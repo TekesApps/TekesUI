@@ -38,12 +38,12 @@ fn main() {
     }
     impl Host {
         fn record(&self, window: &Window, label: &str) {
-            let input = &self.tree.text_surface(f::MARKDOWN).unwrap().input;
-            let composer = &self.tree.text_surface(f::COMPOSER).unwrap().input;
+            let input = self.tree.text_surface(f::MARKDOWN).unwrap().input();
+            let composer = self.tree.text_surface(f::COMPOSER).unwrap().input();
             let value = serde_json::json!({"event":label,"window_active":window.is_active(),"stages":self.stages,
                 "focus":self.tree.focused().map(|id|id.0),"mount":self.tree.semantic_mount(f::MARKDOWN),
-                "markdown":{"text":input.text,"selection":input.selection(),"read_only":input.read_only,"marked":input.marked},
-                "composer":{"text":composer.text,"selection":composer.selection(),"marked":composer.marked},
+                "markdown":{"text":input.text(),"selection":input.selection(),"read_only":input.is_read_only(),"marked":input.marked()},
+                "composer":{"text":composer.text(),"selection":composer.selection(),"marked":composer.marked()},
                 "version":f::rich(&self.tree,f::MARKDOWN).version().revision(),
                 "blocks":f::rich(&self.tree,f::MARKDOWN).block_geometry().len(),
                 "links":self.links.iter().map(|link|serde_json::json!({"document":link.document,"revision":link.revision,"target":link.target,"source":format!("{:?}",link.source)})).collect::<Vec<_>>(),
@@ -175,7 +175,7 @@ fn main() {
                         self.tree
                             .text_surface(f::MARKDOWN)
                             .unwrap()
-                            .input
+                            .input()
                             .external_baseline(),
                     );
                     vec![
@@ -197,7 +197,7 @@ fn main() {
                             self.tree
                                 .text_surface(f::MARKDOWN)
                                 .unwrap()
-                                .input
+                                .input()
                                 .external_baseline()
                         ),
                         self.baseline
@@ -227,15 +227,15 @@ fn main() {
                         self.tree
                             .text_surface(f::COMPOSER)
                             .unwrap()
-                            .input
-                            .marked
+                            .input()
+                            .marked()
                             .is_some()
                     );
                     self.composer_baseline = Some(
                         self.tree
                             .text_surface(f::COMPOSER)
                             .unwrap()
-                            .input
+                            .input()
                             .external_baseline(),
                     );
                     f::append(&mut self.tree);
@@ -253,7 +253,7 @@ fn main() {
                             self.tree
                                 .text_surface(f::COMPOSER)
                                 .unwrap()
-                                .input
+                                .input()
                                 .external_baseline()
                         ),
                         self.composer_baseline
@@ -368,7 +368,7 @@ fn main() {
                         self.tree
                             .text_surface(f::DIFF)
                             .unwrap()
-                            .input
+                            .input()
                             .external_baseline(),
                     );
                     vec![
@@ -383,7 +383,7 @@ fn main() {
                             self.tree
                                 .text_surface(f::DIFF)
                                 .unwrap()
-                                .input
+                                .input()
                                 .external_baseline()
                         ),
                         self.baseline
@@ -422,9 +422,9 @@ fn main() {
         fn event(&mut self, event: ContentEvent, window: &Window) {
             if let ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::Copy) = &event {
                 if let Some(surface) = self.tree.focused_text()
-                    && surface.input.marked.is_none()
+                    && surface.marked().is_none()
                 {
-                    window.set_clipboard_text(&surface.input.selected_text());
+                    window.set_clipboard_text(&surface.input().selected_text());
                 }
                 self.record(window, "original-selection-copied");
                 return;
@@ -479,7 +479,7 @@ fn main() {
                         .tree
                         .text_surface(f::COMPOSER)
                         .unwrap()
-                        .input
+                        .input()
                         .external_baseline();
                     let label = if command == 25_012 {
                         "manual-append"
@@ -504,7 +504,7 @@ fn main() {
                         self.tree
                             .text_surface(f::COMPOSER)
                             .unwrap()
-                            .input
+                            .input()
                             .external_baseline(),
                         baseline
                     );

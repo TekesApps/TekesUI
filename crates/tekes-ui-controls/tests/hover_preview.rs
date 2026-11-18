@@ -45,7 +45,7 @@ impl Component for Draft {
         true
     }
     fn composing(&self) -> bool {
-        self.0.marked.is_some()
+        self.0.marked().is_some()
     }
 }
 #[derive(Debug)]
@@ -199,7 +199,7 @@ fn hover_preview_marked_text_is_preserved_and_escape_keeps_original_input_route(
         .preedit("中文", 1..1, None);
     let before = {
         let input = &host.get(EDITOR).unwrap().component::<Draft>().unwrap().0;
-        (input.text.clone(), input.marked.clone(), input.selection())
+        (input.text().to_owned(), input.marked(), input.selection())
     };
     hover(&mut host);
     assert!(preview(&host).is_open());
@@ -213,7 +213,7 @@ fn hover_preview_marked_text_is_preserved_and_escape_keeps_original_input_route(
     );
     let input = &host.get(EDITOR).unwrap().component::<Draft>().unwrap().0;
     assert_eq!(
-        (input.text.clone(), input.marked.clone(), input.selection()),
+        (input.text().to_owned(), input.marked(), input.selection()),
         before
     );
     assert_eq!(host.focused(), Some(EDITOR));

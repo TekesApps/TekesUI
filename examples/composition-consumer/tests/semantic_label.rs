@@ -108,7 +108,7 @@ fn original_owners_paint_exact_retained_glyph_order_coordinates_and_theme_roles(
                     let mut content = node(kind, overflow);
                     if primary {
                         content.component_mut::<Button>().unwrap().variant =
-                            tekes_ui_controls::paint::ButtonVariant::Primary;
+                            tekes_ui_controls::ButtonVariant::Primary;
                     }
                     let mut host = ContentHost::new(content).unwrap();
                     let mut recorder = Recorder::new();
@@ -286,7 +286,7 @@ fn background_label_revision_theme_font_and_width_keep_composer_marked_state() {
     let before = host
         .text_surface(f::COMPOSER)
         .unwrap()
-        .input
+        .input()
         .external_baseline();
     let mount = host.semantic_mount(f::COMPOSER);
     for id in [f::LABEL, f::ACTION, f::DECORATION] {
@@ -306,7 +306,7 @@ fn background_label_revision_theme_font_and_width_keep_composer_marked_state() {
             assert_eq!(
                 host.text_surface(f::COMPOSER)
                     .unwrap()
-                    .input
+                    .input()
                     .external_baseline(),
                 before
             );

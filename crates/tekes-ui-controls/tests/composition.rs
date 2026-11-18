@@ -109,7 +109,7 @@ impl Component for Editor {
         true
     }
     fn composing(&self) -> bool {
-        self.input.marked.is_some()
+        self.input.marked().is_some()
     }
     fn event(&mut self, e: &ContentEvent) -> ContentResponse {
         match e {
@@ -185,8 +185,8 @@ fn focused_ime_owns_raw_control_keys_before_any_overlay_router() {
             .component::<Editor>()
             .unwrap()
             .input
-            .text
-            .clone();
+            .text()
+            .to_owned();
         for down in [true, false] {
             let event = h.event(&ContentEvent::Key { key, down });
             assert!(
@@ -202,7 +202,7 @@ fn focused_ime_owns_raw_control_keys_before_any_overlay_router() {
                     .component::<Editor>()
                     .unwrap()
                     .input
-                    .text,
+                    .text(),
                 before
             );
             assert!(
@@ -211,7 +211,7 @@ fn focused_ime_owns_raw_control_keys_before_any_overlay_router() {
                     .component::<Editor>()
                     .unwrap()
                     .input
-                    .marked
+                    .marked()
                     .is_some()
             );
             assert_eq!(h.focused(), Some(id(3)));
@@ -249,8 +249,8 @@ fn heterogeneous_children_reorder_preserves_editor_selection_ime_and_focus() {
         .component::<Editor>()
         .unwrap()
         .input
-        .text
-        .clone();
+        .text()
+        .to_owned();
     assert!(
         !h.event(&ContentEvent::Key {
             key: tekes_ui_controls::ControlKey::Tab { reverse: false },
@@ -261,8 +261,8 @@ fn heterogeneous_children_reorder_preserves_editor_selection_ime_and_focus() {
     h.reorder(id(1), &[id(4), id(3), id(2)]).unwrap();
     render(&mut h);
     let e = h.get(id(3)).unwrap().component::<Editor>().unwrap();
-    assert_eq!(e.input.text, before);
-    assert!(e.input.marked.is_some());
+    assert_eq!(e.input.text(), before);
+    assert!(e.input.marked().is_some());
     assert_eq!(h.focused(), Some(id(3)));
     assert_eq!(count.get(), 0);
     assert_eq!(
@@ -280,7 +280,7 @@ fn heterogeneous_children_reorder_preserves_editor_selection_ime_and_focus() {
             .component::<Editor>()
             .unwrap()
             .input
-            .marked
+            .marked()
             .is_some()
     );
 }
@@ -713,7 +713,7 @@ fn inactive_retained_content_rejects_keyboard_and_old_pointer_capture() {
                 .component::<Editor>()
                 .unwrap()
                 .input
-                .text,
+                .text(),
             "draft"
         );
         assert_eq!(host.focused(), None);

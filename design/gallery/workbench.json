@@ -401,7 +401,7 @@
       "api": "tekes_ui_controls::extended::Slider",
       "api_bindings": [
         "tekes_ui_controls::extended::Slider",
-        "tekes_ui_controls::SliderView"
+        "tekes_ui_controls::layout_view::SliderView"
       ]
     },
     {
@@ -433,7 +433,7 @@
       "api": "tekes_ui_controls::extended::RadioGroup",
       "api_bindings": [
         "tekes_ui_controls::extended::RadioGroup",
-        "tekes_ui_controls::RadioGroupView"
+        "tekes_ui_controls::layout_view::RadioGroupView"
       ],
       "api_notes": "Additive public Content: tekes_ui_controls::composition::RadioGroupContent. Original RadioGroup/RadioGroupView owns selection and roving focus; fixed labels/indices; no caller RadioButton Content slot. Original fixed-label RadioGroup/View with indexed controlled selection and roving focus; no caller-owned interactive radio or arbitrary label slots. Native/VoiceOver/performance remain unverified."
     },
@@ -450,7 +450,7 @@
       "api": "tekes_ui_controls::extended::Switch",
       "api_bindings": [
         "tekes_ui_controls::extended::Switch",
-        "tekes_ui_controls::SwitchView"
+        "tekes_ui_controls::layout_view::SwitchView"
       ]
     },
     {
@@ -532,7 +532,7 @@
       "api": "tekes_ui_controls::Tabs",
       "api_bindings": [
         "tekes_ui_controls::Tabs",
-        "tekes_ui_controls::TabsView"
+        "tekes_ui_controls::layout_view::TabsView"
       ],
       "api_notes": "Additive public Content: tekes_ui_controls::composition::TabsContent. TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner. Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified. T64 adds a header-only TabStripContent adapter using the same TabsView and stable keyed select/close intents. Natural title width is capped at 160 points by default; caller content remains outside the strip. This source registration does not establish native acceptance."
     },
@@ -647,7 +647,7 @@
       "api": "tekes_ui_controls::Menu",
       "api_bindings": [
         "tekes_ui_controls::Menu",
-        "tekes_ui_controls::MenuView"
+        "tekes_ui_controls::feedback_view::MenuView"
       ]
     },
     {
@@ -696,7 +696,7 @@
       "api": "tekes_ui_controls::Dialog",
       "api_bindings": [
         "tekes_ui_controls::Dialog",
-        "tekes_ui_controls::DialogView"
+        "tekes_ui_controls::feedback_view::DialogView"
       ]
     },
     {

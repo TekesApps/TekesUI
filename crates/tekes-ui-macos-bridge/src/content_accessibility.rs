@@ -103,7 +103,7 @@ fn enrich(
                 ContentRole::Image | ContentRole::ComboBox | ContentRole::SearchInput
             ) && host
                 .text_surface(id)
-                .is_some_and(|surface| surface.input.multiline)
+                .is_some_and(|surface| surface.input().is_multiline())
             {
                 node.role = AccessibilityRole::TextArea;
             }
@@ -158,7 +158,7 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
             ContentRole::ComboBox | ContentRole::SearchInput
         ) && (host
             .text_surface(n.id)
-            .is_some_and(|surface| surface.input.multiline)
+            .is_some_and(|surface| surface.input().is_multiline())
             || host
                 .semantic_text_layout_snapshot(n.id, None)
                 .is_some_and(|layout| layout.multiline))
@@ -459,7 +459,7 @@ mod tests {
     fn text_field_projection_uses_original_value_selection_and_read_only_state() {
         let mut field = TextFieldContent::new("Notes", "alpha beta");
         field.surface = tekes_ui_controls::TextSurface::new("alpha beta", true, true);
-        assert!(field.surface.input.select_range(6..10));
+        assert!(field.surface.input_mut().select_range(6..10));
         let host = ContentHost::new(Content::new(ComponentId(3), field)).unwrap();
         let projected = content_nodes(&host).into_iter().next().unwrap();
         assert_eq!(projected.role, AccessibilityRole::TextArea);

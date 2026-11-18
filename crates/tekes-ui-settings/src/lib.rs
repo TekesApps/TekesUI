@@ -9,6 +9,6 @@ pub use model::{
     Draft, Field, FieldPresentation, FieldType, Group, Item, OptionValue, Page, Schema, Snapshot,
     Submission,
 };
-pub use sidebar::{SelectableListContent, SettingsSidebar};
+pub use sidebar::SettingsSidebar;
 pub use store::{CommitFailure, FileProvider};
 pub use toml::Value;

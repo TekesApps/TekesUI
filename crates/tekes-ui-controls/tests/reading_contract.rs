@@ -41,20 +41,20 @@ fn history_append_reflow_and_type_scale_preserve_utf16_anchor_and_editor_state()
     let mut view = TextSurface::new(&document(), true, true);
     let mut reading = ReadingController::default();
     layout(&mut reading, &mut view, 560., 1.);
-    view.scroll.scroll_by(0., 713.25);
-    view.input.select_range(0..10);
+    view.scroll_mut().scroll_by(0., 713.25);
+    view.input_mut().select_range(0..10);
     layout(&mut reading, &mut view, 560., 1.);
-    let anchor = view.reflow_anchor.unwrap();
-    let selected = view.input.selection();
-    view.input.text.push_str("\nNew streamed paragraph 中文😀.");
+    let anchor = view.reflow_anchor().unwrap();
+    let selected = view.input().selection();
+    view.append_text("\nNew streamed paragraph 中文😀.");
     for (width, scale) in [(280., 1.), (280., 1.5), (560., 1.), (300., 2.), (560., 1.)] {
         layout(&mut reading, &mut view, width, scale);
-        let after = view.reflow_anchor.unwrap();
+        let after = view.reflow_anchor().unwrap();
         assert_eq!(after.utf16, anchor.utf16);
         assert_eq!(after.within_line, anchor.within_line);
-        assert_eq!(view.input.selection(), selected);
+        assert_eq!(view.input().selection(), selected);
         assert!(!reading.is_following_latest());
-        let relative = view.caret_doc(anchor.utf16).min_y() - view.scroll.offset.y;
+        let relative = view.caret_doc(anchor.utf16).min_y() - view.scroll().offset.y;
         assert!((relative + anchor.within_line).abs() < 0.01);
     }
 }
@@ -62,18 +62,18 @@ fn history_append_reflow_and_type_scale_preserve_utf16_anchor_and_editor_state()
 fn follow_is_explicit_upward_intent_latches_before_append_and_manual_bottom_never_repins() {
     for reduced in [false, true] {
         let mut view = TextSurface::new(&document(), true, true);
-        view.scroll.set_reduced_motion(reduced);
+        view.scroll_mut().set_reduced_motion(reduced);
         let mut reading = ReadingController::default();
         layout(&mut reading, &mut view, 400., 1.);
         reading.follow_latest(&mut view);
-        view.input.text.push_str("\nA new paragraph.");
+        view.append_text("\nA new paragraph.");
         layout(&mut reading, &mut view, 320., 1.);
-        assert_eq!(view.scroll.offset.y, view.scroll.limit().y);
+        assert_eq!(view.scroll().offset.y, view.scroll().limit().y);
         reading.observe_scroll(&mut view, Point::new(0., 1.), true);
         assert!(reading.is_following_latest());
         reading.observe_scroll(&mut view, Point::new(0., 1.), false);
         assert!(!reading.is_following_latest());
-        let point = view.inner.center();
+        let point = view.inner().center();
         view.wheel_at(
             point,
             Point::new(0., 1.),
@@ -84,24 +84,22 @@ fn follow_is_explicit_upward_intent_latches_before_append_and_manual_bottom_neve
             1.,
             false,
         );
-        let history = view.scroll.offset.y;
-        view.input.text.push_str("\nArrival before the next frame.");
+        let history = view.scroll().offset.y;
+        view.append_text("\nArrival before the next frame.");
         layout(&mut reading, &mut view, 320., 1.);
-        assert!((view.scroll.offset.y - history).abs() < 0.001);
-        view.scroll.scroll_by(0., f32::MAX);
-        let manual_bottom = view.scroll.offset.y;
-        view.input
-            .text
-            .push_str("\nTimer or network arrival does not opt in.");
+        assert!((view.scroll().offset.y - history).abs() < 0.001);
+        view.scroll_mut().scroll_by(0., f32::MAX);
+        let manual_bottom = view.scroll().offset.y;
+        view.append_text("\nTimer or network arrival does not opt in.");
         for _ in 0..3 {
             layout(&mut reading, &mut view, 320., 1.);
         }
-        assert_eq!(view.scroll.offset.y, manual_bottom);
-        assert!(view.scroll.offset.y < view.scroll.limit().y);
+        assert_eq!(view.scroll().offset.y, manual_bottom);
+        assert!(view.scroll().offset.y < view.scroll().limit().y);
         reading.follow_latest(&mut view);
         layout(&mut reading, &mut view, 320., 1.);
-        assert_eq!(view.scroll.offset.y, view.scroll.limit().y);
-        assert!(!view.scroll.needs_animation());
+        assert_eq!(view.scroll().offset.y, view.scroll().limit().y);
+        assert!(!view.scroll().needs_animation());
     }
 }
 #[test]
@@ -109,18 +107,18 @@ fn explicit_latest_releases_pointer_capture_but_never_edits_marked_text_or_selec
     let mut view = TextSurface::new(&document(), true, false);
     let mut reading = ReadingController::default();
     layout(&mut reading, &mut view, 400., 1.);
-    view.pointer_down(view.inner.center(), false, 1, 24.);
+    view.pointer_down(view.inner().center(), false, 1, 24.);
     assert!(view.pointer_state(None).pressed);
-    view.input.preedit("输入", 2..2, None);
-    let text = view.input.text.clone();
-    let marked = view.input.marked.clone();
-    let selection = view.input.selection();
+    view.input_mut().preedit("输入", 2..2, None);
+    let text = view.text().to_owned();
+    let marked = view.marked();
+    let selection = view.input().selection();
     reading.follow_latest(&mut view);
     assert!(!view.pointer_state(None).pressed);
     layout(&mut reading, &mut view, 300., 1.5);
-    assert_eq!(view.input.text, text);
-    assert_eq!(view.input.marked, marked);
-    assert_eq!(view.input.selection(), selection);
+    assert_eq!(view.text(), text);
+    assert_eq!(view.marked(), marked);
+    assert_eq!(view.input().selection(), selection);
 }
 
 use tekes_ui_controls::{
@@ -146,13 +144,13 @@ fn versioned_prepend_restores_measured_position_and_selection_within_one_pixel()
             .set_document(&mut view, "document-A", 10, &old)
             .unwrap();
         layout(&mut reading, &mut view, width, 1.);
-        view.scroll.scroll_by(0., 713.25);
+        view.scroll_mut().scroll_by(0., 713.25);
         layout(&mut reading, &mut view, width, 1.);
-        let anchor = view.reflow_anchor.unwrap();
-        let old_y = view.caret_doc(anchor.utf16).min_y() - view.scroll.offset.y;
+        let anchor = view.reflow_anchor().unwrap();
+        let old_y = view.caret_doc(anchor.utf16).min_y() - view.scroll().offset.y;
         let a = utf16(&old[..old.find("中文").unwrap()]);
-        view.input.select_range(a..a + 2);
-        let selected = view.input.selected_text();
+        view.input_mut().select_range(a..a + 2);
+        let selected = view.input().selected_text();
         let before = prefix(1);
         let text = format!("{before}{old}");
         let result = reading
@@ -169,11 +167,11 @@ fn versioned_prepend_restores_measured_position_and_selection_within_one_pixel()
             .unwrap();
         assert_eq!(result.anchor, A::Mapped);
         assert_eq!(result.selection, S::Preserved);
-        assert_eq!(view.input.selected_text(), selected);
-        assert_eq!(view.input.anchor, a + utf16(&before));
+        assert_eq!(view.input().selected_text(), selected);
+        assert_eq!(view.input().anchor(), a + utf16(&before));
         layout(&mut reading, &mut view, width, 1.);
         let mapped = anchor.utf16 + utf16(&before);
-        let after_y = view.caret_doc(mapped).min_y() - view.scroll.offset.y;
+        let after_y = view.caret_doc(mapped).min_y() - view.scroll().offset.y;
         assert!((old_y - after_y).abs() <= 1., "{old_y} vs {after_y}");
         assert!(!reading.is_following_latest());
     }
@@ -186,9 +184,9 @@ fn two_prepend_updates_before_layout_compose_with_tail_append_and_reflow() {
     let mut reading = ReadingController::default();
     let v = reading.set_document(&mut view, "A", 1, &old).unwrap();
     layout(&mut reading, &mut view, 560., 1.);
-    view.scroll.scroll_by(0., 713.25);
+    view.scroll_mut().scroll_by(0., 713.25);
     layout(&mut reading, &mut view, 560., 1.);
-    let anchor = view.reflow_anchor.unwrap();
+    let anchor = view.reflow_anchor().unwrap();
     let p1 = prefix(1);
     let first = format!("{p1}{old}\nAppended same batch. 中文😀");
     let r1 = reading
@@ -221,10 +219,10 @@ fn two_prepend_updates_before_layout_compose_with_tail_append_and_reflow() {
     let logical = anchor.utf16 + utf16(&p1) + utf16(&p2);
     for (width, scale) in [(280., 1.5), (560., 1.), (300., 2.), (560., 1.)] {
         layout(&mut reading, &mut view, width, scale);
-        assert_eq!(view.reflow_anchor.unwrap().utf16, logical);
-        let y = view.caret_doc(logical).min_y() - view.scroll.offset.y;
+        assert_eq!(view.reflow_anchor().unwrap().utf16, logical);
+        let y = view.caret_doc(logical).min_y() - view.scroll().offset.y;
         assert!((y + anchor.within_line).abs() <= 1.);
-        assert!(view.scroll.offset.y < view.scroll.limit().y);
+        assert!(view.scroll().offset.y < view.scroll().limit().y);
     }
     reading.follow_latest(&mut view);
     let third = format!("{second}\nTail after explicit latest.");
@@ -242,7 +240,7 @@ fn two_prepend_updates_before_layout_compose_with_tail_append_and_reflow() {
         .unwrap();
     assert_eq!(r3.anchor, A::FollowingLatest);
     layout(&mut reading, &mut view, 560., 1.);
-    assert_eq!(view.scroll.offset.y, view.scroll.limit().y);
+    assert_eq!(view.scroll().offset.y, view.scroll().limit().y);
 }
 
 #[test]
@@ -276,7 +274,7 @@ fn identity_attachment_revision_and_invalid_mapping_reject_without_mutation() {
         ),
         Err(E::InvalidMapping)
     );
-    assert_eq!(view.input.text, old);
+    assert_eq!(view.text(), old);
     let mut other = ReadingController::default();
     let mut other_view = TextSurface::new("", true, true);
     other.set_document(&mut other_view, "A", 1, &old).unwrap();
@@ -302,7 +300,7 @@ fn identity_attachment_revision_and_invalid_mapping_reject_without_mutation() {
         reading.update_document(&mut view, &new_a, 3, "old callback", &[]),
         Err(E::StaleRevision)
     );
-    view.input.text.push_str("external unversioned mutation");
+    view.append_text("external unversioned mutation");
     assert_eq!(
         reading.update_document(&mut view, &v2, 3, "bad refresh", &[]),
         Err(E::UnversionedChange)
@@ -316,10 +314,11 @@ fn deletion_fallback_and_selection_invalidation_are_explicit_not_a_different_sel
     let mut reading = ReadingController::default();
     let version = reading.set_document(&mut view, "A", 1, &old).unwrap();
     layout(&mut reading, &mut view, 400., 1.);
-    view.scroll.scroll_by(0., 713.25);
+    view.scroll_mut().scroll_by(0., 713.25);
     layout(&mut reading, &mut view, 400., 1.);
-    let anchor = view.reflow_anchor.unwrap();
-    view.input.select_range(anchor.utf16..anchor.utf16 + 3);
+    let anchor = view.reflow_anchor().unwrap();
+    view.input_mut()
+        .select_range(anchor.utf16..anchor.utf16 + 3);
     let first = &old[..old.find('\n').unwrap() + 1];
     let r = reading
         .update_document(
@@ -335,15 +334,15 @@ fn deletion_fallback_and_selection_invalidation_are_explicit_not_a_different_sel
         .unwrap();
     assert_eq!(r.anchor, A::FallbackStart);
     assert_eq!(r.selection, S::Invalidated);
-    assert!(view.input.selection().is_empty());
+    assert!(view.input().selection().is_empty());
     layout(&mut reading, &mut view, 400., 1.);
-    assert_eq!(view.scroll.offset.y, 0.);
+    assert_eq!(view.scroll().offset.y, 0.);
     // An insertion inside a selected span may map both endpoints, but must not
     // silently include new text in the user's old selection.
     let v = reading
         .set_document(&mut view, "C", 1, "中文😀 e\u{301} tail")
         .unwrap();
-    view.input.select_all();
+    view.input_mut().select_all();
     let next = "中文 inserted 😀 e\u{301} tail";
     let r = reading
         .update_document(
@@ -364,7 +363,7 @@ fn deletion_fallback_and_selection_invalidation_are_explicit_not_a_different_sel
         )
         .unwrap();
     assert_eq!(r.selection, S::Invalidated);
-    assert!(view.input.selection().is_empty());
+    assert!(view.input().selection().is_empty());
 }
 
 #[test]
@@ -375,15 +374,15 @@ fn reading_updates_reject_active_composition_and_editable_surfaces_and_invalid_g
         reading.set_document(&mut view, "A", 1, "replace"),
         Err(E::EditableSurface)
     );
-    view.input.preedit("输入", 2..2, None);
-    let composing = view.input.text.clone();
-    let marked = view.input.marked.clone();
+    view.input_mut().preedit("输入", 2..2, None);
+    let composing = view.text().to_owned();
+    let marked = view.marked();
     assert_eq!(
         reading.set_document(&mut view, "A", 1, "replace"),
         Err(E::CompositionActive)
     );
-    assert_eq!(view.input.text, composing);
-    assert_eq!(view.input.marked, marked);
+    assert_eq!(view.text(), composing);
+    assert_eq!(view.marked(), marked);
     let mut view = TextSurface::new("", true, true);
     let v = reading
         .set_document(&mut view, "A", 1, "😀e\u{301}")
@@ -421,7 +420,7 @@ fn selection_requires_retained_interval_coverage_and_keeps_left_affinity_at_its_
     let mut reading = ReadingController::default();
     let mut view = TextSurface::new("", true, true);
     let v = reading.set_document(&mut view, "A", 1, "abcDEF").unwrap();
-    view.input.select_all();
+    view.input_mut().select_all();
     let r = reading
         .update_document(
             &mut view,
@@ -446,8 +445,7 @@ fn selection_requires_retained_interval_coverage_and_keeps_left_affinity_at_its_
         "identical bytes cannot pretend that unmapped selected content retained its identity"
     );
     let v = reading.set_document(&mut view, "A", 3, "abcDEF").unwrap();
-    view.input.anchor = 3;
-    view.input.caret = 0;
+    view.input_mut().set_selection(3, 0);
     let r = reading
         .update_document(
             &mut view,
@@ -467,8 +465,8 @@ fn selection_requires_retained_interval_coverage_and_keeps_left_affinity_at_its_
         )
         .unwrap();
     assert_eq!(r.selection, S::Preserved);
-    assert_eq!(view.input.selected_text(), "abc");
-    assert_eq!((view.input.anchor, view.input.caret), (3, 0));
+    assert_eq!(view.input().selected_text(), "abc");
+    assert_eq!((view.input().anchor(), view.input().caret()), (3, 0));
 }
 
 #[test]
@@ -478,9 +476,9 @@ fn truncating_to_retained_anchor_uses_existing_legal_scroll_clamp() {
     let mut view = TextSurface::new("", true, true);
     let v = reading.set_document(&mut view, "A", 1, &old).unwrap();
     layout(&mut reading, &mut view, 560., 1.);
-    view.scroll.scroll_by(0., 713.25);
+    view.scroll_mut().scroll_by(0., 713.25);
     layout(&mut reading, &mut view, 560., 1.);
-    let anchor = view.reflow_anchor.unwrap();
+    let anchor = view.reflow_anchor().unwrap();
     let start_byte = old
         .char_indices()
         .find(|(b, _)| utf16(&old[..*b]) == anchor.utf16)
@@ -501,8 +499,8 @@ fn truncating_to_retained_anchor_uses_existing_legal_scroll_clamp() {
         .unwrap();
     assert_eq!(r.anchor, A::Mapped);
     layout(&mut reading, &mut view, 560., 1.);
-    assert_eq!(view.scroll.offset.y, 0.);
-    assert_eq!(view.scroll.limit().y, 0.);
-    assert_eq!(view.reflow_anchor.unwrap().utf16, 0);
-    assert!(view.caret_doc(0).min_y() < view.inner.size.height);
+    assert_eq!(view.scroll().offset.y, 0.);
+    assert_eq!(view.scroll().limit().y, 0.);
+    assert_eq!(view.reflow_anchor().unwrap().utf16, 0);
+    assert!(view.caret_doc(0).min_y() < view.inner().size.height);
 }

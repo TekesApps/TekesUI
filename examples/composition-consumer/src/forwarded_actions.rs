@@ -170,8 +170,8 @@ pub fn build() -> ContentHost {
             ButtonActivationPhase::Release,
         ),
     ] {
-        let mut b =
-            Button::new(Content::new(ComponentId(id.0 + 100), Decoration)).with_accessible_name(label);
+        let mut b = Button::new(Content::new(ComponentId(id.0 + 100), Decoration))
+            .with_accessible_name(label);
         b.button.frame_policy = ButtonFramePolicy::Exact;
         b.pointer_activation_phase = phase;
         children.push(if wrapped {

@@ -13,7 +13,7 @@ use tekes_ui_app_host::{
     OthersOptions, PresentationOptions, SettingsDisplayMode, SettingsOwner, SettingsWindow,
 };
 use tekes_ui_controls::{
-    CheckState, ScrollArea, TextInput,
+    CheckState, ScrollArea,
     composition::{
         CheckboxContent, Component, ComponentId, Content, ContentActionPayload,
         ContentActionRecord, ContentHost, DecimalNumberFormat, DisclosureContent,
@@ -200,7 +200,7 @@ fn request_navigation(
         if inspector
             .borrow()
             .focused_text()
-            .is_some_and(|surface| surface.input.marked.is_some())
+            .is_some_and(|surface| surface.marked().is_some())
         {
             update_navigation(host, documents);
             if diag_enabled() {
@@ -399,13 +399,13 @@ fn update_document(host: &mut ContentHost, document: &Document) {
         .component_mut::<TextFieldContent>()
         .unwrap();
     // Inspector updates that leave the body unchanged must retain selection.
-    if field.surface.input.text != value {
-        let baseline = field.surface.input.external_baseline();
+    if field.surface.text() != value {
+        let baseline = field.surface.input().external_baseline();
         let revision = tekes_ui_controls::DraftRevision {
             identity: "gallery-apphost-document-body".into(),
             version: field
                 .surface
-                .input
+                .input()
                 .external_value()
                 .map_or(1, |current| current.version + 1),
             payload: value,
@@ -497,12 +497,13 @@ fn update_inspector(host: &mut ContentHost, document: &Document) {
     host.cancel();
     host.focus(None, false);
     for (id, value) in [(TITLE, &document.title), (AUTHOR, &document.author)] {
-        host.get_mut(id)
+        let field = host
+            .get_mut(id)
             .unwrap()
             .component_mut::<TextFieldContent>()
-            .unwrap()
-            .surface
-            .input = TextInput::new(value, false);
+            .unwrap();
+        field.surface.input_mut().set_text(value);
+        field.surface.invalidate_text_layout();
     }
     host.get_mut(REVISION)
         .unwrap()
@@ -663,18 +664,16 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text
-                .clone();
+                .text()
+                .to_owned();
             item.author = host
                 .get(AUTHOR)
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text
-                .clone();
+                .text()
+                .to_owned();
             item.revision = host
                 .get(REVISION)
                 .unwrap()
@@ -993,8 +992,7 @@ mod tests {
                     .component::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .text,
+                    .text(),
                 state.items[0].title
             );
             if step < 2 {
@@ -1060,7 +1058,7 @@ mod tests {
         let origin = field.surface.origin();
         let end = field
             .surface
-            .caret_doc(field.surface.input.len())
+            .caret_doc(field.surface.input().len())
             .offset(origin.x, origin.y);
         assert!(
             end.min_y() >= narrow.min_y() && end.max_y() <= narrow.max_y(),
@@ -1100,7 +1098,7 @@ mod tests {
                     .offset(origin.x, origin.y)
                     .center()
             };
-            (point(0), point(end), field.surface.input.text.clone())
+            (point(0), point(end), field.surface.text().to_owned())
         };
         for (phase, position) in [
             (PointerPhase::Down, start_point),
@@ -1128,11 +1126,11 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert!(field.surface.input.read_only);
-        let selection = field.surface.input.selection();
+        assert!(field.surface.input().is_read_only());
+        let selection = field.surface.input().selection();
         assert_eq!(selection, 0..end);
         assert_eq!(
-            field.surface.input.selected_text(),
+            field.surface.input().selected_text(),
             String::from_utf16(&original.encode_utf16().take(end).collect::<Vec<_>>()).unwrap()
         );
         host.event(&ContentEvent::Commit {
@@ -1145,9 +1143,9 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(field.surface.input.text, original);
+        assert_eq!(field.surface.text(), original);
         assert_eq!(
-            field.surface.input.selection(),
+            field.surface.input().selection(),
             selection,
             "unrelated Inspector updates retain the original selection"
         );
@@ -1157,10 +1155,7 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(
-            field.surface.input.text,
-            state.items[1].paragraphs.join("\n\n")
-        );
+        assert_eq!(field.surface.text(), state.items[1].paragraphs.join("\n\n"));
     }
 
     #[test]
@@ -1263,8 +1258,7 @@ mod tests {
                     .component::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .text,
+                    .text(),
                 DOCUMENT_TITLES[index]
             );
             assert_eq!(
@@ -1412,8 +1406,7 @@ mod tests {
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text,
+                .text(),
             state.items[2].title
         );
         assert!(

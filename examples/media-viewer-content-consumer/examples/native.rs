@@ -1152,10 +1152,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let r = s.caret();
             let origin = s.origin();
             p::TextInputState {
-                caret_index: s.input.caret,
-                text: s.input.text.clone(),
-                selection: s.input.selection(),
-                marked: s.input.marked.clone(),
+                caret_index: s.input().caret(),
+                text: s.text().to_owned(),
+                selection: s.input().selection(),
+                marked: s.marked(),
                 caret_origin: p::Point {
                     x: r.min_x() as f64,
                     y: r.min_y() as f64,
@@ -1164,17 +1164,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     width: r.size.width as f64,
                     height: r.size.height as f64,
                 },
-                read_only: s.input.read_only,
+                read_only: s.input().is_read_only(),
                 carets: s
-                    .paragraph
-                    .as_ref()
+                    .paragraph()
+                    
                     .map(|paragraph| {
                         paragraph
                             .lines
                             .iter()
                             .filter(|line| {
-                                origin.y + (line.top + line.height) as f32 >= s.inner.min_y()
-                                    && origin.y + line.top as f32 <= s.inner.max_y()
+                                origin.y + (line.top + line.height) as f32 >= s.inner().min_y()
+                                    && origin.y + line.top as f32 <= s.inner().max_y()
                             })
                             .flat_map(|line| {
                                 line.carets.iter().map(move |(index, x)| {
@@ -1250,7 +1250,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap()
                 .surface;
             let metrics = tekes_ui_controls::extended::FocusRingMetrics::new(window.scale() as f32);
-            let full_ring = metrics.bounds(surface.outer);
+            let full_ring = metrics.bounds(surface.outer());
             let dialog = tree.get(fixture::DIALOG).unwrap();
             let modal = dialog
                 .component::<DialogContent>()
@@ -1264,8 +1264,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window.scale(), fixture::ROOT).unwrap();
             writeln!(log,
                 "m6_pointer_surface phase={phase} outer={:?} inner={:?} visible={:?} contains_visible={} disabled={} read_only={} marked={:?}",
-                surface.outer, surface.inner, surface.visible_frame(), surface.contains_visible(point),
-                surface.input.disabled, surface.input.read_only, surface.input.marked).unwrap();
+                surface.outer(), surface.inner(), surface.visible_frame(), surface.contains_visible(point),
+                surface.input().is_disabled(), surface.input().is_read_only(), surface.marked()).unwrap();
         }
         fn start_ime_script(tree: &ContentHost) {
             use p::selftest::{Action as A, run_script_published_state};

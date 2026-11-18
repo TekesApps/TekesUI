@@ -197,11 +197,11 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                         }
                         model.disabled = state == "disabled";
                         let mut surface = TextSurface::new(&model.query, false, false);
-                        surface.input.disabled = model.disabled;
+                        surface.input_mut().set_disabled(model.disabled);
                         surface.layout_with(frame, None, 1., 1., |s, w| {
                             text.shape_surface(s, proposal::TextRole::UiBody, w)
                         });
-                        let point = surface.inner.center();
+                        let point = surface.inner().center();
                         if state == "pressed" {
                             assert!(surface.pointer_down(point, false, 1, 24.).is_some());
                         }
@@ -216,7 +216,7 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                         assert_eq!(pointer.pressed, state == "pressed");
                         let mut view = ComboBoxView::default();
                         view.options.set_reduced_motion(true);
-                        let draft = surface.input.text.clone();
+                        let draft = surface.text().to_owned();
                         let value = model.selected;
                         let result = observe(|| {
                             let mut scene = Scene::new();
@@ -242,16 +242,16 @@ fn existing_choice_states_preserve_values_and_use_actual_production_tokens() {
                             (scene, pointer)
                         });
                         assert_eq!(surface.visible_frame(), Some(frame));
-                        assert_eq!(surface.input.text, draft);
+                        assert_eq!(surface.text(), draft);
                         assert_eq!(model.query, draft);
                         assert_eq!(model.selected, value);
                         assert_eq!(model.open, matches!(state, "open" | "empty"));
                         if state == "selected" {
                             assert_eq!(model.selected, Some(1));
-                            assert_eq!(surface.input.text, labels[1]);
+                            assert_eq!(surface.text(), labels[1]);
                         }
                         if state == "disabled" {
-                            assert!(!surface.input.insert("x", None));
+                            assert!(!surface.input_mut().insert("x", None));
                             model.set_query("ignored");
                             assert_eq!(model.query, draft);
                         }

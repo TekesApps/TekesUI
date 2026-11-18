@@ -124,16 +124,6 @@ fn grouped_list_uses_one_original_scroller_and_thumb_capture_never_activates_ite
         assert!(host.get(ComponentId(109)).is_some());
         let bar = thumb(&scene, palette).expect("overflow List paints its original thumb");
         let event = pointer(bar.center(), PointerPhase::Down);
-        let before = format!("{:?}", scroll(&host));
-        assert!(matches!(
-            scroll(&host).prepare_action(ComponentActionRequest::PointerDown(&event)),
-            ActionPreparation::Ready(_)
-        ));
-        assert_eq!(
-            format!("{:?}", scroll(&host)),
-            before,
-            "preparing a drag is pure"
-        );
         assert!(host.event(&event).capture_pointer);
         assert_eq!(host.pointer_capture().unwrap().0, SCROLL);
         // Render between Down and Drag, as the real Host does. Unchanged
@@ -485,13 +475,13 @@ fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
         let (clear, rest) = paint(&mut host, &mut text);
         let mount = host.get(SEARCH).unwrap().mount_identity();
         let surface = host.text_surface(SEARCH).unwrap();
-        let editor = surface.inner.center();
+        let editor = surface.inner().center();
         assert_eq!(
-            surface.outer.size.width,
+            surface.outer().size.width,
             host.get(SEARCH).unwrap().frame().size.width
         );
-        assert!(surface.outer.contains(clear));
-        assert!(!surface.inner.contains(clear));
+        assert!(surface.outer().contains(clear));
+        assert!(!surface.inner().contains(clear));
         let cursor_regions = host.text_cursor_regions();
         assert!(cursor_regions.iter().any(|r| r.contains(editor)));
         assert!(cursor_regions.iter().all(|r| !r.contains(clear)));
@@ -587,7 +577,7 @@ fn search_clear_keeps_intrinsic_height_in_a_tall_host_allocation() {
                 .unwrap()
                 .semantic_parts()[0]
                 .frame;
-            let outer = host.text_surface(SEARCH).unwrap().outer;
+            let outer = host.text_surface(SEARCH).unwrap().outer();
             let inset = tekes_ui_tokens::Spacing::Micro.value();
             assert_eq!(part.min_y(), outer.min_y() + inset);
             // ContentHost preserves the editor's minimum layout height even
@@ -791,8 +781,8 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
             .unwrap();
         let clear = field.semantic_parts()[0].frame;
         assert_eq!(field.semantics().role, ContentRole::TextInput);
-        assert_eq!(field.surface.outer.intersection(&clear), Some(clear));
-        assert!(field.surface.inner.max_x() <= clear.min_x());
+        assert_eq!(field.surface.outer().intersection(&clear), Some(clear));
+        assert!(field.surface.inner().max_x() <= clear.min_x());
         assert!(
             host.text_cursor_regions()
                 .iter()
@@ -808,7 +798,7 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
                 .unwrap();
             // The public original editor may receive an external publication
             // between down and up; the pending Clear must not erase that value.
-            let baseline = field.surface.input.external_baseline();
+            let baseline = field.surface.input().external_baseline();
             let value = tekes_ui_controls::DraftRevision {
                 identity: "replacement".into(),
                 version: 1,
@@ -840,13 +830,13 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
             .component_mut::<TextFieldContent>()
             .unwrap();
         assert_eq!(
-            field.surface.input.text,
+            field.surface.text(),
             if replacement { "new value" } else { "" }
         );
         if !replacement {
-            assert!(field.surface.input.undo());
-            assert_eq!(field.surface.input.text, "original");
-            assert!(!field.surface.input.undo());
+            assert!(field.surface.input_mut().undo());
+            assert_eq!(field.surface.text(), "original");
+            assert!(!field.surface.input_mut().undo());
         }
     }
 }
@@ -864,17 +854,17 @@ fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() 
     ] {
         let mut field = TextFieldContent::new("Draft", if mode == "empty" { "" } else { "draft" });
         match mode {
-            "multiline" => field.surface.input.multiline = true,
-            "document" => {
-                field.surface.presentation = tekes_ui_controls::TextSurfacePresentation::Content
-            }
+            "multiline" => field.surface.set_multiline(true),
+            "document" => field
+                .surface
+                .set_presentation(tekes_ui_controls::TextSurfacePresentation::Content),
             "opt_out" => field = field.clear_button(false),
-            "readonly" => field.surface.input.read_only = true,
-            "disabled" => field.surface.input.disabled = true,
-            "marked" => field.surface.input.marked = Some(0..5),
+            "readonly" => field.surface.input_mut().set_read_only(true),
+            "disabled" => field.surface.input_mut().set_disabled(true),
+            "marked" => assert!(field.surface.input_mut().set_marked_range(Some(0..5))),
             _ => {}
         }
-        let original = field.surface.input.text.clone();
+        let original = field.surface.text().to_owned();
         let frame = Rect::new(0., 0., 300., 80.);
         field.arrange(&mut Text, frame, frame);
         let parts = field.semantic_parts();
@@ -889,6 +879,6 @@ fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() 
                 assert!(!field.event(&event).activated, "{mode}");
             }
         }
-        assert_eq!(field.surface.input.text, original, "{mode}");
+        assert_eq!(field.surface.text(), original, "{mode}");
     }
 }

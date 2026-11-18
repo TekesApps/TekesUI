@@ -5,8 +5,7 @@ mod coretext;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composition::*,
-    extended::ComboBox,
-    extended::{Axis, Stack},
+    extended::{Axis, ComboBox, Stack},
     layout::MeasuredChild,
     layout_view::ComboBoxView,
 };
@@ -128,21 +127,21 @@ fn original_view_and_public_combobox_pixels() {
                     host.render(&mut scene, &mut text, frame, clip, palette)
                         .unwrap();
                     let original = host.text_surface(ComponentId(90)).unwrap();
-                    let mut reference = TextFieldContent::new("Layout", &original.input.text);
-                    if let Some(mark) = &original.input.marked {
-                        let utf16 = original.input.text.encode_utf16().collect::<Vec<_>>();
-                        reference.surface.input.preedit(
+                    let mut reference = TextFieldContent::new("Layout", original.text());
+                    if let Some(mark) = &original.marked() {
+                        let utf16 = original.text().encode_utf16().collect::<Vec<_>>();
+                        reference.surface.input_mut().preedit(
                             &String::from_utf16(&utf16[mark.clone()]).unwrap(),
-                            original.input.selection().start - mark.start
-                                ..original.input.selection().end - mark.start,
+                            original.input().selection().start - mark.start
+                                ..original.input().selection().end - mark.start,
                             Some(mark.clone()),
                         );
-                        reference.surface.clauses = original.clauses.clone();
+                        reference.surface.set_clauses(original.clauses().to_vec());
                     } else {
                         reference
                             .surface
-                            .input
-                            .select_range(original.input.selection());
+                            .input_mut()
+                            .select_range(original.input().selection());
                     }
                     reference.set_focus(true, true);
                     let mut ref_text = coretext::Text::new(1.);
@@ -175,7 +174,7 @@ fn original_view_and_public_combobox_pixels() {
                         &mut ref_scene,
                         &mut ref_text,
                         &mut model,
-                        reference.surface.outer,
+                        reference.surface.outer(),
                         clip,
                         Some(clip),
                         palette,

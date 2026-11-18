@@ -5,7 +5,6 @@ use super::{
 };
 use crate::gallery::icon_catalog::{IconCatalog, preview_sizes};
 use tekes_ui_controls::layout_view::{IconRenderer, IconView};
-use tekes_ui_controls::paint;
 use tekes_ui_scene::{ImageId, ImageQuad, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{ColorRole, CornerRadius, Spacing, proposal};
 
@@ -450,7 +449,8 @@ pub(crate) fn build_catalog_with_text(
             continue;
         }
         let width = tile.size.width;
-        let (border_width, border_ink) = paint::decorative_border(theme, text.scale());
+        let (border_width, border_ink) =
+            tekes_ui_controls::feedback_view::SurfaceView::decorative_border(theme, text.scale());
         scene.push_quad(
             Quad::new(tile, ColorRole::DocumentCanvas.resolve(theme))
                 .with_corner_radius(CornerRadius::Panel.value())
@@ -742,7 +742,8 @@ mod tests {
                 &IconCatalog::default(),
                 content,
             );
-            let (expected_width, expected_ink) = paint::decorative_border(theme, scale);
+            let (expected_width, expected_ink) =
+                tekes_ui_controls::feedback_view::SurfaceView::decorative_border(theme, scale);
             let card = scene
                 .primitives()
                 .iter()

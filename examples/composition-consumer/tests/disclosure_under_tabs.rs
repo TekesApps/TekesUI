@@ -4,11 +4,10 @@
 mod coretext;
 use std::{ops::Range, rc::Rc, time::Duration};
 use tekes_ui_controls::{
-    ButtonFramePolicy, ControlKey,
+    ButtonFramePolicy, ButtonVariant, ControlKey,
     composition::*,
     extended::{Axis, Stack},
     layout_view::IconRenderer,
-    paint::ButtonVariant,
 };
 use tekes_ui_scene::{ImageId, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Rgba, Theme};
@@ -121,14 +120,14 @@ fn select(h: &mut ContentHost, index: usize) -> bool {
         .select(index)
 }
 fn draft(h: &ContentHost) -> (String, Range<usize>, Option<Range<usize>>) {
-    let input = &h
+    let input = h
         .get(EDITOR)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
-    (input.text.clone(), input.selection(), input.marked.clone())
+        .input();
+    (input.text().to_owned(), input.selection(), input.marked())
 }
 fn mounts(h: &ContentHost) -> Vec<u64> {
     [PANEL, DISCLOSURE, TRIGGER, BODY, EDITOR, ACTION]

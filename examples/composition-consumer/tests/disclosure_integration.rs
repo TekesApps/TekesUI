@@ -248,16 +248,16 @@ fn compound_title_has_one_owner_and_external_fold_preserves_sibling_preedit_and_
         assert_eq!(h.focused(), Some(SIBLING));
         assert_eq!(h.semantic_mount(SIBLING), sibling_mount);
         assert_eq!(h.text_input_snapshot().unwrap(), sibling_before);
-        let input = &h
+        let input = h
             .get(BODY)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        assert_eq!(input.text, body_before.text);
+            .input();
+        assert_eq!(input.text(), body_before.text);
         assert_eq!(input.selection(), body_before.selection);
-        assert_eq!(input.marked, body_before.marked);
+        assert_eq!(input.marked(), body_before.marked);
         assert_eq!(h.semantic_mount(TRIGGER), trigger_mount);
     }
     assert_eq!(h.semantic_mount(BODY), body_mount);

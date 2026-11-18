@@ -3,12 +3,12 @@ use super::*;
 use content_reveal_plan::ContentRoute;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ActionTransactionCompatibility {
+pub(crate) enum ActionTransactionCompatibility {
     Unsupported,
     StableHooks,
 }
 #[derive(Clone, Copy, Debug)]
-pub enum ComponentActionRequest<'a> {
+pub(crate) enum ComponentActionRequest<'a> {
     PointerDown(&'a ContentEvent),
     Accessibility {
         part: Option<usize>,
@@ -16,7 +16,7 @@ pub enum ComponentActionRequest<'a> {
     },
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PreparedActionFocus {
+pub(crate) enum PreparedActionFocus {
     None,
     Owner,
     Preserve,
@@ -27,7 +27,7 @@ pub enum PreparedActionFocus {
 /// A decision uses only its owner-local state and remains applicable across the
 /// declared focus hooks and preceding child effects in the prepared bubble chain.
 /// Shared mutable action state requiring a child callback is Unsupported.
-pub trait PreparedActionEffect: Debug {
+pub(crate) trait PreparedActionEffect: Debug {
     /// Optional post-decision caret geometry, authenticated by final validation.
     fn focus_rect(&self) -> Option<Rect> {
         None
@@ -36,14 +36,14 @@ pub trait PreparedActionEffect: Debug {
     fn apply(self: Box<Self>, owner: &mut dyn Component);
 }
 #[derive(Debug)]
-pub struct PreparedComponentAction {
+pub(crate) struct PreparedComponentAction {
     response: ContentResponse,
     focus: PreparedActionFocus,
     effect: Box<dyn PreparedActionEffect>,
     refused: bool,
 }
 impl PreparedComponentAction {
-    pub fn new(
+    pub(crate) fn new(
         response: ContentResponse,
         focus: PreparedActionFocus,
         effect: Box<dyn PreparedActionEffect>,
@@ -57,7 +57,7 @@ impl PreparedComponentAction {
     }
 }
 #[derive(Debug)]
-pub enum ActionPreparation {
+pub(crate) enum ActionPreparation {
     Unsupported,
     Ready(PreparedComponentAction),
 }
@@ -531,7 +531,8 @@ impl ContentHost {
 struct NoopEffect;
 impl PreparedActionEffect for NoopEffect {
     fn validate(&self, owner: &dyn Component) -> bool {
-        owner.action_transaction_compatibility() == ActionTransactionCompatibility::StableHooks
+        precheck_dispatch::action_transaction_compatibility(owner)
+            == ActionTransactionCompatibility::StableHooks
     }
     fn apply(self: Box<Self>, _: &mut dyn Component) {}
 }
@@ -571,8 +572,9 @@ impl ContentHost {
                 let Some(owner) = action.route.node(&self.root, depth) else {
                     return Some(false);
                 };
-                unsupported |= owner.component.action_transaction_compatibility()
-                    != ActionTransactionCompatibility::StableHooks;
+                unsupported |=
+                    precheck_dispatch::action_transaction_compatibility(&*owner.component)
+                        != ActionTransactionCompatibility::StableHooks;
             }
         }
         if let Some(focus) = focus {
@@ -581,8 +583,9 @@ impl ContentHost {
                     let Some(owner) = route.node(&self.root, depth) else {
                         return Some(false);
                     };
-                    unsupported |= owner.component.action_transaction_compatibility()
-                        != ActionTransactionCompatibility::StableHooks;
+                    unsupported |=
+                        precheck_dispatch::action_transaction_compatibility(&*owner.component)
+                            != ActionTransactionCompatibility::StableHooks;
                 }
             }
             if !self.validate_focus(focus) {
@@ -636,7 +639,7 @@ impl ContentHost {
         let mut focus_intent = PreparedActionFocus::None;
         let mut focus_rect = None;
         for node in path {
-            if node.component.action_transaction_compatibility()
+            if precheck_dispatch::action_transaction_compatibility(&*node.component)
                 != ActionTransactionCompatibility::StableHooks
             {
                 // This original owner has no transaction contract. Keep its
@@ -650,10 +653,10 @@ impl ContentHost {
                     None
                 };
             }
-            let ActionPreparation::Ready(action) = node
-                .component
-                .prepare_action(ComponentActionRequest::PointerDown(event))
-            else {
+            let ActionPreparation::Ready(action) = precheck_dispatch::prepare_action(
+                &*node.component,
+                ComponentActionRequest::PointerDown(event),
+            ) else {
                 // This original owner has no transaction contract. Keep its
                 // existing reducer/capture behavior; do not reject a supported
                 // pointer action merely because a focus plan cannot be staged.
@@ -828,7 +831,7 @@ impl ContentHost {
             // focus admission from falling through to a partially mutating AX reducer.
             let stable_press = (matches!(action, AccessibilityAction::Press) || combo_expansion)
                 && self.scope().find_active(id).is_some_and(|n| {
-                    n.component.action_transaction_compatibility()
+                    precheck_dispatch::action_transaction_compatibility(&*n.component)
                         == ActionTransactionCompatibility::StableHooks
                 });
             if !stable_press {
@@ -848,7 +851,7 @@ impl ContentHost {
             );
         }
         let n = self.scope().find_active(id)?;
-        if n.component.action_transaction_compatibility()
+        if precheck_dispatch::action_transaction_compatibility(&*n.component)
             != ActionTransactionCompatibility::StableHooks
         {
             return if self.ordinary_ax_focus_admissible(id, part, action) {
@@ -857,10 +860,10 @@ impl ContentHost {
                 Some(ContentResponse::default())
             };
         }
-        let prepared = match n
-            .component
-            .prepare_action(ComponentActionRequest::Accessibility { part, action })
-        {
+        let prepared = match precheck_dispatch::prepare_action(
+            &*n.component,
+            ComponentActionRequest::Accessibility { part, action },
+        ) {
             ActionPreparation::Ready(prepared) => prepared,
             ActionPreparation::Unsupported if prepared_select => {
                 return Some(ContentResponse::default());
@@ -1210,13 +1213,13 @@ mod tests {
         assert_eq!(h.focused, Some(OLD));
         render(&mut h);
         let n = h.get(TARGET).unwrap();
-        let ActionPreparation::Ready(p) =
-            n.component
-                .prepare_action(ComponentActionRequest::Accessibility {
-                    part: None,
-                    action: &AccessibilityAction::Press,
-                })
-        else {
+        let ActionPreparation::Ready(p) = precheck_dispatch::prepare_action(
+            &*n.component,
+            ComponentActionRequest::Accessibility {
+                part: None,
+                action: &AccessibilityAction::Press,
+            },
+        ) else {
             panic!("original Button supports preparation")
         };
         assert!(p.effect.validate(&*n.component));
@@ -1509,14 +1512,13 @@ mod tests {
         }
         let mut stale = ordinary(false, false);
         let owner = stale.get(TARGET).unwrap();
-        let ActionPreparation::Ready(action) =
-            owner
-                .component
-                .prepare_action(ComponentActionRequest::Accessibility {
-                    part: None,
-                    action: &AccessibilityAction::Press,
-                })
-        else {
+        let ActionPreparation::Ready(action) = precheck_dispatch::prepare_action(
+            &*owner.component,
+            ComponentActionRequest::Accessibility {
+                part: None,
+                action: &AccessibilityAction::Press,
+            },
+        ) else {
             panic!("original Button has a prepared decision");
         };
         let route = ContentRoute::capture(

@@ -105,7 +105,7 @@ fn combo_box_retained_public_composition_keeps_query_source_indices_and_real_com
         assert_eq!(s.query(), "B");
         assert_eq!(s.active(), Some(2));
         assert_eq!(s.selected(), None);
-        let input = s.host.focused_text().unwrap().outer;
+        let input = s.host.focused_text().unwrap().outer();
         let node = s
             .host
             .semantics()

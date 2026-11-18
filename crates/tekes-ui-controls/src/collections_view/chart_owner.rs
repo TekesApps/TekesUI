@@ -1,7 +1,8 @@
 //! Explicit original Chart owner layout. No Host, reveal, selection or theme engine.
+use super::chart_and_docs::{chart_label_metrics, draw_chart_labels_with_inks};
 use super::{
     BarChart, ButtonTextRenderer, ChartGeometry, ChartView, ChartViewLayout, Palette, Rect, Scene,
-    chart_label_metrics, draw_chart_labels_with_inks, own_clip, valid_rect,
+    own_clip, valid_rect,
 };
 use crate::extended::FocusRingMetrics;
 use tekes_ui_scene::Size;

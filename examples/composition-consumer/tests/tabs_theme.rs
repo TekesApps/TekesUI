@@ -2,7 +2,10 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 
-use tekes_ui_controls::{ControlKey, TabsLayout, TabsView};
+use tekes_ui_controls::{
+    ControlKey,
+    layout_view::{TabsLayout, TabsView},
+};
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme, proposal, surface_palette::resolve_surface};
 

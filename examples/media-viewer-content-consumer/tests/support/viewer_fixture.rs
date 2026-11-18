@@ -1,8 +1,4 @@
-use tekes_ui_controls::{
-    ButtonTextRenderer, Insets,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextRenderer, Insets, composition::*, extended::{Axis, Stack}};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::Palette;

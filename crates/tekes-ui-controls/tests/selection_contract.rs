@@ -1,9 +1,9 @@
 //! Independent public API probe: production Views, real event methods and Scene
 //! primitives. Optional token observations are scoped lookups, not native UAT.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey, RadioGroupView,
-    SelectionEvent, SwitchView,
+    ButtonTextAlign, ButtonTextRenderer, CheckState, Checkbox, ControlKey,
     extended::{RadioGroup, Switch},
+    layout_view::{RadioGroupView, SelectionEvent, SwitchView},
 };
 use tekes_ui_scene::{Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};

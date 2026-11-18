@@ -130,7 +130,7 @@ fn disabled_and_separator_reject_ax_pointer_and_programmatic_item_activation() {
         assert!(!h.event(&ContentEvent::PointerUp(p)).activated);
         assert_eq!(
             menu(&mut h).menu.activate_item(i),
-            tekes_ui_controls::MenuEvent::None
+            tekes_ui_controls::feedback_view::MenuEvent::None
         );
     }
     assert!(h.drain_action_records().is_empty());

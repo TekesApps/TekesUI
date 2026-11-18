@@ -98,9 +98,9 @@ impl Host {
                 let target = local.options.search_entry?;
                 let mut enabled = false;
                 local.with_host(&mut |host| {
-                    enabled = host
-                        .text_surface(target)
-                        .is_some_and(|surface| !surface.input.disabled && !surface.input.read_only)
+                    enabled = host.text_surface(target).is_some_and(|surface| {
+                        !surface.input().is_disabled() && !surface.input().is_read_only()
+                    })
                 });
                 enabled.then_some((index, target))
             })
@@ -874,7 +874,7 @@ mod local_clipboard_tests {
                     .component_mut::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
+                    .input_mut()
                     .select_range(selection.clone())
             );
         });
@@ -979,10 +979,7 @@ mod local_clipboard_tests {
             .as_mut()
             .unwrap()
             .with_host(&mut |host| {
-                assert_eq!(
-                    host.text_surface(ComponentId(1)).unwrap().input.text,
-                    "query"
-                );
+                assert_eq!(host.text_surface(ComponentId(1)).unwrap().text(), "query");
                 assert!(crate::columns::text_state(host).is_some());
             });
         host.panel_mgr.panels[1]
@@ -991,7 +988,7 @@ mod local_clipboard_tests {
             .unwrap()
             .with_host(&mut |host| {
                 assert_eq!(
-                    host.text_surface(ComponentId(1)).unwrap().input.text,
+                    host.text_surface(ComponentId(1)).unwrap().text(),
                     "retained"
                 )
             });
@@ -1089,7 +1086,7 @@ mod local_clipboard_tests {
             .unwrap()
             .with_host(&mut |h| {
                 assert_eq!(h.focused(), Some(ComponentId(1)));
-                assert_eq!(h.text_surface(ComponentId(1)).unwrap().input.text, "found");
+                assert_eq!(h.text_surface(ComponentId(1)).unwrap().text(), "found");
             });
     }
     #[test]
@@ -1151,9 +1148,8 @@ mod local_clipboard_tests {
                     .component::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .text
-                    .clone();
+                    .text()
+                    .to_owned();
             });
         value
     }
@@ -1216,7 +1212,7 @@ mod local_clipboard_tests {
                 .as_mut()
                 .unwrap()
                 .with_host(&mut |h| {
-                    assert_eq!(h.focused_text().unwrap().input.selection(), selection);
+                    assert_eq!(h.focused_text().unwrap().input().selection(), selection);
                 });
             assert_eq!(clipboard.clipboard_text(), before);
             assert!(clipboard.writes.borrow().is_empty());
@@ -1398,17 +1394,17 @@ mod local_clipboard_tests {
                     .as_mut()
                     .unwrap()
                     .with_host(&mut |h| {
-                        let input = &mut h
+                        let input = h
                             .get_mut(ComponentId(1))
                             .unwrap()
                             .component_mut::<TextFieldContent>()
                             .unwrap()
                             .surface
-                            .input;
+                            .input_mut();
                         match mode {
-                            "readonly" => input.read_only = true,
-                            "disabled" => input.disabled = true,
-                            _ => input.marked = Some(1..3),
+                            "readonly" => input.set_read_only(true),
+                            "disabled" => input.set_disabled(true),
+                            _ => assert!(input.set_marked_range(Some(1..3))),
                         }
                     });
                 assert!(host.local_content_input(&event, &clipboard).unwrap());
@@ -1435,16 +1431,16 @@ mod local_clipboard_tests {
                 .as_mut()
                 .unwrap()
                 .with_host(&mut |h| {
-                    let input = &mut h
+                    let input = h
                         .get_mut(ComponentId(1))
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input;
-                    input.text = "A😀B".into();
+                        .input_mut();
+                    input.set_text("A😀B");
                     input.select_range(1..3);
-                    input.read_only = command == tekes_ui_platform_macos::TextEditCommand::Copy;
+                    input.set_read_only(command == tekes_ui_platform_macos::TextEditCommand::Copy);
                 });
             host.local_content_input(&Event::TextCommand(command), &clipboard)
                 .unwrap();
@@ -1485,7 +1481,7 @@ mod local_clipboard_tests {
             .as_mut()
             .unwrap()
             .with_host(&mut |h| {
-                assert!(h.focused_text().unwrap().paragraph.is_some());
+                assert!(h.focused_text().unwrap().paragraph().is_some());
                 // The same service scope prepares before a platform snapshot/claim,
                 // and refreshes again after the dispatch mutates the original field.
                 h.get_mut(ComponentId(1))
@@ -1495,24 +1491,16 @@ mod local_clipboard_tests {
                     .surface
                     .invalidate_text_layout();
                 h.with_text_input(&mut host.text, |h| {
-                    assert!(h.focused_text().unwrap().paragraph.is_some());
+                    assert!(h.focused_text().unwrap().paragraph().is_some());
                     h.event(&ContentEvent::Commit {
                         text: "!".into(),
                         replacement: None,
                     });
                 })
                 .unwrap();
-                assert!(h.focused_text().unwrap().paragraph.is_some());
-                assert_eq!(h.focused_text().unwrap().input.text, "abc!");
-                assert_eq!(
-                    h.focused_text()
-                        .unwrap()
-                        .paragraph
-                        .as_ref()
-                        .unwrap()
-                        .utf16_len,
-                    4
-                );
+                assert!(h.focused_text().unwrap().paragraph().is_some());
+                assert_eq!(h.focused_text().unwrap().text(), "abc!");
+                assert_eq!(h.focused_text().unwrap().paragraph().unwrap().utf16_len, 4);
             });
     }
 }
@@ -1665,7 +1653,7 @@ mod local_scroll_tests {
                 .as_mut()
                 .unwrap()
                 .with_host(&mut |h| {
-                    y = h.text_surface(ComponentId(1)).unwrap().scroll.offset.y;
+                    y = h.text_surface(ComponentId(1)).unwrap().scroll().offset.y;
                 });
             y
         };
@@ -1681,7 +1669,7 @@ mod local_scroll_tests {
                 assert!(
                     !h.text_surface(ComponentId(1))
                         .unwrap()
-                        .outer
+                        .outer()
                         .contains(Point::new(100., 145.))
                 );
             });

@@ -581,48 +581,120 @@ fn observed_inactive_ancestor_clears_sample_without_an_intervening_layout() {
 
 #[test]
 fn completed_dismiss_stays_once_only_across_its_hidden_repaint() {
-    let mut h=toast(1000);let mut t=Text::default();paint(&mut h,&mut t,0).unwrap();
-    assert!(h.accessibility_action(A,None,AccessibilityAction::Press).activated);
-    paint(&mut h,&mut t,1_000_000).unwrap();
-    assert!(!h.accessibility_action(A,None,AccessibilityAction::Press).activated);
-    let actions=h.drain_actions();assert_eq!(actions.len(),1);assert_eq!(actions[0].target,A);assert!(h.drain_actions().is_empty());
+    let mut h = toast(1000);
+    let mut t = Text::default();
+    paint(&mut h, &mut t, 0).unwrap();
+    assert!(
+        h.accessibility_action(A, None, AccessibilityAction::Press)
+            .activated
+    );
+    paint(&mut h, &mut t, 1_000_000).unwrap();
+    assert!(
+        !h.accessibility_action(A, None, AccessibilityAction::Press)
+            .activated
+    );
+    let actions = h.drain_actions();
+    assert_eq!(actions.len(), 1);
+    assert_eq!(actions[0].target, A);
+    assert!(h.drain_actions().is_empty());
 }
 
 #[test]
 fn completed_banner_dismiss_stays_once_only_across_its_hidden_repaint() {
-    let mut h=ContentHost::new(Content::new(T,BannerContent::new("Banner",Banner {
-        message:"Saved".into(),tone:NoticeTone::Info,dismissible:true,visible:true,
-    },A).unwrap())).unwrap();
-    h.set_action_events(true);let mut t=Text::default();paint(&mut h,&mut t,0).unwrap();
-    assert!(h.accessibility_action(A,None,AccessibilityAction::Press).activated);
-    paint(&mut h,&mut t,1_000_000).unwrap();
+    let mut h = ContentHost::new(Content::new(
+        T,
+        BannerContent::new(
+            "Banner",
+            Banner {
+                message: "Saved".into(),
+                tone: NoticeTone::Info,
+                dismissible: true,
+                visible: true,
+            },
+            A,
+        )
+        .unwrap(),
+    ))
+    .unwrap();
+    h.set_action_events(true);
+    let mut t = Text::default();
+    paint(&mut h, &mut t, 0).unwrap();
+    assert!(
+        h.accessibility_action(A, None, AccessibilityAction::Press)
+            .activated
+    );
+    paint(&mut h, &mut t, 1_000_000).unwrap();
     assert!(h.semantic_mount(A).is_none());
-    assert!(!h.accessibility_action(A,None,AccessibilityAction::Press).activated);
-    let actions=h.drain_actions();assert_eq!(actions.len(),1);assert_eq!(actions[0].target,A);assert!(h.drain_actions().is_empty());
+    assert!(
+        !h.accessibility_action(A, None, AccessibilityAction::Press)
+            .activated
+    );
+    let actions = h.drain_actions();
+    assert_eq!(actions.len(), 1);
+    assert_eq!(actions[0].target, A);
+    assert!(h.drain_actions().is_empty());
 }
 #[test]
 fn completed_notice_dismiss_is_revoked_by_observed_ancestor_or_window_aba_before_drain() {
-    for banner in [false,true] {
-        for window in [false,true] {
-            let active=std::rc::Rc::new(std::cell::Cell::new(true));
-            let notice=if banner {Content::new(T,BannerContent::new("Banner",Banner {
-                message:"Saved".into(),tone:NoticeTone::Info,dismissible:true,visible:true,
-            },A).unwrap())}else{Content::new(T,ToastContent::new("Toast",Toast::new("Saved",NoticeTone::Info,1000),A).unwrap())};
-            let mut h=ContentHost::new(Content::new(ComponentId(1),Overflow {
-                active:active.clone(),children:vec![notice],
-            })).unwrap();
-            h.set_action_events(true);let mut t=Text::default();paint(&mut h,&mut t,0).unwrap();
-            assert!(h.accessibility_action(A,None,AccessibilityAction::Press).activated);
+    for banner in [false, true] {
+        for window in [false, true] {
+            let active = std::rc::Rc::new(std::cell::Cell::new(true));
+            let notice = if banner {
+                Content::new(
+                    T,
+                    BannerContent::new(
+                        "Banner",
+                        Banner {
+                            message: "Saved".into(),
+                            tone: NoticeTone::Info,
+                            dismissible: true,
+                            visible: true,
+                        },
+                        A,
+                    )
+                    .unwrap(),
+                )
+            } else {
+                Content::new(
+                    T,
+                    ToastContent::new("Toast", Toast::new("Saved", NoticeTone::Info, 1000), A)
+                        .unwrap(),
+                )
+            };
+            let mut h = ContentHost::new(Content::new(
+                ComponentId(1),
+                Overflow {
+                    active: active.clone(),
+                    children: vec![notice],
+                },
+            ))
+            .unwrap();
+            h.set_action_events(true);
+            let mut t = Text::default();
+            paint(&mut h, &mut t, 0).unwrap();
+            assert!(
+                h.accessibility_action(A, None, AccessibilityAction::Press)
+                    .activated
+            );
             if window {
-                h.set_window_active(false);h.set_window_active(true);
-            }else{
-                active.set(false);h.event(&ContentEvent::PointerMove(Point::new(0.,0.)));
-                active.set(true);h.event(&ContentEvent::PointerMove(Point::new(0.,0.)));
+                h.set_window_active(false);
+                h.set_window_active(true);
+            } else {
+                active.set(false);
+                h.event(&ContentEvent::PointerMove(Point::new(0., 0.)));
+                active.set(true);
+                h.event(&ContentEvent::PointerMove(Point::new(0., 0.)));
             }
-            paint(&mut h,&mut t,1_000_000).unwrap();
-            assert!(h.drain_actions().is_empty(),"banner={banner} window={window}");
+            paint(&mut h, &mut t, 1_000_000).unwrap();
+            assert!(
+                h.drain_actions().is_empty(),
+                "banner={banner} window={window}"
+            );
             assert!(h.drain_actions().is_empty());
-            assert!(!h.accessibility_action(A,None,AccessibilityAction::Press).activated);
+            assert!(
+                !h.accessibility_action(A, None, AccessibilityAction::Press)
+                    .activated
+            );
         }
     }
 }
@@ -632,11 +704,24 @@ fn ordinary_component_frame_requests_survive_the_notice_adapter_and_settle() {
     #[derive(Debug)]
     struct FrameRequester(bool);
     impl Component for FrameRequester {
-        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> tekes_ui_controls::layout::MeasuredChild {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            available: Size,
+        ) -> tekes_ui_controls::layout::MeasuredChild {
             tekes_ui_controls::layout::MeasuredChild::new(available)
         }
-        fn paint(&mut self, _: &mut Scene, text: &mut dyn ButtonTextRenderer, _: Rect, _: Rect, _: ContentTheme) {
-            if self.0 { text.request_animation_frame(); }
+        fn paint(
+            &mut self,
+            _: &mut Scene,
+            text: &mut dyn ButtonTextRenderer,
+            _: Rect,
+            _: Rect,
+            _: ContentTheme,
+        ) {
+            if self.0 {
+                text.request_animation_frame();
+            }
         }
     }
     let id = ComponentId(799);
@@ -645,7 +730,11 @@ fn ordinary_component_frame_requests_survive_the_notice_adapter_and_settle() {
     paint(&mut h, &mut text, 0).unwrap();
     assert_eq!(text.requests, 1);
     assert!(h.animation_frame_requested());
-    h.get_mut(id).unwrap().component_mut::<FrameRequester>().unwrap().0 = false;
+    h.get_mut(id)
+        .unwrap()
+        .component_mut::<FrameRequester>()
+        .unwrap()
+        .0 = false;
     paint(&mut h, &mut text, 1000).unwrap();
     assert_eq!(text.requests, 1);
     assert!(!h.animation_frame_requested());

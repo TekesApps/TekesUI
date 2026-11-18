@@ -50,10 +50,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                     .with_help("Percentage: 50%–300%. Enter commits; Escape cancels."),
                 Content::new(INTEGER, integer).with_help("Quantity"),
                 Content::new(DECIMAL, decimal).with_help("Borderless decimal; step 0.25"),
-                Content::new(
-                    ComponentId(9404),
-                    Button::new("After numeric fields"),
-                ),
+                Content::new(ComponentId(9404), Button::new("After numeric fields")),
             ],
         },
     ))

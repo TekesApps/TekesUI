@@ -142,23 +142,23 @@ fn combo_refresh_preserves_real_editor_ime_selection_focus_and_candidate_contrac
         replacement: Some(0..3),
         clauses: std::iter::once(0..2).collect(),
     });
-    let input = &s.host.focused_text().unwrap().input;
-    let before = (input.text.clone(), input.marked.clone(), input.selection());
+    let input = s.host.focused_text().unwrap().input();
+    let before = (input.text().to_owned(), input.marked(), input.selection());
     s.set_status(Status::Loading);
     draw(&mut s, &mut t, p);
     s.set_status(Status::Error);
     draw(&mut s, &mut t, p);
-    assert_eq!(s.host.focused_text().unwrap().input.text, before.0);
-    assert_eq!(s.host.focused_text().unwrap().input.marked, before.1);
-    assert_eq!(s.host.focused_text().unwrap().input.selection(), before.2);
+    assert_eq!(s.host.focused_text().unwrap().text(), before.0);
+    assert_eq!(s.host.focused_text().unwrap().marked(), before.1);
+    assert_eq!(s.host.focused_text().unwrap().input().selection(), before.2);
     assert!(!s.set_items(vec!["new response".into()]));
     assert!(!key(&mut s, ControlKey::Enter).consumed);
     assert!(s.open());
     assert_eq!(s.selected(), None);
     assert!(!key(&mut s, ControlKey::Down).consumed);
-    assert_eq!(s.host.focused_text().unwrap().input.marked, before.1);
+    assert_eq!(s.host.focused_text().unwrap().marked(), before.1);
     assert!(key(&mut s, ControlKey::Escape).consumed);
-    assert!(s.host.focused_text().unwrap().input.marked.is_none());
+    assert!(s.host.focused_text().unwrap().marked().is_none());
     assert_eq!(s.query(), "Com");
     assert!(s.open(), "first Escape cancels preedit, not the ComboBox");
     draw(&mut s, &mut t, p);
@@ -170,11 +170,11 @@ fn combo_refresh_preserves_real_editor_ime_selection_focus_and_candidate_contrac
             .accessibility_action(QUERY, None, AccessibilityAction::SetSelection(1..3))
             .consumed
     );
-    let selected_range = s.host.focused_text().unwrap().input.selection();
+    let selected_range = s.host.focused_text().unwrap().input().selection();
     s.set_status(Status::Ready);
     draw(&mut s, &mut t, p);
     assert_eq!(
-        s.host.focused_text().unwrap().input.selection(),
+        s.host.focused_text().unwrap().input().selection(),
         selected_range
     );
     assert!(s.set_items(vec![
@@ -185,7 +185,7 @@ fn combo_refresh_preserves_real_editor_ime_selection_focus_and_candidate_contrac
     assert_eq!(s.selected(), Some("Compact"));
     assert_eq!(s.query(), "Compact");
     assert_eq!(
-        s.host.focused_text().unwrap().input.selection(),
+        s.host.focused_text().unwrap().input().selection(),
         selected_range
     );
     commit(&mut s, "Com", Some(0..7));

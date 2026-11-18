@@ -7,7 +7,7 @@
 use super::state_capture::{settle_scroll, stabilize_document};
 use super::{ControlKey, Event, entries};
 use crate::gallery::{Gallery, Page, static_text::StaticText};
-use tekes_ui_controls::DialogEvent;
+use tekes_ui_controls::feedback_view::DialogEvent;
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Theme;

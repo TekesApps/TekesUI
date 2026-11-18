@@ -3,16 +3,15 @@ use super::content_reading::{ReaderUnmountWrites, prepare_reader_writes};
 use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PreparedPhase {
+pub(crate) enum PreparedPhase {
     Retained,
     Detached,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PreparedHookKind {
+pub(crate) enum PreparedHookKind {
     ChildrenAccess,
     Cancel,
     CancelPointer,
-    PointerExit,
     Focus { focused: bool, visible: bool },
     LifecycleStart(Lifecycle),
     Lifecycle(Lifecycle),
@@ -21,29 +20,22 @@ pub enum PreparedHookKind {
     PresentationRunnable(bool),
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct PreparedHook {
-    pub kind: PreparedHookKind,
-    pub phase: PreparedPhase,
+pub(crate) struct PreparedHook {
+    pub(crate) kind: PreparedHookKind,
+    pub(crate) phase: PreparedPhase,
 }
 impl PreparedHook {
-    pub fn retained(kind: PreparedHookKind) -> Self {
+    pub(crate) fn retained(kind: PreparedHookKind) -> Self {
         Self {
             kind,
             phase: PreparedPhase::Retained,
         }
     }
-    pub fn detached(kind: PreparedHookKind) -> Self {
-        Self {
-            kind,
-            phase: PreparedPhase::Detached,
-        }
-    }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PreparedEffectsError {
+pub(crate) enum PreparedEffectsError {
     Unavailable,
     CounterCapacity,
-    ResourceCapacity,
     InvalidSequence,
     StaleOwner,
 }
@@ -54,7 +46,7 @@ pub enum PreparedEffectsError {
 /// Detached calls may change only the detached owner/declared descendants. This is
 /// additive to StableHooks, not a runtime sandbox for dishonest implementations.
 #[derive(Debug)]
-pub struct PreparedEffects {
+pub(crate) struct PreparedEffects {
     owner: usize,
     hooks: Vec<PreparedHook>,
     readers: Vec<(usize, ReaderUnmountWrites)>,
@@ -63,7 +55,7 @@ fn identity<T: ?Sized>(owner: &T) -> usize {
     std::ptr::from_ref(owner).cast::<()>() as usize
 }
 impl PreparedEffects {
-    pub fn local_work(calls: usize) -> Result<usize, PreparedEffectsError> {
+    pub(crate) fn local_work(calls: usize) -> Result<usize, PreparedEffectsError> {
         calls
             .checked_mul(256)
             .and_then(|n| n.checked_add(512))
@@ -73,7 +65,7 @@ impl PreparedEffects {
     /// For a compliant consumer's own finite hooks, including owned fields.
     /// The caller audits/project-checks all its own counters and forwarding first.
     /// No arbitrary resource counts or foreign identities can be inserted here.
-    pub fn local<T: Component + ?Sized>(owner: &T, hooks: &[PreparedHook]) -> Self {
+    pub(crate) fn local<T: Component + ?Sized>(owner: &T, hooks: &[PreparedHook]) -> Self {
         Self {
             owner: identity(owner),
             hooks: hooks.to_vec(),
@@ -97,7 +89,7 @@ impl PreparedEffects {
 /// A wrapper delegates BOTH prepare_effects and lifecycle_prepared to its retained
 /// original field. It cannot forge, move between owners, or replay resource tickets.
 #[derive(Debug)]
-pub struct PreparedLifecycleContext {
+pub(crate) struct PreparedLifecycleContext {
     owner: usize,
     hooks: Vec<PreparedHook>,
     pending: Vec<(usize, ReaderUnmountWrites)>,
@@ -120,7 +112,11 @@ impl PreparedLifecycleContext {
     pub(super) fn set_step(&mut self, step: usize) {
         self.step = step;
     }
-    pub fn original_lifecycle<T: Component + ?Sized>(&mut self, owner: &mut T, event: Lifecycle) {
+    pub(crate) fn original_lifecycle<T: Component + ?Sized>(
+        &mut self,
+        owner: &mut T,
+        event: Lifecycle,
+    ) {
         assert_eq!(
             self.owner,
             identity(owner),
@@ -196,7 +192,7 @@ impl Content {
         &self,
         hooks: &[PreparedHook],
     ) -> Result<PreparedEffects, PreparedEffectsError> {
-        if self.component.table_transaction_compatibility()
+        if precheck_dispatch::table_transaction_compatibility(&*self.component)
             != TableTransactionCompatibility::StableHooks
         {
             return Err(PreparedEffectsError::Unavailable);
@@ -209,8 +205,8 @@ impl Content {
         {
             return Err(PreparedEffectsError::CounterCapacity);
         }
-        self.component.prepared_effects_work(hooks.len())?;
-        self.component.prepare_effects(hooks)
+        precheck_dispatch::prepared_effects_work(&*self.component, hooks.len())?;
+        precheck_dispatch::prepare_effects(&*self.component, hooks)
     }
     pub(super) fn execute_hook(
         &mut self,
@@ -227,17 +223,15 @@ impl Content {
             PreparedHookKind::CancelPointer => {
                 self.component.cancel_pointer();
             }
-            PreparedHookKind::PointerExit => {
-                self.component
-                    .event(&ContentEvent::PointerMove(Point::new(f32::MIN, f32::MIN)));
-            }
             PreparedHookKind::Focus { focused, visible } => {
                 self.component.set_focus(focused, visible)
             }
             PreparedHookKind::LifecycleStart(event) => {
                 self.lifecycle_start(event, mounts.take());
             }
-            PreparedHookKind::Lifecycle(event) => self.component.lifecycle_prepared(event, context),
+            PreparedHookKind::Lifecycle(event) => {
+                precheck_dispatch::lifecycle_prepared(&mut *self.component, event, context)
+            }
             PreparedHookKind::ActivityState { parent, effective } => {
                 let (actual, _) = self.window_active_state(parent);
                 debug_assert_eq!(actual, effective);
@@ -329,7 +323,7 @@ pub(super) fn count(c: &Content) -> Option<usize> {
         .try_fold(1usize, |n, c| n.checked_add(count(c)?))
 }
 pub(super) fn data_work(c: &Content, calls: usize) -> Result<usize, PreparedEffectsError> {
-    let own = match c.component.prepared_effects_work(calls) {
+    let own = match precheck_dispatch::prepared_effects_work(&*c.component, calls) {
         Ok(n) => n,
         Err(PreparedEffectsError::Unavailable) => 0,
         Err(e) => return Err(e),

@@ -30,17 +30,11 @@ impl Default for SeparatorContent {
     }
 }
 impl Component for SeparatorContent {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
 
     fn semantic_hidden(&self) -> bool {

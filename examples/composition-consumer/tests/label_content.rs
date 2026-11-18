@@ -119,9 +119,12 @@ fn node(kind: usize) -> Content {
             .unwrap(),
         _ => Content::new(
             ComponentId(1),
-            Button::new(Content::new(ComponentId(2), TextContent::new(ORIGINAL))
+            Button::new(
+                Content::new(ComponentId(2), TextContent::new(ORIGINAL))
                     .with_label_layout(options)
-                    .unwrap()).with_accessible_name(ORIGINAL),
+                    .unwrap(),
+            )
+            .with_accessible_name(ORIGINAL),
         ),
     }
 }

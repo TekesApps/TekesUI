@@ -1,10 +1,12 @@
 //! Feedback stories use the receiving ContentHost; visual fixtures share the original painters.
 use super::{Entry, StoryState};
 use tekes_ui_controls::{
-    ButtonModel, ButtonTextAlign, ButtonTextRenderer, ControlKey, DialogView, MenuView,
+    ButtonModel, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composition::*,
     extended::{self as controls, Axis, Banner, EmptyState, Popover, Stack, Toast, Tooltip},
-    feedback_view::{BannerView, EmptyStateView, SurfaceView, ToastView, TooltipView},
+    feedback_view::{
+        BannerView, DialogView, EmptyStateView, MenuView, SurfaceView, ToastView, TooltipView,
+    },
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -128,7 +130,7 @@ pub(super) fn matrix_button(
         frame,
         Some(clip),
         palette,
-        tekes_ui_controls::paint::ButtonVariant::Quiet,
+        tekes_ui_controls::ButtonVariant::Quiet,
         tekes_ui_controls::ButtonSize::Body,
         proposal::TextRole::UiBody,
         tekes_ui_controls::ButtonTextAlign::Center,
@@ -690,17 +692,11 @@ impl Component for EmptyStateSurface {
             self.arranged = false;
         }
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         self.arranged = false;

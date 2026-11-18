@@ -45,7 +45,11 @@ fn real_text_button_and_compound_consumers_currently_wrap_without_mutating_origi
                         1 => Content::new(id, Button::new(original)),
                         _ => Content::new(
                             id,
-                            Button::new(Content::new(ComponentId(9862), TextContent::new(original))).with_accessible_name(original),
+                            Button::new(Content::new(
+                                ComponentId(9862),
+                                TextContent::new(original),
+                            ))
+                            .with_accessible_name(original),
                         ),
                     };
                     let mut host = ContentHost::new(node).unwrap();

@@ -41,7 +41,7 @@ impl ControlledEditorFixture {
         ]);
         let mut field = TextFieldContent::new("受控输入", "");
         field.surface = TextSurface::new("", true, false);
-        let baseline = field.surface.input.external_baseline();
+        let baseline = field.surface.input().external_baseline();
         field.surface.apply_external_value(
             &baseline,
             journals["A"].current(),
@@ -106,7 +106,7 @@ impl ControlledEditorFixture {
         self.captured.as_ref().map(|(v, _)| v)
     }
     fn capture_clear(&mut self) {
-        let baseline = self.editor().input.external_baseline();
+        let baseline = self.editor().input().external_baseline();
         self.journals
             .get_mut(self.key)
             .unwrap()
@@ -139,18 +139,18 @@ impl ControlledEditorFixture {
             .text = text;
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
-        let before = self.editor().input.text.clone();
-        let marked = self.editor().input.marked.is_some();
+        let before = self.editor().text().to_owned();
+        let marked = self.editor().marked().is_some();
         let mut response = self.host.event(event);
-        if self.editor().input.marked.is_none() && (self.editor().input.text != before || marked) {
-            let text = self.editor().input.text.clone();
+        if self.editor().marked().is_none() && (self.editor().text() != before || marked) {
+            let text = self.editor().text().to_owned();
             self.journals
                 .get_mut(self.key)
                 .unwrap()
                 .edit(text, |_| Ok(()))
                 .unwrap();
             let value = self.authority().clone();
-            let baseline = self.editor().input.external_baseline();
+            let baseline = self.editor().input().external_baseline();
             self.last_result = Some(self.editor_mut().apply_external_value(
                 &baseline,
                 &value,
@@ -181,7 +181,7 @@ impl ControlledEditorFixture {
         if counts[3] > old[3] {
             self.key = if self.key == "A" { "B" } else { "A" };
             let value = self.authority().clone();
-            let baseline = self.editor().input.external_baseline();
+            let baseline = self.editor().input().external_baseline();
             self.last_result = Some(self.editor_mut().apply_external_value(
                 &baseline,
                 &value,
@@ -190,8 +190,8 @@ impl ControlledEditorFixture {
             ));
         }
         if counts[4] > old[4] {
-            let baseline = self.editor().input.external_baseline();
-            let text = format!("前{}", self.editor().input.text);
+            let baseline = self.editor().input().external_baseline();
+            let text = format!("前{}", self.editor().text());
             self.journals
                 .get_mut(self.key)
                 .unwrap()

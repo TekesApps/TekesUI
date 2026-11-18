@@ -27,7 +27,7 @@
 //! - 窗格 2：参照图（见 `static_text.rs` 的说明），没有时写明原因；
 //! - 窗格 3：差异热图，下面是三个数字和通过与否（`DiffOptions::for_scale`）。
 
-use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
+use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign};
 use tekes_ui_scene::{ImageQuad, Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{ColorRole, Contrast, CornerRadius, Stroke, TextRole, Theme, proposal};
 
@@ -71,7 +71,7 @@ pub(crate) trait CalibrationText {
         frame: Rect,
         clip: Option<Rect>,
         palette: tekes_ui_tokens::Palette,
-        variant: paint::ButtonVariant,
+        variant: tekes_ui_controls::ButtonVariant,
         size: ButtonSize,
         role: proposal::TextRole,
         align: ButtonTextAlign,
@@ -156,7 +156,7 @@ impl CalibrationText for crate::gallery::text::TextEngine {
         frame: Rect,
         clip: Option<Rect>,
         palette: tekes_ui_tokens::Palette,
-        variant: paint::ButtonVariant,
+        variant: tekes_ui_controls::ButtonVariant,
         size: ButtonSize,
         role: proposal::TextRole,
         align: ButtonTextAlign,
@@ -382,7 +382,7 @@ fn button(
         rect,
         Some(clip),
         crate::gallery::brands::brand_palette(renderer.1, 0).expect("registered Gallery brand"),
-        paint::ButtonVariant::Quiet,
+        tekes_ui_controls::ButtonVariant::Quiet,
         ButtonSize::Xs,
         proposal::TextRole::UiCaption,
         ButtonTextAlign::Center,

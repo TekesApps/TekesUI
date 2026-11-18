@@ -16,8 +16,11 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         Content::new(ACTION, Button::new(SOURCE)).with_label_layout(options)?,
         Content::new(
             ComponentId(9903),
-            Button::new(Content::new(ComponentId(9904), TextContent::new(SOURCE))
-                    .with_label_layout(options)?).with_accessible_name(SOURCE),
+            Button::new(
+                Content::new(ComponentId(9904), TextContent::new(SOURCE))
+                    .with_label_layout(options)?,
+            )
+            .with_accessible_name(SOURCE),
         ),
     ];
     ContentHost::new(Content::new(

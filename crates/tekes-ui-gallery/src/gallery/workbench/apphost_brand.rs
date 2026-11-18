@@ -9,7 +9,6 @@ use tekes_ui_controls::{
     composition::*,
     extended::{Axis, Grid, Stack},
     layout::MeasuredChild,
-    paint,
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
@@ -30,7 +29,7 @@ fn text(id: u64, value: impl Into<String>) -> Content {
 }
 fn primary(label: &str) -> Button {
     let mut button = Button::new(label);
-    button.variant = paint::ButtonVariant::Primary;
+    button.variant = tekes_ui_controls::ButtonVariant::Primary;
     button
 }
 #[derive(Debug)]
@@ -86,11 +85,11 @@ impl Component for Card {
         theme: ContentTheme,
     ) {
         scene.push_clip(clip);
-        paint::surface_kind_at_scale(
+        tekes_ui_controls::feedback_view::SurfaceView::paint_kind_at_scale(
             scene,
             frame,
             theme.palette,
-            paint::SurfaceKind::Panel,
+            tekes_ui_controls::SurfaceKind::Panel,
             text.backing_scale(),
         );
         scene.pop_clip();
@@ -301,7 +300,10 @@ impl Component for Roles {
         let mut y = frame.min_y();
         for (label, caption, bg, fg) in self.rows(theme.palette) {
             let sample = Rect::new(frame.min_x(), y, frame.size.width, 30.);
-            let (width, ink) = paint::decorative_border(theme.palette, text.backing_scale());
+            let (width, ink) = tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+                theme.palette,
+                text.backing_scale(),
+            );
             scene.push_quad(
                 Quad::new(sample, bg)
                     .with_corner_radius(proposal::metric("radius", "radius-control").unwrap())
@@ -684,8 +686,7 @@ mod tests {
                 .host
                 .text_surface(INPUT)
                 .unwrap()
-                .input
-                .text
+                .text()
                 .contains("edited brand")
         );
         story

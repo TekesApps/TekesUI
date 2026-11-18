@@ -6,7 +6,6 @@ use tekes_ui_controls::{
     extended::{Axis, Stack},
     layout::MeasuredChild,
     layout_view::{IconRenderer, IconView},
-    paint,
 };
 use tekes_ui_scene::{ImageId, ImageQuad, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Spacing, proposal};
@@ -77,7 +76,13 @@ impl Component for Badge {
         _: Rect,
         theme: ContentTheme,
     ) {
-        paint::surface_at_scale(scene, frame, theme.palette, true, text.backing_scale());
+        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+            scene,
+            frame,
+            theme.palette,
+            true,
+            text.backing_scale(),
+        );
         text.draw(
             scene,
             &self.0,

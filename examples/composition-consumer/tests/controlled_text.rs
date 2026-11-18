@@ -30,11 +30,11 @@ fn repeated_revision_does_not_reset_new_local_text_selection_history_or_preedit(
         R::Unchanged
     );
     assert_eq!(input.external_baseline(), before);
-    assert!(input.marked.is_some());
+    assert!(input.marked().is_some());
     input.cancel_composition();
-    assert_eq!(input.text, "old!");
+    assert_eq!(input.text(), "old!");
     assert!(input.undo());
-    assert_eq!(input.text, "old");
+    assert_eq!(input.text(), "old");
 }
 #[test]
 fn an_edit_undo_aba_still_invalidates_the_original_expected_baseline() {
@@ -43,7 +43,7 @@ fn an_edit_undo_aba_still_invalidates_the_original_expected_baseline() {
     let baseline = input.external_baseline();
     input.insert("x", None);
     assert!(input.undo());
-    assert_eq!(input.text, "text");
+    assert_eq!(input.text(), "text");
     let before = input.external_baseline();
     assert_eq!(
         input.apply_external_value(
@@ -65,13 +65,13 @@ fn foreign_instances_and_legacy_field_changes_cannot_use_an_old_baseline() {
         b.apply_external_value(&baseline, &value("A", 1, "other"), S::Reset, U::Reset),
         R::Conflict(C::ForeignEditor)
     );
-    a.text.push('x');
+    a.append_text("x");
     assert_eq!(
         a.apply_external_value(&baseline, &value("A", 1, "other"), S::Reset, U::Reset),
         R::Conflict(C::StaleBaseline)
     );
-    assert_eq!(a.text, "samex");
-    assert_eq!(b.text, "same");
+    assert_eq!(a.text(), "samex");
+    assert_eq!(b.text(), "same");
 }
 #[test]
 fn preserve_maps_directed_utf16_endpoints_through_retained_grapheme_text() {
@@ -91,8 +91,7 @@ fn preserve_maps_directed_utf16_endpoints_through_retained_grapheme_text() {
     ));
     assert_eq!(input.selection(), 3..7);
     assert_eq!(input.selected_text(), "😀e\u{301}");
-    input.anchor = 7;
-    input.caret = 3;
+    input.set_selection(7, 3);
     let baseline = input.external_baseline();
     input.apply_external_value(
         &baseline,
@@ -100,7 +99,7 @@ fn preserve_maps_directed_utf16_endpoints_through_retained_grapheme_text() {
         S::Preserve,
         U::Preserve,
     );
-    assert_eq!((input.anchor, input.caret), (8, 4));
+    assert_eq!((input.anchor(), input.caret()), (8, 4));
     assert_eq!(input.selected_text(), "😀e\u{301}");
 }
 #[test]
@@ -143,17 +142,17 @@ fn confirmed_clear_is_one_transaction_and_a_duplicate_ack_does_not_erase_user_un
         input.apply_external_value(&baseline, &clear, S::Reset, U::Transaction),
         R::Applied { .. }
     ));
-    assert_eq!(input.text, "");
+    assert_eq!(input.text(), "");
     assert!(input.undo());
-    assert_eq!(input.text, "hello!");
+    assert_eq!(input.text(), "hello!");
     assert_eq!(input.selection(), 6..6);
     assert_eq!(
         input.apply_external_value(&baseline, &clear, S::Reset, U::Transaction),
         R::Unchanged
     );
-    assert_eq!(input.text, "hello!");
+    assert_eq!(input.text(), "hello!");
     assert!(input.redo());
-    assert_eq!(input.text, "");
+    assert_eq!(input.text(), "");
 }
 #[test]
 fn explicit_document_reset_is_required_and_a_b_a_does_not_reuse_old_history_or_receipts() {
@@ -178,7 +177,7 @@ fn explicit_document_reset_is_required_and_a_b_a_does_not_reuse_old_history_or_r
         input.apply_external_value(&old_a, &value("A", 2, "late"), S::Reset, U::Reset),
         R::Conflict(C::StaleBaseline)
     );
-    assert_eq!(input.text, "b");
+    assert_eq!(input.text(), "b");
     let b = input.external_baseline();
     input.apply_external_value(&b, &value("A", 3, "new A"), S::Reset, U::Reset);
     assert!(!input.undo());
@@ -192,7 +191,7 @@ fn explicit_document_reset_is_required_and_a_b_a_does_not_reuse_old_history_or_r
         ),
         R::Conflict(C::Revision)
     );
-    assert_eq!(input.text, "new A");
+    assert_eq!(input.text(), "new A");
 }
 #[test]
 fn preserve_history_is_explicit_and_never_adds_an_external_undo_step() {
@@ -202,13 +201,13 @@ fn preserve_history_is_explicit_and_never_adds_an_external_undo_step() {
     let baseline = input.external_baseline();
     input.apply_external_value(&baseline, &value("A", 1, "ab"), S::Preserve, U::Preserve);
     assert!(input.undo());
-    assert_eq!(input.text, "a");
+    assert_eq!(input.text(), "a");
     assert!(input.redo());
-    assert_eq!(input.text, "ab");
+    assert_eq!(input.text(), "ab");
     let baseline = input.external_baseline();
     input.apply_external_value(&baseline, &value("A", 2, "external"), S::Reset, U::Preserve);
     assert!(input.undo());
-    assert_eq!(input.text, "a");
+    assert_eq!(input.text(), "a");
 }
 #[test]
 fn composition_conflict_is_not_queued_and_retrying_its_old_baseline_cannot_overwrite_local_input() {
@@ -225,12 +224,12 @@ fn composition_conflict_is_not_queued_and_retrying_its_old_baseline_cannot_overw
     assert_eq!(input.external_baseline(), before);
     input.cancel_composition();
     input.insert("new", None);
-    let local = input.text.clone();
+    let local = input.text().to_owned();
     assert_eq!(
         input.apply_external_value(&baseline, &update, S::Reset, U::Transaction),
         R::Conflict(C::StaleBaseline)
     );
-    assert_eq!(input.text, local);
+    assert_eq!(input.text(), local);
     assert_eq!(input.external_value().unwrap().version, 1);
 }
 #[test]
@@ -240,12 +239,12 @@ fn normalization_reuses_native_edit_rules_and_revision_identity_remains_exact() 
         let baseline = input.external_baseline();
         let raw = value("A", 1, "中\r\n😀\t");
         input.apply_external_value(&baseline, &raw, S::Reset, U::Reset);
-        assert_eq!(input.text, if multiline { "中\n😀\t" } else { "中😀" });
+        assert_eq!(input.text(), if multiline { "中\n😀\t" } else { "中😀" });
         assert_eq!(
             input.apply_external_value(&baseline, &raw, S::Set(1..2), U::Transaction),
             R::Unchanged
         );
-        let canonical = value("A", 1, &input.text);
+        let canonical = value("A", 1, input.text());
         let current = input.external_baseline();
         assert_eq!(
             input.apply_external_value(&current, &canonical, S::Preserve, U::Preserve),
@@ -256,17 +255,17 @@ fn normalization_reuses_native_edit_rules_and_revision_identity_remains_exact() 
 #[test]
 fn unchanged_and_conflicting_surface_updates_preserve_all_derived_state() {
     let mut surface = TextSurface::new("", true, false);
-    let baseline = surface.input.external_baseline();
+    let baseline = surface.input().external_baseline();
     surface.apply_external_value(&baseline, &value("A", 1, "original"), S::Reset, U::Reset);
-    surface.input.preedit("ni", 2..2, None);
-    surface.clauses = std::iter::once(0..2).collect();
+    surface.input_mut().preedit("ni", 2..2, None);
+    surface.set_clauses(std::iter::once(0..2).collect());
     let before = format!("{surface:?}");
     assert_eq!(
         surface.apply_external_value(&baseline, &value("A", 1, "original"), S::Reset, U::Reset),
         R::Unchanged
     );
     assert_eq!(format!("{surface:?}"), before);
-    let current = surface.input.external_baseline();
+    let current = surface.input().external_baseline();
     assert_eq!(
         surface.apply_external_value(&current, &value("A", 2, "remote"), S::Reset, U::Reset),
         R::Conflict(C::Composition)
@@ -279,7 +278,7 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
         let id = ComponentId(700);
         let mut field = TextFieldContent::new("editor", "old");
         field.submit_policy = TextSubmitPolicy::Enter;
-        let baseline = field.surface.input.external_baseline();
+        let baseline = field.surface.input().external_baseline();
         field
             .surface
             .apply_external_value(&baseline, &value("A", 1, "old"), S::Reset, U::Reset);
@@ -304,7 +303,7 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        let expected = f.surface.input.external_baseline();
+        let expected = f.surface.input().external_baseline();
         f.surface
             .apply_external_value(&expected, &value(key, 2, "old"), S::Reset, U::Reset);
         host.event(&ContentEvent::Commit {
@@ -323,7 +322,7 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
             response.text_key.unwrap().disposition,
             TextKeyDisposition::Cancelled
         );
-        assert_eq!(host.focused_text().unwrap().input.text, "old");
+        assert_eq!(host.focused_text().unwrap().text(), "old");
     }
 }
 
@@ -332,8 +331,8 @@ fn presentation_disabling_does_not_block_an_authorized_external_update() {
     let mut input = TextInput::new("", true);
     bind(&mut input, "A", "old");
     let baseline = input.external_baseline();
-    input.disabled = true;
-    input.read_only = true;
+    input.set_disabled(true);
+    input.set_read_only(true);
     assert!(matches!(
         input.apply_external_value(
             &baseline,
@@ -343,7 +342,7 @@ fn presentation_disabling_does_not_block_an_authorized_external_update() {
         ),
         R::Applied { .. }
     ));
-    assert_eq!(input.text, "authoritative");
-    assert!(input.disabled);
-    assert!(input.read_only);
+    assert_eq!(input.text(), "authoritative");
+    assert!(input.is_disabled());
+    assert!(input.is_read_only());
 }

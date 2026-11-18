@@ -139,7 +139,7 @@ fn command_palette_same_instance_preserves_query_and_active_candidate_across_the
         assert_eq!(scenario.last_executed(), None);
         assert_eq!(scenario.query_frame(), Some(initial_query));
         assert_eq!(
-            scenario.host.focused_text().unwrap().input.selection(),
+            scenario.host.focused_text().unwrap().input().selection(),
             2..2
         );
         let palette: Palette = theme.into();

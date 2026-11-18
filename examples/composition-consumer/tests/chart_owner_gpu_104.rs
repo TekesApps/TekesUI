@@ -4,7 +4,10 @@ mod coretext;
 
 use tekes_ui_controls::{BarChart, ChartDatum, collections_view::ChartView};
 use tekes_ui_scene::{Primitive, Rect, Scene};
-use tekes_ui_tokens::{Palette, Rgba, Theme, surface_palette::{resolve_data_plot_surface, resolve_surface, surface_names}};
+use tekes_ui_tokens::{
+    Palette, Rgba, Theme,
+    surface_palette::{resolve_data_plot_surface, resolve_surface, surface_names},
+};
 
 const LONG_LABEL: &str = "Long duplicate category label with original complete text";
 const OUTPUT_ENV: &str = "CHART_104_GPU_OUT";
@@ -24,46 +27,114 @@ struct RecordedText {
     draws: Vec<DrawRecord>,
 }
 impl tekes_ui_controls::ButtonTextRenderer for RecordedText {
-    fn backing_scale(&self) -> f32 { self.inner.backing }
-    fn measure(&mut self, s: &str, role: tekes_ui_tokens::proposal::TextRole, w: f32) -> tekes_ui_scene::Size {
+    fn backing_scale(&self) -> f32 {
+        self.inner.backing
+    }
+    fn measure(
+        &mut self,
+        s: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        w: f32,
+    ) -> tekes_ui_scene::Size {
         self.inner.measure(s, role, w)
     }
-    fn draw(&mut self, scene: &mut Scene, s: &str, role: tekes_ui_tokens::proposal::TextRole, frame: Rect, align: tekes_ui_controls::ButtonTextAlign, ink: Rgba) {
+    fn draw(
+        &mut self,
+        scene: &mut Scene,
+        s: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        frame: Rect,
+        align: tekes_ui_controls::ButtonTextAlign,
+        ink: Rgba,
+    ) {
         let start = scene.primitives().len();
         self.inner.draw(scene, s, role, frame, align, ink);
-        self.draws.push(DrawRecord { role: format!("{role:?}"), text: s.to_owned(), frame, start, end: scene.primitives().len(), rgba: rgba8(ink), channel: text_channel(s) });
+        self.draws.push(DrawRecord {
+            role: format!("{role:?}"),
+            text: s.to_owned(),
+            frame,
+            start,
+            end: scene.primitives().len(),
+            rgba: rgba8(ink),
+            channel: text_channel(s),
+        });
     }
-    fn resolved_font_size(&mut self, role: tekes_ui_tokens::proposal::TextRole) -> f32 { self.inner.resolved_font_size(role) }
-    fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> { self.inner.text_surface_host() }
-    fn motion_context(&self) -> Option<tekes_ui_controls::ControlMotionContext> { self.inner.motion_context() }
+    fn resolved_font_size(&mut self, role: tekes_ui_tokens::proposal::TextRole) -> f32 {
+        self.inner.resolved_font_size(role)
+    }
+    fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
+        self.inner.text_surface_host()
+    }
+    fn motion_context(&self) -> Option<tekes_ui_controls::ControlMotionContext> {
+        self.inner.motion_context()
+    }
 }
 fn text_channel(s: &str) -> &'static str {
-    if s.is_empty() { "NA" }
-    else if s == LONG_LABEL { "C" }
-    else if s.parse::<f64>().is_ok() { "V" }
-    else { "C" }
+    if s.is_empty() {
+        "NA"
+    } else if s == LONG_LABEL {
+        "C"
+    } else if s.parse::<f64>().is_ok() {
+        "V"
+    } else {
+        "C"
+    }
 }
-fn clear() -> Rgba { Rgba::new(0., 0., 0., 0.) }
-fn rgba8(c: Rgba) -> [u8; 4] { [(c.r*255.).round() as u8, (c.g*255.).round() as u8, (c.b*255.).round() as u8, (c.a*255.).round() as u8] }
-fn rect4(r: Rect) -> [f32; 4] { [r.min_x(), r.min_y(), r.size.width, r.size.height] }
+fn clear() -> Rgba {
+    Rgba::new(0., 0., 0., 0.)
+}
+fn rgba8(c: Rgba) -> [u8; 4] {
+    [
+        (c.r * 255.).round() as u8,
+        (c.g * 255.).round() as u8,
+        (c.b * 255.).round() as u8,
+        (c.a * 255.).round() as u8,
+    ]
+}
+fn rect4(r: Rect) -> [f32; 4] {
+    [r.min_x(), r.min_y(), r.size.width, r.size.height]
+}
 fn scene_quads(scene: &Scene) -> Vec<serde_json::Value> {
     scene.primitives().iter().enumerate().filter_map(|(index,p)| if let Primitive::Quad(q)=p { Some(serde_json::json!({"primitive_index":index,"rect":rect4(q.rect),"fill":rgba8(q.fill),"border":rgba8(q.border_color),"border_width":q.border_width})) } else { None }).collect()
 }
-fn quad_role_color_collisions(colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors) -> Vec<String> {
-    let roles=[("F",colors.plot.focus.unwrap()),("M",colors.plot.marker.unwrap()),("S",colors.selection.background),("B",colors.plot.boundary.unwrap())];
-    let mut out=vec![]; for i in 0..roles.len() { for j in (i+1)..roles.len() { if roles[i].1==roles[j].1 { out.push(format!("{}={}",roles[i].0,roles[j].0)); } } } out
+fn quad_role_color_collisions(
+    colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors,
+) -> Vec<String> {
+    let roles = [
+        ("F", colors.plot.focus.unwrap()),
+        ("M", colors.plot.marker.unwrap()),
+        ("S", colors.selection.background),
+        ("B", colors.plot.boundary.unwrap()),
+    ];
+    let mut out = vec![];
+    for i in 0..roles.len() {
+        for j in (i + 1)..roles.len() {
+            if roles[i].1 == roles[j].1 {
+                out.push(format!("{}={}", roles[i].0, roles[j].0));
+            }
+        }
+    }
+    out
 }
 fn text_run_kind() -> String {
-    let kind = std::env::var("CHART_THEME_RUN_KIND").expect("CHART_THEME_RUN_KIND=default|external required");
+    let kind = std::env::var("CHART_THEME_RUN_KIND")
+        .expect("CHART_THEME_RUN_KIND=default|external required");
     assert!(kind == "default" || kind == "external");
     kind
 }
-fn push_channel(scene: &Scene, draws: &[DrawRecord], channel: &str, colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors) -> Scene {
+fn push_channel(
+    scene: &Scene,
+    draws: &[DrawRecord],
+    channel: &str,
+    colors: tekes_ui_tokens::surface_palette::DataPlotSurfaceColors,
+) -> Scene {
     let mut out = Scene::new();
     for (i, prim) in scene.primitives().iter().enumerate() {
         let keep = match prim {
             Primitive::PushClip(_) | Primitive::PopClip => true,
-            Primitive::Glyphs(_) => draws.iter().any(|d| d.channel == channel && i >= d.start && i < d.end),
+            Primitive::Glyphs(_) => draws
+                .iter()
+                .any(|d| d.channel == channel && i >= d.start && i < d.end),
             Primitive::Quad(q) => match channel {
                 "F" if q.border_width > 0. && Some(q.border_color) == colors.plot.focus => true,
                 "F" if Some(q.fill) == colors.plot.focus && q.border_width == 0. => true,
@@ -76,11 +147,20 @@ fn push_channel(scene: &Scene, draws: &[DrawRecord], channel: &str, colors: teke
         };
         if keep {
             if let Primitive::Quad(q) = prim {
-                if channel == "F" && q.border_width > 0. && Some(q.border_color) == colors.plot.focus {
-                    let mut only = *q; only.fill = clear(); out.push(Primitive::Quad(only)); continue;
+                if channel == "F"
+                    && q.border_width > 0.
+                    && Some(q.border_color) == colors.plot.focus
+                {
+                    let mut only = *q;
+                    only.fill = clear();
+                    out.push(Primitive::Quad(only));
+                    continue;
                 }
                 if channel == "M" && Some(q.fill) == colors.plot.marker {
-                    let mut only = *q; only.border_width = 0.; out.push(Primitive::Quad(only)); continue;
+                    let mut only = *q;
+                    only.border_width = 0.;
+                    out.push(Primitive::Quad(only));
+                    continue;
                 }
             }
             out.push(prim.clone());
@@ -175,9 +255,27 @@ fn glyph_clip_evidence(
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Fixture { Positive, Negative, Zero, Narrow, DenseLongLabel, InteriorParentClip, ParentTranslatedVisible }
+enum Fixture {
+    Positive,
+    Negative,
+    Zero,
+    Narrow,
+    DenseLongLabel,
+    InteriorParentClip,
+    ParentTranslatedVisible,
+}
 impl Fixture {
-    fn name(self) -> &'static str { match self { Self::Positive=>"positive",Self::Negative=>"negative",Self::Zero=>"zero",Self::Narrow=>"narrow",Self::DenseLongLabel=>"dense-long-label",Self::InteriorParentClip=>"interior-parent-clip-negative",Self::ParentTranslatedVisible=>"parent-translated-visible" } }
+    fn name(self) -> &'static str {
+        match self {
+            Self::Positive => "positive",
+            Self::Negative => "negative",
+            Self::Zero => "zero",
+            Self::Narrow => "narrow",
+            Self::DenseLongLabel => "dense-long-label",
+            Self::InteriorParentClip => "interior-parent-clip-negative",
+            Self::ParentTranslatedVisible => "parent-translated-visible",
+        }
+    }
 }
 
 /// Direct original ChartView GPU evidence. It deliberately has no ContentHost dependency.
@@ -191,71 +289,169 @@ fn chart_owner_gpu_104_view_only_matrix() {
     let out = std::path::PathBuf::from(std::env::var_os(OUTPUT_ENV).expect("SSD output directory"));
     std::fs::create_dir_all(&out).unwrap();
     let mut renderer = tekes_ui_render::Renderer::new_headless().expect("headless GPU renderer");
-    let fixtures = [Fixture::Positive,Fixture::Negative,Fixture::Zero,Fixture::Narrow,Fixture::DenseLongLabel,Fixture::InteriorParentClip,Fixture::ParentTranslatedVisible];
+    let fixtures = [
+        Fixture::Positive,
+        Fixture::Negative,
+        Fixture::Zero,
+        Fixture::Narrow,
+        Fixture::DenseLongLabel,
+        Fixture::InteriorParentClip,
+        Fixture::ParentTranslatedVisible,
+    ];
     let mut rows = vec![];
     for fixture in fixtures {
-        if fixture != Fixture::Positive && kind == "external" { continue; }
+        if fixture != Fixture::Positive && kind == "external" {
+            continue;
+        }
         for (mode_index, mode) in Theme::ALL.into_iter().enumerate() {
-            if fixture != Fixture::Positive && mode_index != 0 { continue; }
-            let mode_name = ["Light","Dark","LightIncreasedContrast","DarkIncreasedContrast"][mode_index];
-            let palette: Palette = if kind == "default" { mode.into() } else { Palette::for_theme_definition(mode,"chart-external").expect("external artifact contains chart-external") };
+            if fixture != Fixture::Positive && mode_index != 0 {
+                continue;
+            }
+            let mode_name = [
+                "Light",
+                "Dark",
+                "LightIncreasedContrast",
+                "DarkIncreasedContrast",
+            ][mode_index];
+            let palette: Palette = if kind == "default" {
+                mode.into()
+            } else {
+                Palette::for_theme_definition(mode, "chart-external")
+                    .expect("external artifact contains chart-external")
+            };
             for &surface in surface_names() {
-                if fixture != Fixture::Positive && surface != "canvas" { continue; }
-                let packet = resolve_data_plot_surface(palette,surface).unwrap();
-                for backing in [1.0f32,2.0] {
-                    let (value,label,count,width,height,clip,translate) = match fixture {
-                        Fixture::Positive => (1.0,"ordinary category",2,480.,240.,None,false),
-                        Fixture::Negative => (-1.0,"",64,480.,240.,None,false),
-                        Fixture::Zero => (0.0,"same",4,480.,240.,None,false),
-                        Fixture::Narrow => (1.0,"",64,120.,240.,None,false),
-                        Fixture::DenseLongLabel => (1.0,LONG_LABEL,64,480.,240.,None,false),
-                        Fixture::InteriorParentClip => (-1.0,"",64,470.,240.,Some(Rect::new(80.,80.,320.,120.)),false),
-                        Fixture::ParentTranslatedVisible => (-1.0,"",64,470.,240.,Some(Rect::new(80.,80.,320.,120.)),true),
+                if fixture != Fixture::Positive && surface != "canvas" {
+                    continue;
+                }
+                let packet = resolve_data_plot_surface(palette, surface).unwrap();
+                for backing in [1.0f32, 2.0] {
+                    let (value, label, count, width, height, clip, translate) = match fixture {
+                        Fixture::Positive => (1.0, "ordinary category", 2, 480., 240., None, false),
+                        Fixture::Negative => (-1.0, "", 64, 480., 240., None, false),
+                        Fixture::Zero => (0.0, "same", 4, 480., 240., None, false),
+                        Fixture::Narrow => (1.0, "", 64, 120., 240., None, false),
+                        Fixture::DenseLongLabel => (1.0, LONG_LABEL, 64, 480., 240., None, false),
+                        Fixture::InteriorParentClip => (
+                            -1.0,
+                            "",
+                            64,
+                            470.,
+                            240.,
+                            Some(Rect::new(80., 80., 320., 120.)),
+                            false,
+                        ),
+                        Fixture::ParentTranslatedVisible => (
+                            -1.0,
+                            "",
+                            64,
+                            470.,
+                            240.,
+                            Some(Rect::new(80., 80., 320., 120.)),
+                            true,
+                        ),
                     };
                     let mut model = if fixture == Fixture::Positive {
                         BarChart::new(vec![
-                            ChartDatum::new("ordinary category",1.0),
-                            ChartDatum::new("ordinary category",0.0),
+                            ChartDatum::new("ordinary category", 1.0),
+                            ChartDatum::new("ordinary category", 0.0),
                         ])
                     } else {
-                        BarChart::new((0..count).map(|_| ChartDatum::new(label,value)).collect())
+                        BarChart::new((0..count).map(|_| ChartDatum::new(label, value)).collect())
                     };
-                    if fixture == Fixture::Positive { model.select(0); } else if count > 2 { model.select(2); }
-                    let mut text = RecordedText { inner: coretext::Text::new(1.), draws: vec![] };
+                    if fixture == Fixture::Positive {
+                        model.select(0);
+                    } else if count > 2 {
+                        model.select(2);
+                    }
+                    let mut text = RecordedText {
+                        inner: coretext::Text::new(1.),
+                        draws: vec![],
+                    };
                     text.inner.backing = backing;
                     let mut view = ChartView::new();
-                    let mut frame = if fixture == Fixture::InteriorParentClip { Rect::new(21.,21.,width,height) } else if translate { Rect::new(21.,-40.,width,height) } else { Rect::new(16.,16.,width,height) };
+                    let mut frame = if fixture == Fixture::InteriorParentClip {
+                        Rect::new(21., 21., width, height)
+                    } else if translate {
+                        Rect::new(21., -40., width, height)
+                    } else {
+                        Rect::new(16., 16., width, height)
+                    };
                     if fixture == Fixture::DenseLongLabel {
-                        let measured = view.measure_owner(&mut text,&model,width,height);
-                        let needed = measured.measured_label_extent.expect("long label measurement").height + 240.;
-                        frame = Rect::new(16.,16.,width,needed);
+                        let measured = view.measure_owner(&mut text, &model, width, height);
+                        let needed = measured
+                            .measured_label_extent
+                            .expect("long label measurement")
+                            .height
+                            + 240.;
+                        frame = Rect::new(16., 16., width, needed);
                     }
                     let clip_rect = clip;
-                    let capacity = view.arrange_owner(&mut text,&mut model,frame,clip_rect);
+                    let capacity = view.arrange_owner(&mut text, &mut model, frame, clip_rect);
                     let initial_space = view.owner_focus_space(&model);
-                    let visible = matches!(initial_space,tekes_ui_controls::collections_view::ChartOwnerFocusSpace::Visible{..});
+                    let visible = matches!(
+                        initial_space,
+                        tekes_ui_controls::collections_view::ChartOwnerFocusSpace::Visible { .. }
+                    );
                     if fixture == Fixture::InteriorParentClip {
                         assert_eq!(initial_space,tekes_ui_controls::collections_view::ChartOwnerFocusSpace::NoVisibleWitness,"interior clip remains a negative owner witness");
-                        assert!(view.try_focus_owner(true,&mut model).is_err(),"interior clip must not manufacture focus");
+                        assert!(
+                            view.try_focus_owner(true, &mut model).is_err(),
+                            "interior clip must not manufacture focus"
+                        );
                     } else {
-                        assert!(visible,"original visible owner fixture lost its witness: {} / {mode_name} / {surface} / {backing}",fixture.name());
-                        view.try_focus_owner(true,&mut model).expect("visible original owner focuses");
+                        assert!(
+                            visible,
+                            "original visible owner fixture lost its witness: {} / {mode_name} / {surface} / {backing}",
+                            fixture.name()
+                        );
+                        view.try_focus_owner(true, &mut model)
+                            .expect("visible original owner focuses");
                     }
                     let focus_space = view.owner_focus_space(&model);
                     let mut focus_scene = Scene::new();
-                    let focus_painted = view.paint_owner_on_surface(&mut focus_scene,&mut text,&mut model,palette,surface).unwrap();
-                    let size = ((600. * backing) as u32,(700. * backing) as u32);
-                    let ground = resolve_surface(palette,surface,"content","rest").unwrap().background;
-                    let focus_pixels = renderer.render_to_rgba8(&focus_scene,&mut text.inner.atlas,size,backing,ground).unwrap();
-                    let key = format!("{}-{mode_name}-{surface}-{}x",fixture.name(),backing as u32);
-                    std::fs::write(out.join(format!("{key}-view.rgba8")),&focus_pixels).unwrap();
-                    let focus_clip_ev = glyph_clip_evidence(&focus_scene,backing,size,text.inner.atlas.page_count());
+                    let focus_painted = view
+                        .paint_owner_on_surface(
+                            &mut focus_scene,
+                            &mut text,
+                            &mut model,
+                            palette,
+                            surface,
+                        )
+                        .unwrap();
+                    let size = ((600. * backing) as u32, (700. * backing) as u32);
+                    let ground = resolve_surface(palette, surface, "content", "rest")
+                        .unwrap()
+                        .background;
+                    let focus_pixels = renderer
+                        .render_to_rgba8(&focus_scene, &mut text.inner.atlas, size, backing, ground)
+                        .unwrap();
+                    let key = format!(
+                        "{}-{mode_name}-{surface}-{}x",
+                        fixture.name(),
+                        backing as u32
+                    );
+                    std::fs::write(out.join(format!("{key}-view.rgba8")), &focus_pixels).unwrap();
+                    let focus_clip_ev = glyph_clip_evidence(
+                        &focus_scene,
+                        backing,
+                        size,
+                        text.inner.atlas.page_count(),
+                    );
                     let focus_draws = std::mem::take(&mut text.draws);
                     let focus_quads = scene_quads(&focus_scene);
-                    for channel in ["F","V","C","T","H","M","S","B"] {
-                        let isolated = push_channel(&focus_scene,&focus_draws,channel,packet);
-                        let pixels = renderer.render_to_rgba8(&isolated,&mut text.inner.atlas,size,backing,clear()).unwrap();
-                        std::fs::write(out.join(format!("{key}-view-{channel}.rgba8")),pixels).unwrap();
+                    for channel in ["F", "V", "C", "T", "H", "M", "S", "B"] {
+                        let isolated = push_channel(&focus_scene, &focus_draws, channel, packet);
+                        let pixels = renderer
+                            .render_to_rgba8(
+                                &isolated,
+                                &mut text.inner.atlas,
+                                size,
+                                backing,
+                                clear(),
+                            )
+                            .unwrap();
+                        std::fs::write(out.join(format!("{key}-view-{channel}.rgba8")), pixels)
+                            .unwrap();
                     }
                     let focused_before_blur = model.is_focused();
                     let selection_before_blur = model.selected();
@@ -265,19 +461,49 @@ fn chart_owner_gpu_104_view_only_matrix() {
                     assert_eq!(model.selected(), selection_before_blur);
                     assert_eq!(model.data(), data_before_blur);
                     let mut blur_scene = Scene::new();
-                    let blur_painted = view.paint_owner_on_surface(&mut blur_scene,&mut text,&mut model,palette,surface).unwrap();
-                    let blur_pixels = renderer.render_to_rgba8(&blur_scene,&mut text.inner.atlas,size,backing,ground).unwrap();
-                    std::fs::write(out.join(format!("{key}-view-blur.rgba8")),&blur_pixels).unwrap();
-                    let blur_clip_ev = glyph_clip_evidence(&blur_scene,backing,size,text.inner.atlas.page_count());
+                    let blur_painted = view
+                        .paint_owner_on_surface(
+                            &mut blur_scene,
+                            &mut text,
+                            &mut model,
+                            palette,
+                            surface,
+                        )
+                        .unwrap();
+                    let blur_pixels = renderer
+                        .render_to_rgba8(&blur_scene, &mut text.inner.atlas, size, backing, ground)
+                        .unwrap();
+                    std::fs::write(out.join(format!("{key}-view-blur.rgba8")), &blur_pixels)
+                        .unwrap();
+                    let blur_clip_ev = glyph_clip_evidence(
+                        &blur_scene,
+                        backing,
+                        size,
+                        text.inner.atlas.page_count(),
+                    );
                     let blur_draws = std::mem::take(&mut text.draws);
                     let blur_quads = scene_quads(&blur_scene);
-                    for channel in ["V","C","T","H"] {
-                        let isolated = push_channel(&blur_scene,&blur_draws,channel,packet);
-                        let pixels = renderer.render_to_rgba8(&isolated,&mut text.inner.atlas,size,backing,clear()).unwrap();
-                        std::fs::write(out.join(format!("{key}-view-blur-{channel}.rgba8")),pixels).unwrap();
+                    for channel in ["V", "C", "T", "H"] {
+                        let isolated = push_channel(&blur_scene, &blur_draws, channel, packet);
+                        let pixels = renderer
+                            .render_to_rgba8(
+                                &isolated,
+                                &mut text.inner.atlas,
+                                size,
+                                backing,
+                                clear(),
+                            )
+                            .unwrap();
+                        std::fs::write(
+                            out.join(format!("{key}-view-blur-{channel}.rgba8")),
+                            pixels,
+                        )
+                        .unwrap();
                     }
                     let effective_clip = clip_rect.unwrap_or(frame);
-                    let records = |draws: &[DrawRecord]| draws.iter().map(|d|serde_json::json!({"role":d.role,"text":d.text,"channel":d.channel,"rgba":d.rgba,"frame":rect4(d.frame),"start":d.start,"end":d.end})).collect::<Vec<_>>();
+                    let records = |draws: &[DrawRecord]| {
+                        draws.iter().map(|d|serde_json::json!({"role":d.role,"text":d.text,"channel":d.channel,"rgba":d.rgba,"frame":rect4(d.frame),"start":d.start,"end":d.end})).collect::<Vec<_>>()
+                    };
                     let colors = serde_json::json!({"ground":rgba8(ground),"plot_focus":packet.plot.focus.map(rgba8),"plot_marker":packet.plot.marker.map(rgba8),"selection_bg":rgba8(packet.selection.background),"plot_boundary":packet.plot.boundary.map(rgba8),"plot_text":rgba8(packet.plot.text),"category_text":rgba8(packet.category.text)});
                     let role_color_collisions = quad_role_color_collisions(packet);
                     rows.push(serde_json::json!({
@@ -287,7 +513,15 @@ fn chart_owner_gpu_104_view_only_matrix() {
             }
         }
     }
-    let expected_rows = if kind == "default" { 56 + 6*2 } else { 56 };
-    assert_eq!(rows.len(),expected_rows,"preserve full #104 matrix plus default-only original structural probes");
-    std::fs::write(out.join("lane.json"),serde_json::to_vec_pretty(&rows).unwrap()).unwrap();
+    let expected_rows = if kind == "default" { 56 + 6 * 2 } else { 56 };
+    assert_eq!(
+        rows.len(),
+        expected_rows,
+        "preserve full #104 matrix plus default-only original structural probes"
+    );
+    std::fs::write(
+        out.join("lane.json"),
+        serde_json::to_vec_pretty(&rows).unwrap(),
+    )
+    .unwrap();
 }

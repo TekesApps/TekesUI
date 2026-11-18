@@ -131,8 +131,8 @@ fn setup() -> (ContentHost, Text) {
     )
     .unwrap();
     paint(&mut h, &mut t);
-    let input = &h.text_surface(FIELD).unwrap().input;
-    assert_ne!(input.anchor, input.caret);
+    let input = h.text_surface(FIELD).unwrap().input();
+    assert_ne!(input.anchor(), input.caret());
     assert!(h.focused_text_binding().is_some());
     (h, t)
 }
@@ -172,9 +172,9 @@ fn state(h: &ContentHost) -> RetainedState {
         focused: h.focused(),
         focus_epoch: h.focus_epoch(),
         offset: offset(h),
-        text: s.input.text.clone(),
-        marked: s.input.marked.clone(),
-        selection: (s.input.anchor, s.input.caret),
+        text: s.text().to_owned(),
+        marked: s.marked(),
+        selection: (s.input().anchor(), s.input().caret()),
         binding: h.focused_text_binding(),
     }
 }
@@ -192,14 +192,14 @@ fn readonly_plan_commit_and_real_editor_preserved() {
     assert!(out.changed);
     assert_eq!(h.focused(), before.focused);
     assert_eq!(h.semantic_mount(FIELD), mount);
-    assert_eq!(h.text_surface(FIELD).unwrap().input.text, before.text);
+    assert_eq!(h.text_surface(FIELD).unwrap().text(), before.text);
     let immediate = state(&h);
     assert_eq!(immediate.selection, before.selection);
     assert_eq!(immediate.binding, before.binding);
     paint(&mut h, &mut t);
     assert!(h.get(TARGET).unwrap().visible().is_some());
-    let input = &h.text_surface(FIELD).unwrap().input;
-    assert_eq!((input.anchor, input.caret), before.selection);
+    let input = h.text_surface(FIELD).unwrap().input();
+    assert_eq!((input.anchor(), input.caret()), before.selection);
     assert_eq!(h.focused_text_binding(), before.binding);
 }
 #[test]
@@ -319,9 +319,9 @@ fn ime_transfer_barrier_keeps_marked_owner_and_scroll() {
     h.reveal_scroll_reading_item(SCROLL, &version, TARGET, options(), &mut t)
         .unwrap();
     assert_eq!(h.focused(), before.focused);
-    assert_eq!(h.text_surface(FIELD).unwrap().input.marked, before.marked);
-    let input = &h.text_surface(FIELD).unwrap().input;
-    assert_eq!((input.anchor, input.caret), before.selection);
+    assert_eq!(h.text_surface(FIELD).unwrap().marked(), before.marked);
+    let input = h.text_surface(FIELD).unwrap().input();
+    assert_eq!((input.anchor(), input.caret()), before.selection);
     assert_eq!(h.focused_text_binding(), before.binding);
 }
 #[test]
@@ -457,7 +457,7 @@ fn real_curve_constraint_lands_original_target_and_preserves_editor() {
         assert!(region.contains(p.map(f64::from)).unwrap());
     }
     assert_eq!(h.focused(), before.focused);
-    assert_eq!(h.text_surface(FIELD).unwrap().input.text, before.text);
+    assert_eq!(h.text_surface(FIELD).unwrap().text(), before.text);
 }
 
 #[test]
@@ -837,21 +837,21 @@ fn focus_old_and_new_owner_paths_ignore_unplanned_mutable_getter_siblings() {
         .unwrap();
         paint(&mut h, &mut t);
         let mount = h.semantic_mount(FIELD);
-        let value = h.text_surface(FIELD).unwrap().input.text.clone();
+        let value = h.text_surface(FIELD).unwrap().text().to_owned();
         let selection = (
-            h.text_surface(FIELD).unwrap().input.anchor,
-            h.text_surface(FIELD).unwrap().input.caret,
+            h.text_surface(FIELD).unwrap().input().anchor(),
+            h.text_surface(FIELD).unwrap().input().caret(),
         );
         armed.set(true);
         assert!(h.focus(Some(TARGET), true));
         assert_eq!(h.focused(), Some(TARGET));
         assert_probe_untouched(&h, &calls);
         assert_eq!(h.semantic_mount(FIELD), mount);
-        assert_eq!(h.text_surface(FIELD).unwrap().input.text, value);
+        assert_eq!(h.text_surface(FIELD).unwrap().text(), value);
         assert_eq!(
             (
-                h.text_surface(FIELD).unwrap().input.anchor,
-                h.text_surface(FIELD).unwrap().input.caret
+                h.text_surface(FIELD).unwrap().input().anchor(),
+                h.text_surface(FIELD).unwrap().input().caret()
             ),
             selection
         );

@@ -48,7 +48,13 @@ impl Component for Badge {
         _: Rect,
         theme: ContentTheme,
     ) {
-        paint::surface_at_scale(s, f, theme.palette, true, t.backing_scale());
+        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
+            s,
+            f,
+            theme.palette,
+            true,
+            t.backing_scale(),
+        );
         t.draw(
             s,
             &self.0,
@@ -92,7 +98,7 @@ impl Component for ActionRow {
         theme: ContentTheme,
     ) {
         if self.action.state.focused && self.action.state.focus_visible {
-            paint::focus_ring(
+            tekes_ui_controls::extended::FocusRingMetrics::paint(
                 scene,
                 frame,
                 theme.palette,
@@ -350,7 +356,8 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
             ),
             body,
             footer,
-        ),
+        )
+        .with_max_width(Some(460.)),
     );
     let invoker = Content::new(ids::DIALOG_INVOKER, Button::new("Edit workspace"));
     ContentHost::new(Content::new(
@@ -375,7 +382,7 @@ pub fn validate_dialog(host: &mut ContentHost) -> bool {
     let invalid = host
         .get(ids::DIALOG_FIELD)
         .and_then(|c| c.component::<TextFieldContent>())
-        .is_none_or(|f| f.surface.input.text.trim().is_empty());
+        .is_none_or(|f| f.surface.text().trim().is_empty());
     let Some(field) = host
         .get_mut(ids::DIALOG_FIELD)
         .and_then(|c| c.component_mut::<TextFieldContent>())

@@ -290,11 +290,11 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(len(surface), len(capabilities.public_type_surface()))
         self.assertEqual(len({e['api'] for e in surface}), len(surface))
         self.assertEqual({e['category'] for e in surface},
-                         {'component', 'component-support', 'component-alias', 'component-adapter', 'composition', 'shared-support', 'optional-component', 'optional-component-support'})
+                         {'component', 'component-support', 'component-adapter', 'composition', 'shared-support', 'optional-component', 'optional-component-support'})
         button = next(e for e in surface if e['api'] == 'tekes_ui_controls::composition::Button')
         self.assertEqual(button['components'], ['tui.button', 'tui.icon-button'])
         self.assertEqual(button['category'], 'component-adapter')
-        removed = {'ButtonContent', 'CompoundButton', 'IconButton', 'IconButtonView'}
+        removed = {'ButtonContent', 'CompoundButton', 'IconButton', 'IconButtonView', 'DiffViewPresenter'}
         self.assertFalse(any(e['api'].split('::')[-1] in removed for e in surface))
         self.assertEqual(self.data['counts']['components'], 45)
 
@@ -433,7 +433,7 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
         bad = copy.deepcopy(good); bad['types'].append(bad['types'][0]); mutations.append((bad, 'duplicate'))
         bad = copy.deepcopy(good); item = next(e for e in bad['types'] if e['category'] == 'component'); item['category'] = 'shared-support'; item['components'] = []; mutations.append((bad, 'cannot be classified as helper'))
         bad = copy.deepcopy(good); item = next(e for e in bad['types'] if e['category'] == 'component-adapter'); item['components'] = []; mutations.append((bad, 'needs an existing owner'))
-        bad = copy.deepcopy(good); item = next(e for e in bad['types'] if e['category'] == 'component-alias'); item['components'] = ['tui.button']; mutations.append((bad, 'alias must reference'))
+        bad = copy.deepcopy(good); item = next(e for e in bad['types'] if e['api'] == 'tekes_ui_controls::composition::Button'); item['category'] = 'component-alias'; item['components'] = ['tui.dialog']; mutations.append((bad, 'alias must reference'))
         bad = copy.deepcopy(good); bad['types'][0]['reason'] = ''; mutations.append((bad, 'reason required'))
         for bad, message in mutations:
             with self.source_fixture() as root:

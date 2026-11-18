@@ -87,14 +87,14 @@ fn all_four_edges_only_focus_and_preserve_original_selection_and_readonly_state(
     for edge in 0..4 {
         let mut host = setup();
         let mount = host.semantic_mount(EDITOR).unwrap();
-        field(&mut host).surface.input.select_range(1..3);
-        let before = field(&mut host).surface.input.external_baseline();
+        field(&mut host).surface.input_mut().select_range(1..3);
+        let before = field(&mut host).surface.input().external_baseline();
         let point = edges(&host)[edge];
         assert!(!host.get(EDITOR).unwrap().frame().contains(point));
         let event = ContentEvent::PointerDown(point);
         assert_eq!(host.padding_focus_target(&event), Some(EDITOR));
         assert_eq!(
-            field(&mut host).surface.input.external_baseline(),
+            field(&mut host).surface.input().external_baseline(),
             before,
             "query is pure"
         );
@@ -102,11 +102,11 @@ fn all_four_edges_only_focus_and_preserve_original_selection_and_readonly_state(
         assert!(response.consumed && !response.capture_pointer);
         assert_eq!(host.focused(), Some(EDITOR));
         assert_eq!(host.semantic_mount(EDITOR).unwrap(), mount);
-        assert_eq!(field(&mut host).surface.input.external_baseline(), before);
-        assert!(field(&mut host).surface.input.read_only);
+        assert_eq!(field(&mut host).surface.input().external_baseline(), before);
+        assert!(field(&mut host).surface.input().is_read_only());
         for point in edges(&host) {
             assert!(!click(&mut host, point).capture_pointer);
-            assert_eq!(field(&mut host).surface.input.external_baseline(), before);
+            assert_eq!(field(&mut host).surface.input().external_baseline(), before);
         }
         assert!(host.drain_actions().is_empty());
     }
@@ -114,7 +114,7 @@ fn all_four_edges_only_focus_and_preserve_original_selection_and_readonly_state(
 #[test]
 fn direct_readonly_pointer_selection_stays_original_and_cannot_edit_or_mark() {
     let mut host = setup();
-    let inner = host.text_surface(EDITOR).unwrap().inner;
+    let inner = host.text_surface(EDITOR).unwrap().inner();
     let from = Point::new(inner.max_x() - 2., inner.center().y);
     let to = Point::new(inner.min_x() + 2., inner.center().y);
     assert_eq!(
@@ -129,15 +129,16 @@ fn direct_readonly_pointer_selection_stays_original_and_cannot_edit_or_mark() {
         !host
             .text_surface(EDITOR)
             .unwrap()
-            .input
+            .input()
             .selection()
             .is_empty()
     );
-    assert_eq!(
-        host.text_surface(EDITOR).unwrap().input.text,
-        READ_ONLY_TEXT
-    );
-    let before = host.text_surface(EDITOR).unwrap().input.external_baseline();
+    assert_eq!(host.text_surface(EDITOR).unwrap().text(), READ_ONLY_TEXT);
+    let before = host
+        .text_surface(EDITOR)
+        .unwrap()
+        .input()
+        .external_baseline();
     for event in [
         ContentEvent::Commit {
             text: "forbidden".into(),
@@ -153,7 +154,10 @@ fn direct_readonly_pointer_selection_stays_original_and_cannot_edit_or_mark() {
     ] {
         host.event(&event);
         assert_eq!(
-            host.text_surface(EDITOR).unwrap().input.external_baseline(),
+            host.text_surface(EDITOR)
+                .unwrap()
+                .input()
+                .external_baseline(),
             before
         );
     }
@@ -167,10 +171,13 @@ fn direct_readonly_pointer_selection_stays_original_and_cannot_edit_or_mark() {
             .changed
     );
     assert_eq!(
-        host.text_surface(EDITOR).unwrap().input.external_baseline(),
+        host.text_surface(EDITOR)
+            .unwrap()
+            .input()
+            .external_baseline(),
         before
     );
-    assert!(host.text_surface(EDITOR).unwrap().input.marked.is_none());
+    assert!(host.text_surface(EDITOR).unwrap().marked().is_none());
 }
 #[test]
 fn original_sibling_action_wins_even_when_disabled_and_unconsumed() {
@@ -202,7 +209,7 @@ fn unavailable_or_stale_mounts_and_foreign_subtrees_refuse_the_original_declarat
         let mut host = setup();
         let point = edges(&host)[0];
         match mutation {
-            0 => field(&mut host).surface.input.disabled = true,
+            0 => field(&mut host).surface.input_mut().set_disabled(true),
             1 => {
                 host.get_mut(BAND)
                     .unwrap()
@@ -312,7 +319,7 @@ fn original_tab_ax_and_capture_do_not_create_another_text_or_input_owner() {
             .consumed
     );
     assert_eq!(host.focused(), Some(EDITOR));
-    let point = host.text_surface(EDITOR).unwrap().inner.center();
+    let point = host.text_surface(EDITOR).unwrap().inner().center();
     assert!(
         host.event(&ContentEvent::PointerDown(point))
             .capture_pointer
@@ -337,13 +344,13 @@ fn same_turn_public_intent_keeps_a_composing_other_owner_behind_the_host_barrier
         clauses: vec![],
         replacement: None,
     });
-    let original = host.focused_text().unwrap().input.external_baseline();
+    let original = host.focused_text().unwrap().input().external_baseline();
     let event = ContentEvent::PointerDown(edges(&host)[0]);
     assert_eq!(host.padding_focus_target(&event), Some(EDITOR));
     assert_eq!(padding_ime_admission(&host, &event), Some(false));
     assert_eq!(host.focused(), Some(OTHER));
     assert_eq!(
-        host.focused_text().unwrap().input.external_baseline(),
+        host.focused_text().unwrap().input().external_baseline(),
         original
     );
     // The host intentionally withholds this new-owner down; it neither blurs nor refocuses.

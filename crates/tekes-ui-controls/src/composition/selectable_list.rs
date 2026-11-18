@@ -111,7 +111,7 @@ fn mul(a: usize, b: usize) -> Result<usize, ListContentError> {
     a.checked_mul(b).ok_or(ListContentError::Overflow)
 }
 #[derive(Debug)]
-struct ListRowSlot {
+pub(super) struct ListRowSlot {
     owner: Arc<()>,
     display: Option<ComponentId>,
     children: Vec<Content>,
@@ -124,9 +124,6 @@ impl Component for ListRowSlot {
             && self.display.is_some()
             && self.children.len() == 1
             && self.children.first().map(Content::id) == self.display
-    }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
     }
     fn fixed_slots(&self) -> bool {
         true
@@ -356,7 +353,9 @@ impl KeyedSelectableListContent {
         {
             return Err(ListContentError::InteractiveDisplay { key, child: c.id() });
         }
-        if p.table_transaction_compatibility() != TableTransactionCompatibility::StableHooks {
+        if precheck_dispatch::table_transaction_compatibility(p)
+            != TableTransactionCompatibility::StableHooks
+        {
             return Err(ListContentError::UnknownTransactionHooks { child: c.id() });
         }
         if validate {
@@ -784,24 +783,11 @@ impl Prepared {
         self.model.snapshot.dataset
     }
 }
-impl Component for KeyedSelectableListContent {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.publishable()
-            && self.validate_all().is_ok()
-            && self.view.layout_keyed(&self.model).is_some()
-    }
-    fn host_reveal_local_clip(&self) -> Option<Rect> {
-        if !self.publishable() {
-            return None;
-        }
-        self.view
-            .layout_keyed(&self.model)
-            .map(|layout| layout.frame)
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+impl KeyedSelectableListContent {
+    pub(super) fn prepare_keyed_list_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -819,10 +805,22 @@ impl Component for KeyedSelectableListContent {
             },
         )
     }
-
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+}
+impl Component for KeyedSelectableListContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.publishable()
+            && self.validate_all().is_ok()
+            && self.view.layout_keyed(&self.model).is_some()
     }
+    fn host_reveal_local_clip(&self) -> Option<Rect> {
+        if !self.publishable() {
+            return None;
+        }
+        self.view
+            .layout_keyed(&self.model)
+            .map(|layout| layout.frame)
+    }
+
     fn fixed_slots(&self) -> bool {
         true
     }
@@ -2165,8 +2163,8 @@ mod tests {
         #[derive(Debug)]
         struct Capability(usize);
         impl Component for Capability {
-            fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-                TableTransactionCompatibility::StableHooks
+            fn has_stable_hooks(&self) -> bool {
+                true
             }
             fn measure(&mut self, _: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
                 MeasuredChild::new(Size::default())

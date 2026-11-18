@@ -148,6 +148,30 @@ impl action_preparation::OriginalActionDecision for PreparedChartAction {
     }
 }
 
+impl ChartContent {
+    pub(super) fn prepare_chart_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |action| (action.response, PreparedActionFocus::Owner),
+        )
+    }
+    pub(super) fn focus_evidence(&self) -> Option<RequiredFocusEvidence> {
+        self.view
+            .owner_focus_evidence(&self.model)
+            .map(RequiredFocusEvidence::from_owner)
+    }
+}
+#[cfg(test)]
+pub(super) fn witness_probe_evidence(probe: &dyn Component) -> Option<RequiredFocusEvidence> {
+    tests::witness_probe_evidence(probe)
+}
+
 impl Component for ChartContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         // ChartContent is a local leaf owner: paint is called inside the
@@ -156,18 +180,6 @@ impl Component for ChartContent {
         // visibility is projected through the same frozen shape chain. Its
         // target RequiredFocus witness remains a separate contract.
         CurveSubtreeCapability::Local
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::prepare_original(
-            self,
-            request,
-            Self::decide_action,
-            Self::apply_action,
-            |action| (action.response, PreparedActionFocus::Owner),
-        )
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let width = if available.width.is_finite() {
@@ -286,15 +298,12 @@ impl Component for ChartContent {
     }
     fn required_focus_space(&self) -> RequiredFocusSpace {
         match self.view.owner_required_focus_space(&self.model) {
-            ChartOwnerFocusSpace::Visible { witness } => {
-                self.view.owner_focus_evidence(&self.model).map_or(
-                    RequiredFocusSpace::Unmeasured,
-                    |token| RequiredFocusSpace::Sufficient {
-                        witness,
-                        evidence: RequiredFocusEvidence::from_owner(token),
-                    },
-                )
-            }
+            ChartOwnerFocusSpace::Visible { witness } => self
+                .view
+                .owner_focus_evidence(&self.model)
+                .map_or(RequiredFocusSpace::Unmeasured, |_| {
+                    RequiredFocusSpace::Sufficient { witness }
+                }),
             ChartOwnerFocusSpace::NotRequired => RequiredFocusSpace::NotRequired,
             ChartOwnerFocusSpace::Unmeasured => RequiredFocusSpace::Unmeasured,
             ChartOwnerFocusSpace::Insufficient(_)
@@ -638,8 +647,8 @@ mod tests {
     }
 
     #[derive(Debug)]
-    struct WitnessProbe {
-        evidence: RequiredFocusEvidence,
+    pub(super) struct WitnessProbe {
+        pub(super) evidence: RequiredFocusEvidence,
         frame: Rect,
         focus_calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
         invalid: bool,
@@ -678,11 +687,14 @@ mod tests {
                     12.0,
                 )
             };
-            RequiredFocusSpace::Sufficient {
-                witness,
-                evidence: self.evidence.clone(),
-            }
+            RequiredFocusSpace::Sufficient { witness }
         }
+    }
+    #[cfg(test)]
+    pub(super) fn witness_probe_evidence(probe: &dyn Component) -> Option<RequiredFocusEvidence> {
+        (probe as &dyn std::any::Any)
+            .downcast_ref::<WitnessProbe>()
+            .map(|probe| probe.evidence.clone())
     }
     fn probe(
         invalid: bool,

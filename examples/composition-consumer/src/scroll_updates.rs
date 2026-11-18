@@ -84,8 +84,7 @@ impl Scenario {
                 if h.get(LATEST).is_none() {
                     h.insert(
                         ROOT,
-                        Content::new(LATEST, Button::new("Return to latest"))
-                            .preserving_focus(),
+                        Content::new(LATEST, Button::new("Return to latest")).preserving_focus(),
                     )
                     .unwrap();
                     h.reorder(ROOT, &[SCROLLER, LATEST, COMPOSER]).unwrap();

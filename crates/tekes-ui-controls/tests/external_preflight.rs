@@ -149,7 +149,7 @@ fn older_publication_and_unchanged_payload_new_revision_preserve_exact_result_fl
         R::Conflict(C::Revision),
     );
     input.insert("!", None);
-    let text = input.text.clone();
+    let text = input.text().to_owned();
     let b = input.external_baseline();
     parity(
         &mut input,
@@ -196,7 +196,7 @@ fn successful_check_is_not_a_reservation_and_apply_revalidates_aba_documents_and
             "aba" => {
                 a.insert("!", None);
                 assert!(a.undo());
-                assert_eq!(a.text, "a😀b");
+                assert_eq!(a.text(), "a😀b");
                 C::StaleBaseline
             }
             "document" => {
@@ -263,7 +263,7 @@ fn successful_prediction_preserves_native_identity_and_actual_selection_undo_rul
                 match undo {
                     U::Transaction => {
                         assert!(input.undo());
-                        assert_eq!(input.text, "a😀b");
+                        assert_eq!(input.text(), "a😀b");
                         assert!(input.redo());
                     }
                     U::Reset => {
@@ -281,11 +281,11 @@ fn successful_prediction_preserves_native_identity_and_actual_selection_undo_rul
 #[test]
 fn surface_check_preserves_preedit_clauses_scroll_navigation_and_history() {
     let mut surface = TextSurface::new("", true, false);
-    bind(&mut surface.input);
-    surface.input.select_range(1..3);
-    surface.input.insert("!", None);
-    surface.scroll.scroll_by(0., 50.);
-    let b = surface.input.external_baseline();
+    bind(surface.input_mut());
+    surface.input_mut().select_range(1..3);
+    surface.input_mut().insert("!", None);
+    surface.scroll_mut().scroll_by(0., 50.);
+    let b = surface.input().external_baseline();
     let before = format!("{surface:?}");
     let next = value("A", 2, "replacement");
     let predicted = surface.check_external_value(&b, &next, S::Preserve, U::Transaction);
@@ -295,10 +295,10 @@ fn surface_check_preserves_preedit_clauses_scroll_navigation_and_history() {
         surface.apply_external_value(&b, &next, S::Preserve, U::Transaction),
         predicted
     );
-    assert!(surface.input.undo());
-    surface.input.preedit("ni", 2..2, None);
-    surface.clauses = std::iter::once(0..2).collect();
-    let b = surface.input.external_baseline();
+    assert!(surface.input_mut().undo());
+    surface.input_mut().preedit("ni", 2..2, None);
+    surface.set_clauses(std::iter::once(0..2).collect());
+    let b = surface.input().external_baseline();
     let before = format!("{surface:?}");
     for _ in 0..2 {
         assert_eq!(
@@ -307,7 +307,7 @@ fn surface_check_preserves_preedit_clauses_scroll_navigation_and_history() {
         );
         assert_eq!(format!("{surface:?}"), before);
     }
-    surface.input.preedit("nih", 3..3, None);
+    surface.input_mut().preedit("nih", 3..3, None);
     assert_eq!(
         surface.check_external_value(&b, &value("A", 3, "remote"), S::Reset, U::Reset),
         R::Conflict(C::Composition)

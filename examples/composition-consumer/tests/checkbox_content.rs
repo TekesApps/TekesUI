@@ -599,7 +599,7 @@ fn actual_composer_marked_binding_selection_barrier_and_local_updates() {
         Rect::new(0., 0., 400., 400.),
         Theme::LIGHT.into(),
     );
-    let original_input = format!("{:?}", h.text_surface(EDITOR).unwrap().input);
+    let original_input = format!("{:?}", h.text_surface(EDITOR).unwrap().input());
     let snap = h.text_input_snapshot().unwrap();
     let binding = h.focused_text_binding();
     let check_before = format!("{:?}", check(&h));
@@ -618,7 +618,7 @@ fn actual_composer_marked_binding_selection_barrier_and_local_updates() {
         Theme::DARK.into(),
     );
     assert_eq!(
-        format!("{:?}", h.text_surface(EDITOR).unwrap().input),
+        format!("{:?}", h.text_surface(EDITOR).unwrap().input()),
         original_input,
         "local Checkbox updates preserve original undo/draft/marked/selection owner"
     );

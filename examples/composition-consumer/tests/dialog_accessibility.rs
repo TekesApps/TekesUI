@@ -1,4 +1,7 @@
-use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, DialogEvent, DialogView};
+use tekes_ui_controls::{
+    ButtonTextAlign, ButtonTextRenderer,
+    feedback_view::{DialogEvent, DialogView},
+};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
 struct Text;

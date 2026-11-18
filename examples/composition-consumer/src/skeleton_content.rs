@@ -59,12 +59,21 @@ pub fn build() -> Result<(Scenario, ReadingDocumentVersion), CompositionError> {
 }
 /// Caller-owned business message; Skeleton has no loading/result state machine.
 pub fn publish(host: &mut ContentHost, result: &str) {
-    host.get_mut(RESULT).unwrap().component_mut::<TextContent>().unwrap().text = result.into();
+    host.get_mut(RESULT)
+        .unwrap()
+        .component_mut::<TextContent>()
+        .unwrap()
+        .text = result.into();
 }
 /// Validate external parent input before replacing the accepted allocation.
 pub fn set_allocation(retained: &mut Size, candidate: Size) -> bool {
-    if !candidate.width.is_finite() || !candidate.height.is_finite()
-        || candidate.width < 0. || candidate.height < 0. { return false; }
+    if !candidate.width.is_finite()
+        || !candidate.height.is_finite()
+        || candidate.width < 0.
+        || candidate.height < 0.
+    {
+        return false;
+    }
     *retained = candidate;
     true
 }

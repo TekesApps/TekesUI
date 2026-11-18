@@ -211,11 +211,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-slider",
         "tekes_ui_controls::extended::Slider",
     );
-    bind::<tekes_ui_controls::SliderView>(
+    bind::<tekes_ui_controls::layout_view::SliderView>(
         &mut actual,
         "tui.slider",
         "component-slider",
-        "tekes_ui_controls::SliderView",
+        "tekes_ui_controls::layout_view::SliderView",
     );
     bind::<tekes_ui_controls::Checkbox>(
         &mut actual,
@@ -229,11 +229,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-radio-group",
         "tekes_ui_controls::extended::RadioGroup",
     );
-    bind::<tekes_ui_controls::RadioGroupView>(
+    bind::<tekes_ui_controls::layout_view::RadioGroupView>(
         &mut actual,
         "tui.radio-group",
         "component-radio-group",
-        "tekes_ui_controls::RadioGroupView",
+        "tekes_ui_controls::layout_view::RadioGroupView",
     );
     bind::<tekes_ui_controls::extended::Switch>(
         &mut actual,
@@ -241,11 +241,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-switch",
         "tekes_ui_controls::extended::Switch",
     );
-    bind::<tekes_ui_controls::SwitchView>(
+    bind::<tekes_ui_controls::layout_view::SwitchView>(
         &mut actual,
         "tui.switch",
         "component-switch",
-        "tekes_ui_controls::SwitchView",
+        "tekes_ui_controls::layout_view::SwitchView",
     );
     bind::<tekes_ui_controls::extended::SegmentedControl>(
         &mut actual,
@@ -301,11 +301,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-tabs",
         "tekes_ui_controls::Tabs",
     );
-    bind::<tekes_ui_controls::TabsView>(
+    bind::<tekes_ui_controls::layout_view::TabsView>(
         &mut actual,
         "tui.tabs",
         "component-tabs",
-        "tekes_ui_controls::TabsView",
+        "tekes_ui_controls::layout_view::TabsView",
     );
     bind::<tekes_ui_controls::extended::Breadcrumb>(
         &mut actual,
@@ -385,11 +385,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-menu",
         "tekes_ui_controls::Menu",
     );
-    bind::<tekes_ui_controls::MenuView>(
+    bind::<tekes_ui_controls::feedback_view::MenuView>(
         &mut actual,
         "tui.menu",
         "component-menu",
-        "tekes_ui_controls::MenuView",
+        "tekes_ui_controls::feedback_view::MenuView",
     );
     bind::<tekes_ui_controls::extended::Tooltip>(
         &mut actual,
@@ -427,11 +427,11 @@ fn every_registered_component_binding_is_public_and_matches_the_current_registry
         "component-dialog",
         "tekes_ui_controls::Dialog",
     );
-    bind::<tekes_ui_controls::DialogView>(
+    bind::<tekes_ui_controls::feedback_view::DialogView>(
         &mut actual,
         "tui.dialog",
         "component-dialog",
-        "tekes_ui_controls::DialogView",
+        "tekes_ui_controls::feedback_view::DialogView",
     );
     bind::<tekes_ui_controls::extended::Toast>(
         &mut actual,
@@ -597,10 +597,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     let mut actual = Vec::new();
     public_type::<tekes_ui_controls::BarChart>(&mut actual, "tekes_ui_controls::BarChart");
     public_type::<tekes_ui_controls::BarGeometry>(&mut actual, "tekes_ui_controls::BarGeometry");
-    public_type::<tekes_ui_controls::BreadcrumbContent>(
-        &mut actual,
-        "tekes_ui_controls::BreadcrumbContent",
-    );
     public_type::<tekes_ui_controls::Button>(&mut actual, "tekes_ui_controls::Button");
     public_type::<tekes_ui_controls::ButtonActivationPhase>(
         &mut actual,
@@ -626,12 +622,11 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::ButtonTextAlign",
     );
     #[allow(dead_code)]
-    fn public_trait_12<T: tekes_ui_controls::ButtonTextRenderer + ?Sized>() {}
+    fn public_trait_11<T: tekes_ui_controls::ButtonTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::ButtonTextRenderer");
-    public_type::<tekes_ui_controls::ChartContent>(&mut actual, "tekes_ui_controls::ChartContent");
-    public_type::<tekes_ui_controls::ChartContentError>(
+    public_type::<tekes_ui_controls::ButtonVariant>(
         &mut actual,
-        "tekes_ui_controls::ChartContentError",
+        "tekes_ui_controls::ButtonVariant",
     );
     public_type::<tekes_ui_controls::ChartDataUpdateError>(
         &mut actual,
@@ -648,10 +643,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::CheckboxLayout",
     );
-    public_type::<tekes_ui_controls::CommandPaletteContent>(
-        &mut actual,
-        "tekes_ui_controls::CommandPaletteContent",
-    );
     public_type::<tekes_ui_controls::ContainerLayout>(
         &mut actual,
         "tekes_ui_controls::ContainerLayout",
@@ -663,17 +654,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     );
     public_type::<tekes_ui_controls::ControlState>(&mut actual, "tekes_ui_controls::ControlState");
     public_type::<tekes_ui_controls::Dialog>(&mut actual, "tekes_ui_controls::Dialog");
-    public_type::<tekes_ui_controls::DialogEvent>(&mut actual, "tekes_ui_controls::DialogEvent");
-    public_type::<tekes_ui_controls::DialogLayout>(&mut actual, "tekes_ui_controls::DialogLayout");
-    public_type::<tekes_ui_controls::DialogView>(&mut actual, "tekes_ui_controls::DialogView");
-    public_type::<tekes_ui_controls::DisclosureContent>(
-        &mut actual,
-        "tekes_ui_controls::DisclosureContent",
-    );
-    public_type::<tekes_ui_controls::DisclosureIntent>(
-        &mut actual,
-        "tekes_ui_controls::DisclosureIntent",
-    );
     public_type::<tekes_ui_controls::DraftJournal>(&mut actual, "tekes_ui_controls::DraftJournal");
     public_type::<tekes_ui_controls::DraftRevision>(
         &mut actual,
@@ -699,26 +679,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::Field>(&mut actual, "tekes_ui_controls::Field");
     public_type::<tekes_ui_controls::Insets>(&mut actual, "tekes_ui_controls::Insets");
     public_type::<tekes_ui_controls::Menu>(&mut actual, "tekes_ui_controls::Menu");
-    public_type::<tekes_ui_controls::MenuEvent>(&mut actual, "tekes_ui_controls::MenuEvent");
-    public_type::<tekes_ui_controls::MenuLayout>(&mut actual, "tekes_ui_controls::MenuLayout");
-    public_type::<tekes_ui_controls::MenuView>(&mut actual, "tekes_ui_controls::MenuView");
-    public_type::<tekes_ui_controls::MenuWheelEvent>(
-        &mut actual,
-        "tekes_ui_controls::MenuWheelEvent",
-    );
-    public_type::<tekes_ui_controls::MenuWheelInput>(
-        &mut actual,
-        "tekes_ui_controls::MenuWheelInput",
-    );
     public_type::<tekes_ui_controls::NumberField>(&mut actual, "tekes_ui_controls::NumberField");
-    public_type::<tekes_ui_controls::RadioGroupLayout>(
-        &mut actual,
-        "tekes_ui_controls::RadioGroupLayout",
-    );
-    public_type::<tekes_ui_controls::RadioGroupView>(
-        &mut actual,
-        "tekes_ui_controls::RadioGroupView",
-    );
     public_type::<tekes_ui_controls::ReadingAnchorUpdate>(
         &mut actual,
         "tekes_ui_controls::ReadingAnchorUpdate",
@@ -744,18 +705,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::ReadingUpdateError",
     );
     public_type::<tekes_ui_controls::ReflowAnchor>(&mut actual, "tekes_ui_controls::ReflowAnchor");
-    public_type::<tekes_ui_controls::RequiredFocusEvidence>(
-        &mut actual,
-        "tekes_ui_controls::RequiredFocusEvidence",
-    );
-    public_type::<tekes_ui_controls::RequiredFocusResult>(
-        &mut actual,
-        "tekes_ui_controls::RequiredFocusResult",
-    );
-    public_type::<tekes_ui_controls::RequiredFocusSpace>(
-        &mut actual,
-        "tekes_ui_controls::RequiredFocusSpace",
-    );
     public_type::<tekes_ui_controls::ScrollArea>(&mut actual, "tekes_ui_controls::ScrollArea");
     public_type::<tekes_ui_controls::ScrollGeometry>(
         &mut actual,
@@ -779,19 +728,8 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::ScrollRevealResult",
     );
     public_type::<tekes_ui_controls::Select>(&mut actual, "tekes_ui_controls::Select");
-    public_type::<tekes_ui_controls::SelectionEvent>(
-        &mut actual,
-        "tekes_ui_controls::SelectionEvent",
-    );
-    public_type::<tekes_ui_controls::SliderLayout>(&mut actual, "tekes_ui_controls::SliderLayout");
-    public_type::<tekes_ui_controls::SliderView>(&mut actual, "tekes_ui_controls::SliderView");
-    public_type::<tekes_ui_controls::SwitchLayout>(&mut actual, "tekes_ui_controls::SwitchLayout");
-    public_type::<tekes_ui_controls::SwitchView>(&mut actual, "tekes_ui_controls::SwitchView");
-    public_type::<tekes_ui_controls::TabItem>(&mut actual, "tekes_ui_controls::TabItem");
+    public_type::<tekes_ui_controls::SurfaceKind>(&mut actual, "tekes_ui_controls::SurfaceKind");
     public_type::<tekes_ui_controls::Tabs>(&mut actual, "tekes_ui_controls::Tabs");
-    public_type::<tekes_ui_controls::TabsContent>(&mut actual, "tekes_ui_controls::TabsContent");
-    public_type::<tekes_ui_controls::TabsLayout>(&mut actual, "tekes_ui_controls::TabsLayout");
-    public_type::<tekes_ui_controls::TabsView>(&mut actual, "tekes_ui_controls::TabsView");
     public_type::<tekes_ui_controls::TextEditBaseline>(
         &mut actual,
         "tekes_ui_controls::TextEditBaseline",
@@ -811,14 +749,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::TextSurfaceAlignment",
     );
     #[allow(dead_code)]
-    fn public_trait_84<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
+    fn public_trait_58<T: tekes_ui_controls::TextSurfaceHost + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceHost");
     public_type::<tekes_ui_controls::TextSurfacePresentation>(
         &mut actual,
         "tekes_ui_controls::TextSurfacePresentation",
     );
     #[allow(dead_code)]
-    fn public_trait_86<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
+    fn public_trait_60<T: tekes_ui_controls::TextSurfaceTextRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::TextSurfaceTextRenderer");
     public_type::<tekes_ui_controls::TickingNumber>(
         &mut actual,
@@ -885,10 +823,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::collections_view::DataTableView",
     );
-    public_type::<tekes_ui_controls::collections_view::DiffViewPresenter>(
-        &mut actual,
-        "tekes_ui_controls::collections_view::DiffViewPresenter",
-    );
     public_type::<tekes_ui_controls::collections_view::DiffViewRuntime>(
         &mut actual,
         "tekes_ui_controls::collections_view::DiffViewRuntime",
@@ -906,7 +840,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::collections_view::MarkdownView",
     );
     #[allow(dead_code)]
-    fn public_trait_109<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
+    fn public_trait_82<T: tekes_ui_controls::collections_view::PassiveCollectionView + ?Sized>() {}
     actual.push("tekes_ui_controls::collections_view::PassiveCollectionView");
     public_type::<tekes_ui_controls::collections_view::TreeView>(
         &mut actual,
@@ -915,14 +849,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::AccessibilityAction>(
         &mut actual,
         "tekes_ui_controls::composition::AccessibilityAction",
-    );
-    public_type::<tekes_ui_controls::composition::ActionPreparation>(
-        &mut actual,
-        "tekes_ui_controls::composition::ActionPreparation",
-    );
-    public_type::<tekes_ui_controls::composition::ActionTransactionCompatibility>(
-        &mut actual,
-        "tekes_ui_controls::composition::ActionTransactionCompatibility",
     );
     public_type::<tekes_ui_controls::composition::BannerContent>(
         &mut actual,
@@ -981,12 +907,8 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::CommandPaletteContent",
     );
     #[allow(dead_code)]
-    fn public_trait_128<T: tekes_ui_controls::composition::Component + ?Sized>() {}
+    fn public_trait_99<T: tekes_ui_controls::composition::Component + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::Component");
-    public_type::<tekes_ui_controls::composition::ComponentActionRequest<'_>>(
-        &mut actual,
-        "tekes_ui_controls::composition::ComponentActionRequest",
-    );
     public_type::<tekes_ui_controls::composition::ComponentId>(
         &mut actual,
         "tekes_ui_controls::composition::ComponentId",
@@ -1411,7 +1333,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_223<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_193<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1473,41 +1395,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::PopoverSession",
     );
-    #[allow(dead_code)]
-    fn public_trait_239<T: tekes_ui_controls::composition::PreparedActionEffect + ?Sized>() {}
-    actual.push("tekes_ui_controls::composition::PreparedActionEffect");
-    public_type::<tekes_ui_controls::composition::PreparedActionFocus>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedActionFocus",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedComponentAction>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedComponentAction",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedEffects>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedEffects",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedEffectsError>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedEffectsError",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedHook>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedHook",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedHookKind>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedHookKind",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedLifecycleContext>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedLifecycleContext",
-    );
-    public_type::<tekes_ui_controls::composition::PreparedPhase>(
-        &mut actual,
-        "tekes_ui_controls::composition::PreparedPhase",
-    );
     public_type::<tekes_ui_controls::composition::ProgressContent>(
         &mut actual,
         "tekes_ui_controls::composition::ProgressContent",
@@ -1527,10 +1414,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::Rejected<()>>(
         &mut actual,
         "tekes_ui_controls::composition::Rejected",
-    );
-    public_type::<tekes_ui_controls::composition::RequiredFocusEvidence>(
-        &mut actual,
-        "tekes_ui_controls::composition::RequiredFocusEvidence",
     );
     public_type::<tekes_ui_controls::composition::RequiredFocusResult>(
         &mut actual,
@@ -1761,10 +1644,6 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::TableRowDisplay>(
         &mut actual,
         "tekes_ui_controls::composition::TableRowDisplay",
-    );
-    public_type::<tekes_ui_controls::composition::TableTransactionCompatibility>(
-        &mut actual,
-        "tekes_ui_controls::composition::TableTransactionCompatibility",
     );
     public_type::<tekes_ui_controls::composition::TabsContent>(
         &mut actual,
@@ -2146,6 +2025,18 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::feedback_view::BannerView",
     );
+    public_type::<tekes_ui_controls::feedback_view::DialogEvent>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::DialogEvent",
+    );
+    public_type::<tekes_ui_controls::feedback_view::DialogLayout>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::DialogLayout",
+    );
+    public_type::<tekes_ui_controls::feedback_view::DialogView>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::DialogView",
+    );
     public_type::<tekes_ui_controls::feedback_view::EmptyStateView>(
         &mut actual,
         "tekes_ui_controls::feedback_view::EmptyStateView",
@@ -2161,6 +2052,26 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::feedback_view::FieldView>(
         &mut actual,
         "tekes_ui_controls::feedback_view::FieldView",
+    );
+    public_type::<tekes_ui_controls::feedback_view::MenuEvent>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::MenuEvent",
+    );
+    public_type::<tekes_ui_controls::feedback_view::MenuLayout>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::MenuLayout",
+    );
+    public_type::<tekes_ui_controls::feedback_view::MenuView>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::MenuView",
+    );
+    public_type::<tekes_ui_controls::feedback_view::MenuWheelEvent>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::MenuWheelEvent",
+    );
+    public_type::<tekes_ui_controls::feedback_view::MenuWheelInput>(
+        &mut actual,
+        "tekes_ui_controls::feedback_view::MenuWheelInput",
     );
     public_type::<tekes_ui_controls::feedback_view::NumberFieldEvent>(
         &mut actual,
@@ -2295,7 +2206,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_443<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_410<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
@@ -2308,6 +2219,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::layout_view::LinkView>(
         &mut actual,
         "tekes_ui_controls::layout_view::LinkView",
+    );
+    public_type::<tekes_ui_controls::layout_view::RadioGroupLayout>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::RadioGroupLayout",
+    );
+    public_type::<tekes_ui_controls::layout_view::RadioGroupView>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::RadioGroupView",
     );
     public_type::<tekes_ui_controls::layout_view::SegmentedControlView>(
         &mut actual,
@@ -2325,6 +2244,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::layout_view::SelectView",
     );
+    public_type::<tekes_ui_controls::layout_view::SelectionEvent>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::SelectionEvent",
+    );
     public_type::<tekes_ui_controls::layout_view::SeparatorLayout>(
         &mut actual,
         "tekes_ui_controls::layout_view::SeparatorLayout",
@@ -2332,6 +2255,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::layout_view::SeparatorView>(
         &mut actual,
         "tekes_ui_controls::layout_view::SeparatorView",
+    );
+    public_type::<tekes_ui_controls::layout_view::SliderLayout>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::SliderLayout",
+    );
+    public_type::<tekes_ui_controls::layout_view::SliderView>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::SliderView",
     );
     public_type::<tekes_ui_controls::layout_view::SplitViewLayout>(
         &mut actual,
@@ -2345,13 +2276,21 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::layout_view::StackView",
     );
-    public_type::<tekes_ui_controls::paint::ButtonVariant>(
+    public_type::<tekes_ui_controls::layout_view::SwitchLayout>(
         &mut actual,
-        "tekes_ui_controls::paint::ButtonVariant",
+        "tekes_ui_controls::layout_view::SwitchLayout",
     );
-    public_type::<tekes_ui_controls::paint::SurfaceKind>(
+    public_type::<tekes_ui_controls::layout_view::SwitchView>(
         &mut actual,
-        "tekes_ui_controls::paint::SurfaceKind",
+        "tekes_ui_controls::layout_view::SwitchView",
+    );
+    public_type::<tekes_ui_controls::layout_view::TabsLayout>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::TabsLayout",
+    );
+    public_type::<tekes_ui_controls::layout_view::TabsView>(
+        &mut actual,
+        "tekes_ui_controls::layout_view::TabsView",
     );
     let surface: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),

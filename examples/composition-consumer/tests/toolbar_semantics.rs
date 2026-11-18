@@ -90,9 +90,8 @@ fn nested_toolbar_measures_available_width_and_preserves_original_editor() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text
-            .clone();
+            .text()
+            .to_owned();
         if width < 1000. {
             let more = parts(&host)
                 .into_iter()
@@ -140,8 +139,8 @@ fn nested_toolbar_measures_available_width_and_preserves_original_editor() {
                 .component::<TextFieldContent>()
                 .unwrap()
                 .surface
-                .input
-                .text,
+                .input()
+                .text(),
             before
         );
         host.focus(Some(EDITOR), true);

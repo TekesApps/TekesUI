@@ -3,9 +3,11 @@ mod text;
 use anyhow::Result;
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem};
 use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextAlign,
+    ButtonModel,
+    ButtonSize,
+    ButtonTextAlign,
+    ButtonVariant,
     composition::{Component, ContentEvent, TextContent, TextFieldContent},
-    paint::ButtonVariant,
 };
 use tekes_ui_module_runtime::{ModuleDefinition, ModuleState, PanelModule};
 use tekes_ui_scene::{GlyphAtlas, Point, Quad, Rect, Scene};
@@ -110,12 +112,12 @@ impl PanelModule for Demo {
             scale: r.scale,
         };
         let body_rect = Rect::new(24., 120., (width - 48.).max(1.), (height - 144.).max(1.));
-        let previous = self.body.surface.paragraph.clone();
+        let previous = self.body.surface.paragraph().cloned();
         let started = std::time::Instant::now();
         self.body.arrange(&mut text, body_rect, body_rect);
         if previous
             .as_ref()
-            .zip(self.body.surface.paragraph.as_ref())
+            .zip(self.body.surface.paragraph())
             .is_none_or(|(a, b)| !std::rc::Rc::ptr_eq(a, b))
         {
             self.layout_ms = started.elapsed().as_secs_f64() * 1000.;
@@ -137,8 +139,7 @@ impl PanelModule for Demo {
         let lines = self
             .body
             .surface
-            .paragraph
-            .as_ref()
+            .paragraph()
             .map_or(0, |p| p.lines.len());
         let mut status = TextContent::new(format!(
             "{} · {:.0} pt · {} 行\n组件排版 {:.2} ms",

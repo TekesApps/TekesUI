@@ -110,7 +110,7 @@ impl TextPage {
             "\n\nUpdate {}. This paragraph is appended on request. While reading earlier lines, your place stays anchored; choose Return to latest to follow new text.",
             self.appended
         );
-        self.field_mut(0).surface.input.text.push_str(&update);
+        self.field_mut(0).surface.append_text(&update);
     }
     fn advance(&mut self, text: &dyn ButtonTextRenderer, visible: bool) {
         let Some(clock) = text.motion_context() else {
@@ -132,26 +132,17 @@ impl TextPage {
     }
 }
 impl Component for TextPage {
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged
     }
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
-    }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
     }
     fn rectangular_input_geometry(&self) -> bool {
         true
@@ -228,7 +219,7 @@ impl Component for TextPage {
             .type_scale();
         let mut sections = section_layout(&surfaces, body, scale, &heights);
         if self.reading {
-            let role = surfaces[0].role;
+            let role = surfaces[0].role();
             let height = text.measure("Mg", role, f32::MAX).height;
             if sections[0].2.size.height < height + 2. * proposal::SCROLL_CONTENT_PADDING {
                 sections[0].1 = Rect::default();
@@ -303,10 +294,13 @@ mod tests {
             let mut text = TextEngine::new();
             render(&mut host, &mut text, 640.);
             assert!(host.focus(Some(FIRST_SURFACE), true));
-            let before = host.text_surface(FIRST_SURFACE).unwrap().input.text.clone();
+            let before = host.text_surface(FIRST_SURFACE).unwrap().text().to_owned();
             let readonly = renderer != "internal-text";
             assert_eq!(
-                host.text_surface(FIRST_SURFACE).unwrap().input.read_only,
+                host.text_surface(FIRST_SURFACE)
+                    .unwrap()
+                    .input()
+                    .is_read_only(),
                 readonly
             );
             host.event_with_text(
@@ -317,7 +311,7 @@ mod tests {
                 &mut text,
             )
             .unwrap();
-            let after = &host.text_surface(FIRST_SURFACE).unwrap().input.text;
+            let after = host.text_surface(FIRST_SURFACE).unwrap().text();
             if readonly {
                 assert_eq!(after, &before);
             } else {
@@ -344,7 +338,7 @@ mod tests {
         let mut host = ContentHost::new(content("scroll", Locale::En).unwrap()).unwrap();
         let mut text = TextEngine::new();
         render(&mut host, &mut text, 640.);
-        let before = host.text_surface(FIRST_SURFACE).unwrap().input.text.clone();
+        let before = host.text_surface(FIRST_SURFACE).unwrap().text().to_owned();
         let binding = host
             .semantic_text_layout_snapshot(FIRST_SURFACE, None)
             .unwrap()
@@ -354,22 +348,20 @@ mod tests {
         assert!(
             host.text_surface(FIRST_SURFACE)
                 .unwrap()
-                .input
-                .text
+                .text()
                 .starts_with(&before)
         );
         assert!(
             host.text_surface(FIRST_SURFACE)
                 .unwrap()
-                .input
-                .text
+                .text()
                 .ends_with("follow new text.")
         );
         render(&mut host, &mut text, 320.);
         assert!(action(&mut host, LATEST));
         render(&mut host, &mut text, 320.);
         let field = host.text_surface(FIRST_SURFACE).unwrap();
-        assert!((field.scroll.offset.y - field.scroll.limit().y).abs() < 1.);
+        assert!((field.scroll().offset.y - field.scroll().limit().y).abs() < 1.);
         assert_eq!(
             host.semantic_text_layout_snapshot(FIRST_SURFACE, None)
                 .unwrap()
@@ -389,7 +381,7 @@ use super::super::{
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use tekes_ui_app_host::ContainerRenderContext;
-use tekes_ui_controls::{ButtonModel, ButtonSize, ControlKey, paint};
+use tekes_ui_controls::{ButtonModel, ButtonSize, ControlKey};
 use tekes_ui_scene::Point;
 use tekes_ui_tokens::{Palette, Rgba, TextRole};
 
@@ -461,7 +453,7 @@ impl calibration::CalibrationText for CalibrationHostText<'_> {
         frame: Rect,
         clip: Option<Rect>,
         palette: Palette,
-        variant: paint::ButtonVariant,
+        variant: tekes_ui_controls::ButtonVariant,
         size: ButtonSize,
         role: proposal::TextRole,
         align: ButtonTextAlign,

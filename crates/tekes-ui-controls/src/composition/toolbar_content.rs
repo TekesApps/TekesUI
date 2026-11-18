@@ -111,12 +111,8 @@ impl Component for ToolbarGroup {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(
@@ -266,12 +262,8 @@ impl Component for ToolbarContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
-
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
     fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
         theme

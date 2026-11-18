@@ -34,9 +34,9 @@ pub(crate) fn section_layout(
     let bottom = content.max_y();
     let mut out = Vec::new();
     for (i, surface) in surfaces.iter().enumerate() {
-        let name = if surface.input.read_only {
+        let name = if surface.input().is_read_only() {
             "Text · 选择与复制"
-        } else if surface.input.multiline {
+        } else if surface.input().is_multiline() {
             "TextEditor · 多行"
         } else {
             "TextEditor · 单行"
@@ -51,11 +51,11 @@ pub(crate) fn section_layout(
         y += label.size.height;
         y += Spacing::Regular.value().min((bottom - y).max(0.0));
         let desired_height =
-            if surfaces.len() <= 2 && i + 1 == surfaces.len() && surface.input.multiline {
+            if surfaces.len() <= 2 && i + 1 == surfaces.len() && surface.input().is_multiline() {
                 (bottom - y).max(0.0)
-            } else if surface.input.read_only {
+            } else if surface.input().is_read_only() {
                 line_h * 8.0
-            } else if surface.input.multiline {
+            } else if surface.input().is_multiline() {
                 line_h * 20.0
             } else {
                 surface.minimum_outer_height(type_scale)
@@ -111,12 +111,12 @@ impl Surface {
         self.layout_clipped(text, rect, None);
     }
     fn layout_clipped(&mut self, text: &mut TextEngine, rect: Rect, ancestor_clip: Option<Rect>) {
-        let role = self.view.role;
+        let role = self.view.role();
         let fixture = self.fixture;
         let prepared = &mut self.prepared;
         let prepared_role = &mut self.prepared_role;
-        let text_changed = self.view.shaped != self.view.input.text;
-        let scale_changed = self.view.type_scale != text.type_scale();
+        let text_changed = self.view.shaped() != self.view.text();
+        let scale_changed = self.view.type_scale() != text.type_scale();
         let role_changed = *prepared_role != Some(role);
         if text_changed || scale_changed || role_changed {
             *prepared = None;
@@ -158,14 +158,14 @@ impl Surface {
     ) {
         let caret = self.caret();
         let keep_visible = focused
-            && !self.input.read_only
-            && self.input.selection().is_empty()
-            && self.paragraph.is_some()
-            && self.inner.size != rect.inset(Spacing::Regular.value()).size
-            && caret.min_x() >= self.inner.min_x()
-            && caret.max_x() <= self.inner.max_x()
-            && caret.min_y() >= self.inner.min_y()
-            && caret.max_y() <= self.inner.max_y();
+            && !self.input().is_read_only()
+            && self.input().selection().is_empty()
+            && self.paragraph().is_some()
+            && self.inner().size != rect.inset(Spacing::Regular.value()).size
+            && caret.min_x() >= self.inner().min_x()
+            && caret.max_x() <= self.inner().max_x()
+            && caret.min_y() >= self.inner().min_y()
+            && caret.max_y() <= self.inner().max_y();
         self.layout_clipped(text, rect, ancestor_clip);
         if keep_visible {
             self.reveal();
@@ -231,7 +231,7 @@ impl TextDemo {
             .enumerate()
             // Read-only surfaces still own a selection and copy interaction;
             // only disabled surfaces are removed from the keyboard sequence.
-            .filter(|(_, surface)| !surface.input.disabled)
+            .filter(|(_, surface)| !surface.input().is_disabled())
             .map(|(index, _)| FocusStop::Surface(index))
             .collect();
         if self
@@ -252,7 +252,7 @@ impl TextDemo {
 
     fn focus_stop_frame(&self, stop: FocusStop) -> Option<Rect> {
         let frame = match stop {
-            FocusStop::Surface(index) => self.surfaces.get(index)?.outer,
+            FocusStop::Surface(index) => self.surfaces.get(index)?.outer(),
             FocusStop::ReadingButton(index) => self.reading_buttons.get(index)?.layout()?.frame,
         };
         (!frame.is_empty()).then_some(frame)
@@ -262,7 +262,7 @@ impl TextDemo {
         match stop {
             FocusStop::Surface(index) => {
                 let surface = self.surfaces.get(index)?;
-                if surface.input.disabled {
+                if surface.input().is_disabled() {
                     return None;
                 }
                 self.reading_button_focus = None;
@@ -340,17 +340,17 @@ impl TextDemo {
     /// Hosts use this for focus reveal; visible fragments are not a substitute
     /// for the control's full geometry.
     pub fn frame_at(&self, index: usize) -> Option<Rect> {
-        self.surfaces.get(index).map(|surface| surface.outer)
+        self.surfaces.get(index).map(|surface| surface.outer())
     }
 
     pub fn set_locale(&mut self, locale: super::locale::Locale) {
         let zh = include_str!("../../../../fixtures/text/gallery-reading.txt").trim_end();
         let en = include_str!("../../../../fixtures/text/gallery-reading-en.txt").trim_end();
         for surface in &mut self.surfaces {
-            if surface.input.marked.is_some() {
+            if surface.marked().is_some() {
                 continue;
             }
-            let current = surface.input.text.as_str();
+            let current = surface.text();
             let next = if current == zh || current == en {
                 Some(if locale == super::locale::Locale::En {
                     en
@@ -367,13 +367,14 @@ impl TextDemo {
                 None
             };
             if let Some(next) = next.filter(|next| *next != current) {
-                let read_only = surface.input.read_only;
-                surface.input = TextInput::new(next, surface.input.multiline);
-                surface.input.read_only = read_only;
+                let read_only = surface.input().is_read_only();
+                let multiline = surface.input().is_multiline();
+                *surface.input_mut() = TextInput::new(next, multiline);
+                surface.input_mut().set_read_only(read_only);
                 surface.cancel_interaction();
-                let offset = surface.scroll.offset;
-                surface.scroll.scroll_by(-offset.x, -offset.y);
-                surface.reflow_anchor = None;
+                let offset = surface.scroll().offset;
+                surface.scroll_mut().scroll_by(-offset.x, -offset.y);
+                surface.set_reflow_anchor(None);
             }
         }
     }
@@ -391,10 +392,11 @@ impl TextDemo {
     pub fn scroll_only() -> Self {
         let mut demo = Self::default();
         let mut surface = demo.surfaces.pop().unwrap();
-        surface.input.read_only = true;
+        surface.input_mut().set_read_only(true);
         // This reading fixture ends at its last row, without an extra blank
         // editable line that would look like asymmetric bottom padding.
-        surface.input.text = surface.input.text.trim_end_matches('\n').to_owned();
+        let trimmed = surface.text().trim_end_matches('\n').to_owned();
+        surface.input_mut().set_text(&trimmed);
         surface.reading = Some(ReadingController::default());
         demo.surfaces = vec![surface];
         demo
@@ -407,9 +409,9 @@ impl TextDemo {
         self.surfaces
             .into_iter()
             .map(|surface| {
-                let label = if surface.input.read_only {
+                let label = if surface.input().is_read_only() {
                     "Text · 选择与复制"
-                } else if surface.input.multiline {
+                } else if surface.input().is_multiline() {
                     "TextEditor · 多行"
                 } else {
                     "TextEditor · 单行"
@@ -500,7 +502,7 @@ impl TextDemo {
                     ),
                     paint_clip,
                     ctx.theme,
-                    tekes_ui_controls::paint::ButtonVariant::Quiet,
+                    tekes_ui_controls::ButtonVariant::Quiet,
                     ButtonSize::Sm,
                     proposal::TextRole::UiBody,
                     ButtonTextAlign::Center,
@@ -519,9 +521,9 @@ impl TextDemo {
             .surfaces
             .iter()
             .map(|surface| {
-                let name = if surface.input.read_only {
+                let name = if surface.input().is_read_only() {
                     "Text · 选择与复制"
-                } else if surface.input.multiline {
+                } else if surface.input().is_multiline() {
                     "TextEditor · 多行"
                 } else {
                     "TextEditor · 单行"
@@ -536,7 +538,7 @@ impl TextDemo {
         if self.surfaces.len() == 1 && self.surfaces[0].reading.is_some() {
             let line_height = ctx
                 .text
-                .proposal_label("Mg", self.surfaces[0].role, None)
+                .proposal_label("Mg", self.surfaces[0].role(), None)
                 .height as f32;
             let minimum = line_height + 2.0 * proposal::SCROLL_CONTENT_PADDING;
             if sections[0].2.size.height < minimum {
@@ -591,7 +593,7 @@ impl TextDemo {
         }
         surface.appended += 1;
         let appended = surface.appended;
-        surface.input.text.push_str(&format!("\n\nUpdate {}. This paragraph is appended on request. While reading earlier lines, your place stays anchored; choose Return to latest to follow new text.", appended));
+        surface.append_text(&format!("\n\nUpdate {}. This paragraph is appended on request. While reading earlier lines, your place stays anchored; choose Return to latest to follow new text.", appended));
     }
 
     fn return_to_latest(&mut self) {
@@ -611,31 +613,34 @@ impl TextDemo {
     #[cfg(feature = "selftest")]
     pub(super) fn scroll_reference_state(&self) -> Option<[f32; 2]> {
         let surface = self.surfaces.last()?;
-        Some([surface.scroll.offset.y, surface.scroll.visual_offset().y])
+        Some([
+            surface.scroll().offset.y,
+            surface.scroll().visual_offset().y,
+        ])
     }
 
     /// Benchmark-only snapshot of the actual retained layout; never reshapes text.
     #[cfg(feature = "selftest")]
     pub(super) fn scroll_reference_fixture(&self) -> Option<serde_json::Value> {
         let s = self.surfaces.last()?;
-        let paragraph = s.paragraph.as_ref()?;
-        if s.shaped != s.input.text {
+        let paragraph = s.paragraph()?;
+        if s.shaped() != s.text() {
             return None;
         }
         let rect = |r: Rect| [r.origin.x, r.origin.y, r.size.width, r.size.height];
         Some(serde_json::json!({
             "schema": "tekesui-scroll-reference-fixture/1",
-            "text": s.shaped,
+            "text": s.shaped(),
             "normalization": "gallery-reading-en.txt.trim_end()",
-            "outer_rect_pt": rect(s.outer),
-            "inner_rect_pt": rect(s.inner),
-            "wrap_width_pt": s.width,
-            "role": s.role.id(),
-            "type_scale": s.type_scale,
-            "read_only": s.input.read_only,
-            "multiline": s.input.multiline,
+            "outer_rect_pt": rect(s.outer()),
+            "inner_rect_pt": rect(s.inner()),
+            "wrap_width_pt": s.width(),
+            "role": s.role().id(),
+            "type_scale": s.type_scale(),
+            "read_only": s.input().is_read_only(),
+            "multiline": s.input().is_multiline(),
             "paragraph_height_pt": paragraph.height,
-            "scroll_limit_pt": s.scroll.limit().y,
+            "scroll_limit_pt": s.scroll().limit().y,
             "fonts": paragraph.fonts.iter().map(|f| serde_json::json!({
                 "post_script_name": f.post_script_name, "size_pt": f.size,
                 "is_color": f.is_color,
@@ -650,14 +655,14 @@ impl TextDemo {
     #[cfg(any(test, feature = "selftest"))]
     pub fn scroll_metrics(&self) -> (f32, f32) {
         let s = self.surfaces.last().unwrap();
-        (s.scroll.limit().y, s.inner.size.height)
+        (s.scroll().limit().y, s.inner().size.height)
     }
     #[cfg(any(test, feature = "selftest"))]
     pub fn scroll_to(&mut self, offset: f32) {
         self.stop_following();
         let s = self.surfaces.last_mut().unwrap();
-        let current = s.scroll.offset.y;
-        s.scroll.scroll_by(0.0, offset - current);
+        let current = s.scroll().offset.y;
+        s.scroll_mut().scroll_by(0.0, offset - current);
     }
     /// A single-line search field using the same selection, clipboard and IME engine.
     pub fn search() -> Self {
@@ -687,7 +692,7 @@ impl TextDemo {
     }
     pub fn set_disabled(&mut self, disabled: bool) {
         for s in &mut self.surfaces {
-            s.input.disabled = disabled;
+            s.input_mut().set_disabled(disabled);
         }
         if disabled {
             self.blur();
@@ -695,7 +700,7 @@ impl TextDemo {
     }
     pub fn set_error(&mut self, error: bool) {
         for s in &mut self.surfaces {
-            s.error = error;
+            s.set_error(error);
         }
     }
     /// State specimens use the production editor transactions, including UTF-16
@@ -704,12 +709,12 @@ impl TextDemo {
         let surface = &mut self.surfaces[0];
         match state {
             "selection" => {
-                surface.input.select_range(0..6);
+                surface.input_mut().select_range(0..6);
             }
             "composing" => {
-                surface.input.select_range(0..6);
-                surface.input.preedit("输入", 2..2, None);
-                surface.clauses = vec![0..1, 1..2];
+                surface.input_mut().select_range(0..6);
+                surface.input_mut().preedit("输入", 2..2, None);
+                surface.set_clauses(vec![0..1, 1..2]);
             }
             _ => {}
         }
@@ -732,7 +737,7 @@ impl TextDemo {
         // established on its full frame first, then the real clip is restored.
         if state == "pressed" {
             surface.layout_clipped(text, rect, None);
-            let point = surface.inner.center();
+            let point = surface.inner().center();
             surface.pointer_down(point, false, 1, metric("size", "size-row-height"));
             surface.layout_clipped(text, rect, clip);
         }
@@ -746,15 +751,15 @@ impl TextDemo {
         }
     }
     pub fn focus_field(&mut self) {
-        if self.surfaces[0].input.disabled {
+        if self.surfaces[0].input().is_disabled() {
             return;
         }
         self.focus = Some(0);
         self.caret_on = true;
     }
     pub fn set_value(&mut self, value: &str) {
-        self.surfaces[0].input =
-            tekes_ui_controls::TextInput::new(value, self.surfaces[0].input.multiline);
+        let multiline = self.surfaces[0].input().is_multiline();
+        *self.surfaces[0].input_mut() = tekes_ui_controls::TextInput::new(value, multiline);
     }
     pub fn search_fixture() -> Self {
         let mut field = Self::search();
@@ -762,7 +767,7 @@ impl TextDemo {
         field
     }
     pub fn query(&self) -> &str {
-        &self.surfaces[0].input.text
+        self.surfaces[0].text()
     }
     pub fn build_search(&mut self, ctx: &mut PageCtx<'_>, rect: Rect, scene: &mut Scene) {
         self.build_search_clipped(ctx, rect, None, scene);
@@ -789,8 +794,8 @@ impl TextDemo {
         );
         if self.query().is_empty() && self.focus.is_none() {
             let Some(clip) = ancestor_clip.map_or(
-                (!self.surfaces[0].inner.is_empty()).then_some(self.surfaces[0].inner),
-                |clip| self.surfaces[0].inner.intersection(&clip),
+                (!self.surfaces[0].inner().is_empty()).then_some(self.surfaces[0].inner()),
+                |clip| self.surfaces[0].inner().intersection(&clip),
             ) else {
                 return;
             };
@@ -798,7 +803,7 @@ impl TextDemo {
             ctx.text.proposal_label_in(
                 scene,
                 ctx.theme,
-                self.surfaces[0].inner,
+                self.surfaces[0].inner(),
                 "按名称搜索…",
                 proposal::TextRole::UiBody,
                 ink("secondary-text", ctx.theme),
@@ -826,7 +831,7 @@ impl TextDemo {
         }
         self.surfaces
             .iter()
-            .filter(|surface| !surface.input.disabled)
+            .filter(|surface| !surface.input().is_disabled())
             .filter_map(|surface| surface.visible_frame())
             .collect()
     }
@@ -834,22 +839,22 @@ impl TextDemo {
         let Some(surface) = self.surfaces.first_mut() else {
             return 0.0;
         };
-        if surface.input.multiline {
+        if surface.input().is_multiline() {
             // Multiline parents own the available viewport. This is a minimum
             // line frame only; preserve the existing width-specific paragraph.
             return surface.minimum_outer_height(text.type_scale());
         }
-        let role = surface.role;
-        let source = surface.input.text.clone();
+        let role = surface.role();
+        let source = surface.text().to_owned();
         let scale = text.type_scale();
         let role_changed = surface.prepared_role != Some(role);
-        if surface.type_scale != scale
-            || surface.shaped != source
-            || surface.paragraph.is_none()
-            || surface.width.is_some()
+        if surface.type_scale() != scale
+            || surface.shaped() != source
+            || surface.paragraph().is_none()
+            || surface.width().is_some()
             || role_changed
         {
-            if surface.type_scale != scale || surface.shaped != source || role_changed {
+            if surface.type_scale() != scale || surface.shaped() != source || role_changed {
                 surface.prepared = None;
             }
             let paragraph = if surface.fixture {
@@ -864,13 +869,10 @@ impl TextDemo {
                     None,
                 ))
             };
-            surface.paragraph = Some(paragraph);
-            surface.shaped = source.clone();
-            surface.width = None;
-            surface.type_scale = scale;
+            surface.cache_shaped_paragraph(paragraph, source.clone(), None, scale);
             surface.prepared_role = Some(role);
         }
-        let paragraph_height = surface.paragraph.as_ref().map_or(0.0, |p| p.height as f32);
+        let paragraph_height = surface.paragraph().map_or(0.0, |p| p.height as f32);
         (paragraph_height + 2.0 * proposal::SCROLL_SINGLE_LINE_PADDING_Y)
             .max(metric("size", "size-button-md"))
     }
@@ -894,15 +896,15 @@ impl TextDemo {
                     label,
                     frame,
                 );
-                if s.input.multiline {
+                if s.input().is_multiline() {
                     n.role = R::TextArea;
                 }
-                n.value = Some(s.input.text.clone());
-                n.enabled = !s.input.disabled;
-                n.invalid = s.error;
+                n.value = Some(s.text().to_owned());
+                n.enabled = !s.input().is_disabled();
+                n.invalid = s.error();
                 n.focused = self.window_active && self.focus == Some(index);
-                n.read_only = s.input.read_only;
-                n.text_selection = Some(s.input.selection());
+                n.read_only = s.input().is_read_only();
+                n.text_selection = Some(s.input().selection());
                 Some(n)
             })
             .collect()
@@ -916,7 +918,7 @@ impl TextDemo {
         let Some(s) = self.surfaces.get_mut(index) else {
             return false;
         };
-        if s.visible_frame().is_none() || s.input.disabled || s.input.marked.is_some() {
+        if s.visible_frame().is_none() || s.input().is_disabled() || s.marked().is_some() {
             return false;
         }
         let changed = match action {
@@ -927,18 +929,20 @@ impl TextDemo {
                 return changed;
             }
             A::SetSelection(range) => {
-                let before = s.input.selection();
-                s.input.select_range(range.clone()) && before != s.input.selection()
+                let before = s.input().selection();
+                s.input_mut().select_range(range.clone()) && before != s.input().selection()
             }
-            A::SetValue(value) if !s.input.read_only => {
-                let len = s.input.len();
-                s.input.insert(value, Some(0..len))
+            A::SetValue(value) if !s.input().is_read_only() => {
+                let len = s.input().len();
+                s.input_mut().insert(value, Some(0..len))
             }
-            A::ReplaceSelectedText(value) if !s.input.read_only => s.input.insert(value, None),
+            A::ReplaceSelectedText(value) if !s.input().is_read_only() => {
+                s.input_mut().insert(value, None)
+            }
             _ => false,
         };
         if changed {
-            s.clauses.clear();
+            s.clear_clauses();
             s.reveal();
             self.caret_on = true;
         }
@@ -954,10 +958,10 @@ impl TextDemo {
         let s = self.surfaces.get(index)?;
         let c = s.caret();
         Some(TextInputState {
-            caret_index: s.input.caret,
-            text: s.input.text.clone(),
-            selection: s.input.selection(),
-            marked: s.input.marked.clone(),
+            caret_index: s.input().caret(),
+            text: s.text().to_owned(),
+            selection: s.input().selection(),
+            marked: s.marked().clone(),
             caret_origin: tekes_ui_platform_macos::Point {
                 x: f64::from(c.min_x()),
                 y: f64::from(c.min_y()),
@@ -966,17 +970,17 @@ impl TextDemo {
                 width: f64::from(c.size.width),
                 height: f64::from(c.size.height),
             },
-            read_only: s.input.read_only,
+            read_only: s.input().is_read_only(),
             carets: s
-                .paragraph
+                .paragraph()
                 .as_ref()
                 .map(|p| {
                     let origin = s.origin();
                     p.lines
                         .iter()
                         .filter(|line| {
-                            origin.y + (line.top + line.height) as f32 >= s.inner.min_y()
-                                && origin.y + line.top as f32 <= s.inner.max_y()
+                            origin.y + (line.top + line.height) as f32 >= s.inner().min_y()
+                                && origin.y + line.top as f32 <= s.inner().max_y()
                         })
                         .flat_map(|line| {
                             line.carets.iter().map(move |(i, x)| {
@@ -1014,7 +1018,7 @@ impl TextDemo {
             }
             self.reading_button_focus = None;
             for surface in &mut self.surfaces {
-                surface.input.unmark();
+                surface.input_mut().unmark();
                 surface.cancel_interaction();
             }
             self.drag = None;
@@ -1029,7 +1033,7 @@ impl TextDemo {
             button.state.focus_visible = false;
         }
         for s in &mut self.surfaces {
-            s.input.unmark();
+            s.input_mut().unmark();
             s.cancel_interaction();
         }
         self.focus = None;
@@ -1038,7 +1042,7 @@ impl TextDemo {
     }
     pub fn end_scroll_gesture(&mut self) {
         for s in &mut self.surfaces {
-            s.scroll.end_gesture();
+            s.scroll_mut().end_gesture();
         }
         self.scroll_target = None;
     }
@@ -1053,7 +1057,7 @@ impl TextDemo {
     pub fn set_reduced_motion(&mut self, reduced: bool) -> bool {
         let mut dirty = false;
         for surface in &mut self.surfaces {
-            dirty |= surface.scroll.set_reduced_motion(reduced);
+            dirty |= surface.scroll_mut().set_reduced_motion(reduced);
         }
         for button in &mut self.reading_buttons {
             dirty |= button.set_reduced_motion(reduced, self.motion_now);
@@ -1061,7 +1065,7 @@ impl TextDemo {
         dirty
     }
     pub fn needs_animation(&self) -> bool {
-        self.surfaces.iter().any(|s| s.scroll.needs_animation())
+        self.surfaces.iter().any(|s| s.scroll().needs_animation())
             || (self.window_active && self.surfaces[0].stream_remaining > 0)
             || self
                 .reading_buttons
@@ -1074,7 +1078,7 @@ impl TextDemo {
             .iter()
             .any(ButtonModel::needs_animation);
         for surface in &mut self.surfaces {
-            changed |= surface.scroll.tick(dt);
+            changed |= surface.scroll_mut().tick(dt);
         }
         // Bounded deterministic consumer fixture, not a component timer or
         // performance sample. Only an explicit stream action schedules updates.
@@ -1094,14 +1098,14 @@ impl TextDemo {
         changed || chunks > 0
     }
     pub fn clipboard_selection(&self) -> Option<String> {
-        self.focus.map(|i| self.surfaces[i].input.selected_text())
+        self.focus.map(|i| self.surfaces[i].input().selected_text())
     }
     pub fn paste(&mut self, text: &str) -> bool {
         self.reveal_pending = true;
         let Some(i) = self.focus else {
             return false;
         };
-        let changed = self.surfaces[i].input.insert(text, None);
+        let changed = self.surfaces[i].input_mut().insert(text, None);
         self.caret_on = true;
         changed
     }
@@ -1232,7 +1236,7 @@ impl TextDemo {
                     let index = self
                         .surfaces
                         .iter()
-                        .position(|s| !s.input.disabled && s.contains_visible(point));
+                        .position(|s| !s.input().is_disabled() && s.contains_visible(point));
                     // The text body owns focus after this click. An old
                     // reading action must not keep handling Space or Return.
                     self.reading_button_focus = None;
@@ -1340,7 +1344,11 @@ impl TextDemo {
                 let i = self.focus?;
                 self.caret_on = true;
                 self.reveal_pending = true;
-                Some(self.surfaces[i].input.insert(text, replacement.clone()))
+                Some(
+                    self.surfaces[i]
+                        .input_mut()
+                        .insert(text, replacement.clone()),
+                )
             }
             Event::TextPreedit {
                 text,
@@ -1350,16 +1358,16 @@ impl TextDemo {
             } => {
                 let i = self.focus?;
                 self.caret_on = true;
-                self.surfaces[i].clauses = clauses.clone();
-                Some(
-                    self.surfaces[i]
-                        .input
-                        .preedit(text, selection.clone(), replacement.clone()),
-                )
+                self.surfaces[i].set_clauses(clauses.clone());
+                Some(self.surfaces[i].input_mut().preedit(
+                    text,
+                    selection.clone(),
+                    replacement.clone(),
+                ))
             }
             Event::TextUnmark => {
                 let i = self.focus?;
-                self.surfaces[i].input.unmark();
+                self.surfaces[i].input_mut().unmark();
                 Some(true)
             }
             Event::TextCommand(command) => {
@@ -1435,7 +1443,7 @@ impl TextDemo {
                 return None;
             }
             if let Some(index) = self.focus {
-                self.surfaces[index].input.unmark();
+                self.surfaces[index].input_mut().unmark();
             }
             self.advance_focus(backwards);
             self.caret_on = true;
@@ -1455,8 +1463,8 @@ impl TextDemo {
                 } else {
                     1.
                 };
-                let amount = s.inner.size.height * 0.9 * sign;
-                s.scroll.scroll_by(0., amount);
+                let amount = s.inner().size.height * 0.9 * sign;
+                s.scroll_mut().scroll_by(0., amount);
             }
             _ => {
                 if s.view.command(command).is_none() {
@@ -1468,8 +1476,8 @@ impl TextDemo {
     }
     pub fn refresh(&mut self, text: &mut TextEngine) {
         for s in &mut self.surfaces {
-            if s.outer.size.width > 0.0 {
-                let rect = s.outer;
+            if s.outer().size.width > 0.0 {
+                let rect = s.outer();
                 let clip = s.view.ancestor_clip();
                 s.layout_clipped(text, rect, clip);
             }
@@ -1511,11 +1519,11 @@ mod tests {
         gallery.set_view_size(1440., 900.);
         gallery.set_reduced_motion(true);
         gallery.build_scene(&mut Scene::new());
-        let limit = gallery.scroll_demo.surfaces[0].scroll.limit().y;
+        let limit = gallery.scroll_demo.surfaces[0].scroll().limit().y;
         assert!(limit > 0.);
         gallery.scroll_demo.scroll_to(713.25_f32.min(limit * 0.5));
         gallery.build_scene(&mut Scene::new());
-        let offset = gallery.scroll_demo.surfaces[0].scroll.offset;
+        let offset = gallery.scroll_demo.surfaces[0].scroll().offset;
         assert!(offset.y > 0. && offset.y < limit);
         let mut original = None;
         let mut observed = Vec::new();
@@ -1534,12 +1542,12 @@ mod tests {
             let mut scene = Scene::new();
             gallery.build_scene(&mut scene);
             let surface = &gallery.scroll_demo.surfaces[0];
-            assert!(surface.input.read_only && !surface.input.disabled);
-            assert_eq!(surface.scroll.offset, offset);
-            assert!(surface.scroll.scrollbar_visible(true));
+            assert!(surface.input().is_read_only() && !surface.input().is_disabled());
+            assert_eq!(surface.scroll().offset, offset);
+            assert!(surface.scroll().scrollbar_visible(true));
             let visible = surface.visible_frame().unwrap();
             let thumb = surface
-                .scroll
+                .scroll()
                 .thumb(
                     true,
                     surface.track(true),
@@ -1547,7 +1555,7 @@ mod tests {
                 )
                 .intersection(&visible)
                 .unwrap();
-            let geometry = (surface.outer, visible, thumb, surface.scroll.limit());
+            let geometry = (surface.outer(), visible, thumb, surface.scroll().limit());
             if let Some(original) = original {
                 assert_eq!(geometry, original);
             } else {
@@ -1559,7 +1567,7 @@ mod tests {
                 .iter()
                 .enumerate()
                 .find_map(|(index, p)| match p {
-                    Primitive::Quad(q) if q.rect == surface.outer => Some((index, q)),
+                    Primitive::Quad(q) if q.rect == surface.outer() => Some((index, q)),
                     _ => None,
                 })
                 .expect("actual read-only TextSurface parent background");
@@ -1643,17 +1651,20 @@ mod tests {
         reading_layout(&mut demo, &mut text, 400.);
         assert_eq!(demo.surfaces[0].appended, 2);
         assert_eq!(
-            demo.surfaces[0].scroll.offset.y,
-            demo.surfaces[0].scroll.limit().y
+            demo.surfaces[0].scroll().offset.y,
+            demo.surfaces[0].scroll().limit().y
         );
         demo.scroll_to(713.25);
         reading_layout(&mut demo, &mut text, 400.);
-        let anchor = demo.surfaces[0].reflow_anchor.unwrap();
+        let anchor = demo.surfaces[0].reflow_anchor().unwrap();
         demo.animate(1.6);
         reading_layout(&mut demo, &mut text, 280.);
         assert_eq!(demo.surfaces[0].appended, 4);
         assert_eq!(demo.surfaces[0].stream_remaining, 0);
-        assert_eq!(demo.surfaces[0].reflow_anchor.unwrap().utf16, anchor.utf16);
+        assert_eq!(
+            demo.surfaces[0].reflow_anchor().unwrap().utf16,
+            anchor.utf16
+        );
         assert!(
             !demo.surfaces[0]
                 .reading
@@ -1670,8 +1681,8 @@ mod tests {
         assert_eq!(demo.focus, None);
         assert_eq!(demo.reading_button_focus, Some(1));
         assert_eq!(
-            demo.surfaces[0].scroll.offset.y,
-            demo.surfaces[0].scroll.limit().y
+            demo.surfaces[0].scroll().offset.y,
+            demo.surfaces[0].scroll().limit().y
         );
     }
     #[test]
@@ -1701,23 +1712,23 @@ mod tests {
         for multiline in [false, true] {
             let mut selection = super::TextDemo::field("Sample text", multiline, false);
             selection.prepare_input_state_fixture("selection");
-            assert_eq!(selection.surfaces[0].input.selected_text(), "Sample");
+            assert_eq!(selection.surfaces[0].input().selected_text(), "Sample");
             let mut composing = super::TextDemo::field("Sample text", multiline, false);
             composing.prepare_input_state_fixture("composing");
-            assert_eq!(composing.surfaces[0].input.text, "输入 text");
-            assert_eq!(composing.surfaces[0].input.marked, Some(0..2));
-            assert_eq!(composing.surfaces[0].clauses, [0..1, 1..2]);
+            assert_eq!(composing.surfaces[0].text(), "输入 text");
+            assert_eq!(composing.surfaces[0].marked(), Some(0..2));
+            assert_eq!(composing.surfaces[0].clauses(), [0..1, 1..2]);
             let mut read_only = super::TextDemo::field("Sample text", multiline, true);
             read_only.focus_field();
-            assert!(!read_only.surfaces[0].input.insert("x", None));
-            assert!(read_only.surfaces[0].input.select_range(0..6));
+            assert!(!read_only.surfaces[0].input_mut().insert("x", None));
+            assert!(read_only.surfaces[0].input_mut().select_range(0..6));
             assert!(read_only.focus.is_some());
             let mut disabled = super::TextDemo::field("Sample text", multiline, false);
             disabled.set_disabled(true);
             disabled.focus_field();
-            assert!(!disabled.surfaces[0].input.read_only);
+            assert!(!disabled.surfaces[0].input().is_read_only());
             assert!(disabled.focus.is_none());
-            assert!(!disabled.surfaces[0].input.insert("x", None));
+            assert!(!disabled.surfaces[0].input_mut().insert("x", None));
         }
     }
     use super::*;
@@ -1740,21 +1751,23 @@ mod tests {
             let mut text = TextEngine::new();
             reading_layout(&mut demo, &mut text, 640.0);
             demo.scroll_to(713.25);
-            demo.surfaces[0].input.anchor = 12;
-            demo.surfaces[0].input.caret = 120;
+            demo.surfaces[0].input_mut().set_selection(12, 120);
             reading_layout(&mut demo, &mut text, 640.0);
-            let initial = demo.surfaces[0].reflow_anchor.unwrap();
+            let initial = demo.surfaces[0].reflow_anchor().unwrap();
             demo.append_reading_paragraph();
             reading_layout(&mut demo, &mut text, 320.0);
             let surface = &demo.surfaces[0];
-            let after = surface.reflow_anchor.unwrap();
+            let after = surface.reflow_anchor().unwrap();
             assert_eq!(after.utf16, initial.utf16);
             assert_eq!(after.within_line, initial.within_line);
             let expected = surface.caret_doc(initial.utf16).min_y() + initial.within_line;
-            assert!((surface.scroll.offset.y - expected).abs() < 0.001);
-            assert_eq!((surface.input.anchor, surface.input.caret), (12, 120));
+            assert!((surface.scroll().offset.y - expected).abs() < 0.001);
+            assert_eq!(
+                (surface.input().anchor(), surface.input().caret()),
+                (12, 120)
+            );
             reading_layout(&mut demo, &mut text, 640.0);
-            assert!((demo.surfaces[0].scroll.offset.y - initial.applied_y).abs() < 0.001);
+            assert!((demo.surfaces[0].scroll().offset.y - initial.applied_y).abs() < 0.001);
         }
     }
 
@@ -1770,10 +1783,10 @@ mod tests {
             demo.append_reading_paragraph();
             reading_layout(&mut demo, &mut text, 320.0);
             assert_eq!(
-                demo.surfaces[0].scroll.offset.y,
-                demo.surfaces[0].scroll.limit().y
+                demo.surfaces[0].scroll().offset.y,
+                demo.surfaces[0].scroll().limit().y
             );
-            let point = demo.surfaces[0].inner.center();
+            let point = demo.surfaces[0].inner().center();
             let event = Event::Scroll(ScrollEvent {
                 timestamp: 1.0,
                 delta: Vec2 { x: 0.0, y: 80.0 },
@@ -1795,25 +1808,25 @@ mod tests {
                     .unwrap()
                     .is_following_latest()
             );
-            let history_offset = demo.surfaces[0].scroll.offset.y;
+            let history_offset = demo.surfaces[0].scroll().offset.y;
             // Append lands before another rendered frame; do not steal this gesture.
             demo.append_reading_paragraph();
             reading_layout(&mut demo, &mut text, 320.0);
-            assert!((demo.surfaces[0].scroll.offset.y - history_offset).abs() < 0.001);
+            assert!((demo.surfaces[0].scroll().offset.y - history_offset).abs() < 0.001);
             // Even manually returning exactly to the bottom does not re-enable follow.
             demo.scroll_to(f32::MAX);
-            let manual_bottom = demo.surfaces[0].scroll.offset.y;
+            let manual_bottom = demo.surfaces[0].scroll().offset.y;
             demo.append_reading_paragraph();
             reading_layout(&mut demo, &mut text, 320.0);
-            assert!((demo.surfaces[0].scroll.offset.y - manual_bottom).abs() < 0.001);
-            assert!(demo.surfaces[0].scroll.offset.y < demo.surfaces[0].scroll.limit().y);
+            assert!((demo.surfaces[0].scroll().offset.y - manual_bottom).abs() < 0.001);
+            assert!(demo.surfaces[0].scroll().offset.y < demo.surfaces[0].scroll().limit().y);
             demo.return_to_latest();
             reading_layout(&mut demo, &mut text, 500.0);
             assert_eq!(
-                demo.surfaces[0].scroll.offset.y,
-                demo.surfaces[0].scroll.limit().y
+                demo.surfaces[0].scroll().offset.y,
+                demo.surfaces[0].scroll().limit().y
             );
-            assert!(!demo.surfaces[0].scroll.needs_animation());
+            assert!(!demo.surfaces[0].scroll().needs_animation());
         }
     }
 
@@ -1862,8 +1875,8 @@ mod tests {
         assert_eq!(demo.handle(&enter, None), Some(true));
         demo.refresh(&mut text);
         assert_eq!(
-            demo.surfaces[0].scroll.offset.y,
-            demo.surfaces[0].scroll.limit().y
+            demo.surfaces[0].scroll().offset.y,
+            demo.surfaces[0].scroll().limit().y
         );
         assert!(
             demo.surfaces[0]
@@ -1985,7 +1998,7 @@ mod tests {
             );
             let focused_border = proposal::render_color("border-focused", Theme::LIGHT).unwrap();
             assert_eq!(
-                demo.surfaces[surface_index].view.presentation,
+                demo.surfaces[surface_index].view.presentation(),
                 tekes_ui_controls::TextSurfacePresentation::Field
             );
             let edge = scene
@@ -2120,7 +2133,7 @@ mod tests {
         assert_eq!(demo.reading_button_focus, Some(1));
         demo.refresh(&mut text);
         demo.scroll_to(80.);
-        let body = demo.surfaces[0].inner.center();
+        let body = demo.surfaces[0].inner().center();
         demo.handle(&pointer(down, body), Some(body));
         demo.handle(&pointer(up, body), Some(body));
         assert_eq!(demo.focus, Some(0));
@@ -2130,7 +2143,7 @@ mod tests {
                 .iter()
                 .all(|b| !b.state.focused && !b.state.focus_visible)
         );
-        let history_offset = demo.surfaces[0].scroll.offset.y;
+        let history_offset = demo.surfaces[0].scroll().offset.y;
         for code in [49, 36] {
             for kind in [KeyEventKind::Down, KeyEventKind::Up] {
                 demo.handle(
@@ -2155,39 +2168,31 @@ mod tests {
                 .unwrap()
                 .is_following_latest()
         );
-        assert!((demo.surfaces[0].scroll.offset.y - history_offset).abs() < 0.01);
+        assert!((demo.surfaces[0].scroll().offset.y - history_offset).abs() < 0.01);
     }
 
     #[test]
     fn language_switch_changes_only_pristine_samples_and_preserves_documents() {
         use crate::gallery::locale::Locale;
         let mut demo = TextDemo::default();
-        assert!(
-            demo.surfaces[0]
-                .input
-                .text
-                .starts_with("A day by the window")
-        );
-        let read_only = demo.surfaces[0].input.read_only;
+        assert!(demo.surfaces[0].text().starts_with("A day by the window"));
+        let read_only = demo.surfaces[0].input().is_read_only();
         demo.set_locale(Locale::ZhCn);
         assert_eq!(
-            demo.surfaces[0].input.text,
+            demo.surfaces[0].text(),
             include_str!("../../../../fixtures/text/gallery-reading.txt").trim_end()
         );
-        assert_eq!(demo.surfaces[0].input.read_only, read_only);
+        assert_eq!(demo.surfaces[0].input().is_read_only(), read_only);
         demo.set_locale(Locale::En);
-        demo.surfaces[0]
-            .input
-            .text
-            .push_str(" My own words. 我的文字。");
-        let edited = demo.surfaces[0].input.text.clone();
-        demo.surfaces[1].input.marked = Some(0..1);
-        let composing = demo.surfaces[1].input.text.clone();
+        demo.surfaces[0].append_text(" My own words. 我的文字。");
+        let edited = demo.surfaces[0].text().to_owned();
+        demo.surfaces[1].input_mut().set_marked_range(Some(0..1));
+        let composing = demo.surfaces[1].text().to_owned();
         demo.set_locale(Locale::ZhCn);
-        assert_eq!(demo.surfaces[0].input.text, edited);
-        assert_eq!(demo.surfaces[1].input.text, composing);
-        assert_eq!(demo.surfaces[1].input.marked, Some(0..1));
-        assert!(demo.surfaces[2].input.text.contains("窗"));
+        assert_eq!(demo.surfaces[0].text(), edited);
+        assert_eq!(demo.surfaces[1].text(), composing);
+        assert_eq!(demo.surfaces[1].marked(), Some(0..1));
+        assert!(demo.surfaces[2].text().contains("窗"));
     }
 
     #[test]
@@ -2199,17 +2204,17 @@ mod tests {
             false,
         );
         s.layout(&mut text, Rect::new(0.0, 0.0, 640.0, 260.0));
-        s.input.select(500, false);
+        s.input_mut().select(500, false);
         s.reveal();
-        assert!(s.caret().max_y() <= s.inner.max_y());
+        assert!(s.caret().max_y() <= s.inner().max_y());
         s.layout_preserving_caret_clipped(&mut text, Rect::new(0.0, 0.0, 320.0, 260.0), None, true);
-        assert!(s.caret().min_y() >= s.inner.min_y());
-        assert!(s.caret().max_y() <= s.inner.max_y());
-        s.input.select(0, false);
-        s.scroll.scroll_by(0.0, 800.0);
+        assert!(s.caret().min_y() >= s.inner().min_y());
+        assert!(s.caret().max_y() <= s.inner().max_y());
+        s.input_mut().select(0, false);
+        s.scroll_mut().scroll_by(0.0, 800.0);
         s.layout_preserving_caret_clipped(&mut text, Rect::new(0.0, 0.0, 400.0, 260.0), None, true);
-        assert!(s.scroll.offset.y > 0.0);
-        assert!(s.caret().max_y() < s.inner.min_y());
+        assert!(s.scroll().offset.y > 0.0);
+        assert!(s.caret().max_y() < s.inner().min_y());
     }
 
     #[test]
@@ -2222,34 +2227,33 @@ mod tests {
                 read_only,
             );
             s.layout(&mut text, Rect::new(0.0, 0.0, 640.0, 260.0));
-            s.scroll.scroll_by(0.0, 713.25);
-            s.input.caret = 120;
-            s.input.anchor = 12;
-            let initial = s.scroll.offset.y;
+            s.scroll_mut().scroll_by(0.0, 713.25);
+            s.input_mut().set_selection(12, 120);
+            let initial = s.scroll().offset.y;
             let mut logical_anchor = None;
             for w in (320..640).rev().chain(320..=640) {
                 s.layout(&mut text, Rect::new(0.0, 0.0, w as f32, 260.0));
-                let anchor = s.reflow_anchor.unwrap();
+                let anchor = s.reflow_anchor().unwrap();
                 assert_eq!(*logical_anchor.get_or_insert(anchor.utf16), anchor.utf16);
                 let expected = s.caret_doc(anchor.utf16).min_y() + anchor.within_line;
-                assert!((s.scroll.offset.y - expected).abs() < 0.001);
-                assert_eq!((s.input.anchor, s.input.caret), (12, 120));
-                assert!(!s.paragraph.as_ref().unwrap().lines.is_empty());
-                assert_eq!(s.scroll.limit().x, 0.0);
+                assert!((s.scroll().offset.y - expected).abs() < 0.001);
+                assert_eq!((s.input().anchor(), s.input().caret()), (12, 120));
+                assert!(!s.paragraph().unwrap().lines.is_empty());
+                assert_eq!(s.scroll().limit().x, 0.0);
                 assert_eq!(
-                    s.scroll.scroll_policy(),
+                    s.scroll().scroll_policy(),
                     (
                         tekes_ui_controls::ScrollPolicy::Disabled,
                         tekes_ui_controls::ScrollPolicy::Auto
                     )
                 );
             }
-            assert!((s.scroll.offset.y - initial).abs() < 0.001);
+            assert!((s.scroll().offset.y - initial).abs() < 0.001);
             // A new user scroll must replace the old reading anchor.
             let old = logical_anchor.unwrap();
-            s.scroll.scroll_by(0.0, 220.0);
+            s.scroll_mut().scroll_by(0.0, 220.0);
             s.layout(&mut text, Rect::new(0.0, 0.0, 639.0, 260.0));
-            assert_ne!(s.reflow_anchor.unwrap().utf16, old);
+            assert_ne!(s.reflow_anchor().unwrap().utf16, old);
         }
     }
 
@@ -2265,22 +2269,19 @@ mod tests {
             );
             s.layout(&mut text, Rect::new(0.0, 0.0, 640.0, 260.0));
             let count = text.shape_count();
-            let paragraph = s.paragraph.as_ref().unwrap().clone();
+            let paragraph = s.paragraph().unwrap().clone();
             s.layout(&mut text, Rect::new(0.0, 0.0, 640.0 + 0.2 / scale, 260.0));
             assert_eq!(count, text.shape_count());
-            assert!(std::rc::Rc::ptr_eq(
-                &paragraph,
-                s.paragraph.as_ref().unwrap()
-            ));
-            s.scroll.scroll_by(0.0, f32::MAX);
+            assert!(std::rc::Rc::ptr_eq(&paragraph, s.paragraph().unwrap()));
+            s.scroll_mut().scroll_by(0.0, f32::MAX);
             for (w, h) in [(320.0, 300.0), (700.0, 200.0), (640.0, 260.0)] {
                 s.layout(&mut text, Rect::new(0.0, 0.0, w, h));
-                assert!((s.scroll.offset.y - s.scroll.limit().y).abs() < 0.001);
+                assert!((s.scroll().offset.y - s.scroll().limit().y).abs() < 0.001);
             }
-            s.input.text = "A中👨‍👩‍👧‍👦e\u{301}\n新的内容".into();
+            s.input_mut().set_text("A中👨‍👩‍👧‍👦e\u{301}\n新的内容");
             s.layout(&mut text, Rect::new(0.0, 0.0, 400.0, 260.0));
-            assert!(s.reflow_anchor.is_none());
-            assert_eq!(s.scroll.offset.y, 0.0);
+            assert!(s.reflow_anchor().is_none());
+            assert_eq!(s.scroll().offset.y, 0.0);
         }
     }
 
@@ -2293,14 +2294,14 @@ mod tests {
             let frame = Rect::new(10.0, 10.0, 320.0, 180.0);
             surface.layout(&mut text, frame);
             if bottom {
-                surface.scroll.scroll_by(0.0, f32::MAX);
+                surface.scroll_mut().scroll_by(0.0, f32::MAX);
             } else {
-                surface.scroll.scroll_by(0.0, 713.25);
+                surface.scroll_mut().scroll_by(0.0, 713.25);
             }
             surface.layout(&mut text, frame);
-            let initial_offset = surface.scroll.offset.y;
+            let initial_offset = surface.scroll().offset.y;
             let initial_utf16 = surface
-                .paragraph
+                .paragraph()
                 .as_ref()
                 .unwrap()
                 .lines
@@ -2313,20 +2314,20 @@ mod tests {
 
             text.set_type_scale(1.5);
             surface.layout(&mut text, frame);
-            let scaled_anchor = surface.reflow_anchor.unwrap();
+            let scaled_anchor = surface.reflow_anchor().unwrap();
             assert_eq!(scaled_anchor.utf16, initial_utf16);
             if bottom {
-                assert!((surface.scroll.offset.y - surface.scroll.limit().y).abs() < 0.001);
+                assert!((surface.scroll().offset.y - surface.scroll().limit().y).abs() < 0.001);
             }
 
             text.set_type_scale(1.0);
             surface.layout(&mut text, frame);
-            let restored_anchor = surface.reflow_anchor.unwrap();
+            let restored_anchor = surface.reflow_anchor().unwrap();
             assert_eq!(restored_anchor.utf16, initial_utf16);
             if bottom {
-                assert!((surface.scroll.offset.y - surface.scroll.limit().y).abs() < 0.001);
+                assert!((surface.scroll().offset.y - surface.scroll().limit().y).abs() < 0.001);
             } else {
-                assert!((surface.scroll.offset.y - initial_offset).abs() < 0.001);
+                assert!((surface.scroll().offset.y - initial_offset).abs() < 0.001);
             }
         }
     }
@@ -2359,7 +2360,7 @@ mod tests {
                 .enumerate()
                 .rev()
                 .find_map(|(i, p)| match p {
-                    Primitive::Quad(q) if q.rect == surface.outer => Some((i, *q)),
+                    Primitive::Quad(q) if q.rect == surface.outer() => Some((i, *q)),
                     _ => None,
                 })
                 .expect("actual readonly TextSurface own Field ground");
@@ -2382,10 +2383,10 @@ mod tests {
                 .filter_map(|p| match p {
                     Primitive::Quad(q)
                         if q.fill.a > 0.
-                            && q.rect.min_x() >= surface.inner.min_x()
-                            && q.rect.max_x() <= surface.inner.max_x()
-                            && q.rect.min_y() >= surface.inner.min_y()
-                            && q.rect.max_y() <= surface.inner.max_y() =>
+                            && q.rect.min_x() >= surface.inner().min_x()
+                            && q.rect.max_x() <= surface.inner().max_x()
+                            && q.rect.min_y() >= surface.inner().min_y()
+                            && q.rect.max_y() <= surface.inner().max_y() =>
                     {
                         Some(*q)
                     }
@@ -2394,7 +2395,7 @@ mod tests {
                 .collect();
             assert_eq!(
                 selections.len(),
-                surface.selection_rects(surface.input.selection()).len()
+                surface.selection_rects(surface.input().selection()).len()
             );
             assert!(!selections.is_empty());
             for q in &selections {
@@ -2416,7 +2417,7 @@ mod tests {
                         if run.glyphs.iter().any(|g| {
                             let a = g.glyph;
                             surface
-                                .inner
+                                .inner()
                                 .intersection(&Rect::new(
                                     g.origin.x + a.left as f32 / backing,
                                     g.origin.y + a.top as f32 / backing,
@@ -2490,8 +2491,8 @@ mod tests {
             crate::gallery::Page::Text,
             "registered root must reach the original live Text leaf"
         );
-        let source = gallery.text_view.surfaces[0].input.text.clone();
-        let inner = gallery.text_view.surfaces[0].inner;
+        let source = gallery.text_view.surfaces[0].text().to_owned();
+        let inner = gallery.text_view.surfaces[0].inner();
         let point = Point::new(inner.min_x() + 4., inner.min_y() + 4.);
         gallery.handle_input(&mouse(point, true));
         gallery.handle_input(&mouse(point, false));
@@ -2514,23 +2515,23 @@ mod tests {
             gallery.build_scene(&mut scene);
             assert_eq!(gallery.theme(), theme);
             let surface = &gallery.text_view.surfaces[0].view;
-            assert!(surface.input.read_only);
+            assert!(surface.input().is_read_only());
             assert_eq!(
-                surface.presentation,
+                surface.presentation(),
                 tekes_ui_controls::TextSurfacePresentation::Field,
                 "readonly capability does not imply undecorated Content presentation"
             );
-            assert_eq!(surface.input.text, source);
-            assert_eq!(surface.input.selection(), 0..4);
-            assert_eq!(surface.input.selected_text(), copy);
-            assert_eq!(surface.role, proposal::TextRole::ComposerBody);
+            assert_eq!(surface.text(), source);
+            assert_eq!(surface.input().selection(), 0..4);
+            assert_eq!(surface.input().selected_text(), copy);
+            assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
             if let Some(before) = initial {
-                assert_eq!((surface.outer, surface.inner), before);
+                assert_eq!((surface.outer(), surface.inner()), before);
             } else {
-                initial = Some((surface.outer, surface.inner));
+                initial = Some((surface.outer(), surface.inner()));
             }
             assert_readonly_scene(&scene, surface, theme.into(), gallery.text.scale());
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.rect == surface.outer() && q.border_width == proposal::metric("stroke", "c-focus-width").unwrap()
                 && q.border_color==Palette::from(theme).color("border-focused").unwrap())));
             assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
             let native = gallery
@@ -2548,9 +2549,9 @@ mod tests {
         gallery.handle_input(&Event::TextCommand(
             tekes_ui_platform_macos::TextEditCommand::DeleteBackward,
         ));
-        assert_eq!(gallery.text_view.surfaces[0].input.text, source);
+        assert_eq!(gallery.text_view.surfaces[0].text(), source);
         let height = gallery.text_view.surfaces[0]
-            .paragraph
+            .paragraph()
             .as_ref()
             .unwrap()
             .height;
@@ -2559,14 +2560,14 @@ mod tests {
         gallery.build_scene(&mut scene);
         assert!(
             gallery.text_view.surfaces[0]
-                .paragraph
+                .paragraph()
                 .as_ref()
                 .unwrap()
                 .height
                 > height,
             "original text reflows at narrower actual Gallery width"
         );
-        assert_eq!(gallery.text_view.surfaces[0].input.selection(), 0..4);
+        assert_eq!(gallery.text_view.surfaces[0].input().selection(), 0..4);
         assert_eq!(gallery.text_view.clipboard_selection(), Some(copy.clone()));
         assert_readonly_scene(
             &scene,
@@ -2576,8 +2577,8 @@ mod tests {
         );
         gallery.text_view.scroll_to(120.);
         gallery.build_scene(&mut Scene::new());
-        assert!(gallery.text_view.surfaces[0].scroll.offset.y > 0.);
-        assert_eq!(gallery.text_view.surfaces[0].input.text, source);
+        assert!(gallery.text_view.surfaces[0].scroll().offset.y > 0.);
+        assert_eq!(gallery.text_view.surfaces[0].text(), source);
         assert_eq!(gallery.text_view.clipboard_selection(), Some(copy));
     }
 
@@ -2588,14 +2589,14 @@ mod tests {
         let frame = Rect::new(0.0, 0.0, 320.0, 40.0);
         surface.layout(&mut text, frame);
         let shape_count = text.shape_count();
-        let old_paragraph = surface.paragraph.as_ref().unwrap().clone();
+        let old_paragraph = surface.paragraph().unwrap().clone();
 
         surface.view.set_role(proposal::TextRole::UiCaption);
         surface.layout(&mut text, frame);
         assert!(text.shape_count() > shape_count);
         assert!(!std::rc::Rc::ptr_eq(
             &old_paragraph,
-            surface.paragraph.as_ref().unwrap()
+            surface.paragraph().unwrap()
         ));
         let after_role_shape = text.shape_count();
         surface.layout(&mut text, frame);
@@ -2650,7 +2651,7 @@ mod tests {
             ),
             Some(true)
         );
-        assert!(!demo.surfaces[0].input.selection().is_empty());
+        assert!(!demo.surfaces[0].input().selection().is_empty());
     }
 
     fn layout(demo: &mut TextDemo, text: &mut TextEngine) -> Scene {
@@ -2679,32 +2680,27 @@ mod tests {
                 }
                 let surface = demo.surfaces.last_mut().unwrap();
                 surface.layout(&mut text, panel);
-                let padding_top = surface.inner.min_y() - surface.outer.min_y();
-                let padding_bottom = surface.outer.max_y() - surface.inner.max_y();
+                let padding_top = surface.inner().min_y() - surface.outer().min_y();
+                let padding_bottom = surface.outer().max_y() - surface.inner().max_y();
                 assert_eq!(padding_top, padding_bottom);
                 let vertical_track = surface.track(true).inset(-Spacing::Micro.value());
                 let horizontal_track = surface.track(false).inset(-Spacing::Micro.value());
-                assert!(surface.inner.max_x() < vertical_track.min_x());
-                assert!(surface.inner.max_y() < horizontal_track.min_y());
-                surface.scroll.scroll_by(0.0, f32::MAX);
-                let paragraph = surface.paragraph.as_ref().unwrap();
-                if paragraph.height as f32 > surface.inner.size.height {
+                assert!(surface.inner().max_x() < vertical_track.min_x());
+                assert!(surface.inner().max_y() < horizontal_track.min_y());
+                surface.scroll_mut().scroll_by(0.0, f32::MAX);
+                let paragraph = surface.paragraph().unwrap();
+                if paragraph.height as f32 > surface.inner().size.height {
                     assert!(
-                        (surface.origin().y + paragraph.height as f32 - surface.inner.max_y())
+                        (surface.origin().y + paragraph.height as f32 - surface.inner().max_y())
                             .abs()
                             < 0.001
                     );
                 } else {
-                    assert_eq!(surface.origin().y, surface.inner.min_y());
+                    assert_eq!(surface.origin().y, surface.inner().min_y());
                 }
             }
         }
-        assert!(
-            !TextDemo::scroll_only().surfaces[0]
-                .input
-                .text
-                .ends_with('\n')
-        );
+        assert!(!TextDemo::scroll_only().surfaces[0].text().ends_with('\n'));
     }
 
     #[test]
@@ -2728,18 +2724,20 @@ mod tests {
     fn caret_hit_testing_uses_shaped_grapheme_positions_and_newline_stays_on_its_line() {
         let mut demo = TextDemo::default();
         let mut text = TextEngine::new();
-        demo.surfaces[2].input.text = "A中👨‍👩‍👧‍👦e\u{301}\n第二行".into();
+        demo.surfaces[2]
+            .input_mut()
+            .set_text("A中👨‍👩‍👧‍👦e\u{301}\n第二行");
         layout(&mut demo, &mut text);
         let s = &demo.surfaces[2];
-        let first = &s.paragraph.as_ref().unwrap().lines[0];
+        let first = &s.paragraph().unwrap().lines[0];
         for &(index, x) in first.carets.iter().filter(|(i, _)| *i < first.utf16.end) {
             let origin = s.origin();
             let p = Point::new(origin.x + x as f32, origin.y + first.height as f32 * 0.5);
             assert_eq!(s.hit(p), Some(index), "index {index}");
         }
         let p = Point::new(
-            s.inner.max_x() - 1.0,
-            s.inner.min_y() + first.height as f32 * 0.5,
+            s.inner().max_x() - 1.0,
+            s.inner().min_y() + first.height as f32 * 0.5,
         );
         assert_eq!(s.hit(p), Some(first.utf16.end - 1));
     }
@@ -2749,7 +2747,7 @@ mod tests {
         let mut text = TextEngine::new();
         layout(&mut demo, &mut text);
         demo.focus = Some(0);
-        demo.surfaces[0].input.select_all();
+        demo.surfaces[0].input_mut().select_all();
         let before = demo.state().unwrap();
         demo.set_window_active(false);
         assert!(demo.state().is_none());
@@ -2803,20 +2801,20 @@ mod tests {
         d.command(tekes_ui_controls::TextEditCommand::SelectAll);
         assert_eq!(d.clipboard_selection().as_deref(), Some("原始"));
         d.focus = Some(0);
-        let original = d.surfaces[0].input.text.clone();
+        let original = d.surfaces[0].text().to_owned();
         assert!(!d.paste("不能写入"));
-        assert_eq!(d.surfaces[0].input.text, original);
+        assert_eq!(d.surfaces[0].text(), original);
         d.focus = Some(2);
         d.command(tekes_ui_controls::TextEditCommand::MoveToEndOfDocument);
         d.refresh(&mut text);
         let s = &d.surfaces[2];
-        assert!(s.scroll.offset.y > 0.0);
+        assert!(s.scroll().offset.y > 0.0);
         let caret = s.caret();
-        assert!(caret.min_y() >= s.inner.min_y() && caret.max_y() <= s.inner.max_y() + 0.01);
-        let offset = s.scroll.offset;
+        assert!(caret.min_y() >= s.inner().min_y() && caret.max_y() <= s.inner().max_y() + 0.01);
+        let offset = s.scroll().offset;
         d.handle(&Event::CaretBlink, None);
         d.refresh(&mut text);
-        assert_eq!(d.surfaces[2].scroll.offset, offset);
+        assert_eq!(d.surfaces[2].scroll().offset, offset);
     }
 
     #[test]
@@ -2827,7 +2825,7 @@ mod tests {
         for scale in [1.0, 1.25, 1.5] {
             text.set_type_scale(scale);
             let height = demo.measure_search_height(&mut text);
-            let paragraph_height = demo.surfaces[0].paragraph.as_ref().unwrap().height as f32;
+            let paragraph_height = demo.surfaces[0].paragraph().unwrap().height as f32;
             assert!(
                 paragraph_height <= height - 2.0 * proposal::SCROLL_SINGLE_LINE_PADDING_Y + 0.001,
                 "real mixed-script line height must fit its frame at {scale}x"
@@ -2867,22 +2865,22 @@ mod tests {
         );
         assert!(
             surface
-                .hit(Point::new(121.0, surface.inner.center().y))
+                .hit(Point::new(121.0, surface.inner().center().y))
                 .is_some()
         );
         assert_eq!(
-            surface.hit(Point::new(110.0, surface.inner.center().y)),
+            surface.hit(Point::new(110.0, surface.inner().center().y)),
             None
         );
-        let lower = Point::new(surface.inner.center().x, surface.inner.max_y() - 1.0);
+        let lower = Point::new(surface.inner().center().x, surface.inner().max_y() - 1.0);
         assert!(
             surface.hit(lower).is_some(),
             "large single-line frames remain selectable below line center"
         );
-        let right = Point::new(clip.max_x() - 0.1, surface.inner.center().y);
+        let right = Point::new(clip.max_x() - 0.1, surface.inner().center().y);
         assert_eq!(
             surface.hit(right),
-            Some(surface.input.len()),
+            Some(surface.input().len()),
             "blank trailing field space maps to the final caret"
         );
 
@@ -2919,16 +2917,16 @@ mod tests {
             &mut Scene::new(),
         );
         let surface = &mut demo.surfaces[0];
-        surface.input.select(220, false);
+        surface.input_mut().select(220, false);
         let before = surface.caret();
-        surface.scroll.scroll_by(0.0, 55.0);
+        surface.scroll_mut().scroll_by(0.0, 55.0);
         let after = surface.caret();
         assert!((before.min_y() - after.min_y() - 55.0).abs() < 0.001);
         let point = after.center();
         assert!(
-            surface.inner.contains(point),
+            surface.inner().contains(point),
             "caret {after:?}, inner {:?}",
-            surface.inner
+            surface.inner()
         );
         assert_eq!(surface.hit(point), Some(220));
     }
@@ -2978,7 +2976,7 @@ mod tests {
             Some(true)
         );
         assert_eq!(demo.scroll_target, Some(0));
-        let moved = demo.surfaces[0].scroll.offset;
+        let moved = demo.surfaces[0].scroll().offset;
 
         assert_eq!(
             demo.handle(
@@ -2987,7 +2985,7 @@ mod tests {
             ),
             Some(true)
         );
-        assert!(demo.surfaces[0].scroll.offset.y > moved.y);
+        assert!(demo.surfaces[0].scroll().offset.y > moved.y);
         assert_eq!(demo.scroll_target, Some(0));
 
         assert_eq!(
@@ -3057,7 +3055,7 @@ mod tests {
             read_only.surfaces[0]
                 .pointer_drag(Point::new(400.0, 35.0), metric("size", "size-row-height"))
         );
-        assert!(!read_only.surfaces[0].input.selection().is_empty());
+        assert!(!read_only.surfaces[0].input().selection().is_empty());
         read_only.surfaces[0].cancel_interaction();
 
         let mut disabled = TextDemo::field("Disabled", false, false);
@@ -3099,24 +3097,24 @@ mod tests {
         );
         let surface = &mut demo.surfaces[0];
         let (top, line_height, range) = {
-            let last = surface.paragraph.as_ref().unwrap().lines.last().unwrap();
+            let last = surface.paragraph().unwrap().lines.last().unwrap();
             (
                 last.top as f32,
                 last.height as f32,
                 last.utf16.start..last.utf16.end,
             )
         };
-        let inner_height = surface.inner.size.height;
+        let inner_height = surface.inner().size.height;
         surface
-            .scroll
+            .scroll_mut()
             .scroll_by(0.0, top - inner_height + line_height * 0.5);
-        surface.input.marked = Some(range.clone());
+        surface.input_mut().set_marked_range(Some(range.clone()));
         let rects = surface.selection_rects(range);
         assert!(!rects.is_empty());
         let line = rects[0];
         assert_eq!(line.size.height, line_height);
         assert!(
-            line.max_y() > surface.inner.max_y(),
+            line.max_y() > surface.inner().max_y(),
             "scene clip trims pixels without moving the IME underline baseline"
         );
     }
@@ -3222,15 +3220,15 @@ mod tests {
             demo.build_clipped(&mut ctx, content, None, &mut Scene::new());
         }
         let count = text.shape_count();
-        let paragraph = demo.surfaces[0].paragraph.as_ref().unwrap().clone();
-        let width = demo.surfaces[0].width;
+        let paragraph = demo.surfaces[0].paragraph().unwrap().clone();
+        let width = demo.surfaces[0].width();
         let height = demo.measure_search_height(&mut text);
         assert!(height > 0.0);
         assert_eq!(text.shape_count(), count);
-        assert_eq!(demo.surfaces[0].width, width);
+        assert_eq!(demo.surfaces[0].width(), width);
         assert!(std::rc::Rc::ptr_eq(
             &paragraph,
-            demo.surfaces[0].paragraph.as_ref().unwrap()
+            demo.surfaces[0].paragraph().unwrap()
         ));
     }
 }
@@ -3258,8 +3256,8 @@ mod pixel_review {
                             TextDemo::scroll_only()
                         };
                         demo.set_reduced_motion(true);
-                        demo.surfaces[0].input.select_range(12..120);
-                        let selected = demo.surfaces[0].input.selection();
+                        demo.surfaces[0].input_mut().select_range(12..120);
+                        let selected = demo.surfaces[0].input().selection();
                         let mut history = None;
                         for stage in ["initial", "following", "history", "append-reflow", "latest"]
                         {
@@ -3317,20 +3315,20 @@ mod pixel_review {
                             let following = surface.reading.as_ref().unwrap().is_following_latest();
                             if matches!(stage, "following" | "latest") {
                                 assert!(following);
-                                assert_eq!(surface.scroll.offset.y, surface.scroll.limit().y);
+                                assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
                             }
                             if stage == "history" {
-                                history = surface.reflow_anchor;
+                                history = surface.reflow_anchor();
                             }
                             if stage == "append-reflow" {
                                 assert!(!following);
                                 let before = history.unwrap();
-                                let after = surface.reflow_anchor.unwrap();
+                                let after = surface.reflow_anchor().unwrap();
                                 assert_eq!(after.utf16, before.utf16);
                                 assert_eq!(after.within_line, before.within_line);
                                 assert_eq!(surface.appended, 4);
                             }
-                            assert_eq!(surface.input.selection(), selected);
+                            assert_eq!(surface.input().selection(), selected);
                             let size = ((width + 40) * scale, 400 * scale);
                             let rgba = renderer
                                 .render_to_rgba8(
@@ -3370,7 +3368,7 @@ mod pixel_review {
                                     .write_image_data(&rgba)
                                     .unwrap();
                             }
-                            manifest.push(serde_json::json!({"file":name,"kind":kind,"stage":stage,"theme":format!("{theme:?}"),"backing_scale":scale,"width":width,"frame_width":frame.size.width,"type_scale":text.type_scale(),"following":following,"offset":surface.scroll.offset.y,"range":surface.scroll.limit().y,"anchor":surface.reflow_anchor.map(|a|a.utf16),"selection_preserved":true,"actual_gpu":true,"native_acceptance":false}));
+                            manifest.push(serde_json::json!({"file":name,"kind":kind,"stage":stage,"theme":format!("{theme:?}"),"backing_scale":scale,"width":width,"frame_width":frame.size.width,"type_scale":text.type_scale(),"following":following,"offset":surface.scroll().offset.y,"range":surface.scroll().limit().y,"anchor":surface.reflow_anchor().map(|a|a.utf16),"selection_preserved":true,"actual_gpu":true,"native_acceptance":false}));
                         }
                     }
                 }
@@ -3404,7 +3402,7 @@ mod pixel_review {
                     read_only,
                 );
                 view.layout(&mut text, Rect::new(20.0, 20.0, 640.0, 260.0));
-                view.scroll.scroll_by(0.0, 713.25);
+                view.scroll_mut().scroll_by(0.0, 713.25);
                 let mut first = None;
                 for (frame, width) in [
                     640, 600, 560, 520, 480, 440, 400, 360, 320, 360, 400, 440, 480, 520, 560, 600,
@@ -3508,14 +3506,14 @@ mod pixel_review {
                         metric("size", "size-button-md")
                     };
                     view.layout(&mut text, Rect::new(20.0, 20.0, 600.0, h));
-                    view.input.select_all();
-                    let boxes = view.selection_rects(view.input.selection());
+                    view.input_mut().select_all();
+                    let boxes = view.selection_rects(view.input().selection());
                     assert!(!boxes.is_empty());
                     if !multiline {
-                        let line = &view.paragraph.as_ref().unwrap().lines[0];
+                        let line = &view.paragraph().unwrap().lines[0];
                         let caret = view.caret();
                         assert!(
-                            (caret.center().y - view.outer.center().y).abs() <= 0.5,
+                            (caret.center().y - view.outer().center().y).abs() <= 0.5,
                             "single-line caret must be vertically centered"
                         );
                         assert_eq!(boxes[0].min_y(), caret.min_y());
@@ -3525,7 +3523,7 @@ mod pixel_review {
                             "selection/caret horizontal edges use CoreText advances"
                         );
                         assert!(
-                            line.height <= f64::from(view.inner.size.height),
+                            line.height <= f64::from(view.inner().size.height),
                             "font fallback must fit the line viewport"
                         );
                     }
@@ -3563,8 +3561,8 @@ mod pixel_review {
                             .unwrap();
                     }
                     // Review the insertion caret separately: selection normally hides it.
-                    let caret_index = view.input.caret;
-                    view.input.select(caret_index, false);
+                    let caret_index = view.input().caret();
+                    view.input_mut().select(caret_index, false);
                     let mut caret_scene = Scene::new();
                     view.draw(&mut text, &mut caret_scene, theme, true, true);
                     let rgba = renderer
@@ -3597,8 +3595,8 @@ mod pixel_review {
                     // and read-only surfaces must render identical pixels for
                     // both blink phases, without clearing their draft.
                     for mode in ["disabled", "read-only"] {
-                        view.input.disabled = mode == "disabled";
-                        view.input.read_only = mode == "read-only";
+                        view.input_mut().set_disabled(mode == "disabled");
+                        view.input_mut().set_read_only(mode == "read-only");
                         let mut images = Vec::new();
                         for caret_on in [false, true] {
                             let mut scene = Scene::new();
@@ -3619,7 +3617,7 @@ mod pixel_review {
                             images[0], images[1],
                             "{mode} must suppress the insertion caret"
                         );
-                        assert_eq!(view.input.text, value);
+                        assert_eq!(view.text(), value);
                         if let Some(dir) = &output {
                             let path = dir.join(format!(
                                 "{}-{mode}-{}@{}x.png",
@@ -3641,10 +3639,10 @@ mod pixel_review {
                                 .unwrap();
                         }
                     }
-                    view.input.disabled = false;
-                    view.input.read_only = false;
+                    view.input_mut().set_disabled(false);
+                    view.input_mut().set_read_only(false);
                     for mode in ["hover", "pressed"] {
-                        let point = view.inner.center();
+                        let point = view.inner().center();
                         if mode == "pressed" {
                             view.pointer_down(point, false, 1, 24.);
                         }
@@ -3662,7 +3660,7 @@ mod pixel_review {
                                 ink("document-canvas", theme),
                             )
                             .unwrap();
-                        let selection = view.input.selection();
+                        let selection = view.input().selection();
                         view.pointer_up();
                         assert!(!view.pointer_state(None).pressed);
                         let mut released = Scene::new();
@@ -3677,8 +3675,8 @@ mod pixel_review {
                             )
                             .unwrap();
                         assert_eq!(active, released, "hover/pressed preserve input paint");
-                        assert_eq!(view.input.selection(), selection);
-                        assert_eq!(view.input.text, value);
+                        assert_eq!(view.input().selection(), selection);
+                        assert_eq!(view.text(), value);
                         if let Some(dir) = &output {
                             let path = dir.join(format!(
                                 "{}-{mode}-{}@{}x.png",
@@ -3738,10 +3736,10 @@ mod native_semantics_tests {
         assert_eq!(n.role, R::TextArea);
         assert!(n.read_only);
         assert!(demo.accessibility_action(0, &A::SetSelection(3..5)));
-        let before = format!("{:?}", demo.surfaces[0].input);
+        let before = format!("{:?}", demo.surfaces[0].input());
         assert!(!demo.accessibility_action(0, &A::SetValue("replace".into())));
         assert!(!demo.accessibility_action(0, &A::ReplaceSelectedText("replace".into())));
-        assert_eq!(format!("{:?}", demo.surfaces[0].input), before);
+        assert_eq!(format!("{:?}", demo.surfaces[0].input()), before);
         assert_eq!(
             demo.accessibility_nodes(901, "Reading")[0].text_selection,
             Some(3..5)

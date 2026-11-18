@@ -804,17 +804,11 @@ mod issue102_original_allocator_tests {
         }
     }
     impl Component for FiniteDrop {
-        fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-            TableTransactionCompatibility::StableHooks
+        fn has_stable_hooks(&self) -> bool {
+            true
         }
-        fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-            PreparedEffects::local_work(n)
-        }
-        fn prepare_effects(
-            &self,
-            h: &[PreparedHook],
-        ) -> Result<PreparedEffects, PreparedEffectsError> {
-            Ok(PreparedEffects::local(self, h))
+        fn supports_prepared_lifecycle(&self) -> bool {
+            true
         }
         fn measure(
             &mut self,

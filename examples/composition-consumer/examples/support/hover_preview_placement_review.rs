@@ -157,18 +157,18 @@ impl Review {
             .component::<HoverPreviewContent>()
             .unwrap();
         let frame = popup.layout().frame;
-        let input = &f
+        let input = f
             .host
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
+            .input();
         if f.host.focused() != Some(COMPOSER)
-            || input.text != "Original composer draft"
+            || input.text() != "Original composer draft"
             || input.selection() != (0..8)
-            || input.marked.is_some()
+            || input.marked().is_some()
         {
             errors.push("original Composer focus/text/selection changed".to_string());
         }
@@ -258,7 +258,7 @@ impl Review {
         if id == LAST && self.completed != (FIRST..LAST).collect::<Vec<_>>() {
             errors.push("placement checkpoints missing/reordered".into());
         }
-        let report = serde_json::json!({"phase":id,"passed":errors.is_empty(),"errors":errors,"case":match id {46101=>"right-fit",46103=>"flip-left",46105=>"both-sides-clamp",_=>"retired"},"anchor":rect(anchor),"popup":rect(frame),"viewport":rect(bounds),"right_candidate_x":right,"left_candidate_x":left,"gap":gap,"owner_mount":self.owner_mount,"text":input.text,"selection":input.selection(),"marked":input.marked,"focus":f.host.focused().map(|id|id.0),"activations":self.actions.iter().map(|id|id.0).collect::<Vec<_>>(),"native_software_only":true,"physical_ime":"not_run","voiceover":"not_run"});
+        let report = serde_json::json!({"phase":id,"passed":errors.is_empty(),"errors":errors,"case":match id {46101=>"right-fit",46103=>"flip-left",46105=>"both-sides-clamp",_=>"retired"},"anchor":rect(anchor),"popup":rect(frame),"viewport":rect(bounds),"right_candidate_x":right,"left_candidate_x":left,"gap":gap,"owner_mount":self.owner_mount,"text":input.text(),"selection":input.selection(),"marked":input.marked(),"focus":f.host.focused().map(|id|id.0),"activations":self.actions.iter().map(|id|id.0).collect::<Vec<_>>(),"native_software_only":true,"physical_ime":"not_run","voiceover":"not_run"});
         if let Some(path) = evidence {
             std::fs::create_dir_all(path).unwrap();
             std::fs::write(

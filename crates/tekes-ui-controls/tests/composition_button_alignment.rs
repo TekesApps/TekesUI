@@ -173,7 +173,7 @@ fn public_button_rendered_text_and_background_meet_declared_contrast() {
         };
         0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b)
     }
-    use tekes_ui_controls::paint::ButtonVariant;
+    use tekes_ui_controls::ButtonVariant;
     use tekes_ui_scene::Primitive;
     for theme in Theme::ALL {
         for brand in [0, 1] {

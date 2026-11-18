@@ -2,7 +2,7 @@
 //! No host, window, renderer, timers or extra UI toolkit is created here.
 use super::PageCtx;
 use crate::gallery::motion_preview::{MotionPlacement, MotionPreview, Parameter, PresetCatalog};
-use tekes_ui_controls::{ButtonSize, ButtonTextAlign, paint::ButtonVariant};
+use tekes_ui_controls::{ButtonSize, ButtonTextAlign, ButtonVariant};
 use tekes_ui_motion::recipes::{Phase, RecipeKind};
 use tekes_ui_platform_macos::{Event, MouseButton, MouseEventKind};
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene, Size};
@@ -1366,8 +1366,10 @@ impl Painter<'_, '_> {
         self.scene.push_quad(quad);
     }
     fn panel(&mut self, r: Rect, fill: &str, radius: f32) {
-        let (width, border) =
-            tekes_ui_controls::paint::decorative_border(self.ctx.theme, self.ctx.text.scale());
+        let (width, border) = tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
+            self.ctx.theme,
+            self.ctx.text.scale(),
+        );
         self.scene.push_quad(
             Quad::new(r, color(self.ctx.theme, fill))
                 .with_corner_radius(radius)

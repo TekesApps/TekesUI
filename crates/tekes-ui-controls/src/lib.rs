@@ -2,12 +2,7 @@
 pub mod collections_view;
 mod composite;
 pub mod composition;
-pub use composition::{BreadcrumbContent, CommandPaletteContent, TabItem, TabsContent};
 pub use composition::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
-pub use composition::{
-    ChartContent, ChartContentError, RequiredFocusEvidence, RequiredFocusResult, RequiredFocusSpace,
-};
-pub use composition::{DisclosureContent, DisclosureIntent};
 mod control_motion;
 mod draft;
 pub mod feedback_view;
@@ -29,14 +24,6 @@ pub use scroll_view::{
 mod selection;
 mod text_surface;
 mod toolbar;
-pub use composite::{
-    DialogEvent, DialogLayout, DialogView, MenuEvent, MenuLayout, MenuView, MenuWheelEvent,
-    MenuWheelInput, TabsLayout, TabsView,
-};
-pub use selection::{
-    RadioGroupLayout, RadioGroupView, SelectionEvent, SliderLayout, SliderView, SwitchLayout,
-    SwitchView,
-};
 pub use text_input::{
     ExternalSelection, ExternalUndo, ExternalValueConflict, ExternalValueResult, TextEditBaseline,
     TextInput,
@@ -52,7 +39,8 @@ pub use widgets::{
     CheckState, Checkbox, CheckboxLayout, ControlKey, ControlMotionContext, ControlState, Dialog,
     Field, Menu, NumberField, Select, Tabs,
 };
-pub mod paint;
+mod paint;
+pub use paint::{ButtonVariant, SurfaceKind};
 pub use widgets::Toolbar;
 mod chart;
 pub mod extended;

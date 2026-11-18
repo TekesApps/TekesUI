@@ -3,7 +3,7 @@
 mod coretext;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, extended::Disclosure,
-    layout_view::DisclosureView, paint,
+    layout_view::DisclosureView,
 };
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, proposal};
@@ -136,7 +136,7 @@ fn retained_disclosure_themes_keep_header_states_open_body_and_real_input() {
                 assert_eq!(body.interactive, open);
                 if let Some(body_clip) = body.visible_clip {
                     scene.push_clip(body_clip);
-                    paint::surface_at_scale(
+                    tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                         &mut scene,
                         body.body_rect,
                         palette,

@@ -1,7 +1,8 @@
 use std::time::Duration;
 use tekes_ui_controls::layout_view::SelectView;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlMotionContext, Menu, MenuEvent, MenuView, Select,
+    ButtonTextAlign, ButtonTextRenderer, ControlMotionContext, Menu, Select,
+    feedback_view::{MenuEvent, MenuView},
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};

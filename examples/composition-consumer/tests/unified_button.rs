@@ -81,7 +81,10 @@ fn render_surface(h: &mut ContentHost, t: &mut Text, theme: Theme, surface: &str
     let frame = Rect::new(20., 30., 320. * t.scale, 100. * t.scale);
     let mut scene = Scene::new();
     t.drawn.clear();
-    h.get_mut(ComponentId(1)).unwrap().set_surface(Some(surface)).unwrap();
+    h.get_mut(ComponentId(1))
+        .unwrap()
+        .set_surface(Some(surface))
+        .unwrap();
     h.render(
         &mut scene,
         t,
@@ -231,8 +234,11 @@ fn transparent_custom_icon_keeps_original_child_image_and_surface_tint() {
     let mut button = Button::new(content).with_accessible_name("Settings");
     button.set_transparent_chrome(true);
     let mut h = ContentHost::new(
-        Content::new(ComponentId(1), button).with_surface("toolbar").unwrap(),
-    ).unwrap();
+        Content::new(ComponentId(1), button)
+            .with_surface("toolbar")
+            .unwrap(),
+    )
+    .unwrap();
     h.set_action_events(true);
     let mut t = Text::new(1.);
     let mut icons = Icons::default();

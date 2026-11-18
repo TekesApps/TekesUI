@@ -121,7 +121,10 @@ fn four_tones_complete_packets_original_geometry_and_label_measurement() {
                                     view.layout()
                                 );
                                 assert_eq!(quads(&actual)[0].fill, packet.background);
-                                assert_eq!(quads(&actual)[0].corner_radii, tekes_ui_scene::CornerRadii::uniform(h * 0.5));
+                                assert_eq!(
+                                    quads(&actual)[0].corner_radii,
+                                    tekes_ui_scene::CornerRadii::uniform(h * 0.5)
+                                );
                             }
                         }
                     }
@@ -613,18 +616,32 @@ fn hidden_semantic_wrapper_preserves_visible_descendant_parentage() {
     #[derive(Debug)]
     struct HiddenWrapper(Vec<Content>);
     impl Component for HiddenWrapper {
-        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> tekes_ui_controls::layout::MeasuredChild {
+        fn measure(
+            &mut self,
+            _: &mut dyn ButtonTextRenderer,
+            available: Size,
+        ) -> tekes_ui_controls::layout::MeasuredChild {
             tekes_ui_controls::layout::MeasuredChild::new(available)
         }
-        fn semantic_hidden(&self) -> bool { true }
-        fn children(&self) -> &[Content] { &self.0 }
-        fn children_mut(&mut self) -> Option<&mut Vec<Content>> { Some(&mut self.0) }
+        fn semantic_hidden(&self) -> bool {
+            true
+        }
+        fn children(&self) -> &[Content] {
+            &self.0
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.0)
+        }
     }
     let child = ComponentId(9002);
     let host = ContentHost::new(Content::new(
         ComponentId(9001),
-        HiddenWrapper(vec![Content::new(child, TextContent::new("Visible status"))]),
-    )).unwrap();
+        HiddenWrapper(vec![Content::new(
+            child,
+            TextContent::new("Visible status"),
+        )]),
+    ))
+    .unwrap();
     let nodes = host.semantics();
     assert_eq!(nodes.len(), 1);
     assert_eq!(nodes[0].id, child);

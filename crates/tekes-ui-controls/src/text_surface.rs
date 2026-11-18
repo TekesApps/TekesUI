@@ -368,29 +368,29 @@ struct MeasuredParagraph {
 /// not depend on a particular font backend.
 #[derive(Debug)]
 pub struct TextSurface {
-    pub input: TextInput,
-    pub presentation: TextSurfacePresentation,
+    pub(crate) input: TextInput,
+    pub(crate) presentation: TextSurfacePresentation,
     /// Keyboard-origin focus decoration, independent of logical editing focus.
-    pub focus_visible: bool,
-    pub alignment: TextSurfaceAlignment,
+    pub(crate) focus_visible: bool,
+    pub(crate) alignment: TextSurfaceAlignment,
     /// Soft wrapping for multiline text. Single-line editing remains unwrapped.
     /// Scroll axes remain configurable on the original `scroll` model.
-    pub wrap: bool,
-    pub scroll: ScrollArea,
-    pub paragraph: Option<Rc<Paragraph>>,
-    pub shaped: String,
-    pub width: Option<f32>,
-    pub reflow_anchor: Option<ReflowAnchor>,
-    pub outer: Rect,
-    pub inner: Rect,
+    pub(crate) wrap: bool,
+    pub(crate) scroll: ScrollArea,
+    pub(crate) paragraph: Option<Rc<Paragraph>>,
+    pub(crate) shaped: String,
+    pub(crate) width: Option<f32>,
+    pub(crate) reflow_anchor: Option<ReflowAnchor>,
+    pub(crate) outer: Rect,
+    pub(crate) inner: Rect,
     /// Space owned by an internal trailing action; chrome keeps the full frame.
     pub(crate) trailing_action_width: f32,
-    pub role: proposal::TextRole,
+    pub(crate) role: proposal::TextRole,
     shaped_role: Option<proposal::TextRole>,
     measured: RefCell<Option<MeasuredParagraph>>,
-    pub error: bool,
-    pub type_scale: f32,
-    pub clauses: Vec<Range<usize>>,
+    pub(crate) error: bool,
+    pub(crate) type_scale: f32,
+    pub(crate) clauses: Vec<Range<usize>>,
     ancestor_clip: Option<Rect>,
     pointer_dragging: bool,
     scrollbar_pointer_active: bool,
@@ -546,8 +546,113 @@ impl TextSurface {
         self.reflow_anchor = None;
     }
 
+    pub fn input(&self) -> &TextInput {
+        &self.input
+    }
+    pub fn input_mut(&mut self) -> &mut TextInput {
+        &mut self.input
+    }
+    pub fn text(&self) -> &str {
+        self.input.text()
+    }
+    pub fn marked(&self) -> Option<Range<usize>> {
+        self.input.marked()
+    }
+    pub fn set_multiline(&mut self, multiline: bool) {
+        if self.input.is_multiline() != multiline {
+            self.input.set_multiline(multiline);
+            self.invalidate_text_layout();
+        }
+    }
+    pub fn append_text(&mut self, suffix: &str) {
+        self.input.append_text(suffix);
+    }
+    pub fn presentation(&self) -> TextSurfacePresentation {
+        self.presentation
+    }
+    pub fn set_presentation(&mut self, presentation: TextSurfacePresentation) {
+        self.presentation = presentation;
+    }
+    pub fn focus_visible(&self) -> bool {
+        self.focus_visible
+    }
+    pub fn set_focus_visible(&mut self, visible: bool) {
+        self.focus_visible = visible;
+    }
+    pub fn alignment(&self) -> TextSurfaceAlignment {
+        self.alignment
+    }
+    pub fn set_alignment(&mut self, alignment: TextSurfaceAlignment) {
+        self.alignment = alignment;
+    }
+    pub fn wrap(&self) -> bool {
+        self.wrap
+    }
+    pub fn set_wrap(&mut self, wrap: bool) {
+        self.wrap = wrap;
+    }
+    pub fn scroll(&self) -> &ScrollArea {
+        &self.scroll
+    }
+    pub fn scroll_mut(&mut self) -> &mut ScrollArea {
+        &mut self.scroll
+    }
+    pub fn paragraph(&self) -> Option<&Rc<Paragraph>> {
+        self.paragraph.as_ref()
+    }
+    pub fn shaped(&self) -> &str {
+        &self.shaped
+    }
+    pub fn width(&self) -> Option<f32> {
+        self.width
+    }
+    pub fn reflow_anchor(&self) -> Option<ReflowAnchor> {
+        self.reflow_anchor
+    }
+    pub fn set_reflow_anchor(&mut self, anchor: Option<ReflowAnchor>) {
+        self.reflow_anchor = anchor;
+    }
+    pub fn outer(&self) -> Rect {
+        self.outer
+    }
+    pub fn inner(&self) -> Rect {
+        self.inner
+    }
+    pub fn role(&self) -> proposal::TextRole {
+        self.role
+    }
     pub fn set_role(&mut self, role: proposal::TextRole) {
         self.role = role;
+    }
+    pub fn error(&self) -> bool {
+        self.error
+    }
+    pub fn set_error(&mut self, error: bool) {
+        self.error = error;
+    }
+    pub fn type_scale(&self) -> f32 {
+        self.type_scale
+    }
+    pub fn clauses(&self) -> &[Range<usize>] {
+        &self.clauses
+    }
+    pub fn set_clauses(&mut self, clauses: Vec<Range<usize>>) {
+        self.clauses = clauses;
+    }
+    pub fn clear_clauses(&mut self) {
+        self.clauses.clear();
+    }
+    pub fn cache_shaped_paragraph(
+        &mut self,
+        paragraph: Rc<Paragraph>,
+        shaped: String,
+        width: Option<f32>,
+        type_scale: f32,
+    ) {
+        self.paragraph = Some(paragraph);
+        self.shaped = shaped;
+        self.width = width;
+        self.type_scale = type_scale;
     }
 
     fn content_insets(&self) -> Insets {

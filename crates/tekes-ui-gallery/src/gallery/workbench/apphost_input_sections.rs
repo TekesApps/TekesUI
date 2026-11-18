@@ -188,14 +188,14 @@ impl TextFixture {
         field.show_metadata = false;
         field.viewport = TextViewport::Fixed(if multiline { 140. } else { 40. });
         field.surface = tekes_ui_controls::TextSurface::new(value, multiline, name == "read-only");
-        field.surface.input.disabled = state.disabled;
+        field.surface.input_mut().set_disabled(state.disabled);
         field.field.error = state.error.then(|| "A name is required.".into());
         if matches!(name, "selection" | "composing") {
-            field.surface.input.select_range(0..6);
+            field.surface.input_mut().select_range(0..6);
         }
         if name == "composing" {
-            field.surface.input.preedit("输入", 2..2, None);
-            field.surface.clauses = vec![0..1, 1..2];
+            field.surface.input_mut().preedit("输入", 2..2, None);
+            field.surface.set_clauses(vec![0..1, 1..2]);
         }
         field.set_focus(state.focused, state.focused);
         Self { field, name, state }
@@ -211,8 +211,9 @@ impl Component for TextFixture {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.field.arrange(text, frame, clip);
         if self.name == "pressed" {
+            let center = self.field.surface.inner().center();
             self.field.surface.pointer_down(
-                self.field.surface.inner.center(),
+                center,
                 false,
                 1,
                 tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap(),
@@ -334,7 +335,7 @@ impl Component for NavigationFixture {
                 .collect()
         };
         let extra = if self.name.starts_with("Open") && !menu_labels.is_empty() {
-            tekes_ui_controls::MenuView::measure(
+            tekes_ui_controls::feedback_view::MenuView::measure(
                 &mut text,
                 &menu_labels,
                 width,
@@ -376,11 +377,11 @@ impl Component for NavigationFixture {
                 },
                 state,
             );
-            let length = self.field.field.surface.input.len();
+            let length = self.field.field.surface.text().len();
             self.field
                 .field
                 .surface
-                .input
+                .input_mut()
                 .insert(&model.query, Some(0..length));
             self.field.arrange(text, self.trigger, clip);
         }

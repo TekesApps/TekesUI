@@ -191,7 +191,7 @@ fn observe<T>(f: impl FnOnce() -> T) -> (T, Vec<(String, String)>) {
 }
 #[test]
 fn action_family_required_states_use_real_public_events_and_token_painters() {
-    use tekes_ui_controls::{ButtonModel, ButtonSize, CheckState, Checkbox, paint::ButtonVariant};
+    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonVariant, CheckState, Checkbox};
     let registry:serde_json::Value=serde_json::from_str(include_str!("../../../design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json")).unwrap();
     let mut cases = Vec::new();
     for theme in Theme::ALL {

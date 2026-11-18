@@ -118,7 +118,7 @@ fn actual_field_receives_shift_click_count_and_grapheme_legal_selection() {
         1,
         PointerButton::Primary,
     );
-    let anchor = h.text_surface(ID).unwrap().input.anchor;
+    let anchor = h.text_surface(ID).unwrap().input().anchor();
     send(
         &mut h,
         PointerPhase::Down,
@@ -128,8 +128,8 @@ fn actual_field_receives_shift_click_count_and_grapheme_legal_selection() {
         PointerButton::Primary,
     );
     let s = h.text_surface(ID).unwrap();
-    assert_eq!(s.input.anchor, anchor);
-    assert!(s.input.caret > anchor);
+    assert_eq!(s.input().anchor(), anchor);
+    assert!(s.input().caret() > anchor);
     send(&mut h, PointerPhase::Up, b, true, 1, PointerButton::Primary);
     for index in [7, 10, 13] {
         let p = point(&h, index);
@@ -142,10 +142,10 @@ fn actual_field_receives_shift_click_count_and_grapheme_legal_selection() {
             PointerButton::Primary,
         );
         let s = h.text_surface(ID).unwrap();
-        let selection = s.input.selection();
+        let selection = s.input().selection();
         assert!(!selection.is_empty());
-        assert!(s.input.boundaries().contains(&selection.start));
-        assert!(s.input.boundaries().contains(&selection.end));
+        assert!(s.input().boundaries().contains(&selection.start));
+        assert!(s.input().boundaries().contains(&selection.end));
         send(
             &mut h,
             PointerPhase::Up,
@@ -165,7 +165,7 @@ fn actual_field_receives_shift_click_count_and_grapheme_legal_selection() {
         PointerButton::Primary,
     );
     let s = h.text_surface(ID).unwrap();
-    assert_eq!(s.input.selection(), 0..s.input.len()); // One paragraph: its selection covers the complete input.
+    assert_eq!(s.input().selection(), 0..s.input().len()); // One paragraph: its selection covers the complete input.
 }
 #[test]
 fn secondary_is_inert_and_cancel_ends_real_field_drag_capture() {
@@ -187,7 +187,7 @@ fn secondary_is_inert_and_cancel_ends_real_field_drag_capture() {
         1,
         PointerButton::Primary,
     );
-    let before = h.text_surface(ID).unwrap().input.selection();
+    let before = h.text_surface(ID).unwrap().input().selection();
     let focus = h.focused();
     let later = point(&h, 15);
     send(
@@ -206,7 +206,7 @@ fn secondary_is_inert_and_cancel_ends_real_field_drag_capture() {
         1,
         PointerButton::Secondary,
     );
-    assert_eq!(h.text_surface(ID).unwrap().input.selection(), before);
+    assert_eq!(h.text_surface(ID).unwrap().input().selection(), before);
     assert_eq!(h.focused(), focus);
     send(
         &mut h,
@@ -225,7 +225,7 @@ fn secondary_is_inert_and_cancel_ends_real_field_drag_capture() {
         0,
         PointerButton::Primary,
     );
-    let selected = h.text_surface(ID).unwrap().input.selection();
+    let selected = h.text_surface(ID).unwrap().input().selection();
     assert!(selected.end > selected.start);
     h.event(&ContentEvent::Cancel);
     send(
@@ -236,7 +236,7 @@ fn secondary_is_inert_and_cancel_ends_real_field_drag_capture() {
         0,
         PointerButton::Primary,
     );
-    assert_eq!(h.text_surface(ID).unwrap().input.selection(), selected);
+    assert_eq!(h.text_surface(ID).unwrap().input().selection(), selected);
     assert!(!h.text_surface(ID).unwrap().pointer_state(None).pressed);
 }
 
@@ -245,11 +245,11 @@ fn double_click_targets_the_visual_grapheme_on_both_sides_of_caret_boundary() {
     let mut h = host();
     for word in ["😀", "e\u{301}", "second"] {
         let s = h.text_surface(ID).unwrap();
-        let byte = s.input.text.find(word).unwrap();
-        let start = s.input.text[..byte].encode_utf16().count();
+        let byte = s.text().find(word).unwrap();
+        let start = s.text()[..byte].encode_utf16().count();
         let end = start + word.encode_utf16().count();
         let first_end = s
-            .input
+            .input()
             .boundaries()
             .into_iter()
             .find(|i| *i > start)
@@ -266,7 +266,7 @@ fn double_click_targets_the_visual_grapheme_on_both_sides_of_caret_boundary() {
                 PointerButton::Primary,
             );
             assert_eq!(
-                h.text_surface(ID).unwrap().input.selection(),
+                h.text_surface(ID).unwrap().input().selection(),
                 start..end,
                 "{word} at {fraction}"
             );
@@ -307,7 +307,7 @@ fn triple_click_selects_the_logical_paragraph_including_its_line_break() {
         PointerButton::Primary,
     );
     assert_eq!(
-        h.text_surface(ID).unwrap().input.selection(),
+        h.text_surface(ID).unwrap().input().selection(),
         0.."First para 中文😀\r\n".encode_utf16().count()
     );
 }
@@ -335,7 +335,7 @@ fn paragraph_selection_preserves_crlf_and_the_trailing_empty_paragraph() {
                 surface.origin().y + caret.center().y,
             );
             assert!(surface.pointer_down(p, false, 3, 24.).is_some());
-            assert_eq!(surface.input.selection(), expected, "{body:?} at {index}");
+            assert_eq!(surface.input().selection(), expected, "{body:?} at {index}");
             surface.pointer_up();
         }
     }
@@ -359,13 +359,13 @@ fn long_read_only_document_drag_reuses_scroll_reveal_and_cancel() {
     let p = surface.caret().center();
     assert!(surface.pointer_down(p, false, 1, 24.).is_some());
     assert!(surface.pointer_drag(Point::new(500., 1800.), 24.));
-    assert!(surface.scroll.offset.y > 0.);
-    let selection = surface.input.selection();
-    assert!(surface.input.boundaries().contains(&selection.start));
-    assert!(surface.input.boundaries().contains(&selection.end));
+    assert!(surface.scroll().offset.y > 0.);
+    let selection = surface.input().selection();
+    assert!(surface.input().boundaries().contains(&selection.start));
+    assert!(surface.input().boundaries().contains(&selection.end));
     assert!(surface.pointer_state(None).pressed);
     surface.cancel_interaction();
     assert!(!surface.pointer_state(None).pressed);
     assert!(!surface.pointer_drag(Point::new(-500., -500.), 24.));
-    assert_eq!(surface.input.selection(), selection);
+    assert_eq!(surface.input().selection(), selection);
 }

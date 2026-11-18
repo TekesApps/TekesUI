@@ -2,7 +2,10 @@
 //! Uses original CoreText preparation and glyph pushing; no editor/layout engine.
 use std::rc::Rc;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer,
+    ButtonTextAlign,
+    ButtonTextRenderer,
+    TextSurfaceHost,
+    TextSurfaceTextRenderer,
 };
 use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
 use tekes_ui_text::{

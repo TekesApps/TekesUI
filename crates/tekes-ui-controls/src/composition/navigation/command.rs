@@ -282,7 +282,7 @@ impl Component for CommandPaletteContent {
         // ordinary trigger slot. Both layout and painting use MenuRuntime's
         // shared header geometry and the existing viewport placement rules.
         self.sync_model_query();
-        let width = crate::MenuView::header_content_width(
+        let width = crate::feedback_view::MenuView::header_content_width(
             &mut FrameTextAdapter(text, None, true),
             clip.size.width,
         );
@@ -620,18 +620,21 @@ impl Component for CommandPaletteContent {
                 momentum,
                 time,
             } if self.popup_contains(*position) => {
-                let result = self.view.options.wheel_event(crate::MenuWheelInput {
-                    point: *position,
-                    delta: *delta,
-                    precise: *precise,
-                    begin: *begin,
-                    end: *end,
-                    momentum: *momentum,
-                    time: *time,
-                });
+                let result = self
+                    .view
+                    .options
+                    .wheel_event(crate::feedback_view::MenuWheelInput {
+                        point: *position,
+                        delta: *delta,
+                        precise: *precise,
+                        begin: *begin,
+                        end: *end,
+                        momentum: *momentum,
+                        time: *time,
+                    });
                 match result {
-                    crate::MenuWheelEvent::Ignored => ContentResponse::default(),
-                    crate::MenuWheelEvent::Consumed { scrolled } => {
+                    crate::feedback_view::MenuWheelEvent::Ignored => ContentResponse::default(),
+                    crate::feedback_view::MenuWheelEvent::Consumed { scrolled } => {
                         ContentResponse::consumed(scrolled)
                     }
                 }

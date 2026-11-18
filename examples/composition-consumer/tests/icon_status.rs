@@ -1,7 +1,7 @@
 //! Full generated packets, original status model and one passive semantic owner.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, composition::*, extended::StatusBadge,
-    layout_view::IconRenderer, paint::ButtonVariant,
+    ButtonTextAlign, ButtonTextRenderer, ButtonVariant, composition::*, extended::StatusBadge,
+    layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Rect, Scene, Size};
 use tekes_ui_tokens::{

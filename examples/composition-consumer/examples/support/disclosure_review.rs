@@ -187,14 +187,14 @@ impl Review {
                 ]
             }
             38_009 => {
-                let input = &tree
+                let input = tree
                     .focused_text()
                     .expect("original body editor focused")
-                    .input;
+                    .input();
                 assert_eq!(tree.focused(), Some(f::EDITOR));
-                assert_eq!(input.text, "中文 body draft");
+                assert_eq!(input.text(), "中文 body draft");
                 assert_eq!(input.selection(), 1..1);
-                assert_eq!(input.marked, Some(0..2));
+                assert_eq!(input.marked(), Some(0..2));
                 self.marked = Some(input.external_baseline());
                 assert!(!f::disclosure_mut(tree).set_expanded(false));
                 // The original host refuses a cross-owner AX Press during composition.
@@ -212,7 +212,7 @@ impl Review {
                 );
                 assert_eq!(tree.focused(), Some(f::EDITOR));
                 assert_eq!(
-                    tree.focused_text().unwrap().input.external_baseline(),
+                    tree.focused_text().unwrap().input().external_baseline(),
                     *self.marked.as_ref().unwrap()
                 );
                 self.marked_ax_refused = true;
@@ -227,7 +227,7 @@ impl Review {
                 assert!(f::disclosure_mut(tree).confirm(&intent, false));
                 assert_eq!(tree.focused(), Some(f::EDITOR));
                 assert_eq!(
-                    tree.focused_text().unwrap().input.external_baseline(),
+                    tree.focused_text().unwrap().input().external_baseline(),
                     *self.marked.as_ref().unwrap()
                 );
                 vec![
@@ -237,7 +237,7 @@ impl Review {
                 ]
             }
             38_011 => {
-                assert!(tree.focused_text().unwrap().input.marked.is_none());
+                assert!(tree.focused_text().unwrap().marked().is_none());
                 f::disclosure_mut(tree).set_disabled(true);
                 vec![
                     (150, capture("disabled-light.png")),
@@ -300,28 +300,28 @@ impl Review {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(outside.surface.input.text, "Keep A😀B");
-        assert_eq!(outside.surface.input.selection(), 0..0);
-        assert!(outside.surface.input.marked.is_none());
+        assert_eq!(outside.surface.text(), "Keep A😀B");
+        assert_eq!(outside.surface.input().selection(), 0..0);
+        assert!(outside.surface.marked().is_none());
         self.verified.push(phase);
-        let editor = &tree
+        let editor = tree
             .get(f::EDITOR)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
+            .input();
         if phase >= 38_011 {
-            assert_eq!(editor.text, "中文 body draft");
+            assert_eq!(editor.text(), "中文 body draft");
             assert_eq!(editor.selection(), 1..1);
-            assert!(editor.marked.is_none(), "unmarked body stays unmarked");
+            assert!(editor.marked().is_none(), "unmarked body stays unmarked");
         }
         let snapshot = serde_json::json!({"phase":phase,"passed":true,"complete":phase==38_015,
             "window_active":window_active,"width":width,
             "expanded":f::disclosure(tree).expanded(),"disabled":f::disclosure(tree).disabled(),
             "focus":tree.focused().map(|id|id.0),"trigger_mount":self.trigger_mount,"editor_mount":self.editor_mount,"outside_mount":self.outside_mount,
-            "editor":{"text":editor.text,"selection":editor.selection(),"marked":editor.marked},
-            "outside":{"text":outside.surface.input.text,"selection":outside.surface.input.selection(),"marked":outside.surface.input.marked},
+            "editor":{"text":editor.text(),"selection":editor.selection(),"marked":editor.marked()},
+            "outside":{"text":outside.surface.text(),"selection":outside.surface.input().selection(),"marked":outside.surface.marked()},
             "marked_baseline":self.marked.as_ref().map(|_| "中文 body draft|1..1|0..2"),
             "public_sdk_marked_ax_refused":self.marked_ax_refused,
             "records":records.iter().map(|r|serde_json::json!({"source":format!("{:?}",r.action.source),"target":r.action.target.0,"mount":r.mount,

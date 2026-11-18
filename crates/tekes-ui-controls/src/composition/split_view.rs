@@ -10,7 +10,7 @@ use std::rc::Rc;
 #[derive(Clone, Debug, PartialEq)]
 pub enum SplitViewError {
     Composition(CompositionError),
-    Effects(PreparedEffectsError),
+    UnsupportedEffects,
     InvalidConfig,
     InvalidAllocation,
     Structure,
@@ -24,7 +24,12 @@ pub enum SplitViewError {
 }
 impl From<PreparedEffectsError> for SplitViewError {
     fn from(e: PreparedEffectsError) -> Self {
-        Self::Effects(e)
+        match e {
+            PreparedEffectsError::CounterCapacity => Self::ResourceCapacity,
+            PreparedEffectsError::Unavailable
+            | PreparedEffectsError::InvalidSequence
+            | PreparedEffectsError::StaleOwner => Self::UnsupportedEffects,
+        }
     }
 }
 /// Every refusal owns the COMPLETE original request; formatting never inspects it.
@@ -105,7 +110,7 @@ pub struct SplitViewReplacement {
     pub budget: usize,
 }
 #[derive(Debug)]
-struct PaneSlot<const LEADING: bool> {
+pub(super) struct PaneSlot<const LEADING: bool> {
     owner: Rc<()>,
     children: Vec<Content>,
     id: ComponentId,
@@ -115,7 +120,7 @@ struct PaneSlot<const LEADING: bool> {
     arranged: bool,
 }
 impl<const LEADING: bool> PaneSlot<LEADING> {
-    fn intact(&self) -> bool {
+    pub(super) fn intact(&self) -> bool {
         self.children.len() == 1
             && self.children[0].id == self.id
             && self.children[0].mount == self.mount
@@ -126,27 +131,18 @@ impl<const LEADING: bool> Component for PaneSlot<LEADING> {
         self.arranged = false;
     }
 
-    // These passive path owners have no local action reducer or action callbacks.
-    // Their original mutable child access/focus hooks satisfy main #98's route contract.
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
 
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged && self.intact()
-    }
-
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, h))
     }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.intact() {
@@ -189,7 +185,7 @@ impl<const LEADING: bool> Component for PaneSlot<LEADING> {
     }
 }
 #[derive(Debug)]
-struct OriginalDivider {
+pub(super) struct OriginalDivider {
     owner: Rc<()>,
     model: SplitView,
     view: SplitViewView,
@@ -273,17 +269,10 @@ impl OriginalDivider {
     fn apply_action(&mut self, action: PreparedSplitterAction) {
         let _ = self.model.set_ratio(action.next_ratio);
     }
-}
-impl Component for OriginalDivider {
-    // The original view owns the clipped rectangular divider hit region. This
-    // permits its pointer reducer beneath a Scroll without granting curve support.
-    fn rectangular_input_geometry(&self) -> bool {
-        true
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+    pub(super) fn prepare_divider_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -297,14 +286,18 @@ impl Component for OriginalDivider {
             },
         )
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+}
+impl Component for OriginalDivider {
+    // The original view owns the clipped rectangular divider hit region. This
+    // permits its pointer reducer beneath a Scroll without granting curve support.
+    fn rectangular_input_geometry(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, h))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
         MeasuredChild::new(a)
@@ -549,7 +542,7 @@ impl SplitViewContent {
             retired_capture: false,
         })
     }
-    fn intact(&self) -> bool {
+    pub(super) fn intact(&self) -> bool {
         if self.children.len() != 3 {
             return false;
         }
@@ -631,30 +624,18 @@ impl Component for SplitViewContent {
         self.arranged_config = None;
     }
 
-    // These passive path owners have no local action reducer or action callbacks.
-    // Their original mutable child access/focus hooks satisfy main #98's route contract.
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        action_preparation::ignored_pointer(request)
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+    fn ignores_pointer_actions(&self) -> bool {
+        true
     }
 
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged_config.is_some() && self.arranged_config == self.config()
-    }
-
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(&self, h: &[PreparedHook]) -> Result<PreparedEffects, PreparedEffectsError> {
-        if !self.intact() {
-            return Err(PreparedEffectsError::Unavailable);
-        }
-        Ok(PreparedEffects::local(self, h))
     }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.intact() {

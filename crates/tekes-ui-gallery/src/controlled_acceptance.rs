@@ -64,10 +64,10 @@ impl Host {
                 .map(|s| {
                     let caret = s.caret();
                     tekes_ui_platform_macos::TextInputState {
-                        text: s.input.text.clone(),
-                        selection: s.input.selection(),
-                        marked: s.input.marked.clone(),
-                        caret_index: s.input.caret,
+                        text: s.text().to_owned(),
+                        selection: s.input().selection(),
+                        marked: s.marked(),
+                        caret_index: s.input().caret(),
                         caret_origin: tekes_ui_platform_macos::Point {
                             x: caret.min_x() as f64,
                             y: caret.min_y() as f64,
@@ -76,7 +76,7 @@ impl Host {
                             width: caret.size.width as f64,
                             height: caret.size.height as f64,
                         },
-                        read_only: s.input.read_only,
+                        read_only: s.input().is_read_only(),
                         ..Default::default()
                     }
                 }),
@@ -86,7 +86,7 @@ impl Host {
         let semantics:Vec<_>=self.fixture.host.semantics().into_iter().map(|n|serde_json::json!({"id":n.id.0,"name":n.semantics.name,"value":n.semantics.value,"focused":n.focused})).collect();
         std::fs::create_dir_all(&self.out).unwrap();
         std::fs::write(self.out.join("controlled-events.json"),serde_json::to_vec_pretty(&serde_json::json!({
-            "editor":self.fixture.editor().input.text,"selection":self.fixture.editor().input.selection(),"marked":self.fixture.editor().input.marked,
+            "editor":self.fixture.editor().text(),"selection":self.fixture.editor().input().selection(),"marked":self.fixture.editor().marked(),
             "authority":{"key":self.fixture.authority().identity,"revision":self.fixture.authority().version,"value":self.fixture.authority().payload},
             "captured":self.fixture.captured_value().map(|v|serde_json::json!({"key":v.identity,"revision":v.version,"value":v.payload})),
             "result":format!("{:?}",self.fixture.last_result),"focus":self.fixture.host.focused().map(|id|id.0),"semantics":semantics,"events":self.reports,
@@ -174,7 +174,7 @@ impl Host {
         };
         let response = self.fixture.event(&e);
         if self.reports.len() < 512 {
-            self.reports.push(serde_json::json!({"event":format!("{e:?}"),"response":format!("{response:?}"),"value":self.fixture.editor().input.text,"result":format!("{:?}",self.fixture.last_result)}));
+            self.reports.push(serde_json::json!({"event":format!("{e:?}"),"response":format!("{response:?}"),"value":self.fixture.editor().text(),"result":format!("{:?}",self.fixture.last_result)}));
         }
         self.publish(w);
         self.save();

@@ -5,8 +5,11 @@ use super::{
     extended,
 };
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlState, TabsView, composition::*, extended::Disclosure,
-    layout::MeasuredChild, layout_view::DisclosureView,
+    ButtonTextRenderer, ControlState,
+    composition::*,
+    extended::Disclosure,
+    layout::MeasuredChild,
+    layout_view::{DisclosureView, TabsView},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal::TextRole};

@@ -1,7 +1,9 @@
 //! Actual Metal/CoreText consumer and a one-shape coverage oracle over the exact arranged glyphs.
 //! Current-main reception of the preserved R19 consumer; GPU output stays in this SSD intake epoch.
 use tekes_ui_controls::{
-    ButtonTextRenderer, Insets, ScrollArea,
+    ButtonTextRenderer,
+    Insets,
+    ScrollArea,
     composition::*,
     extended::{Axis, Stack},
     layout::MeasuredChild,
@@ -770,13 +772,10 @@ fn render_failure_diagnostic(
                 .map(|geometry| (geometry.outer, geometry.allocation, geometry.shape));
             let surface = host.text_surface(id).map(|surface| {
                 (
-                    surface.outer,
-                    surface.inner,
-                    surface.input.text.len(),
-                    surface
-                        .paragraph
-                        .as_ref()
-                        .map(|paragraph| paragraph.lines.len()),
+                    surface.outer(),
+                    surface.inner(),
+                    surface.text().len(),
+                    surface.paragraph().map(|paragraph| paragraph.lines.len()),
                 )
             });
             nodes.push(format!(

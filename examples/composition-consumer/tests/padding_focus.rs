@@ -82,13 +82,16 @@ fn input(h: &mut ContentHost) -> &mut TextFieldContent {
 #[test]
 fn padding_focuses_original_editor_without_capture_or_synthetic_caret_mapping() {
     let mut h = setup();
-    let before = input(&mut h).surface.input.external_baseline();
+    let before = input(&mut h).surface.input().external_baseline();
     let p = padding(&h);
     assert!(h.event(&ContentEvent::PointerDown(p)).consumed);
     assert_eq!(h.focused(), Some(EDITOR));
     h.event(&ContentEvent::PointerMove(Point::new(500., 200.)));
     h.event(&ContentEvent::PointerUp(Point::new(500., 200.)));
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     assert!(h.drain_actions().is_empty());
 }
 #[test]
@@ -100,8 +103,8 @@ fn already_focused_padding_preserves_preedit_selection_and_undo() {
             text: "retained".into(),
             replacement: None,
         });
-        input(&mut h).surface.input.select(2, false);
-        input(&mut h).surface.input.select(1, true);
+        input(&mut h).surface.input_mut().select(2, false);
+        input(&mut h).surface.input_mut().select(1, true);
         if composing {
             h.event(&ContentEvent::Preedit {
                 text: "ni".into(),
@@ -110,15 +113,18 @@ fn already_focused_padding_preserves_preedit_selection_and_undo() {
                 replacement: None,
             });
         }
-        let before = h.focused_text().unwrap().input.external_baseline();
+        let before = h.focused_text().unwrap().input().external_baseline();
         let p = padding(&h);
         click(&mut h, p);
-        assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+        assert_eq!(
+            h.focused_text().unwrap().input().external_baseline(),
+            before
+        );
         if !composing {
             h.event(&ContentEvent::TextCommand(
                 tekes_ui_controls::TextEditCommand::Undo,
             ));
-            assert_eq!(h.focused_text().unwrap().input.text, "Draft A😀B");
+            assert_eq!(h.focused_text().unwrap().text(), "Draft A😀B");
         }
     }
 }
@@ -149,8 +155,8 @@ fn readonly_disabled_hidden_and_parent_disabled_reject_redirect() {
         let mut h = setup();
         let p = padding(&h);
         match state {
-            0 => input(&mut h).surface.input.read_only = true,
-            1 => input(&mut h).surface.input.disabled = true,
+            0 => input(&mut h).surface.input_mut().set_read_only(true),
+            1 => input(&mut h).surface.input_mut().set_disabled(true),
             2 => {
                 h.get_mut(BAND)
                     .unwrap()
@@ -239,7 +245,7 @@ fn tab_reverse_tab_and_ax_retain_original_nodes_only() {
 #[test]
 fn existing_editor_drag_capture_is_not_stolen_by_padding() {
     let mut h = setup();
-    let p = h.text_surface(EDITOR).unwrap().outer.center();
+    let p = h.text_surface(EDITOR).unwrap().outer().center();
     h.event(&ContentEvent::PointerDown(p));
     let pad = padding(&h);
     h.event(&ContentEvent::PointerMove(pad));
@@ -315,7 +321,7 @@ fn padding_focus_is_atomic_for_original_key_chain_and_repeated_click_preserves_i
     let key = result.text_key.unwrap();
     assert_eq!(key.target, Some(EDITOR));
     assert_ne!(key.disposition, TextKeyDisposition::Cancelled);
-    assert!(h.focused_text().unwrap().input.marked.is_some());
+    assert!(h.focused_text().unwrap().marked().is_some());
 }
 #[test]
 fn old_editor_key_chain_cannot_leak_across_atomic_padding_focus_switch() {
@@ -334,7 +340,7 @@ fn old_editor_key_chain_cannot_leak_across_atomic_padding_focus_switch() {
             characters_ignoring_modifiers: "n".into(),
         },
     });
-    let before = input(&mut h).surface.input.external_baseline();
+    let before = input(&mut h).surface.input().external_baseline();
     let p = padding(&h);
     click(&mut h, p);
     assert_eq!(h.focused(), Some(EDITOR));
@@ -350,12 +356,15 @@ fn old_editor_key_chain_cannot_leak_across_atomic_padding_focus_switch() {
         result.text_key.unwrap().disposition,
         TextKeyDisposition::Cancelled
     );
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
 }
 #[test]
 fn visible_container_with_fully_clipped_text_does_not_focus_invisible_editor() {
     let mut h = setup();
-    let outer = h.text_surface(EDITOR).unwrap().outer;
+    let outer = h.text_surface(EDITOR).unwrap().outer();
     let f = Rect::new(20., 30., 600., 260.);
     let clip = Rect::new(
         f.min_x(),
@@ -371,7 +380,7 @@ fn visible_container_with_fully_clipped_text_does_not_focus_invisible_editor() {
     assert!(
         h.text_surface(EDITOR)
             .unwrap()
-            .outer
+            .outer()
             .intersection(&clip)
             .is_none()
     );
@@ -393,15 +402,15 @@ fn padding_intent_is_read_only_and_dispatch_resolves_the_same_original_editor() 
         text: "retained".into(),
         replacement: None,
     });
-    input(&mut h).surface.input.select(2, false);
-    input(&mut h).surface.input.select(1, true);
+    input(&mut h).surface.input_mut().select(2, false);
+    input(&mut h).surface.input_mut().select(1, true);
     h.event(&ContentEvent::Preedit {
         text: "ni".into(),
         selection: 0..2,
         clauses: vec![],
         replacement: None,
     });
-    let baseline = h.focused_text().unwrap().input.external_baseline();
+    let baseline = h.focused_text().unwrap().input().external_baseline();
     let focus = h.capture_focus();
     let semantics = format!("{:?}", h.semantics());
     for _ in 0..3 {
@@ -409,14 +418,14 @@ fn padding_intent_is_read_only_and_dispatch_resolves_the_same_original_editor() 
     }
     assert_eq!(h.capture_focus(), focus);
     assert_eq!(
-        h.focused_text().unwrap().input.external_baseline(),
+        h.focused_text().unwrap().input().external_baseline(),
         baseline
     );
     assert_eq!(format!("{:?}", h.semantics()), semantics);
     assert!(h.drain_actions().is_empty());
     assert!(!h.event(&e).changed);
     assert_eq!(
-        h.focused_text().unwrap().input.external_baseline(),
+        h.focused_text().unwrap().input().external_baseline(),
         baseline
     );
 }
@@ -494,7 +503,7 @@ fn padding_intent_obeys_live_capture_and_never_acquires_its_own() {
     let mut h = setup();
     let p = padding(&h);
     let event = ContentEvent::PointerDown(p);
-    let editor = h.text_surface(EDITOR).unwrap().outer.center();
+    let editor = h.text_surface(EDITOR).unwrap().outer().center();
     assert!(h.event(&ContentEvent::PointerDown(editor)).capture_pointer);
     assert_eq!(h.padding_focus_target(&event), None);
     h.event(&ContentEvent::PointerUp(editor));
@@ -513,8 +522,8 @@ fn padding_intent_dispatch_rechecks_mutated_availability_and_mount() {
         let event = ContentEvent::PointerDown(padding(&h));
         assert_eq!(h.padding_focus_target(&event), Some(EDITOR));
         match mutation {
-            0 => input(&mut h).surface.input.read_only = true,
-            1 => input(&mut h).surface.input.disabled = true,
+            0 => input(&mut h).surface.input_mut().set_read_only(true),
+            1 => input(&mut h).surface.input_mut().set_disabled(true),
             2 => {
                 h.get_mut(BAND)
                     .unwrap()
@@ -577,7 +586,7 @@ fn padding_intent_preserves_original_key_epoch_and_undo_chain() {
         clauses: vec![],
         replacement: None,
     });
-    let before = h.focused_text().unwrap().input.external_baseline();
+    let before = h.focused_text().unwrap().input().external_baseline();
     assert_eq!(h.padding_focus_target(&event), Some(EDITOR));
     let out = h
         .event(&ContentEvent::TextKeyEnd {
@@ -588,7 +597,10 @@ fn padding_intent_preserves_original_key_epoch_and_undo_chain() {
         .unwrap();
     assert_eq!(out.target, Some(EDITOR));
     assert_ne!(out.disposition, TextKeyDisposition::Cancelled);
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     h.event(&ContentEvent::Commit {
         text: "你".into(),
         replacement: None,
@@ -596,7 +608,7 @@ fn padding_intent_preserves_original_key_epoch_and_undo_chain() {
     h.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert!(h.focused_text().unwrap().input.text.contains("retained"));
+    assert!(h.focused_text().unwrap().text().contains("retained"));
 }
 
 #[test]

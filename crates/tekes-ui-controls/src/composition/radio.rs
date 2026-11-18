@@ -1,8 +1,8 @@
 //! Fixed-label Radio Content over the original model and roving View.
 use super::*;
 use crate::{
-    RadioGroupView, SelectionEvent,
     extended::{Axis, RadioGroup, RadioSelectionError},
+    layout_view::{RadioGroupView, SelectionEvent},
 };
 use std::sync::Arc;
 
@@ -358,11 +358,11 @@ impl RadioGroupContent {
         }
     }
 }
-impl Component for RadioGroupContent {
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
+impl RadioGroupContent {
+    pub(super) fn prepare_radio_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
         action_preparation::prepare_original(
             self,
             request,
@@ -371,7 +371,8 @@ impl Component for RadioGroupContent {
             |d| (d.response, d.focus),
         )
     }
-
+}
+impl Component for RadioGroupContent {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let labels: Vec<_> = self.labels.iter().map(String::as_str).collect();
         MeasuredChild::new(RadioGroupView::measure_content(

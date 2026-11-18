@@ -4,9 +4,7 @@ use tekes_ui_composition_consumer::{
     scroll_updates::{COMPOSER, SCROLLER},
     skeleton_content::{self as fixture, BAR, RESULT, ROW},
 };
-use tekes_ui_controls::{
-    ControlKey, composition::*, feedback_view::SkeletonView, paint::skeleton_on_surface,
-};
+use tekes_ui_controls::{ControlKey, composition::*, feedback_view::SkeletonView};
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{
     Palette, Theme,
@@ -140,7 +138,7 @@ fn inherited_explicit_clear_unknown_context_preserve_mount() {
     assert_eq!(v.surface(), "panel");
     let mut scene = Scene::new();
     assert!(
-        skeleton_on_surface(
+        SkeletonView::paint_on_surface(
             &mut scene,
             Rect::new(0., 0., 50., 12.),
             Theme::LIGHT.into(),
@@ -449,9 +447,9 @@ fn compatibility_signature_keeps_canonical_canvas_geometry() {
     let f = Rect::new(2.25, 3.5, 40., 12.);
     let p = Theme::DARK.into();
     let mut a = Scene::new();
-    tekes_ui_controls::paint::skeleton(&mut a, f, p);
+    SkeletonView::paint(&mut a, f, p);
     let mut b = Scene::new();
-    skeleton_on_surface(&mut b, f, p, "canvas").unwrap();
+    SkeletonView::paint_on_surface(&mut b, f, p, "canvas").unwrap();
     assert_eq!(a, b);
 }
 #[test]

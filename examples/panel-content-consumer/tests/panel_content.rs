@@ -1,9 +1,5 @@
 //! Independent public consumer: original ContentHost owns all child measurement/layout.
-use tekes_ui_controls::{
-    Insets, TextSurfacePresentation,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{Insets, TextSurfacePresentation, composition::*, extended::{Axis, Stack}};
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::Theme;
 #[path = "support/coretext.rs"]
@@ -87,11 +83,11 @@ fn layout_diagnostic(host: &ContentHost, ids: &[ComponentId]) -> String {
                     .and_then(PanelContent::geometry);
                 let text_surface = host.text_surface(*id).map(|surface| {
                     (
-                        surface.presentation,
-                        surface.outer,
-                        surface.inner,
-                        surface.input.text.len(),
-                        surface.paragraph.as_ref().map(|p| p.lines.len()),
+                        surface.presentation(),
+                        surface.outer(),
+                        surface.inner(),
+                        surface.text().len(),
+                        surface.paragraph().map(|p| p.lines.len()),
                     )
                 });
                 let text_layout = host.semantic_text_layout_snapshot(*id, None).map(|layout| {
@@ -131,7 +127,7 @@ fn layout_diagnostic(host: &ContentHost, ids: &[ComponentId]) -> String {
 fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_intent() {
     let composer = panel_fixture::composer();
     assert_eq!(
-        composer.surface.presentation,
+        composer.surface.presentation(),
         TextSurfacePresentation::Field
     );
 
@@ -157,14 +153,13 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
         .collect();
     let first_layout = editor_layout(&host);
     let first_surface = host.text_surface(EDITOR).unwrap();
-    assert_eq!(first_surface.shaped, first_surface.input.text);
+    assert_eq!(first_surface.shaped(), first_surface.text());
     assert!(
         first_surface
-            .paragraph
-            .as_ref()
+            .paragraph()
             .is_some_and(|p| !p.lines.is_empty())
     );
-    assert!(first_surface.inner.size.width > 0. && first_surface.inner.size.height > 0.);
+    assert!(first_surface.inner().size.width > 0. && first_surface.inner().size.height > 0.);
     assert!(!first_layout.lines.is_empty() && !first_layout.carets.is_empty());
     assert!(
         !text.surface_shape_calls.is_empty(),
@@ -277,7 +272,7 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
     assert_eq!(host.focused(), Some(EDITOR));
     let resized_layout = editor_layout(&host);
     assert!(!resized_layout.lines.is_empty() && !resized_layout.carets.is_empty());
-    assert!(host.text_surface(EDITOR).unwrap().inner.size.width > 0.);
+    assert!(host.text_surface(EDITOR).unwrap().inner().size.width > 0.);
     assert_ne!(
         first_layout.input, resized_layout.input,
         "changed layout/type scale must update original text geometry"
@@ -470,10 +465,10 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
 #[test]
 fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effects() {
     let mut field = TextFieldContent::new("Inline", "focus witness at curved edge");
-    field.surface.input.multiline = true;
+    field.surface.set_multiline(true);
     field.show_metadata = false;
     field.viewport = TextViewport::Fill;
-    assert_eq!(field.surface.presentation, TextSurfacePresentation::Field);
+    assert_eq!(field.surface.presentation(), TextSurfacePresentation::Field);
     let root = Content::new(
         ComponentId(8260),
         panel(Content::new(ComponentId(8261), field), true),
@@ -493,8 +488,8 @@ fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effect
         .cloned()
         .expect("the original zero-inset Panel publishes its arranged curve");
     let surface_before = host.text_surface(ComponentId(8261)).unwrap();
-    assert_eq!(surface_before.presentation, TextSurfacePresentation::Field);
-    assert!(surface_before.outer.size.width > 0. && surface_before.inner.size.width > 0.);
+    assert_eq!(surface_before.presentation(), TextSurfacePresentation::Field);
+    assert!(surface_before.outer().size.width > 0. && surface_before.inner().size.width > 0.);
     let layout_before = host
         .semantic_text_layout_snapshot(ComponentId(8261), None)
         .unwrap();
@@ -535,14 +530,14 @@ fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effect
 
 #[test]
 fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
-    use tekes_ui_controls::composition::{
-        SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewSlotIds,
+    use tekes_ui_controls::{
+        composition::{SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewSlotIds},
     };
     let mut editor = TextFieldContent::new("Inline", "self-framed 😀 value");
-    editor.surface.input.multiline = true;
+    editor.surface.set_multiline(true);
     editor.show_metadata = false;
     editor.viewport = TextViewport::Fill;
-    assert_eq!(editor.surface.presentation, TextSurfacePresentation::Field);
+    assert_eq!(editor.surface.presentation(), TextSurfacePresentation::Field);
     let leading = Content::new(
         ComponentId(8230),
         panel(
@@ -602,7 +597,7 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
     assert!(
         host.text_surface(ComponentId(8241))
             .unwrap()
-            .inner
+            .inner()
             .size
             .width
             > 0.

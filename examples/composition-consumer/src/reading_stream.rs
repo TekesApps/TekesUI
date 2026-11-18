@@ -72,8 +72,7 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
                     vec![
                         Content::new(APPEND, Button::new("Append one")),
                         Content::new(STREAM, Button::new("Stream four")),
-                        Content::new(LATEST, Button::new("Return to latest"))
-                            .preserving_focus(),
+                        Content::new(LATEST, Button::new("Return to latest")).preserving_focus(),
                     ],
                 ),
                 row(
@@ -94,7 +93,7 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .variant = tekes_ui_controls::paint::ButtonVariant::Quiet;
+            .variant = tekes_ui_controls::ButtonVariant::Quiet;
     }
     host.set_action_events(true);
     Ok((host, StreamState::default()))
@@ -108,7 +107,7 @@ fn field(host: &mut ContentHost) -> &mut TextFieldContent {
 impl StreamState {
     fn append(&mut self, host: &mut ContentHost) {
         self.appended += 1;
-        field(host).surface.input.text.push_str(&format!(
+        field(host).surface.append_text(&format!(
             "Arrival {:03}｜新内容，保持当前阅读意图与独立草稿。\n",
             self.appended
         ));

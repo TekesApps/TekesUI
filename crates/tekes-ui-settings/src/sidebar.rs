@@ -1,8 +1,5 @@
-#[path = "sidebar_list.rs"]
-mod sidebar_list;
 use crate::Schema;
 use anyhow::Result;
-pub use sidebar_list::SelectableListContent;
 use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer,
@@ -64,7 +61,7 @@ impl SidebarGroup {
 /// Definition-driven Group -> Item navigation. History remains owned by the Host service.
 #[derive(Debug)]
 pub struct SettingsSidebar {
-    pub host: ContentHost,
+    host: ContentHost,
     items: BTreeMap<ComponentId, SidebarGroup>,
     selected_item: Option<String>,
     back_requested: bool,
@@ -384,6 +381,24 @@ impl SettingsSidebar {
     pub fn take_back(&mut self) -> bool {
         std::mem::take(&mut self.back_requested)
     }
+    pub fn host(&self) -> &ContentHost {
+        &self.host
+    }
+    pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
+        self.host.focus(id, visible)
+    }
+    pub fn enter_focus(&mut self, reverse: bool) -> bool {
+        self.host.enter_focus(reverse)
+    }
+    pub fn set_focus_wrap(&mut self, wrap: bool) {
+        self.host.set_focus_wrap(wrap);
+    }
+    pub fn cancel_host(&mut self) {
+        self.host.cancel();
+    }
+    pub fn with_host_mut<R>(&mut self, visit: impl FnOnce(&mut ContentHost) -> R) -> R {
+        visit(&mut self.host)
+    }
     pub fn select(&mut self, item: &str) {
         self.selected_item = Some(item.into());
         for (id, group) in &self.items {
@@ -524,20 +539,20 @@ mod search_focus_tests {
             key: ControlKey::Tab { reverse: false },
             down: true,
         });
-        sidebar.host.focus(None, true);
+        sidebar.focus(None, true);
         sidebar.sync_search().unwrap();
         assert!(sidebar.search_button.is_some());
         assert_eq!(sidebar.query, "font");
 
         // Clearing query to empty and blurring cancels search cleanly.
-        assert!(sidebar.host.focus(Some(ComponentId(6)), true));
+        assert!(sidebar.focus(Some(ComponentId(6)), true));
         sidebar.event(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::SelectAll,
         ));
         sidebar.event(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::DeleteBackward,
         ));
-        sidebar.host.focus(None, false);
+        sidebar.focus(None, false);
         sidebar.sync_search().unwrap();
         assert!(sidebar.search_button.is_none());
         assert!(sidebar.query.is_empty());

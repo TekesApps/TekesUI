@@ -759,19 +759,20 @@ impl ContentHost {
         }
         self.validate_curve_path(&path)?;
         let target_node = path.last().expect("collected reveal target");
-        let (required_witness, required_evidence) = match target_node
-            .component
-            .required_focus_space()
-        {
-            RequiredFocusSpace::Sufficient { witness, evidence } => (Some(witness), Some(evidence)),
-            RequiredFocusSpace::Insufficient | RequiredFocusSpace::Unmeasured => {
-                return Err(HostRevealError::NoFeasibleRegion);
-            }
-            RequiredFocusSpace::Legacy if target_node.component.requires_focus_reveal() => {
-                return Err(HostRevealError::UnsupportedLayout);
-            }
-            RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired => (None, None),
-        };
+        let (required_witness, required_evidence) =
+            match target_node.component.required_focus_space() {
+                RequiredFocusSpace::Sufficient { witness } => (
+                    Some(witness),
+                    precheck_dispatch::required_focus_evidence(&*target_node.component),
+                ),
+                RequiredFocusSpace::Insufficient | RequiredFocusSpace::Unmeasured => {
+                    return Err(HostRevealError::NoFeasibleRegion);
+                }
+                RequiredFocusSpace::Legacy if target_node.component.requires_focus_reveal() => {
+                    return Err(HostRevealError::UnsupportedLayout);
+                }
+                RequiredFocusSpace::Legacy | RequiredFocusSpace::NotRequired => (None, None),
+            };
         if target_node.component.requires_focus_reveal() && required_witness.is_none() {
             return Err(HostRevealError::UnsupportedLayout);
         }
@@ -1263,14 +1264,11 @@ impl ContentHost {
             .map_err(|_| HostRevealError::StalePlan)?;
         if let Some(witness) = plan.required_witness {
             let current = path.last().map(|n| n.component.required_focus_space());
-            if current
-                != Some(RequiredFocusSpace::Sufficient {
-                    witness,
-                    evidence: plan
-                        .required_evidence
-                        .clone()
-                        .ok_or(HostRevealError::StalePlan)?,
-                })
+            let current_evidence = path
+                .last()
+                .and_then(|n| precheck_dispatch::required_focus_evidence(&*n.component));
+            if current != Some(RequiredFocusSpace::Sufficient { witness })
+                || current_evidence != plan.required_evidence
             {
                 return Err(HostRevealError::StalePlan);
             }
@@ -1599,7 +1597,10 @@ impl ContentHost {
         }
         // Target focus-space remains independent of any certified ancestor clip.
         let (required_witness, required_evidence) = match target.component.required_focus_space() {
-            RequiredFocusSpace::Sufficient { witness, evidence } => (Some(witness), Some(evidence)),
+            RequiredFocusSpace::Sufficient { witness } => (
+                Some(witness),
+                precheck_dispatch::required_focus_evidence(&*target.component),
+            ),
             RequiredFocusSpace::Insufficient | RequiredFocusSpace::Unmeasured => {
                 return Err(HostRevealError::NoFeasibleRegion);
             }
@@ -2174,4 +2175,116 @@ fn validate_rect_in_curve_shapes(rect: Rect, shapes: &[ClipShape]) -> Result<(),
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+#[derive(Debug)]
+pub(super) struct EvidenceProbe {
+    pub(super) witness: Rect,
+    pub(super) evidence: RequiredFocusEvidence,
+    pub(super) focused: std::rc::Rc<std::cell::Cell<bool>>,
+}
+#[cfg(test)]
+impl Component for EvidenceProbe {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+    fn measure(
+        &mut self,
+        _: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> crate::layout::MeasuredChild {
+        crate::layout::MeasuredChild::new(available)
+    }
+    fn focusable(&self) -> bool {
+        true
+    }
+    fn set_focus(&mut self, focused: bool, _: bool) {
+        self.focused.set(focused);
+    }
+    fn requires_focus_reveal(&self) -> bool {
+        true
+    }
+    fn required_focus_space(&self) -> RequiredFocusSpace {
+        RequiredFocusSpace::Sufficient {
+            witness: self.witness,
+        }
+    }
+}
+#[cfg(test)]
+mod evidence_tests {
+    use super::*;
+    use crate::composition::{PanelContent, StackContent};
+    use crate::extended::{Axis, Stack};
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+            Size::new((s.len() as f32 * 7.).min(w), 18.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: crate::ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn changed_target_focus_evidence_rejects_plan_before_focus_or_scroll_mutation() {
+        let root_id = ComponentId(9901);
+        let child_id = ComponentId(9902);
+        let focused = std::rc::Rc::new(std::cell::Cell::new(false));
+        let witness = Rect::new(40., 25., 12., 10.);
+        let probe = EvidenceProbe {
+            witness,
+            evidence: RequiredFocusEvidence::new(),
+            focused: focused.clone(),
+        };
+        let panel = PanelContent::new(Content::new(
+            ComponentId(9903),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: None,
+                children: vec![Content::new(child_id, probe)],
+            },
+        ))
+        .unwrap();
+        let mut host = ContentHost::new(Content::new(root_id, panel)).unwrap();
+        let f = Rect::new(0., 0., 120., 100.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            f,
+            f,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let plan = host
+            .plan_host_reveal(
+                child_id,
+                crate::ScrollRevealOptions::default(),
+                &[],
+                HostRevealBudget::default(),
+            )
+            .unwrap();
+        host.get_mut(child_id)
+            .unwrap()
+            .component_mut::<EvidenceProbe>()
+            .unwrap()
+            .evidence = RequiredFocusEvidence::new();
+        assert_eq!(
+            host.commit_host_reveal(plan),
+            Err(HostRevealError::StalePlan)
+        );
+        assert!(!focused.get());
+        assert_eq!(host.focused(), None);
+    }
 }

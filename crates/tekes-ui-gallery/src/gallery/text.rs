@@ -366,7 +366,7 @@ impl TextEngine {
         frame: Rect,
         clip: Option<Rect>,
         palette: impl Into<tekes_ui_tokens::Palette>,
-        variant: tekes_ui_controls::paint::ButtonVariant,
+        variant: tekes_ui_controls::ButtonVariant,
         size: ButtonSize,
         role: proposal::TextRole,
         align: ButtonTextAlign,
@@ -893,7 +893,7 @@ mod tests {
 
     #[test]
     fn shared_button_measure_and_render_keep_wrapped_labels_in_the_same_geometry() {
-        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
+        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign};
         use tekes_ui_scene::Primitive;
 
         let labels = [
@@ -922,7 +922,7 @@ mod tests {
                         None,
                         crate::gallery::brands::brand_palette(Theme::LIGHT, 0)
                             .expect("registered Gallery brand"),
-                        paint::ButtonVariant::Quiet,
+                        tekes_ui_controls::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
                         ButtonTextAlign::Center,
@@ -1011,7 +1011,7 @@ mod tests {
                         None,
                         crate::gallery::brands::brand_palette(Theme::LIGHT, 0)
                             .expect("registered Gallery brand"),
-                        paint::ButtonVariant::Quiet,
+                        tekes_ui_controls::ButtonVariant::Quiet,
                         ButtonSize::Md,
                         proposal::TextRole::UiBody,
                         ButtonTextAlign::Center,
@@ -1032,7 +1032,7 @@ mod tests {
 
     #[test]
     fn shared_button_single_line_cache_survives_animated_frame_widths() {
-        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint};
+        use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign};
 
         let mut text = TextEngine::new();
         text.set_type_scale(1.5);
@@ -1053,7 +1053,7 @@ mod tests {
                 Rect::new(0.0, 0.0, width, 48.0),
                 None,
                 palette,
-                paint::ButtonVariant::Quiet,
+                tekes_ui_controls::ButtonVariant::Quiet,
                 ButtonSize::Md,
                 proposal::TextRole::UiBody,
                 ButtonTextAlign::Center,
@@ -1113,7 +1113,7 @@ mod tests {
 #[cfg(test)]
 mod gold7_focus_raster {
     use super::*;
-    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, paint::ButtonVariant};
+    use tekes_ui_controls::{ButtonModel, ButtonSize, ButtonTextAlign, ButtonVariant};
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{Rect, Scene};
 

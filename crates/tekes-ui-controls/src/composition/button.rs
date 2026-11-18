@@ -392,6 +392,42 @@ impl Button {
         )
     }
 }
+impl Button {
+    pub(super) fn prepare_button_effects(
+        &self,
+        hooks: &[PreparedHook],
+    ) -> Result<PreparedEffects, PreparedEffectsError> {
+        if self.help.is_some()
+            && self.help_revision == u64::MAX
+            && hooks
+                .iter()
+                .any(|h| h.kind == PreparedHookKind::Lifecycle(Lifecycle::Unmounted))
+        {
+            return Err(PreparedEffectsError::CounterCapacity);
+        }
+        Ok(PreparedEffects::local(self, hooks))
+    }
+
+    pub(super) fn prepare_button_action(
+        &self,
+        request: ComponentActionRequest<'_>,
+    ) -> ActionPreparation {
+        let owned = action_preparation::OwnedActionRequest::read(request);
+        if self
+            .decide_action(&owned)
+            .is_some_and(|decision| decision.response.activated && self.activations == usize::MAX)
+        {
+            return action_preparation::rejected();
+        }
+        action_preparation::prepare_original(
+            self,
+            request,
+            Self::decide_action,
+            Self::apply_action,
+            |decision| (decision.response, decision.focus),
+        )
+    }
+}
 impl Component for Button {
     #[cfg(feature = "inspection")]
     fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
@@ -411,25 +447,11 @@ impl Component for Button {
             ),
         ])
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        if self.help.is_some()
-            && self.help_revision == u64::MAX
-            && hooks
-                .iter()
-                .any(|h| h.kind == PreparedHookKind::Lifecycle(Lifecycle::Unmounted))
-        {
-            return Err(PreparedEffectsError::CounterCapacity);
-        }
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
 
     fn focus_boundary_visible(&self) -> bool {
@@ -447,25 +469,6 @@ impl Component for Button {
         } else {
             CurveSubtreeCapability::Recursive
         }
-    }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepare_action(&self, request: ComponentActionRequest<'_>) -> ActionPreparation {
-        let owned = action_preparation::OwnedActionRequest::read(request);
-        if self
-            .decide_action(&owned)
-            .is_some_and(|decision| decision.response.activated && self.activations == usize::MAX)
-        {
-            return action_preparation::rejected();
-        }
-        action_preparation::prepare_original(
-            self,
-            request,
-            Self::decide_action,
-            Self::apply_action,
-            |decision| (decision.response, decision.focus),
-        )
     }
 
     fn focus_decoration_above_siblings(&self) -> bool {

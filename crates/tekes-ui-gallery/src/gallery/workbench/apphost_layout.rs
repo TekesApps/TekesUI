@@ -5,7 +5,6 @@ use tekes_ui_controls::{
     composition::*,
     extended::{Axis, Grid, Stack},
     layout::MeasuredChild,
-    paint,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::proposal::TextRole;
@@ -70,7 +69,7 @@ impl Component for LayoutFixture {
                     text.backing_scale(),
                 );
             } else {
-                paint::surface_at_scale(
+                tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                     scene,
                     frame.inset(0.5),
                     theme.palette,
@@ -247,20 +246,11 @@ impl Component for DialogViewport {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
         CurveSubtreeCapability::Recursive
     }
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
-    }
-    fn prepared_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(n)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn lifecycle(&mut self, _: Lifecycle) {
         self.arranged = false;

@@ -641,8 +641,8 @@ struct Gate {
     body: ListContent,
 }
 impl Component for Gate {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
 
     fn active(&self) -> bool {

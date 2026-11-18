@@ -429,8 +429,8 @@ fn approved_close_falls_right_then_left_and_reopen_preserves_mount_and_draft() {
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .text,
+            .input()
+            .text(),
         "retained draft"
     );
     assert!(

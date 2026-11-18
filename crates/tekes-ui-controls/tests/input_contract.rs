@@ -44,7 +44,7 @@ fn observe<T>(f: impl FnOnce() -> T) -> (T, Vec<(String, String)>) {
     }
 }
 fn layout(surface: &mut TextSurface, host: &mut TextHost, frame: Rect) {
-    let role = surface.role;
+    let role = surface.role();
     surface.layout_with(frame, None, 1., 1., |s, w| host.shape_surface(s, role, w));
 }
 #[test]
@@ -91,8 +91,8 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                             component == "tui.text-area",
                             read_only,
                         );
-                        surface.input.disabled = disabled;
-                        surface.error = state.starts_with("error");
+                        surface.input_mut().set_disabled(disabled);
+                        surface.set_error(state.starts_with("error"));
                         let frame = Rect::new(
                             16.,
                             18.,
@@ -105,33 +105,33 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                         );
                         layout(&mut surface, &mut host, frame);
                         if matches!(state, "selection" | "read-only-selection") {
-                            assert!(surface.input.select_range(2..4));
-                            assert_eq!(surface.input.selection(), 1..5);
-                            assert_eq!(surface.input.selected_text(), "😀e\u{301}");
+                            assert!(surface.input_mut().select_range(2..4));
+                            assert_eq!(surface.input().selection(), 1..5);
+                            assert_eq!(surface.input().selected_text(), "😀e\u{301}");
                             assert!(!surface.selection_rects(1..5).is_empty());
                         }
                         if state.starts_with("composing") {
-                            assert!(surface.input.select_range(1..5));
-                            assert!(surface.input.preedit("输入", 2..2, None));
-                            surface.clauses = vec![0..1, 1..2];
-                            assert_eq!(surface.input.marked, Some(1..3));
-                            assert!(!surface.input.select_range(0..1));
+                            assert!(surface.input_mut().select_range(1..5));
+                            assert!(surface.input_mut().preedit("输入", 2..2, None));
+                            surface.set_clauses(vec![0..1, 1..2]);
+                            assert_eq!(surface.marked(), Some(1..3));
+                            assert!(!surface.input_mut().select_range(0..1));
                         }
                         layout(&mut surface, &mut host, frame);
-                        let point = surface.inner.center();
+                        let point = surface.inner().center();
                         let before_hover = (
-                            surface.input.text.clone(),
-                            surface.input.selection(),
-                            surface.input.marked.clone(),
+                            surface.text().to_owned(),
+                            surface.input().selection(),
+                            surface.marked(),
                         );
                         let hover = surface.pointer_state(Some(point));
                         assert_eq!(hover.hovered, !disabled);
                         assert!(!hover.pressed);
                         assert_eq!(
                             (
-                                surface.input.text.clone(),
-                                surface.input.selection(),
-                                surface.input.marked.clone()
+                                surface.text().to_owned(),
+                                surface.input().selection(),
+                                surface.marked()
                             ),
                             before_hover
                         );
@@ -145,8 +145,8 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                         assert_eq!(pointer.pressed, state.ends_with("pressed") && !disabled);
                         assert!(!surface.pointer_state(None).hovered);
                         assert_eq!(surface.pointer_state(None).pressed, pointer.pressed);
-                        let draft = surface.input.text.clone();
-                        let selection = surface.input.selection();
+                        let draft = surface.text().to_owned();
+                        let selection = surface.input().selection();
                         let mut blink_on = Scene::new();
                         let mut blink_off = Scene::new();
                         surface.draw(&mut host, &mut blink_on, palette, focused, true);
@@ -172,7 +172,7 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                         assert_eq!(
                             boundary.border_color,
                             palette
-                                .color(if surface.error {
+                                .color(if surface.error() {
                                     "status-failed"
                                 } else if focused && !disabled {
                                     "border-focused"
@@ -194,23 +194,23 @@ fn input_states_preserve_draft_selection_geometry_and_editability() {
                             .unwrap()
                         );
                         assert!(!blink_on.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == frame.center())), "Field focus has no separate outer contour");
-                        assert_eq!(surface.input.text, draft);
-                        assert_eq!(surface.input.selection(), selection);
+                        assert_eq!(surface.text(), draft);
+                        assert_eq!(surface.input().selection(), selection);
                         assert_eq!(surface.visible_frame(), Some(frame));
                         if disabled || read_only {
-                            assert!(!surface.input.insert("x", None));
-                            assert!(!surface.input.preedit("pin", 3..3, None));
-                            assert!(!surface.input.delete(true, false));
-                            assert_eq!(surface.input.text, draft);
+                            assert!(!surface.input_mut().insert("x", None));
+                            assert!(!surface.input_mut().preedit("pin", 3..3, None));
+                            assert!(!surface.input_mut().delete(true, false));
+                            assert_eq!(surface.text(), draft);
                         }
                         if state.starts_with("composing") {
-                            assert!(surface.input.preedit("", 0..0, None));
-                            assert_eq!(surface.input.text, "A😀e\u{301}中 Sample");
-                            assert_eq!(surface.input.selection(), 1..5);
-                            assert!(surface.input.preedit("你", 1..1, None));
-                            assert!(surface.input.insert("你", None));
-                            assert!(surface.input.undo());
-                            assert_eq!(surface.input.text, "A😀e\u{301}中 Sample");
+                            assert!(surface.input_mut().preedit("", 0..0, None));
+                            assert_eq!(surface.text(), "A😀e\u{301}中 Sample");
+                            assert_eq!(surface.input().selection(), 1..5);
+                            assert!(surface.input_mut().preedit("你", 1..1, None));
+                            assert!(surface.input_mut().insert("你", None));
+                            assert!(surface.input_mut().undo());
+                            assert_eq!(surface.text(), "A😀e\u{301}中 Sample");
                         }
                         // Ending capture changes no input skin or text/selection;
                         // hover/pressed have no Button appearance or activation.
@@ -268,7 +268,7 @@ fn pointer_snapshot_uses_visible_geometry_and_existing_selection_capture() {
             let mut surface = TextSurface::new("A😀 e\u{301} 中文 sample", multiline, read_only);
             let frame = Rect::new(20., 20., 240., 80.);
             let clip = Rect::new(20., 20., 100., 80.);
-            let role = surface.role;
+            let role = surface.role();
             surface.layout_with(frame, Some(clip), 1., 1., |s, w| {
                 host.shape_surface(s, role, w)
             });
@@ -278,22 +278,22 @@ fn pointer_snapshot_uses_visible_geometry_and_existing_selection_capture() {
             assert!(!surface.pointer_state(Some(outside)).hovered);
             assert!(surface.pointer_down(outside, false, 1, 24.).is_none());
             assert!(!surface.pointer_state(Some(outside)).pressed);
-            let draft = surface.input.text.clone();
+            let draft = surface.text().to_owned();
             assert!(surface.pointer_down(inside, false, 1, 24.).is_some());
             assert!(surface.pointer_state(None).pressed);
             surface.pointer_drag(outside, 24.);
-            let selection = surface.input.selection();
+            let selection = surface.input().selection();
             surface.pointer_up();
             assert!(!surface.pointer_state(Some(inside)).pressed);
-            assert_eq!(surface.input.selection(), selection);
-            assert_eq!(surface.input.text, draft);
+            assert_eq!(surface.input().selection(), selection);
+            assert_eq!(surface.text(), draft);
             surface.pointer_down(inside, false, 1, 24.);
-            surface.input.disabled = true;
+            surface.input_mut().set_disabled(true);
             let state = surface.pointer_state(Some(inside));
             assert!(state.disabled);
             assert!(!state.hovered && !state.pressed);
             assert!(!surface.pointer_drag(outside, 24.));
-            surface.input.disabled = false;
+            surface.input_mut().set_disabled(false);
             assert!(!surface.pointer_state(Some(inside)).pressed);
             surface.pointer_down(inside, false, 1, 24.);
             surface.cancel_interaction();

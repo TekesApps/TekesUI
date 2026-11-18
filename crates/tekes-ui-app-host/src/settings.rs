@@ -284,9 +284,11 @@ impl SettingsSurface {
     ) -> bool {
         use tekes_ui_platform_macos::AccessibilityAction;
         let response = if owner.0 == 1 && sidebar_visible {
-            publication.dispatch(owner, &mut self.sidebar.host, target, action.clone())
+            self.sidebar
+                .with_host_mut(|host| publication.dispatch(owner, host, target, action.clone()))
         } else if owner.0 == 2 || owner.0 == u64::MAX {
-            publication.dispatch(owner, &mut self.form.host, target, action.clone())
+            self.form
+                .with_host_mut(|host| publication.dispatch(owner, host, target, action.clone()))
         } else {
             return false;
         };
@@ -299,11 +301,11 @@ impl SettingsSurface {
             // The current original publication must authorize delivery first.
             // Its accepted owner keeps the focus semantics of that exact action.
             if owner.0 == 1 {
-                self.form.host.focus(None, false);
+                self.form.focus(None, false);
                 if matches!(action, AccessibilityAction::Press)
-                    && let Some(id) = self.sidebar.host.semantics().iter().find_map(|node| {
-                        (self.sidebar.host.semantic_mount(node.id) == Some(target.component)
-                            && self.sidebar.host.get(node.id).is_some_and(|n| {
+                    && let Some(id) = self.sidebar.host().semantics().iter().find_map(|node| {
+                        (self.sidebar.host().semantic_mount(node.id) == Some(target.component)
+                            && self.sidebar.host().get(node.id).is_some_and(|n| {
                                 n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                                     .is_some()
                             }))
@@ -312,10 +314,10 @@ impl SettingsSurface {
                 {
                     // Retain the original Settings List Press keyboard intent,
                     // after delivery, without overriding AX Focus visibility.
-                    self.sidebar.host.focus(Some(id), false);
+                    self.sidebar.focus(Some(id), false);
                 }
             } else {
-                self.sidebar.host.focus(None, false);
+                self.sidebar.focus(None, false);
             }
         }
         response.consumed
@@ -495,7 +497,7 @@ impl SettingsSurface {
         }
     }
     fn composition_active(&self) -> bool {
-        self.form.host.is_composing()
+        self.form.host().is_composing()
     }
     pub fn undo_action(
         &mut self,
@@ -525,8 +527,8 @@ impl SettingsSurface {
             })?;
             self.pending = true;
             self.restoring = true;
-            self.form.host.cancel();
-            self.form.host.focus(None, false);
+            self.form.cancel_host();
+            self.form.focus(None, false);
             self.message.clear();
         }
         Ok(())
@@ -718,8 +720,8 @@ impl SettingsSurface {
         );
     }
     pub fn text_state(&self) -> Option<TextInputState> {
-        crate::columns::text_state(&self.sidebar.host)
-            .or_else(|| crate::columns::text_state(&self.form.host))
+        crate::columns::text_state(self.sidebar.host())
+            .or_else(|| crate::columns::text_state(self.form.host()))
     }
 }
 
@@ -821,19 +823,14 @@ mod autosave_restore_tests {
                 Theme::LIGHT.into(),
             )
             .unwrap();
-        assert!(surface.form.host.focus(Some(ComponentId(101)), true));
-        surface
-            .form
-            .host
-            .event_with_text(
+        assert!(surface.form.focus(Some(ComponentId(101)), true));
+        surface.form.with_host_mut(|host| {
+            host.event_with_text(
                 &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::SelectAll),
                 &mut crate::text::Text::new(),
             )
             .unwrap();
-        surface
-            .form
-            .host
-            .event_with_text(
+            host.event_with_text(
                 &ContentEvent::Commit {
                     text: "140%".into(),
                     replacement: None,
@@ -841,6 +838,7 @@ mod autosave_restore_tests {
                 &mut crate::text::Text::new(),
             )
             .unwrap();
+        });
         assert!(surface.form.has_number_draft());
         surface.discard_changes();
         assert!(!surface.form.has_number_draft());

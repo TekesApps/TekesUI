@@ -89,7 +89,7 @@ fn field() -> TextFieldContent {
     field.show_metadata = false;
     field.viewport = TextViewport::Fixed(90.);
     field.surface = TextSurface::new(&value, true, false);
-    field.surface.scroll.set_reduced_motion(true);
+    field.surface.scroll_mut().set_reduced_motion(true);
     field
 }
 fn fixture(bubble: bool) -> ContentHost {
@@ -117,7 +117,7 @@ fn surface(host: &ContentHost) -> &TextSurface {
     host.text_surface(AREA).unwrap()
 }
 fn offset(host: &ContentHost) -> f32 {
-    surface(host).scroll.offset.y
+    surface(host).scroll().offset.y
 }
 fn parent_offset(host: &ContentHost) -> f32 {
     host.get(ROOT)
@@ -129,10 +129,10 @@ fn parent_offset(host: &ContentHost) -> f32 {
         .y
 }
 fn position(host: &ContentHost) -> Point {
-    surface(host).inner.center()
+    surface(host).inner().center()
 }
 fn outside(host: &ContentHost) -> Point {
-    let frame = surface(host).outer;
+    let frame = surface(host).outer();
     Point::new(frame.center().x, frame.max_y() + 10.)
 }
 fn send(
@@ -223,7 +223,7 @@ fn text_wheel_nonprecise_edge_disabled_axes_and_button_keep_parent_bubbling() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.scroll.scroll_by(0., f32::MAX);
+    field.surface.scroll_mut().scroll_by(0., f32::MAX);
     let inside = position(&host);
     send(&mut host, inside, 1., Phase::None, Phase::None, false);
     assert!(
@@ -237,7 +237,7 @@ fn text_wheel_nonprecise_edge_disabled_axes_and_button_keep_parent_bubbling() {
         .component_mut::<TextFieldContent>()
         .unwrap()
         .surface
-        .scroll
+        .scroll_mut()
         .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Disabled);
     let inside = position(&host);
     send(&mut host, inside, 20., Phase::Began, Phase::None, true);
@@ -296,8 +296,8 @@ fn text_wheel_mount_blur_disabled_inactive_cancel_and_reparent_revoke_tail() {
                     .component_mut::<TextFieldContent>()
                     .unwrap()
                     .surface
-                    .input
-                    .disabled = true;
+                    .input_mut()
+                    .set_disabled(true);
             }
             "inactive" => {
                 host.set_window_active(false);
@@ -365,9 +365,9 @@ fn text_wheel_end_does_not_cancel_pointer_capture_focus_or_marked_text() {
         &mut Text,
     )
     .unwrap();
-    let text = surface(&host).input.text.clone();
-    let marked = surface(&host).input.marked.clone();
-    let selection = surface(&host).input.selection();
+    let text = surface(&host).text().to_owned();
+    let marked = surface(&host).marked();
+    let selection = surface(&host).input().selection();
     assert!(marked.is_some());
     begin(&mut host);
     let point = outside(&host);
@@ -379,9 +379,9 @@ fn text_wheel_end_does_not_cancel_pointer_capture_focus_or_marked_text() {
         "wheel end preserves the exact pointer owner and capture epoch"
     );
     assert_eq!(host.focused(), Some(AREA));
-    assert_eq!(surface(&host).input.text, text);
-    assert_eq!(surface(&host).input.marked, marked);
-    assert_eq!(surface(&host).input.selection(), selection);
+    assert_eq!(surface(&host).text(), text);
+    assert_eq!(surface(&host).marked(), marked);
+    assert_eq!(surface(&host).input().selection(), selection);
     host.event_with_text(&ContentEvent::PointerUp(point), &mut Text)
         .unwrap();
     assert_eq!(host.pointer_capture(), None);

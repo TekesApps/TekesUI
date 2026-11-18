@@ -1047,15 +1047,15 @@ mod tests {
             fn prepare_for_render(&mut self) {
                 self.prepares.set(self.prepares.get() + 1);
                 let value = self.next.borrow().clone();
-                if self.host.text_surface(ComponentId(1)).unwrap().input.text != value {
+                if self.host.text_surface(ComponentId(1)).unwrap().text() != value {
                     self.host
                         .get_mut(ComponentId(1))
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap()
                         .surface
-                        .input
-                        .text = value;
+                        .input_mut()
+                        .set_text(&value);
                 }
             }
             fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
@@ -1079,10 +1079,7 @@ mod tests {
         };
         let mut container = LocalContainer::from_source("derived", source);
         container.with_host(&mut |host| {
-            assert_eq!(
-                host.text_surface(ComponentId(1)).unwrap().input.text,
-                "initial"
-            )
+            assert_eq!(host.text_surface(ComponentId(1)).unwrap().text(), "initial")
         });
         assert_eq!(prepares.get(), 0);
         let mut text = crate::text::Text::new();
@@ -1182,7 +1179,7 @@ mod tests {
             &mut text,
         )
         .unwrap();
-        c.with_host(&mut |h| assert_eq!(h.focused_text().unwrap().input.text, "本地 mixed"));
+        c.with_host(&mut |h| assert_eq!(h.focused_text().unwrap().text(), "本地 mixed"));
         let next = Rect::new(40., 60., 180., 160.);
         c.render(
             &mut Scene::new(),
@@ -1249,16 +1246,16 @@ mod text_state_tests {
         let frame = Rect::new(0., 0., 300., 80.);
         render(&mut host, frame, frame);
         host.focus(Some(FIELD), true);
-        let input = &mut host
+        let input = host
             .get_mut(FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
+            .input_mut();
         input.select(1, false);
         input.select(3, true);
-        input.marked = Some(1..3);
+        assert!(input.set_marked_range(Some(1..3)));
         let state = text_state(&host).unwrap();
         assert_eq!(state.text, "A😀B");
         assert_eq!(state.caret_index, 3);
@@ -1309,16 +1306,16 @@ mod text_state_tests {
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .disabled = true;
+            .input_mut()
+            .set_disabled(true);
         assert!(text_state(&host).is_none());
         host.get_mut(FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
             .surface
-            .input
-            .disabled = false;
+            .input_mut()
+            .set_disabled(false);
         host.set_window_active(false);
         assert!(text_state(&host).is_none());
     }

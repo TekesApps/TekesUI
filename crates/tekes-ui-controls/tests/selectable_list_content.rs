@@ -386,8 +386,8 @@ struct Gate {
     children: Vec<Content>,
 }
 impl Component for Gate {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
     fn active(&self) -> bool {
         self.active.get()
@@ -447,8 +447,8 @@ struct DynamicPassive {
     interactive: std::rc::Rc<std::cell::Cell<bool>>,
 }
 impl Component for DynamicPassive {
-    fn table_transaction_compatibility(&self) -> TableTransactionCompatibility {
-        TableTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
     fn interactive(&self) -> bool {
         self.interactive.get()

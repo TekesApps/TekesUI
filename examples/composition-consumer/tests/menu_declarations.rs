@@ -375,7 +375,7 @@ fn toolbar_icon_menu_trigger_keeps_keyboard_focus_without_focus_border() {
     let mut trigger_menu = MenuContent::new("Actions", Vec::new())
         .with_trigger_content("Actions", trigger)
         .unwrap();
-    trigger_menu.trigger.variant = tekes_ui_controls::paint::ButtonVariant::Toolbar;
+    trigger_menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
     trigger_menu.trigger.set_toolbar_icon_slot(true);
     trigger_menu
         .set_entries(vec![MenuEntry::item("create", "Create")])
@@ -649,7 +649,7 @@ fn semantic_submenu_selection_does_not_edit_or_unmark_focused_original_composer(
         replacement: None,
     });
     paint(&mut h);
-    let before = h.focused_text().unwrap().input.external_baseline();
+    let before = h.focused_text().unwrap().input().external_baseline();
     h.get_mut(f::OPTIONS)
         .unwrap()
         .component_mut::<MenuContent>()
@@ -677,7 +677,10 @@ fn semantic_submenu_selection_does_not_edit_or_unmark_focused_original_composer(
             .activated
     );
     assert_eq!(h.focused(), Some(f::MESSAGE));
-    assert_eq!(h.focused_text().unwrap().input.external_baseline(), before);
+    assert_eq!(
+        h.focused_text().unwrap().input().external_baseline(),
+        before
+    );
     assert_eq!(h.drain_action_records().len(), 1);
 }
 

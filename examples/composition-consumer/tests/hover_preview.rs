@@ -35,15 +35,15 @@ fn hover_preview_independent_consumer_two_layers_stream_and_original_marked_comp
         replacement: None,
     });
     let before = {
-        let input = &fixture
+        let input = fixture
             .host
             .get(COMPOSER)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
             .surface
-            .input;
-        (input.text.clone(), input.marked.clone(), input.selection())
+            .input();
+        (input.text().to_owned(), input.marked(), input.selection())
     };
     hover(&mut fixture, TICK_A);
     assert!(
@@ -78,16 +78,16 @@ fn hover_preview_independent_consumer_two_layers_stream_and_original_marked_comp
         Err(HoverPreviewError::StaleVersion)
     );
     assert_eq!(fixture.host.focused(), Some(COMPOSER));
-    let input = &fixture
+    let input = fixture
         .host
         .get(COMPOSER)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
         .surface
-        .input;
+        .input();
     assert_eq!(
-        (input.text.clone(), input.marked.clone(), input.selection()),
+        (input.text().to_owned(), input.marked(), input.selection()),
         before
     );
     fixture.host.event(&ContentEvent::Key {

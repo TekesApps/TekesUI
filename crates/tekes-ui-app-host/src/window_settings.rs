@@ -172,11 +172,11 @@ struct SettingsColumn {
 impl crate::ContainerContent for SettingsColumn {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
         let mut state = self.state.borrow_mut();
-        visit(if self.sidebar {
-            &mut state.sidebar.host
+        if self.sidebar {
+            state.sidebar.with_host_mut(visit);
         } else {
-            &mut state.form.host
-        });
+            state.form.with_host_mut(visit);
+        }
     }
 }
 // Keep the mounted original host (input, AX and scrolling) while sharing the
@@ -249,17 +249,17 @@ impl Host {
         let intents = settings
             .form
             .collect(&settings.view_schema, &mut settings.draft);
-        let form_focused = settings.form.host.focused().is_some();
+        let form_focused = settings.form.host().focused().is_some();
         if trace_pointer {
             eprintln!(
                 "SETTINGS_FORM_POINTER after focus={:?} overlay={:?} bubbled={}",
-                settings.form.host.focused(),
-                settings.form.host.input_overlay_owner(),
-                settings.form.host.event_bubbled()
+                settings.form.host().focused(),
+                settings.form.host().input_overlay_owner(),
+                settings.form.host().event_bubbled()
             );
         }
         if form_focused {
-            settings.sidebar.host.focus(None, false);
+            settings.sidebar.focus(None, false);
         }
         drop(state);
         if form_focused {
@@ -302,9 +302,10 @@ impl Host {
             let mut state = shared.borrow_mut();
             // Selection/navigation can replace a form Host. Configure the
             // current original hosts, rather than relying on an old mount.
-            state.sidebar.host.set_focus_wrap(false);
-            state.form.host.set_focus_wrap(false);
-            if !completing && (state.sidebar.host.is_composing() || state.form.host.is_composing())
+            state.sidebar.set_focus_wrap(false);
+            state.form.set_focus_wrap(false);
+            if !completing
+                && (state.sidebar.host().is_composing() || state.form.host().is_composing())
             {
                 return Ok(());
             }
@@ -323,9 +324,9 @@ impl Host {
             .map(SettingsFocusScope::Toolbar)
             .or_else(|| {
                 let state = shared.borrow();
-                if self.layout.leading_visible && state.sidebar.host.focused().is_some() {
+                if self.layout.leading_visible && state.sidebar.host().focused().is_some() {
                     Some(SettingsFocusScope::Sidebar)
-                } else if state.form.host.focused().is_some() {
+                } else if state.form.host().focused().is_some() {
                     Some(SettingsFocusScope::Form)
                 } else {
                     None
@@ -352,9 +353,9 @@ impl Host {
             };
             let mut state = shared.borrow_mut();
             let bubbles = if scope == SettingsFocusScope::Sidebar {
-                state.sidebar.host.event_bubbled()
+                state.sidebar.host().event_bubbled()
             } else {
-                state.form.host.event_bubbled()
+                state.form.host().event_bubbled()
             };
             state.edited();
             // Only the original editor can authorize continuation of a native
@@ -389,20 +390,18 @@ impl Host {
                     self.set_toolbar_focus(Some(target), true);
                     self.actual_toolbar_owner() == Some(target)
                 }
-                SettingsFocusScope::Sidebar => {
-                    shared.borrow_mut().sidebar.host.enter_focus(reverse)
-                }
-                SettingsFocusScope::Form => shared.borrow_mut().form.host.enter_focus(reverse),
+                SettingsFocusScope::Sidebar => shared.borrow_mut().sidebar.enter_focus(reverse),
+                SettingsFocusScope::Form => shared.borrow_mut().form.enter_focus(reverse),
             };
             if !accepted {
                 continue;
             }
             let mut state = shared.borrow_mut();
             if target != SettingsFocusScope::Sidebar {
-                state.sidebar.host.focus(None, false);
+                state.sidebar.focus(None, false);
             }
             if target != SettingsFocusScope::Form {
-                state.form.host.focus(None, false);
+                state.form.focus(None, false);
             }
             drop(state);
             if !matches!(target, SettingsFocusScope::Toolbar(_)) {
@@ -429,10 +428,10 @@ impl Host {
     fn sidebar_navigation_point(&self, point: Point) -> bool {
         self.settings_mgr.settings.as_ref().is_some_and(|state| {
             let state = state.borrow();
-            state.sidebar.host.semantics().iter().any(|node| {
+            state.sidebar.host().semantics().iter().any(|node| {
                 state
                     .sidebar
-                    .host
+                    .host()
                     .get(node.id)
                     .and_then(|n| {
                         n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -483,7 +482,7 @@ impl Host {
                     && state
                         .borrow()
                         .sidebar
-                        .host
+                        .host()
                         .get(ComponentId(4))
                         .and_then(|node| node.visible())
                         .is_some_and(|visible| visible.contains(point));
@@ -509,15 +508,15 @@ impl Host {
                 let sidebar = state.borrow();
                 let focused_list = sidebar
                     .sidebar
-                    .host
+                    .host()
                     .focused()
-                    .and_then(|id| sidebar.sidebar.host.get(id))
+                    .and_then(|id| sidebar.sidebar.host().get(id))
                     .is_some_and(|node| {
                         node.component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
                             .is_some()
                     });
                 back = self.layout.leading_visible
-                    && sidebar.sidebar.host.focused() == Some(ComponentId(4))
+                    && sidebar.sidebar.host().focused() == Some(ComponentId(4))
                     && matches!(key, Some(ControlKey::Enter | ControlKey::Space));
                 (focused_list
                     && matches!(
@@ -578,11 +577,11 @@ impl Host {
                         )
                 {
                     let state = state.borrow();
-                    back = state.sidebar.host.semantic_mount(ComponentId(4))
+                    back = state.sidebar.host().semantic_mount(ComponentId(4))
                         == Some(target.component)
-                        && state.sidebar.host.get(ComponentId(4)).is_some();
-                    back || state.sidebar.host.semantics().iter().any(|node| state.sidebar.host.semantic_mount(node.id) == Some(target.component)
-                        && state.sidebar.host.get(node.id).is_some_and(|n| n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>().is_some()))
+                        && state.sidebar.host().get(ComponentId(4)).is_some();
+                    back || state.sidebar.host().semantics().iter().any(|node| state.sidebar.host().semantic_mount(node.id) == Some(target.component)
+                        && state.sidebar.host().get(node.id).is_some_and(|n| n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>().is_some()))
                 } else {
                     false
                 }
@@ -1173,9 +1172,9 @@ impl Host {
                     .unwrap_or_else(|| field.display(&field.default));
                 let (form_value, edit, clean) = {
                     let settings = self.settings_mgr.settings.as_ref().unwrap().borrow();
-                    let edit = settings.form.host.semantics().iter().find_map(|node| {
+                    let edit = settings.form.host().semantics().iter().find_map(|node| {
                         if node.semantics.name != field.label { return None; }
-                        settings.form.host.get(node.id)
+                        settings.form.host().get(node.id)
                             .and_then(|n| n.component::<tekes_ui_controls::composition::NumberFieldContent>())
                             .map(|number| number.edit_state())
                     }).ok_or_else(|| anyhow::anyhow!("actual Settings NumberField absent"))?;
@@ -1530,7 +1529,7 @@ impl Host {
             regions.extend(
                 state
                     .form
-                    .host
+                    .host()
                     .text_cursor_regions()
                     .into_iter()
                     .filter_map(|r| r.intersection(&form_content)),
@@ -1539,7 +1538,7 @@ impl Host {
                 regions.extend(
                     state
                         .sidebar
-                        .host
+                        .host()
                         .text_cursor_regions()
                         .into_iter()
                         .filter_map(|r| r.intersection(&sidebar_rect)),
@@ -1766,7 +1765,7 @@ impl Host {
                 .settings_mgr
                 .settings
                 .as_ref()
-                .is_some_and(|state| state.borrow().sidebar.host.focused().is_some())
+                .is_some_and(|state| state.borrow().sidebar.host().focused().is_some())
             && self
                 .settings_mgr
                 .settings
@@ -1786,7 +1785,7 @@ impl Host {
             .settings_mgr
             .settings
             .as_ref()
-            .is_some_and(|s| s.borrow().sidebar.host.focused_text().is_some());
+            .is_some_and(|s| s.borrow().sidebar.host().focused_text().is_some());
         if sidebar_editor
             && matches!(
                 event,
@@ -1829,9 +1828,9 @@ impl Host {
                             .is_some_and(|r| r.contains(p));
                     self.settings_mgr.settings_pointer = Some(sidebar);
                     if sidebar {
-                        settings.form.host.focus(None, false);
+                        settings.form.focus(None, false);
                     } else {
-                        settings.sidebar.host.focus(None, false);
+                        settings.sidebar.focus(None, false);
                     }
                 }
                 if self.settings_mgr.settings_pointer == Some(true) {
@@ -1873,7 +1872,7 @@ impl Host {
             }
             Event::Key(key)
                 if w.is_active()
-                    && settings.sidebar.host.focused().is_some()
+                    && settings.sidebar.host().focused().is_some()
                     && !key.modifiers.command
                     && key.key_code != 53 =>
             {
@@ -1882,12 +1881,12 @@ impl Host {
             Event::Key(key) if w.is_active() => {
                 let composing = settings
                     .form
-                    .host
+                    .host()
                     .focused_text()
-                    .is_some_and(|s| s.input.marked.is_some());
+                    .is_some_and(|s| s.marked().is_some());
                 if key.kind == KeyEventKind::Down && key.modifiers.command {
                     let shortcut = key.characters_ignoring_modifiers.to_ascii_lowercase();
-                    if settings.form.host.focused_text().is_some() {
+                    if settings.form.host().focused_text().is_some() {
                         match shortcut.as_str() {
                             "a" => {
                                 routed = Some(ContentEvent::TextCommand(
@@ -1902,10 +1901,10 @@ impl Host {
                                 }));
                             }
                             "c" | "x" => {
-                                if let Some(surface) = settings.form.host.focused_text()
-                                    && !surface.input.selection().is_empty()
+                                if let Some(surface) = settings.form.host().focused_text()
+                                    && !surface.input().selection().is_empty()
                                 {
-                                    w.set_clipboard_text(&surface.input.selected_text());
+                                    w.set_clipboard_text(&surface.input().selected_text());
                                     if shortcut == "x" {
                                         routed = Some(ContentEvent::TextCommand(
                                             tekes_ui_controls::TextEditCommand::DeleteBackward,
@@ -1978,19 +1977,19 @@ impl Host {
                     && !settings.form.has_open_menu()
                     && settings
                         .form
-                        .host
+                        .host()
                         .focused_text()
-                        .is_none_or(|s| s.input.marked.is_none()) =>
+                        .is_none_or(|s| s.marked().is_none()) =>
             {
                 intents.push(FormIntent::Cancel)
             }
             Event::TextCommand(command) => match command {
                 tekes_ui_platform_macos::TextEditCommand::Copy
                 | tekes_ui_platform_macos::TextEditCommand::Cut => {
-                    if let Some(surface) = settings.form.host.focused_text()
-                        && !surface.input.selection().is_empty()
+                    if let Some(surface) = settings.form.host().focused_text()
+                        && !surface.input().selection().is_empty()
                     {
-                        w.set_clipboard_text(&surface.input.selected_text());
+                        w.set_clipboard_text(&surface.input().selected_text());
                         if *command == tekes_ui_platform_macos::TextEditCommand::Cut {
                             routed = Some(ContentEvent::TextCommand(
                                 tekes_ui_controls::TextEditCommand::DeleteBackward,
@@ -2064,7 +2063,7 @@ impl Host {
                 }
             }
             Event::Focus(false) => {
-                settings.form.host.cancel();
+                settings.form.cancel_host();
                 settings.flush(w.wake_proxy())?;
                 w.set_content_accessibility_publication(None);
                 w.set_text_input_state(None);
@@ -2232,7 +2231,7 @@ mod settings_theme_radio_width_tests {
             text.set_body_size(tekes_ui_tokens::proposal::TextRole::UiBody.style().size * scale);
             for width in [320., 1200.] {
                 let allocation = Rect::new(240., 72., width, 260.);
-                let mount = state.borrow().form.host.semantic_mount(ComponentId(100));
+                let mount = state.borrow().form.host().semantic_mount(ComponentId(100));
                 for scrolled in [false, true] {
                     direct
                         .render(
@@ -2251,47 +2250,50 @@ mod settings_theme_radio_width_tests {
                     )
                     .unwrap();
                     let mut state = state.borrow_mut();
-                    let host = &mut state.form.host;
-                    let body = host.get(ComponentId(1)).unwrap().frame();
-                    assert_eq!(body.size.width, width.min(560. * scale));
-                    assert_eq!(
-                        body.min_x(),
-                        allocation.min_x() + (width - body.size.width) / 2.
-                    );
-                    // Includes wrapped label/row heights, controls, clips and AX bounds.
-                    assert_eq!(host.semantics(), direct.host.semantics());
-                    assert_eq!(host.focus_targets(), direct.host.focus_targets());
-                    assert_eq!(host.semantic_mount(ComponentId(100)), mount);
-                    let footer = host.get(ComponentId(12)).unwrap().frame();
-                    assert!(footer.max_y() <= allocation.max_y());
-                    let scroll = host.get(ComponentId(11)).unwrap().frame();
-                    assert!(scroll.max_y() <= footer.min_y());
-                    if !scrolled {
-                        host.focus(Some(ComponentId(5)), true);
-                        direct.host.focus(Some(ComponentId(5)), true);
-                        for host in [host, &mut direct.host] {
+                    state.form.with_host_mut(|host| {
+                        let body = host.get(ComponentId(1)).unwrap().frame();
+                        assert_eq!(body.size.width, width.min(560. * scale));
+                        assert_eq!(
+                            body.min_x(),
+                            allocation.min_x() + (width - body.size.width) / 2.
+                        );
+                        // Includes wrapped label/row heights, controls, clips and AX bounds.
+                        assert_eq!(host.semantics(), direct.host().semantics());
+                        assert_eq!(host.focus_targets(), direct.host().focus_targets());
+                        assert_eq!(host.semantic_mount(ComponentId(100)), mount);
+                        let footer = host.get(ComponentId(12)).unwrap().frame();
+                        assert!(footer.max_y() <= allocation.max_y());
+                        let scroll = host.get(ComponentId(11)).unwrap().frame();
+                        assert!(scroll.max_y() <= footer.min_y());
+                        if !scrolled {
+                            host.focus(Some(ComponentId(5)), true);
+                            direct.focus(Some(ComponentId(5)), true);
+                            let scroll_by = |h: &mut ContentHost| {
+                                assert!(
+                                    h.get_mut(ComponentId(11))
+                                        .unwrap()
+                                        .component_mut::<ScrollContent>()
+                                        .unwrap()
+                                        .scroll
+                                        .scroll_by(0., 80.)
+                                );
+                            };
+                            scroll_by(host);
+                            direct.with_host_mut(scroll_by);
+                        } else {
+                            assert_eq!(host.focused(), Some(ComponentId(5)));
                             assert!(
-                                host.get_mut(ComponentId(11))
+                                host.get(ComponentId(11))
                                     .unwrap()
-                                    .component_mut::<ScrollContent>()
+                                    .component::<ScrollContent>()
                                     .unwrap()
                                     .scroll
-                                    .scroll_by(0., 80.)
+                                    .offset
+                                    .y
+                                    > 0.
                             );
                         }
-                    } else {
-                        assert_eq!(host.focused(), Some(ComponentId(5)));
-                        assert!(
-                            host.get(ComponentId(11))
-                                .unwrap()
-                                .component::<ScrollContent>()
-                                .unwrap()
-                                .scroll
-                                .offset
-                                .y
-                                > 0.
-                        );
-                    }
+                    });
                 }
             }
         }
@@ -2326,7 +2328,7 @@ mod settings_theme_radio_width_tests {
                 .unwrap();
 
             let radio = form
-                .host
+                .host()
                 .get(ComponentId(100))
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -2436,10 +2438,10 @@ mod pinned_header_tests {
             render_header(s, t, frame);
         };
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
-        assert!(sidebar.host.get(ComponentId(6)).is_none());
-        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame();
-        let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
+        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        assert!(sidebar.host().get(ComponentId(6)).is_none());
+        let chip = sidebar.host().get(ComponentId(10)).unwrap().frame();
+        let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
         assert_eq!(
             back.min_x(),
             scroll.min_x() + tekes_ui_tokens::Spacing::Loose.value()
@@ -2448,30 +2450,30 @@ mod pinned_header_tests {
         sidebar.event(&ContentEvent::PointerDown(chip.center()));
         sidebar.event(&ContentEvent::PointerUp(chip.center()));
         render_header(&mut sidebar, &mut text, Rect::new(12., 16., 760., 180.));
-        let wide_editor = sidebar.host.get(ComponentId(6)).unwrap().frame();
+        let wide_editor = sidebar.host().get(ComponentId(6)).unwrap().frame();
         assert_eq!(
             wide_editor,
-            sidebar.host.get(ComponentId(5)).unwrap().frame()
+            sidebar.host().get(ComponentId(5)).unwrap().frame()
         );
-        assert!(sidebar.host.get(ComponentId(4)).is_none());
+        assert!(sidebar.host().get(ComponentId(4)).is_none());
         draw(&mut sidebar, &mut text);
-        let search = sidebar.host.get(ComponentId(6)).unwrap().frame();
-        let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        assert_eq!(sidebar.host.focused(), Some(ComponentId(6)));
-        assert!(sidebar.host.get(ComponentId(10)).is_none());
-        assert!(sidebar.host.get(ComponentId(4)).is_none());
-        assert_eq!(search, sidebar.host.get(ComponentId(5)).unwrap().frame());
+        let search = sidebar.host().get(ComponentId(6)).unwrap().frame();
+        let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
+        assert_eq!(sidebar.host().focused(), Some(ComponentId(6)));
+        assert!(sidebar.host().get(ComponentId(10)).is_none());
+        assert!(sidebar.host().get(ComponentId(4)).is_none());
+        assert_eq!(search, sidebar.host().get(ComponentId(5)).unwrap().frame());
         assert!(search.max_y() < scroll.min_y());
         assert!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(2))
                 .unwrap()
                 .component::<ListContent>()
                 .is_some()
         );
         let list = sidebar
-            .host
+            .host()
             .get(ComponentId(101))
             .unwrap()
             .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2488,17 +2490,12 @@ mod pinned_header_tests {
                 tekes_ui_tokens::Spacing::Micro.value()
             );
         }
-        sidebar
-            .host
-            .event_with_text(&ContentEvent::PointerDown(search.center()), &mut text)
-            .unwrap();
-        sidebar
-            .host
-            .event_with_text(&ContentEvent::PointerUp(search.center()), &mut text)
-            .unwrap();
-        sidebar
-            .host
-            .event_with_text(
+        sidebar.with_host_mut(|host| {
+            host.event_with_text(&ContentEvent::PointerDown(search.center()), &mut text)
+                .unwrap();
+            host.event_with_text(&ContentEvent::PointerUp(search.center()), &mut text)
+                .unwrap();
+            host.event_with_text(
                 &ContentEvent::Commit {
                     text: "文字大小".into(),
                     replacement: None,
@@ -2506,9 +2503,7 @@ mod pinned_header_tests {
                 &mut text,
             )
             .unwrap();
-        sidebar
-            .host
-            .event_with_text(
+            host.event_with_text(
                 &ContentEvent::Scroll {
                     position: scroll.center(),
                     delta: Point::new(0., 100.),
@@ -2521,11 +2516,12 @@ mod pinned_header_tests {
                 &mut text,
             )
             .unwrap();
+        });
         draw(&mut sidebar, &mut text);
-        assert_eq!(sidebar.host.get(ComponentId(6)).unwrap().frame(), search);
+        assert_eq!(sidebar.host().get(ComponentId(6)).unwrap().frame(), search);
         assert_eq!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(6))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::SearchFieldContent>()
@@ -2535,10 +2531,10 @@ mod pinned_header_tests {
         );
         assert!(sidebar.cancel_search().unwrap());
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
+        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
         assert!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(4))
                 .unwrap()
                 .component::<tekes_ui_controls::Button>()
@@ -2566,10 +2562,10 @@ mod pinned_header_tests {
             render_header(s, t, frame);
         };
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
-        let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
-        let scroll = sidebar.host.get(ComponentId(1)).unwrap().frame();
-        let list = sidebar.host.get(ComponentId(101)).unwrap().frame();
+        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        let arrow = sidebar.host().get(ComponentId(8)).unwrap().frame();
+        let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
+        let list = sidebar.host().get(ComponentId(101)).unwrap().frame();
         assert_eq!(
             list.min_x(),
             scroll.min_x() + tekes_ui_tokens::Spacing::Loose.value()
@@ -2580,7 +2576,7 @@ mod pinned_header_tests {
             list.min_x() + tekes_ui_tokens::Spacing::Relaxed.value()
         );
         let artwork = sidebar
-            .host
+            .host()
             .get(ComponentId(8))
             .unwrap()
             .component::<tekes_ui_controls::composition::IconContent>()
@@ -2601,13 +2597,17 @@ mod pinned_header_tests {
             back.size.height
                 >= tekes_ui_tokens::proposal::metric("size", "size-action-button").unwrap()
         );
-        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        let chip = sidebar
+            .host()
+            .get(ComponentId(10))
+            .unwrap()
+            .frame()
+            .center();
         sidebar.event(&ContentEvent::PointerDown(chip));
         sidebar.event(&ContentEvent::PointerUp(chip));
         draw(&mut sidebar, &mut text);
-        sidebar
-            .host
-            .event_with_text(
+        sidebar.with_host_mut(|host| {
+            host.event_with_text(
                 &ContentEvent::Commit {
                     text: "行距倍数".into(),
                     replacement: None,
@@ -2615,9 +2615,10 @@ mod pinned_header_tests {
                 &mut text,
             )
             .unwrap();
+        });
         draw(&mut sidebar, &mut text);
         let reading = sidebar
-            .host
+            .host()
             .get(ComponentId(103))
             .unwrap()
             .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2639,7 +2640,7 @@ mod pinned_header_tests {
         sidebar.event(&ContentEvent::PointerUp(target));
         // The original List emits selection on pointer down, and its visible
         // index must map to advanced rather than the unfiltered text route.
-        sidebar.host.focus(Some(ComponentId(103)), true);
+        sidebar.focus(Some(ComponentId(103)), true);
         assert_eq!(
             sidebar.event(&ContentEvent::Key {
                 key: ControlKey::Enter,
@@ -2648,21 +2649,26 @@ mod pinned_header_tests {
             Some("reading/advanced".into())
         );
         // Escape while the original editor owns focus restores keyboard focus.
-        sidebar.host.focus(Some(ComponentId(6)), true);
+        sidebar.focus(Some(ComponentId(6)), true);
         assert!(sidebar.cancel_search().unwrap());
         let collapsed = render_header(&mut sidebar, &mut text, frame);
-        let chip = sidebar.host.get(ComponentId(10)).unwrap();
+        let chip = sidebar.host().get(ComponentId(10)).unwrap();
         let button = chip.component::<tekes_ui_controls::Button>().unwrap();
         assert!(
             button.button.state.focused && button.button.state.focus_visible,
             "search keeps logical and keyboard focus after Escape"
         );
-        let back = sidebar.host.get(ComponentId(4)).unwrap().frame();
-        let arrow = sidebar.host.get(ComponentId(8)).unwrap().frame();
+        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        let arrow = sidebar.host().get(ComponentId(8)).unwrap().frame();
         assert_eq!(chip.frame().center().y, back.center().y);
         assert_eq!(
             arrow.min_x(),
-            sidebar.host.get(ComponentId(101)).unwrap().frame().min_x()
+            sidebar
+                .host()
+                .get(ComponentId(101))
+                .unwrap()
+                .frame()
+                .min_x()
                 + tekes_ui_tokens::Spacing::Relaxed.value()
         );
         let focus_ink = Palette::from(Theme::LIGHT).color("border-focused").unwrap();
@@ -2676,7 +2682,7 @@ mod pinned_header_tests {
             "the restored search icon must not paint a clipped focus border"
         );
         let reading = sidebar
-            .host
+            .host()
             .get(ComponentId(103))
             .unwrap()
             .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2693,16 +2699,20 @@ mod pinned_header_tests {
             reading.selected_key(),
             Some(tekes_ui_controls::extended::ListItemKey(2))
         );
-        assert!(sidebar.host.get(ComponentId(6)).is_none());
-        assert_eq!(sidebar.host.focused(), Some(ComponentId(10)));
+        assert!(sidebar.host().get(ComponentId(6)).is_none());
+        assert_eq!(sidebar.host().focused(), Some(ComponentId(10)));
         assert!(!sidebar.take_back());
-        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        let chip = sidebar
+            .host()
+            .get(ComponentId(10))
+            .unwrap()
+            .frame()
+            .center();
         sidebar.event(&ContentEvent::PointerDown(chip));
         sidebar.event(&ContentEvent::PointerUp(chip));
         draw(&mut sidebar, &mut text);
-        sidebar
-            .host
-            .event_with_text(
+        sidebar.with_host_mut(|host| {
+            host.event_with_text(
                 &ContentEvent::Preedit {
                     text: "没有这样的设置".into(),
                     selection: 0..0,
@@ -2712,6 +2722,7 @@ mod pinned_header_tests {
                 &mut text,
             )
             .unwrap();
+        });
         assert!(
             !sidebar.cancel_search().unwrap(),
             "IME owns cancellation while marked"
@@ -2719,7 +2730,7 @@ mod pinned_header_tests {
         sidebar.sync_search().unwrap();
         assert_eq!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(103))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2730,13 +2741,12 @@ mod pinned_header_tests {
             2
         );
         sidebar
-            .host
-            .event_with_text(&ContentEvent::Unmark, &mut text)
+            .with_host_mut(|host| host.event_with_text(&ContentEvent::Unmark, &mut text))
             .unwrap();
         draw(&mut sidebar, &mut text);
         assert_eq!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(103))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2750,7 +2760,7 @@ mod pinned_header_tests {
         draw(&mut sidebar, &mut text);
         assert_eq!(
             sidebar
-                .host
+                .host()
                 .get(ComponentId(103))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2772,7 +2782,12 @@ mod pinned_header_tests {
         let mut text = crate::text::Text::new();
         let frame = Rect::new(0., 0., 260., 600.);
         render_header(&mut sidebar, &mut text, frame);
-        let chip = sidebar.host.get(ComponentId(10)).unwrap().frame().center();
+        let chip = sidebar
+            .host()
+            .get(ComponentId(10))
+            .unwrap()
+            .frame()
+            .center();
         sidebar.event(&ContentEvent::PointerDown(chip));
         sidebar.event(&ContentEvent::PointerUp(chip));
         sidebar
@@ -2786,7 +2801,7 @@ mod pinned_header_tests {
             .unwrap();
         render_header(&mut sidebar, &mut text, frame);
         let result = sidebar
-            .host
+            .host()
             .get(ComponentId(103))
             .unwrap()
             .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2799,11 +2814,11 @@ mod pinned_header_tests {
         sidebar.select(&route);
         render_header(&mut sidebar, &mut text, frame);
         sidebar.event(&ContentEvent::PointerUp(result));
-        assert!(sidebar.host.get(ComponentId(6)).is_some());
-        assert_eq!(sidebar.host.focused(), Some(ComponentId(103)));
+        assert!(sidebar.host().get(ComponentId(6)).is_some());
+        assert_eq!(sidebar.host().focused(), Some(ComponentId(103)));
         {
             let list = sidebar
-                .host
+                .host()
                 .get(ComponentId(103))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2816,12 +2831,12 @@ mod pinned_header_tests {
         }
         assert!(sidebar.cancel_search().unwrap());
         render_header(&mut sidebar, &mut text, frame);
-        assert!(sidebar.host.get(ComponentId(6)).is_none());
-        assert!(sidebar.host.get(ComponentId(4)).is_some());
-        assert!(sidebar.host.get(ComponentId(10)).is_some());
-        assert_eq!(sidebar.host.focused(), Some(ComponentId(103)));
+        assert!(sidebar.host().get(ComponentId(6)).is_none());
+        assert!(sidebar.host().get(ComponentId(4)).is_some());
+        assert!(sidebar.host().get(ComponentId(10)).is_some());
+        assert_eq!(sidebar.host().focused(), Some(ComponentId(103)));
         let list = sidebar
-            .host
+            .host()
             .get(ComponentId(103))
             .unwrap()
             .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()
@@ -2848,10 +2863,10 @@ mod pinned_header_tests {
             )
             .unwrap();
 
-        let first_heading = sidebar.host.get(ComponentId(100)).unwrap();
-        let first_list = sidebar.host.get(ComponentId(101)).unwrap();
-        let second_heading = sidebar.host.get(ComponentId(102)).unwrap();
-        let second_list = sidebar.host.get(ComponentId(103)).unwrap();
+        let first_heading = sidebar.host().get(ComponentId(100)).unwrap();
+        let first_list = sidebar.host().get(ComponentId(101)).unwrap();
+        let second_heading = sidebar.host().get(ComponentId(102)).unwrap();
+        let second_list = sidebar.host().get(ComponentId(103)).unwrap();
         assert_eq!(
             first_heading.component::<TextContent>().unwrap().role,
             tekes_ui_tokens::proposal::TextRole::UiCaption
@@ -2977,23 +2992,25 @@ mod navigation_input_tests {
         {
             let mut s = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
             let id = ComponentId(if marked { 100 } else { 101 });
-            assert!(s.form.host.focus(Some(id), true));
-            if marked {
-                s.form.host.event(&ContentEvent::Preedit {
-                    text: "中文".into(),
-                    selection: 0..2,
-                    clauses: std::iter::once(0..2).collect(),
-                    replacement: None,
-                });
-            } else {
-                s.form.host.event(&ContentEvent::TextCommand(
-                    tekes_ui_controls::TextEditCommand::SelectAll,
-                ));
-                s.form.host.event(&ContentEvent::Commit {
-                    text: "99".into(),
-                    replacement: None,
-                });
-            }
+            assert!(s.form.focus(Some(id), true));
+            s.form.with_host_mut(|h| {
+                if marked {
+                    h.event(&ContentEvent::Preedit {
+                        text: "中文".into(),
+                        selection: 0..2,
+                        clauses: std::iter::once(0..2).collect(),
+                        replacement: None,
+                    });
+                } else {
+                    h.event(&ContentEvent::TextCommand(
+                        tekes_ui_controls::TextEditCommand::SelectAll,
+                    ));
+                    h.event(&ContentEvent::Commit {
+                        text: "99".into(),
+                        replacement: None,
+                    });
+                }
+            });
         }
         render(&mut host);
         (host, path)
@@ -3036,17 +3053,19 @@ mod navigation_input_tests {
     }
     fn correct(host: &mut Host, marked: bool) {
         let mut s = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
-        if marked {
-            s.form.host.event(&ContentEvent::Unmark);
-        } else {
-            s.form.host.event(&ContentEvent::TextCommand(
-                tekes_ui_controls::TextEditCommand::SelectAll,
-            ));
-            s.form.host.event(&ContentEvent::Commit {
-                text: "18".into(),
-                replacement: None,
-            });
-        }
+        s.form.with_host_mut(|h| {
+            if marked {
+                h.event(&ContentEvent::Unmark);
+            } else {
+                h.event(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::SelectAll,
+                ));
+                h.event(&ContentEvent::Commit {
+                    text: "18".into(),
+                    replacement: None,
+                });
+            }
+        });
         let state = &mut *s;
         state.form.collect(&state.view_schema, &mut state.draft);
         state.edited();
@@ -3060,10 +3079,10 @@ mod navigation_input_tests {
             "高级排版"
         };
         let state = host.settings_mgr.settings.as_ref().unwrap().borrow();
-        for node in state.sidebar.host.semantics() {
+        for node in state.sidebar.host().semantics() {
             if let Some(list) = state
                 .sidebar
-                .host
+                .host()
                 .get(node.id)
                 .and_then(|n| n.component::<KeyedSelectableListContent>())
                 && let Some(part) = list
@@ -3095,9 +3114,9 @@ mod navigation_input_tests {
     ) {
         let state = host.settings_mgr.settings.as_ref().unwrap().borrow();
         assert_eq!(state.selected, selected);
-        assert_eq!(state.form.host.focused_text().unwrap().input.text, text);
-        assert_eq!(state.form.host.focused_text().unwrap().input.marked, marked);
-        assert!(state.form.has_number_draft() || state.form.host.is_composing());
+        assert_eq!(state.form.host().focused_text().unwrap().text(), text);
+        assert_eq!(state.form.host().focused_text().unwrap().marked(), marked);
+        assert!(state.form.has_number_draft() || state.form.host().is_composing());
     }
     #[test]
     fn actual_sidebar_pointer_keyboard_and_ax_refuse_then_accept_corrected_input() {
@@ -3113,7 +3132,6 @@ mod navigation_input_tests {
                             .unwrap()
                             .borrow_mut()
                             .sidebar
-                            .host
                             .focus(Some(list), true)
                     );
                     render(&mut host);
@@ -3147,8 +3165,8 @@ mod navigation_input_tests {
                     let s = host.settings_mgr.settings.as_ref().unwrap().borrow();
                     (
                         s.selected.clone(),
-                        s.form.host.focused_text().unwrap().input.text.clone(),
-                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                        s.form.host().focused_text().unwrap().text().to_owned(),
+                        s.form.host().focused_text().unwrap().marked(),
                     )
                 };
                 assert!(
@@ -3158,7 +3176,7 @@ mod navigation_input_tests {
                 assert_retained(&host, &selected, &text, composition.clone());
                 if channel == "ax" {
                     let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
-                    let focused = state.sidebar.host.focused();
+                    let focused = state.sidebar.host().focused();
                     assert!(
                         !state.accessibility_input(
                             &publication,
@@ -3170,7 +3188,7 @@ mod navigation_input_tests {
                         "stale/refused publication cannot dispatch"
                     );
                     assert_eq!(
-                        state.sidebar.host.focused(),
+                        state.sidebar.host().focused(),
                         focused,
                         "refusal must not transfer keyboard ownership"
                     );
@@ -3198,7 +3216,7 @@ mod navigation_input_tests {
                     "allowed preflight must preserve the same multi-Host AX publication"
                 );
                 let entry=match &event {
-                Event::Accessibility{target,action}=>{let mut state=host.settings_mgr.settings.as_ref().unwrap().borrow_mut();assert!(state.accessibility_input(&publication,ContentAccessibilityOwner(1),*target,action.clone(),true));assert_eq!(state.sidebar.host.focused(),Some(list),"successful List Press keeps original keyboard owner");assert_eq!(state.form.host.focused(),None,"old form focus retires only after successful AX delivery");state.take_item_navigation().unwrap()},
+                Event::Accessibility{target,action}=>{let mut state=host.settings_mgr.settings.as_ref().unwrap().borrow_mut();assert!(state.accessibility_input(&publication,ContentAccessibilityOwner(1),*target,action.clone(),true));assert_eq!(state.sidebar.host().focused(),Some(list),"successful List Press keeps original keyboard owner");assert_eq!(state.form.host().focused(),None,"old form focus retires only after successful AX delivery");state.take_item_navigation().unwrap()},
                 _=>host.settings_sidebar_input(&crate::window::window_toolbar_mount::native_toolbar_event(&event).unwrap()).unwrap(),
             }.unwrap_or_else(|| panic!("original sidebar must produce its real settings-item Entry: marked={marked} channel={channel}"));
                 let expected = if marked {
@@ -3263,8 +3281,8 @@ mod navigation_input_tests {
                 let state = host.settings_mgr.settings.as_ref().unwrap().borrow();
                 (
                     state.selected.clone(),
-                    state.form.host.focused_text().unwrap().input.text.clone(),
-                    state.form.host.focused_text().unwrap().input.marked.clone(),
+                    state.form.host().focused_text().unwrap().text().to_owned(),
+                    state.form.host().focused_text().unwrap().marked(),
                 )
             };
             host.toolbar_mgr.toolbar_index = 1;
@@ -3403,8 +3421,8 @@ mod navigation_input_tests {
                     let s = host.settings_mgr.settings.as_ref().unwrap().borrow();
                     (
                         s.selected.clone(),
-                        s.form.host.focused_text().unwrap().input.text.clone(),
-                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                        s.form.host().focused_text().unwrap().text().to_owned(),
+                        s.form.host().focused_text().unwrap().marked(),
                     )
                 };
                 assert!(host.settings_navigation_focus_guard(&event, Some(&publication)));
@@ -3477,13 +3495,15 @@ mod navigation_input_tests {
         let (mut host, path) = fixture(false);
         {
             let mut state = host.settings_mgr.settings.as_ref().unwrap().borrow_mut();
-            assert!(state.form.host.focus(Some(ComponentId(102)), true));
-            state.form.host.event(&ContentEvent::TextCommand(
-                tekes_ui_controls::TextEditCommand::SelectAll,
-            ));
-            state.form.host.event(&ContentEvent::Commit {
-                text: "18".into(),
-                replacement: None,
+            assert!(state.form.focus(Some(ComponentId(102)), true));
+            state.form.with_host_mut(|h| {
+                h.event(&ContentEvent::TextCommand(
+                    tekes_ui_controls::TextEditCommand::SelectAll,
+                ));
+                h.event(&ContentEvent::Commit {
+                    text: "18".into(),
+                    replacement: None,
+                });
             });
             assert!(!state.draft.dirty());
         }
@@ -3505,7 +3525,7 @@ mod navigation_input_tests {
             assert!(
                 state
                     .form
-                    .host
+                    .host()
                     .get(ComponentId(2))
                     .unwrap()
                     .component::<tekes_ui_controls::composition::TextContent>()
@@ -3531,7 +3551,6 @@ mod navigation_input_tests {
                             .unwrap()
                             .borrow_mut()
                             .sidebar
-                            .host
                             .focus(Some(ComponentId(4)), true)
                     );
                     render(&mut host);
@@ -3539,8 +3558,13 @@ mod navigation_input_tests {
                 let (point, mount) = {
                     let s = host.settings_mgr.settings.as_ref().unwrap().borrow();
                     (
-                        s.sidebar.host.get(ComponentId(4)).unwrap().frame().center(),
-                        s.sidebar.host.semantic_mount(ComponentId(4)).unwrap(),
+                        s.sidebar
+                            .host()
+                            .get(ComponentId(4))
+                            .unwrap()
+                            .frame()
+                            .center(),
+                        s.sidebar.host().semantic_mount(ComponentId(4)).unwrap(),
                     )
                 };
                 let publication = host.content_accessibility_publication(true).unwrap();
@@ -3576,8 +3600,8 @@ mod navigation_input_tests {
                     let s = host.settings_mgr.settings.as_ref().unwrap().borrow();
                     (
                         s.selected.clone(),
-                        s.form.host.focused_text().unwrap().input.text.clone(),
-                        s.form.host.focused_text().unwrap().input.marked.clone(),
+                        s.form.host().focused_text().unwrap().text().to_owned(),
+                        s.form.host().focused_text().unwrap().marked(),
                     )
                 };
                 assert!(
@@ -3757,10 +3781,10 @@ mod cold_settings_host_tests {
             surface.show();
             let surface = Rc::new(RefCell::new(surface));
             let original = {
-                let mut state = surface.borrow_mut();
+                let state = surface.borrow();
                 [
-                    &mut state.sidebar.host as *mut ContentHost as usize,
-                    &mut state.form.host as *mut ContentHost as usize,
+                    state.sidebar.host() as *const ContentHost as usize,
+                    state.form.host() as *const ContentHost as usize,
                 ]
             };
             let parent =
@@ -3914,8 +3938,8 @@ mod display_preferences_tests {
                     clauses: std::iter::once(0..2).collect(),
                     replacement: None,
                 });
-                let input = &host.focused_text().unwrap().input;
-                input_before = Some((input.text.clone(), input.marked.clone()));
+                let input = host.focused_text().unwrap().input();
+                input_before = Some((input.text().to_owned(), input.marked()));
             });
         let mut second = Host::new(vec![], false, None).with_theme(Theme::LIGHT);
         first
@@ -3953,9 +3977,9 @@ mod display_preferences_tests {
                     host.is_composing(),
                     "style changes preserve original composition"
                 );
-                let input = &host.focused_text().unwrap().input;
+                let input = host.focused_text().unwrap().input();
                 assert_eq!(
-                    (input.text.clone(), input.marked.clone()),
+                    (input.text().to_owned(), input.marked()),
                     input_before.clone().unwrap()
                 );
             });
@@ -4121,7 +4145,7 @@ mod display_preferences_tests {
         )
         .unwrap();
         assert!(
-            form.host
+            form.host()
                 .get(ComponentId(100))
                 .unwrap()
                 .component::<tekes_ui_controls::composition::RadioGroupContent>()
@@ -4340,7 +4364,7 @@ mod form_keyboard_owner_tests {
         let field = surface
             .borrow()
             .form
-            .host
+            .host()
             .get(ComponentId(100))
             .unwrap()
             .frame()
@@ -4361,7 +4385,7 @@ mod form_keyboard_owner_tests {
         let chip = surface
             .borrow()
             .sidebar
-            .host
+            .host()
             .get(ComponentId(10))
             .unwrap()
             .frame()
@@ -4386,20 +4410,20 @@ mod form_keyboard_owner_tests {
             .unwrap();
         let state = surface.borrow();
         assert_eq!(state.selected, "workspace/general");
-        assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
+        assert_eq!(state.form.host().focused(), Some(ComponentId(100)));
         assert_eq!(
-            state.form.host.focused_text().unwrap().input.text,
+            state.form.host().focused_text().unwrap().text(),
             "Retained draft"
         );
-        assert_eq!(state.sidebar.host.focused(), None);
-        assert!(state.sidebar.host.get(ComponentId(6)).is_some());
+        assert_eq!(state.sidebar.host().focused(), None);
+        assert!(state.sidebar.host().get(ComponentId(6)).is_some());
         drop(state);
         assert!(surface.borrow_mut().sidebar.cancel_search().unwrap());
         let state = surface.borrow();
-        assert!(state.sidebar.host.get(ComponentId(6)).is_none());
-        assert!(state.sidebar.host.get(ComponentId(4)).is_some());
-        assert!(state.sidebar.host.get(ComponentId(10)).is_some());
-        assert_eq!(state.form.host.focused(), Some(ComponentId(100)));
+        assert!(state.sidebar.host().get(ComponentId(6)).is_none());
+        assert!(state.sidebar.host().get(ComponentId(4)).is_some());
+        assert!(state.sidebar.host().get(ComponentId(10)).is_some());
+        assert_eq!(state.form.host().focused(), Some(ComponentId(100)));
         drop(state);
         drop(host);
         drop(surface);
@@ -4417,18 +4441,24 @@ mod form_keyboard_owner_tests {
             Some(ToolbarTarget::Visibility(0))
         );
         assert!(host.toolbar_key_input(key(48, true)).unwrap());
-        assert!(surface.borrow().sidebar.host.focused().is_some());
-        assert!(surface.borrow().form.host.focused().is_none());
+        assert!(surface.borrow().sidebar.host().focused().is_some());
+        assert!(surface.borrow().form.host().focused().is_none());
         assert!(host.actual_toolbar_owner().is_none());
         assert!(host.toolbar_key_input(key(48, true)).unwrap());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
-        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(100))
+        );
+        assert!(surface.borrow().sidebar.host().focused().is_none());
         assert!(host.actual_toolbar_owner().is_none());
         assert!(host.toolbar_mgr.toolbar_focus_lease.is_none());
         let mut modified = key(48, true);
         modified.modifiers.command = true;
         assert!(!host.toolbar_key_input(modified).unwrap());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(100))
+        );
         for down in [true, false] {
             assert!(!host.toolbar_key_input(key(49, down)).unwrap());
             host.settings_form_input(&ContentEvent::KeyInput(key(49, down)))
@@ -4438,9 +4468,12 @@ mod form_keyboard_owner_tests {
         assert!(host.layout.leading_visible);
         render_original_panels(&mut host);
         assert!(host.toolbar_key_input(key(48, true)).unwrap());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         assert!(host.actual_toolbar_owner().is_none());
-        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert!(surface.borrow().sidebar.host().focused().is_none());
         drop(host);
         drop(surface);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
@@ -4455,14 +4488,17 @@ mod form_keyboard_owner_tests {
             // against geometry from the resulting original panel render.
             render_original_panels(&mut host);
         }
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(100))
+        );
         let mut reverse = key(48, true);
         reverse.key = Some(ControlKey::Tab { reverse: true });
         reverse.modifiers.shift = true;
         assert!(host.toolbar_key_input(reverse.clone()).unwrap());
         render_original_panels(&mut host);
-        assert!(surface.borrow().sidebar.host.focused().is_some());
-        assert!(surface.borrow().form.host.focused().is_none());
+        assert!(surface.borrow().sidebar.host().focused().is_some());
+        assert!(surface.borrow().form.host().focused().is_none());
         assert!(host.toolbar_key_input(reverse.clone()).unwrap());
         render_original_panels(&mut host);
         assert_eq!(
@@ -4471,7 +4507,7 @@ mod form_keyboard_owner_tests {
         );
         assert!(host.toolbar_key_input(reverse).unwrap());
         render_original_panels(&mut host);
-        assert!(surface.borrow().form.host.focused().is_some());
+        assert!(surface.borrow().form.host().focused().is_some());
         assert!(host.actual_toolbar_owner().is_none());
         assert!(host.layout.leading_visible);
         drop(host);
@@ -4488,7 +4524,10 @@ mod form_keyboard_owner_tests {
             host.toolbar_key_input(key(48, true)).unwrap();
             render_original_panels(&mut host);
         }
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         let context = TextKeyContext {
             id: 1,
             key: KeyEvent {
@@ -4514,7 +4553,10 @@ mod form_keyboard_owner_tests {
             &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertTab),
         )
         .unwrap();
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         assert!(host.actual_toolbar_owner().is_none());
         let finished =
             window_toolbar_mount::native_toolbar_event(&Event::TextKey(TextKeyEvent::Finished {
@@ -4531,7 +4573,7 @@ mod form_keyboard_owner_tests {
             Some(ToolbarTarget::Visibility(0)),
             "completed Tab at the last valid field must advance to the next window scope"
         );
-        assert!(surface.borrow().form.host.focused().is_none());
+        assert!(surface.borrow().form.host().focused().is_none());
         host.settings_scope_tab(false, &finished).unwrap();
         assert_eq!(
             host.actual_toolbar_owner(),
@@ -4551,7 +4593,10 @@ mod form_keyboard_owner_tests {
                 host.toolbar_key_input(key(48, true)).unwrap();
                 render_original_panels(&mut host);
             }
-            assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+            assert_eq!(
+                surface.borrow().form.host().focused(),
+                Some(ComponentId(101))
+            );
             if case == "invalid" {
                 host.settings_form_input(&ContentEvent::TextCommand(
                     tekes_ui_controls::TextEditCommand::SelectAll,
@@ -4573,8 +4618,8 @@ mod form_keyboard_owner_tests {
             }
             let (text, marked) = {
                 let state = surface.borrow();
-                let input = &state.form.host.focused_text().unwrap().input;
-                (input.text.clone(), input.marked.clone())
+                let input = state.form.host().focused_text().unwrap().input();
+                (input.text().to_owned(), input.marked())
             };
             host.settings_form_input(&ContentEvent::TextKeyStart {
                 id: 1,
@@ -4597,11 +4642,15 @@ mod form_keyboard_owner_tests {
             for _ in 0..2 {
                 host.settings_scope_tab(false, &finished).unwrap();
                 let state = surface.borrow();
-                assert_eq!(state.form.host.focused(), Some(ComponentId(101)), "{case}");
-                let input = &state.form.host.focused_text().unwrap().input;
-                assert_eq!(input.text, text, "{case}");
-                assert_eq!(input.marked, marked, "{case}");
-                assert!(state.sidebar.host.focused().is_none(), "{case}");
+                assert_eq!(
+                    state.form.host().focused(),
+                    Some(ComponentId(101)),
+                    "{case}"
+                );
+                let input = state.form.host().focused_text().unwrap().input();
+                assert_eq!(input.text(), text, "{case}");
+                assert_eq!(input.marked(), marked, "{case}");
+                assert!(state.sidebar.host().focused().is_none(), "{case}");
                 assert!(host.actual_toolbar_owner().is_none(), "{case}");
             }
             drop(host);
@@ -4617,7 +4666,10 @@ mod form_keyboard_owner_tests {
             host.toolbar_key_input(key(48, true)).unwrap();
             render_original_panels(&mut host);
         }
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         let mut reverse = key(48, true);
         reverse.key = Some(ControlKey::Tab { reverse: true });
         reverse.modifiers.shift = true;
@@ -4632,15 +4684,21 @@ mod form_keyboard_owner_tests {
             &ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::InsertBacktab),
         )
         .unwrap();
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         let finished = ContentEvent::TextKeyEnd {
             id: 1,
             input_context_consumed: false,
         };
         for _ in 0..2 {
             host.settings_scope_tab(true, &finished).unwrap();
-            assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
-            assert!(surface.borrow().sidebar.host.focused().is_none());
+            assert_eq!(
+                surface.borrow().form.host().focused(),
+                Some(ComponentId(100))
+            );
+            assert!(surface.borrow().sidebar.host().focused().is_none());
             assert!(host.actual_toolbar_owner().is_none());
         }
         drop(host);
@@ -4654,7 +4712,10 @@ mod form_keyboard_owner_tests {
         for _ in 0..4 {
             assert!(host.toolbar_key_input(key(48, true)).unwrap());
         }
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         host.settings_form_input(&ContentEvent::TextCommand(
             tekes_ui_controls::TextEditCommand::SelectAll,
         ))
@@ -4668,24 +4729,19 @@ mod form_keyboard_owner_tests {
         let invalid = surface
             .borrow()
             .form
-            .host
+            .host()
             .focused_text()
             .unwrap()
-            .input
-            .text
-            .clone();
+            .text()
+            .to_owned();
         assert!(host.toolbar_key_input(key(48, true)).unwrap());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         assert!(host.actual_toolbar_owner().is_none());
         assert_eq!(
-            surface
-                .borrow()
-                .form
-                .host
-                .focused_text()
-                .unwrap()
-                .input
-                .text,
+            surface.borrow().form.host().focused_text().unwrap().text(),
             invalid
         );
         // Correct/discard through the original editor, not a focus reset.
@@ -4701,30 +4757,30 @@ mod form_keyboard_owner_tests {
             replacement: None,
         })
         .unwrap();
-        assert!(surface.borrow().form.host.is_composing());
+        assert!(surface.borrow().form.host().is_composing());
         let marked = surface
             .borrow()
             .form
-            .host
+            .host()
             .focused_text()
             .unwrap()
-            .input
-            .marked
-            .clone();
+            .marked();
         assert!(host.toolbar_key_input(key(48, true)).unwrap());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         assert_eq!(
             surface
                 .borrow()
                 .form
-                .host
+                .host()
                 .focused_text()
                 .unwrap()
-                .input
-                .marked,
+                .marked(),
             marked
         );
-        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert!(surface.borrow().sidebar.host().focused().is_none());
         assert!(host.actual_toolbar_owner().is_none());
         assert!(host.layout.leading_visible);
         drop(host);
@@ -4745,7 +4801,10 @@ mod form_keyboard_owner_tests {
         // form navigation; the outer toolbar consumed decision has its own test.
         host.settings_form_input(&ContentEvent::KeyInput(key(48, true)))
             .unwrap();
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(100)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(100))
+        );
         assert!(
             host.panel_mgr.panels.iter().all(|panel| panel
                 .mounted_toolbar
@@ -4770,7 +4829,7 @@ mod form_keyboard_owner_tests {
             surface
                 .borrow()
                 .form
-                .host
+                .host()
                 .get(ComponentId(100))
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -4780,7 +4839,7 @@ mod form_keyboard_owner_tests {
             Some(0),
             "Space stays with the original selected Theme radio option"
         );
-        assert!(surface.borrow().form.host.input_overlay_owner().is_none());
+        assert!(surface.borrow().form.host().input_overlay_owner().is_none());
         assert!(
             host.layout.leading_visible,
             "Space must not invoke the old toolbar visibility command"
@@ -4798,20 +4857,20 @@ mod form_keyboard_owner_tests {
             let state = surface.borrow();
             let radio = state
                 .form
-                .host
+                .host()
                 .get(id)
                 .unwrap()
                 .component::<RadioGroupContent>()
                 .unwrap();
             (
-                state.form.host.semantic_mount(id),
+                state.form.host().semantic_mount(id),
                 radio.view().layout().rows[2].frame().center(),
                 radio.model().selected,
                 radio.view().layout().clone(),
-                state.form.host.get(id).unwrap().frame(),
+                state.form.host().get(id).unwrap().frame(),
                 state
                     .form
-                    .host
+                    .host()
                     .get(ComponentId(1_u64 << 32))
                     .unwrap()
                     .frame(),
@@ -4869,7 +4928,7 @@ mod form_keyboard_owner_tests {
             .unwrap();
             if phase == PointerPhase::Down {
                 assert!(
-                    !surface.borrow().form.host.event_bubbled(),
+                    !surface.borrow().form.host().event_bubbled(),
                     "native Primary PointerDown on an exposed radio row is handled"
                 );
             }
@@ -4882,7 +4941,7 @@ mod form_keyboard_owner_tests {
             surface
                 .borrow()
                 .form
-                .host
+                .host()
                 .get(id)
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -4892,7 +4951,7 @@ mod form_keyboard_owner_tests {
             Some(2)
         );
         assert!(
-            surface.borrow().form.host.input_overlay_owner().is_none(),
+            surface.borrow().form.host().input_overlay_owner().is_none(),
             "radio choice never creates a popup"
         );
         {
@@ -4902,12 +4961,12 @@ mod form_keyboard_owner_tests {
             let draft = state.draft.clone();
             state.form.replace_values(&schema, &draft);
         }
-        assert_eq!(surface.borrow().form.host.semantic_mount(id), mount);
+        assert_eq!(surface.borrow().form.host().semantic_mount(id), mount);
         assert_eq!(
             surface
                 .borrow()
                 .form
-                .host
+                .host()
                 .get(id)
                 .unwrap()
                 .component::<RadioGroupContent>()
@@ -4940,9 +4999,12 @@ mod form_keyboard_owner_tests {
         // The original Menu closes and advances once within the form. The
         // same Tab must not also escape to sidebar/toolbar scope navigation.
         assert!(!surface.borrow().form.has_open_menu());
-        assert_eq!(surface.borrow().form.host.focused(), Some(ComponentId(101)));
+        assert_eq!(
+            surface.borrow().form.host().focused(),
+            Some(ComponentId(101))
+        );
         assert!(host.actual_toolbar_owner().is_none());
-        assert!(surface.borrow().sidebar.host.focused().is_none());
+        assert!(surface.borrow().sidebar.host().focused().is_none());
         drop(host);
         drop(surface);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();

@@ -89,7 +89,7 @@ impl super::Host {
                 let mut local_input = None;
                 if let Some(local) = &mut self.panel_mgr.panels[2].local {
                     local.with_host(&mut |h| {
-                        local_input = h.focused_text().map(|s| s.input.text.clone())
+                        local_input = h.focused_text().map(|s| s.text().to_owned())
                     });
                     anyhow::ensure!(
                         local_input.as_deref() == Some("mixed 本地输入验收"),
@@ -570,12 +570,7 @@ impl super::Host {
                     .and_then(|node| {
                         node.component::<tekes_ui_controls::composition::TextFieldContent>()
                     })
-                    .map(|field| {
-                        (
-                            field.surface.input.text.clone(),
-                            field.surface.input.marked.clone(),
-                        )
-                    });
+                    .map(|field| (field.surface.text().to_owned(), field.surface.marked()));
             });
         value.ok_or_else(|| anyhow::anyhow!("original text field missing: {id}"))
     }

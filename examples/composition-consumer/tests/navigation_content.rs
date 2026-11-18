@@ -1020,12 +1020,12 @@ fn command_geometry_capture_cancel_retains_query_and_window_loss_retires_it() {
         .changed
     );
     assert!(host.is_composing(), "preedit must reach the original query");
-    let input = &host.focused_text().unwrap().input;
+    let input = host.focused_text().unwrap().input();
     let marked = input
-        .marked
+        .marked()
         .clone()
         .expect("query must contain marked text");
-    let utf16: Vec<_> = input.text.encode_utf16().collect();
+    let utf16: Vec<_> = input.text().encode_utf16().collect();
     assert_eq!(String::from_utf16(&utf16[marked.clone()]).unwrap(), "Open");
     assert_eq!(input.selection(), 1..3);
     assert_eq!(
@@ -1045,9 +1045,9 @@ fn command_geometry_capture_cancel_retains_query_and_window_loss_retires_it() {
         host.is_composing(),
         "candidate refresh must preserve preedit"
     );
-    let input = &host.focused_text().unwrap().input;
-    assert_eq!(input.marked, Some(marked.clone()));
-    let utf16: Vec<_> = input.text.encode_utf16().collect();
+    let input = host.focused_text().unwrap().input();
+    assert_eq!(input.marked(), Some(marked.clone()));
+    let utf16: Vec<_> = input.text().encode_utf16().collect();
     assert_eq!(String::from_utf16(&utf16[marked]).unwrap(), "Open");
     assert_eq!(input.selection(), 1..3);
     assert_eq!(

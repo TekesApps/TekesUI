@@ -58,17 +58,17 @@ fn main() {
             self.tree
                 .text_surface(f::EDITOR)
                 .unwrap()
-                .input
+                .input()
                 .external_baseline()
         }
         fn record(&self, window: &Window, label: &str) {
-            let input = &self.tree.text_surface(f::EDITOR).unwrap().input;
-            let other = &self.tree.text_surface(f::OTHER).unwrap().input;
+            let input = self.tree.text_surface(f::EDITOR).unwrap().input();
+            let other = self.tree.text_surface(f::OTHER).unwrap().input();
             let value = serde_json::json!({"event":label,"readonly_case":self.readonly,
                 "window_active":window.is_active(),"stages":self.stages,
                 "focus":self.tree.focused().map(|id|id.0),"editor_mount":self.tree.semantic_mount(f::EDITOR),
-                "editor":{"text":input.text,"selection":input.selection(),"marked":input.marked,"read_only":input.read_only},
-                "other":{"text":other.text,"selection":other.selection(),"marked":other.marked},
+                "editor":{"text":input.text(),"selection":input.selection(),"marked":input.marked(),"read_only":input.is_read_only()},
+                "other":{"text":other.text(),"selection":other.selection(),"marked":other.marked()},
                 "blocked_padding":self.blocked_padding,"direct_text_down":self.direct_text_down,
                 "actions":self.actions.iter().map(|a|serde_json::json!({"target":a.action.target.0,"mount":a.mount,"source":format!("{:?}",a.action.source)})).collect::<Vec<_>>(),
                 "software_AppKit":true,"physical_IME":false,"VoiceOver":false});
@@ -164,7 +164,11 @@ fn main() {
                 }
                 30_003 => {
                     assert_eq!(
-                        self.tree.text_surface(f::EDITOR).unwrap().input.selection(),
+                        self.tree
+                            .text_surface(f::EDITOR)
+                            .unwrap()
+                            .input()
+                            .selection(),
                         selection
                     );
                     self.baseline = Some(self.field_baseline());
@@ -180,14 +184,20 @@ fn main() {
                 30_004 => {
                     assert_eq!(self.field_baseline(), *self.baseline.as_ref().unwrap());
                     assert_eq!(
-                        self.tree.text_surface(f::EDITOR).unwrap().input.read_only,
+                        self.tree
+                            .text_surface(f::EDITOR)
+                            .unwrap()
+                            .input()
+                            .is_read_only(),
                         self.readonly
                     );
                     assert!(self.actions.is_empty());
                     vec![
                         (
                             100,
-                            Self::click(self.tree.text_surface(f::EDITOR).unwrap().inner.center()),
+                            Self::click(
+                                self.tree.text_surface(f::EDITOR).unwrap().inner().center(),
+                            ),
                         ),
                         (350, next(30_005)),
                     ]
@@ -211,12 +221,12 @@ fn main() {
                     steps
                 }
                 30_006 => {
-                    let input = &self.tree.text_surface(f::EDITOR).unwrap().input;
+                    let input = self.tree.text_surface(f::EDITOR).unwrap().input();
                     if self.readonly {
-                        assert!(input.marked.is_none());
+                        assert!(input.marked().is_none());
                         assert_eq!(self.field_baseline(), *self.baseline.as_ref().unwrap());
                     } else {
-                        assert!(input.marked.is_some());
+                        assert!(input.marked().is_some());
                     }
                     self.baseline = Some(self.field_baseline());
                     vec![
@@ -248,9 +258,14 @@ fn main() {
                 }
                 30_008 => {
                     assert_eq!(self.tree.focused(), Some(f::OTHER));
-                    assert!(self.tree.focused_text().unwrap().input.marked.is_some());
-                    self.other_baseline =
-                        Some(self.tree.focused_text().unwrap().input.external_baseline());
+                    assert!(self.tree.focused_text().unwrap().marked().is_some());
+                    self.other_baseline = Some(
+                        self.tree
+                            .focused_text()
+                            .unwrap()
+                            .input()
+                            .external_baseline(),
+                    );
                     vec![
                         (100, Self::click(self.edge_points()[0])),
                         (350, next(30_009)),
@@ -260,7 +275,11 @@ fn main() {
                     assert!(self.blocked_padding > 0);
                     assert_eq!(self.tree.focused(), Some(f::OTHER));
                     assert_eq!(
-                        self.tree.focused_text().unwrap().input.external_baseline(),
+                        self.tree
+                            .focused_text()
+                            .unwrap()
+                            .input()
+                            .external_baseline(),
                         *self.other_baseline.as_ref().unwrap()
                     );
                     vec![
@@ -322,7 +341,7 @@ fn main() {
                     );
                     if self.readonly {
                         assert_eq!(
-                            self.tree.text_surface(f::EDITOR).unwrap().input.text,
+                            self.tree.text_surface(f::EDITOR).unwrap().text(),
                             f::READ_ONLY_TEXT
                         );
                     }

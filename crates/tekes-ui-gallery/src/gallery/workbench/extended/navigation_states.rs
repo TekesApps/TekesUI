@@ -133,7 +133,10 @@ fn combo_box(
         let choices = model.filtered();
         let labels: Vec<&str> = choices.iter().map(|i| model.items[*i].as_str()).collect();
         let extra = if open && !labels.is_empty() {
-            tekes_ui_controls::MenuView::measure(ctx.text, &labels, width, BODY, false).height
+            tekes_ui_controls::feedback_view::MenuView::measure(
+                ctx.text, &labels, width, BODY, false,
+            )
+            .height
                 + proposal::metric("spacing", "space-micro").unwrap()
         } else if open {
             8. + caption_size(ctx, "No matching options", input.size.width).height
@@ -273,7 +276,10 @@ fn select(
         .height;
         let trigger = Rect::new(bounds.min_x(), top, trigger_width, height);
         let extra = if state == "open" {
-            tekes_ui_controls::MenuView::measure(ctx.text, labels, width, BODY, false).height
+            tekes_ui_controls::feedback_view::MenuView::measure(
+                ctx.text, labels, width, BODY, false,
+            )
+            .height
                 + proposal::metric("spacing", "space-micro").unwrap()
         } else if let Some(message) = feedback {
             8. + caption_size(ctx, message, width).height
@@ -658,7 +664,10 @@ fn command_palette(
             let extra = if labels.is_empty() {
                 8. + caption_size(ctx, "No matching commands", input.size.width).height
             } else {
-                tekes_ui_controls::MenuView::measure(ctx.text, &labels, width, BODY, false).height
+                tekes_ui_controls::feedback_view::MenuView::measure(
+                    ctx.text, &labels, width, BODY, false,
+                )
+                .height
                     + proposal::metric("spacing", "space-micro").unwrap()
             };
             input.max_y() + extra
@@ -790,7 +799,7 @@ fn command_palette(
             .render(scene, ctx.text, frame, clip, palette)
             .unwrap();
         let menu_height = if cached {
-            tekes_ui_controls::MenuView::measure(
+            tekes_ui_controls::feedback_view::MenuView::measure(
                 ctx.text,
                 &["Open file", "Open settings"],
                 frame.size.width,

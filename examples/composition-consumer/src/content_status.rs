@@ -2,12 +2,12 @@
 //! These are application fixtures, not new built-in controls or status protocols.
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, TabsView,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composition::*,
     extended::{Axis, Banner, Disclosure, EmptyState, NoticeTone, Progress, Stack},
     feedback_view::{BannerView, EmptyStateView, ProgressView},
     layout::MeasuredChild,
-    layout_view::{DisclosureView, IconRenderer, IconView},
+    layout_view::{DisclosureView, IconRenderer, IconView, TabsView},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Spacing, proposal};
@@ -49,7 +49,7 @@ enum HeaderView {
 }
 #[derive(Debug)]
 struct Header {
-    tabs_layout: tekes_ui_controls::TabsLayout,
+    tabs_layout: tekes_ui_controls::layout_view::TabsLayout,
     icon: Option<IconContent>,
     view: HeaderView,
     visible: Rc<Cell<bool>>,
@@ -70,17 +70,11 @@ impl Component for Header {
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
-    fn action_transaction_compatibility(&self) -> ActionTransactionCompatibility {
-        ActionTransactionCompatibility::StableHooks
+    fn has_stable_hooks(&self) -> bool {
+        true
     }
-    fn prepared_effects_work(&self, calls: usize) -> Result<usize, PreparedEffectsError> {
-        PreparedEffects::local_work(calls)
-    }
-    fn prepare_effects(
-        &self,
-        hooks: &[PreparedHook],
-    ) -> Result<PreparedEffects, PreparedEffectsError> {
-        Ok(PreparedEffects::local(self, hooks))
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
     }
     fn requires_icon_services(&self) -> bool {
         self.icon.is_some()

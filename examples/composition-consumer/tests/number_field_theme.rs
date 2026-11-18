@@ -74,19 +74,24 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
             let surface = host.text_surface(NUMBER).unwrap();
             let parts = field(&host).semantic_parts();
             assert_eq!(parts.len(), 2);
-            let current = (surface.outer, surface.inner, parts[0].frame, parts[1].frame);
+            let current = (
+                surface.outer(),
+                surface.inner(),
+                parts[0].frame,
+                parts[1].frame,
+            );
             if let Some(geometry) = geometry {
                 assert_eq!(current, geometry);
             } else {
                 geometry = Some(current);
             }
-            assert_eq!(surface.error, draft != "7");
+            assert_eq!(surface.error(), draft != "7");
             assert_eq!(field(&host).semantics().invalid, draft != "7");
             let background = scene
                 .primitives()
                 .iter()
                 .find_map(|p| match p {
-                    Primitive::Quad(q) if q.rect == surface.outer && q.fill.a > 0. => Some(q),
+                    Primitive::Quad(q) if q.rect == surface.outer() && q.fill.a > 0. => Some(q),
                     _ => None,
                 })
                 .expect("original editable numeric TextSurface background");
@@ -110,9 +115,9 @@ fn number_field_retained_themes_keep_draft_committed_value_and_actual_numeric_in
                 proposal::metric("stroke", "c-focus-width").unwrap(),
                 "the original numeric editor has one attached focus/error edge"
             );
-            assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == surface.outer.center())), "no duplicate outer contour");
+            assert!(!scene.primitives().iter().any(|p| matches!(p, Primitive::Quad(q) if q.fill.a == 0. && q.border_width > 0. && q.rect.center() == surface.outer().center())), "no duplicate outer contour");
             let regions = [
-                (surface.inner, false, background.fill, "primary-text"),
+                (surface.inner(), false, background.fill, "primary-text"),
                 (
                     parts[0].frame,
                     parts[0].semantics.disabled,

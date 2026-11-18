@@ -2,8 +2,9 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 use tekes_ui_controls::{
-    ControlKey, ControlState, RadioGroupLayout, RadioGroupView, SelectionEvent,
+    ControlKey, ControlState,
     extended::RadioGroup,
+    layout_view::{RadioGroupLayout, RadioGroupView, SelectionEvent},
 };
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme};

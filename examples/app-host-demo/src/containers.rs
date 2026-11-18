@@ -7,8 +7,8 @@ use tekes_ui_app_host::{
     PresentationState, ProcessContainer,
 };
 use tekes_ui_app_protocol::ToolbarItem;
-use tekes_ui_controls::composition::{
-    ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent,
+use tekes_ui_controls::{
+    composition::{ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent},
 };
 
 const RETAIN_FIRST: u64 = 101;
@@ -112,7 +112,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         let text = host
             .get(ComponentId(1))
             .and_then(|content| content.component::<TextFieldContent>())
-            .map(|field| field.surface.input.text.clone());
+            .map(|field| field.surface.text().to_owned());
         eprintln!(
             "DEMO_COMMAND owner={owner} command={command} count={} text={text:?}",
             command_count.get()
@@ -130,7 +130,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
             let text = host
                 .get(ComponentId(1))
                 .and_then(|content| content.component::<TextFieldContent>())
-                .map(|field| field.surface.input.text.clone());
+                .map(|field| field.surface.text().to_owned());
             eprintln!(
                 "DEMO_ACTION owner={actions_owner} action={:?} payload={:?} text={text:?}",
                 record.action, record.payload

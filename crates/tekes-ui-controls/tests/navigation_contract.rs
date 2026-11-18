@@ -206,7 +206,10 @@ fn breadcrumb_scroll_host_activates_visible_ancestors_and_rejects_unavailable_it
 
 #[test]
 fn navigation_header_states_use_public_events_and_existing_painters() {
-    use tekes_ui_controls::{TabsView, extended::Breadcrumb, layout_view::BreadcrumbView};
+    use tekes_ui_controls::{
+        extended::Breadcrumb,
+        layout_view::{BreadcrumbView, TabsView},
+    };
     let registry:serde_json::Value=serde_json::from_str(include_str!("../../../design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/registry/components.json")).unwrap();
     let mut cases = Vec::new();
     let mut deferred = Vec::new();

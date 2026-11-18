@@ -172,7 +172,7 @@ fn source() -> String {
         .collect()
 }
 fn render(surface: &mut TextSurface, text: &mut coretext::Text, theme: Theme) -> Scene {
-    let role = surface.role;
+    let role = surface.role();
     let scale = text.scale;
     let backing = text.backing;
     surface.layout_with(
@@ -191,18 +191,18 @@ fn text_area_primary_retained_themes_keep_multiline_selection_scroll_and_real_in
     let source = source();
     let mut area = TextSurface::new(&source, true, false);
     let mut text = coretext::Text::new(1.);
-    assert!(area.input.multiline);
-    assert_eq!(area.role, proposal::TextRole::ComposerBody);
+    assert!(area.input().is_multiline());
+    assert_eq!(area.role(), proposal::TextRole::ComposerBody);
     render(&mut area, &mut text, Theme::LIGHT);
-    assert!(area.input.select_range(0..4));
-    let frame = area.outer;
-    let inner = area.inner;
+    assert!(area.input_mut().select_range(0..4));
+    let frame = area.outer();
+    let inner = area.inner();
     for theme in Theme::ALL {
         let scene = render(&mut area, &mut text, theme);
-        assert_eq!(area.input.text, source);
-        assert_eq!(area.input.selection(), 0..4);
-        assert_eq!(area.input.selected_text(), "Area");
-        assert_eq!((area.outer, area.inner), (frame, inner));
+        assert_eq!(area.text(), source);
+        assert_eq!(area.input().selection(), 0..4);
+        assert_eq!(area.input().selected_text(), "Area");
+        assert_eq!((area.outer(), area.inner()), (frame, inner));
         assert!(
             assert_input(&scene, frame, theme.into(), text.backing) > 0,
             "first visible selection phase must paint selection"
@@ -211,22 +211,23 @@ fn text_area_primary_retained_themes_keep_multiline_selection_scroll_and_real_in
         assert!(has_attached_focus(&scene, frame, theme.into()));
         assert_thumb(&scene, frame, theme.into());
     }
-    assert!(area.scroll.scroll_by(0., 96.));
-    let offset = area.scroll.offset;
+    assert!(area.scroll_mut().scroll_by(0., 96.));
+    let offset = area.scroll().offset;
     assert!(offset.y > 0.);
     for theme in Theme::ALL {
         let scene = render(&mut area, &mut text, theme);
-        assert_eq!(area.scroll.offset, offset);
-        assert_eq!(area.input.selection(), 0..4);
-        assert_eq!(area.input.text, source);
+        assert_eq!(area.scroll().offset, offset);
+        assert_eq!(area.input().selection(), 0..4);
+        assert_eq!(area.text(), source);
         assert_input(&scene, frame, theme.into(), text.backing);
     }
-    area.input.select(area.input.len(), false);
+    let len = area.input().len();
+    area.input_mut().select(len, false);
     assert_eq!(
         area.command(tekes_ui_controls::TextEditCommand::InsertNewline),
         Some(true)
     );
-    assert!(area.input.text.ends_with("\n\n"));
+    assert!(area.text().ends_with("\n\n"));
 }
 fn render_host(host: &mut ContentHost, text: &mut coretext::Text, theme: Theme) -> Scene {
     let mut scene = Scene::new();
@@ -261,10 +262,10 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.input.select_range(0..4));
-    assert!(field.surface.scroll.scroll_by(0., 80.));
-    let offset = field.surface.scroll.offset;
-    let frame = field.surface.outer;
+    assert!(field.surface.input_mut().select_range(0..4));
+    assert!(field.surface.scroll_mut().scroll_by(0., 80.));
+    let offset = field.surface.scroll().offset;
+    let frame = field.surface.outer();
     for theme in Theme::ALL {
         let scene = render_host(&mut host, &mut text, theme);
         let field = host
@@ -272,12 +273,12 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert!(field.surface.input.multiline);
-        assert_eq!(field.surface.role, proposal::TextRole::ComposerBody);
-        assert_eq!(field.surface.outer, frame);
-        assert_eq!(field.surface.scroll.offset, offset);
-        assert_eq!(field.surface.input.selection(), 0..4);
-        assert_eq!(field.surface.input.text, source);
+        assert!(field.surface.input().is_multiline());
+        assert_eq!(field.surface.role(), proposal::TextRole::ComposerBody);
+        assert_eq!(field.surface.outer(), frame);
+        assert_eq!(field.surface.scroll().offset, offset);
+        assert_eq!(field.surface.input().selection(), 0..4);
+        assert_eq!(field.surface.text(), source);
         assert_input(&scene, frame, theme.into(), text.backing);
         assert!(has_attached_focus(&scene, frame, theme.into()));
         assert_eq!(

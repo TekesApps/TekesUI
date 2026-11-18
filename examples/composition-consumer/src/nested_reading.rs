@@ -30,7 +30,7 @@ pub fn build() -> Result<(ContentHost, State), CompositionError> {
     };
     inner
         .surface
-        .scroll
+        .scroll_mut()
         .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
     let mut reading = ReadingController::default();
     reading

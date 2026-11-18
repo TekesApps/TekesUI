@@ -89,16 +89,16 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
             .unwrap();
         let surface = &field.surface;
         assert!(!field.show_metadata);
-        assert!(!surface.input.multiline && !surface.input.read_only);
-        assert_eq!(surface.role, proposal::TextRole::UiBody);
-        assert_eq!(surface.input.text, "notes 文档");
-        let geometry = (surface.outer, surface.inner);
+        assert!(!surface.input().is_multiline() && !surface.input().is_read_only());
+        assert_eq!(surface.role(), proposal::TextRole::UiBody);
+        assert_eq!(surface.text(), "notes 文档");
+        let geometry = (surface.outer(), surface.inner());
         if let Some(original) = original_geometry {
             assert_eq!(geometry, original);
         } else {
             original_geometry = Some(geometry);
         }
-        assert_query_ink(&scene, surface.outer, theme, text.backing);
+        assert_query_ink(&scene, surface.outer(), theme, text.backing);
         let nodes = host.semantics();
         let node = nodes.iter().find(|n| n.id == SEARCH).unwrap();
         assert_eq!(node.semantics.role, ContentRole::TextInput);
@@ -144,10 +144,10 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.input.text, "notes 文档");
+    assert_eq!(field.surface.text(), "notes 文档");
     assert_query_ink(
         &scene,
-        field.surface.outer,
+        field.surface.outer(),
         Theme::DARK_INCREASED,
         text.backing,
     );

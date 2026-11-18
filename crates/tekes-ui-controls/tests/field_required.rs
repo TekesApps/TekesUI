@@ -21,7 +21,7 @@ fn required_is_independent_of_readonly_disabled_error_and_multiline_policies() {
                     for invalid in [false, true] {
                         let mut field = TextFieldContent::new("Name", "Existing");
                         field.surface = TextSurface::new("Existing", multiline, readonly);
-                        field.surface.input.disabled = disabled;
+                        field.surface.input_mut().set_disabled(disabled);
                         field.field.required = required;
                         field.field.error = invalid.then(|| "Existing validation".into());
                         let s = field.semantics();
@@ -46,8 +46,8 @@ fn content_presentation_keeps_explicit_metadata_without_reintroducing_form_decor
     field.field.required = true;
     assert!(field.semantics().required);
     assert_eq!(
-        field.surface.presentation,
+        field.surface.presentation(),
         tekes_ui_controls::TextSurfacePresentation::Content
     );
-    assert!(field.surface.input.read_only);
+    assert!(field.surface.input().is_read_only());
 }

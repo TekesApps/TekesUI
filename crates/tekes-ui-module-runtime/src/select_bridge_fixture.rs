@@ -2,8 +2,8 @@
 //! Prepares geometry and opens with original pointer input before mounting. This
 //! deliberately does not implement #89's adapter, trigger AX open or update seams.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, MenuEvent, Select, composition::*, layout::MeasuredChild,
-    layout_view::SelectView,
+    ButtonTextAlign, ButtonTextRenderer, Select, composition::*, feedback_view::MenuEvent,
+    layout::MeasuredChild, layout_view::SelectView,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};

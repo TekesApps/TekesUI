@@ -2474,7 +2474,7 @@ mod field_area_host_migration_tests {
                 .host
                 .text_surface(tekes_ui_controls::composition::ComponentId(27502))
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset
                 .y
         };
@@ -2534,7 +2534,7 @@ mod field_area_host_migration_tests {
                 .host
                 .text_surface(tekes_ui_controls::composition::ComponentId(27502))
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset
                 .y
         };

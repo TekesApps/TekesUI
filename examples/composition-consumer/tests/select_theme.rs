@@ -1,7 +1,9 @@
 #![cfg(target_os = "macos")]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{ButtonLayout, ControlKey, MenuEvent, Select, layout_view::SelectView};
+use tekes_ui_controls::{
+    ButtonLayout, ControlKey, Select, feedback_view::MenuEvent, layout_view::SelectView,
+};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
 const LABELS: [&str; 3] = ["Automatic 自动", "Compact 紧凑", "Comfortable 舒适"];
