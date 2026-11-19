@@ -2047,7 +2047,7 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "c2799039cc36bb21976e138bb2b7d76260a8dd241391cd24bf84317195011624",
+    "DESIGN.md": "63f220b1409ee8c12fb13f41c81ce66b77bed3091ce947bbba205361e8131050",
     "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
     "crates/tekes-ui-app-host/src/window.rs": "a0a2399642f73356605ae503293270c58de19b45f7ee16423f4ff1b716abe6c8",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",

@@ -157,6 +157,7 @@ class PackageStructure(unittest.TestCase):
             cmd_offline = package.resolve_build_command(args_offline)
             self.assertIn('--offline', cmd_offline)
             self.assertIn('--release', cmd_offline)
+            self.assertEqual(cmd_offline.count('--release'), 1)
         with patch.dict(package.os.environ, {'TEKESUI_OFFLINE': '1'}, clear=True):
             args_env = type('Args', (), {'offline': False, 'release': False})()
             self.assertIn('--offline', package.resolve_build_command(args_env))

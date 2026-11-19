@@ -18,28 +18,28 @@ default-members = ["crates/*"]
 
 [workspace.package]
 # 版本号的唯一权威来源；各 crate 使用 version.workspace = true。
-version = "0.3.34"
+version = "0.3.35"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/TekesApps/TekesUI"
 rust-version = "1.95"
 
 [workspace.dependencies]
-tekes-ui-controls = { version = "0.3.34", path = "crates/tekes-ui-controls" }
-tekes-ui-tokens = { version = "0.3.34", path = "crates/tekes-ui-tokens" }
-tekes-ui-design-export = { version = "0.3.34", path = "crates/tekes-ui-design-export" }
-tekes-ui-scene = { version = "0.3.34", path = "crates/tekes-ui-scene" }
-tekes-ui-render = { version = "0.3.34", path = "crates/tekes-ui-render" }
-tekes-ui-text = { version = "0.3.34", path = "crates/tekes-ui-text" }
-tekes-ui-motion = { version = "0.3.34", path = "crates/tekes-ui-motion" }
-tekes-ui-icons = { version = "0.3.34", path = "crates/tekes-ui-icons" }
-tekes-ui-scene3d = { version = "0.3.34", path = "crates/tekes-ui-scene3d" }
-tekes-ui-platform-macos = { version = "0.3.34", path = "crates/tekes-ui-platform-macos" }
-tekes-ui-macos-bridge = { version = "0.3.34", path = "crates/tekes-ui-macos-bridge" }
-tekes-ui-app-protocol = { version = "0.3.34", path = "crates/tekes-ui-app-protocol" }
-tekes-ui-module-runtime = { version = "0.3.34", path = "crates/tekes-ui-module-runtime" }
-tekes-ui-settings = { version = "0.3.34", path = "crates/tekes-ui-settings" }
-tekes-ui-app-host = { version = "0.3.34", path = "crates/tekes-ui-app-host" }
+tekes-ui-controls = { version = "0.3.35", path = "crates/tekes-ui-controls" }
+tekes-ui-tokens = { version = "0.3.35", path = "crates/tekes-ui-tokens" }
+tekes-ui-design-export = { version = "0.3.35", path = "crates/tekes-ui-design-export" }
+tekes-ui-scene = { version = "0.3.35", path = "crates/tekes-ui-scene" }
+tekes-ui-render = { version = "0.3.35", path = "crates/tekes-ui-render" }
+tekes-ui-text = { version = "0.3.35", path = "crates/tekes-ui-text" }
+tekes-ui-motion = { version = "0.3.35", path = "crates/tekes-ui-motion" }
+tekes-ui-icons = { version = "0.3.35", path = "crates/tekes-ui-icons" }
+tekes-ui-scene3d = { version = "0.3.35", path = "crates/tekes-ui-scene3d" }
+tekes-ui-platform-macos = { version = "0.3.35", path = "crates/tekes-ui-platform-macos" }
+tekes-ui-macos-bridge = { version = "0.3.35", path = "crates/tekes-ui-macos-bridge" }
+tekes-ui-app-protocol = { version = "0.3.35", path = "crates/tekes-ui-app-protocol" }
+tekes-ui-module-runtime = { version = "0.3.35", path = "crates/tekes-ui-module-runtime" }
+tekes-ui-settings = { version = "0.3.35", path = "crates/tekes-ui-settings" }
+tekes-ui-app-host = { version = "0.3.35", path = "crates/tekes-ui-app-host" }
 tekes-ui-compare = { path = "crates/tekes-ui-compare" }
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
 bytemuck = { version = "1", features = ["derive"] }
