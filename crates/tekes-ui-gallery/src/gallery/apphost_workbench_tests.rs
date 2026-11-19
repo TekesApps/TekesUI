@@ -85,6 +85,7 @@ fn state(page: &str) -> SharedWorkbench {
         current: 0,
         visits: vec![Selection::new(page, None)],
         visit_sections: vec![None],
+        pending_section: None,
         pages: HashMap::from([(
             page.into(),
             Rc::new(RefCell::new(page_host(page, &palette).unwrap())),
@@ -2245,4 +2246,24 @@ fn apphost_supports_slug_and_story_startup_routes() {
             "unexpected error for {invalid}: {err:#}"
         );
     }
+}
+
+#[test]
+fn apphost_focus_restore_inside_borrowed_host_handles_initial_and_same_page_sections() {
+    let (app, state, session_dir) =
+        assemble_for_route_internal("component-button/playground", true).unwrap();
+    drop(app);
+    let mut focus = focus_container(state.clone());
+    focus.with_host(&mut |_| state.borrow_mut().restore(COMMAND).unwrap());
+    focus.with_host(&mut |h| assert!(h.get(workbench::apphost_basic::SPECIMEN).is_some()));
+
+    state.borrow_mut().navigate("component-button/states");
+    let entry = state.borrow_mut().pending.pop_front().unwrap();
+    let visit = entry.params["visit"].as_u64().unwrap();
+    focus.with_host(&mut |_| state.borrow_mut().restore(COMMAND + visit).unwrap());
+    focus.with_host(&mut |h| assert!(h.get(workbench::apphost_basic::SPECIMEN).is_none()));
+
+    focus.with_host(&mut |_| state.borrow_mut().restore(COMMAND).unwrap());
+    focus.with_host(&mut |h| assert!(h.get(workbench::apphost_basic::SPECIMEN).is_some()));
+    let _ = std::fs::remove_dir_all(&session_dir);
 }
