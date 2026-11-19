@@ -45,6 +45,8 @@ pub(crate) struct ViewIvars {
     metal_link: RefCell<Option<Retained<CAMetalDisplayLink>>>,
     metal_start_pending: Cell<bool>,
     live_resizing: Cell<bool>,
+    pub(crate) scrolling_active: Cell<bool>,
+    cursor_tracking_dirty: Cell<bool>,
 }
 
 define_class!(
@@ -616,7 +618,18 @@ define_class!(
                 {
                     eprintln!("OTHERS_SCROLL_NATIVE window={} event={ev:?}", e.windowNumber());
                 }
+                let active_scroll = matches!(
+                    ev.phase,
+                    ScrollPhase::Began | ScrollPhase::Changed | ScrollPhase::MayBegin
+                ) || matches!(
+                    ev.momentum_phase,
+                    ScrollPhase::Began | ScrollPhase::Changed
+                );
+                self.ivars().scrolling_active.set(active_scroll);
                 self.ivars().shared.dispatch(Event::Scroll(ev));
+                if !active_scroll && !self.ivars().shared.animating.get() {
+                    self.flush_cursor_tracking_if_needed();
+                }
             });
         }
 
@@ -850,6 +863,14 @@ impl TekesView {
             return;
         }
         *self.ivars().cursor_regions.borrow_mut() = regions;
+        // Updating NSTrackingAreas on every scroll/animation frame recreates AppKit
+        // tracking rects and flickers the hardware cursor as row gaps pass under
+        // a stationary pointer. Defer tracking rebuilds until scroll/animation ends.
+        if self.ivars().scrolling_active.get() || self.ivars().shared.animating.get() {
+            self.ivars().cursor_tracking_dirty.set(true);
+            return;
+        }
+        self.ivars().cursor_tracking_dirty.set(false);
         self.updateTrackingAreas();
         if cfg!(debug_assertions)
             && let Some(window) = self.window()
@@ -863,6 +884,28 @@ impl TekesView {
                     y: point.y,
                 },
             );
+        }
+    }
+
+    pub(crate) fn flush_cursor_tracking_if_needed(&self) {
+        self.ivars().scrolling_active.set(false);
+        if self.ivars().cursor_tracking_dirty.replace(false) && !self.ivars().shared.closed.get() {
+            self.updateTrackingAreas();
+            if let Some(window) = self.window()
+                && window.isKeyWindow()
+            {
+                let p =
+                    self.convertPoint_fromView(window.mouseLocationOutsideOfEventStream(), None);
+                let bounds = self.bounds();
+                if p.x >= bounds.origin.x
+                    && p.x < bounds.origin.x + bounds.size.width
+                    && p.y >= bounds.origin.y
+                    && p.y < bounds.origin.y + bounds.size.height
+                {
+                    let (_, cursor) = self.cursor_for_point(Point { x: p.x, y: p.y });
+                    cursor.set();
+                }
+            }
         }
     }
 
@@ -977,6 +1020,8 @@ impl TekesView {
             metal_link: RefCell::new(None),
             metal_start_pending: Cell::new(false),
             live_resizing: Cell::new(false),
+            scrolling_active: Cell::new(false),
+            cursor_tracking_dirty: Cell::new(false),
         });
         // SAFETY: NSView 的指定初始化方法 initWithFrame: 签名正确。
         let view: Retained<TekesView> = unsafe { msg_send![super(this), initWithFrame: frame] };
@@ -1022,6 +1067,9 @@ impl TekesView {
         if !run {
             if let Some(link) = existing {
                 link.setPaused(true);
+            }
+            if !self.ivars().scrolling_active.get() {
+                self.flush_cursor_tracking_if_needed();
             }
             return false;
         }
@@ -1071,6 +1119,9 @@ impl TekesView {
             .presentation
             .metal_display_link
             .store(false, std::sync::atomic::Ordering::Relaxed);
+        if !self.ivars().live_resizing.get() && !self.ivars().scrolling_active.get() {
+            self.flush_cursor_tracking_if_needed();
+        }
     }
 
     /// Opt-in diagnostic driver. The ordinary production driver is unchanged.
@@ -1220,6 +1271,7 @@ impl TekesView {
     }
 
     fn mouse(&self, e: &NSEvent, kind: MouseEventKind) {
+        self.flush_cursor_tracking_if_needed();
         // Track the original native type, independently of a synthesized
         // object's buttonNumber (AppKit's object factory may leave it at zero).
         match e.r#type() {

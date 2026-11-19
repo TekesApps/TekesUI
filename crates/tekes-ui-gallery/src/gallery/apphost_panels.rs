@@ -401,6 +401,7 @@ pub(super) struct PanelContent {
     pub(super) inspector: bool,
     pub(super) inspector_groups: Vec<InspectorGroup>,
     pub(super) inspector_target: Option<(ComponentId, u64)>,
+    pub(super) inspector_snapshot: Option<InspectionSnapshot>,
     pub(super) document_focus: Rc<Cell<Option<u64>>>,
 }
 impl PanelContent {
@@ -431,112 +432,119 @@ impl PanelContent {
             let target = snapshot
                 .as_ref()
                 .map(|snapshot| (snapshot.id, snapshot.mount));
-            let groups = inspector_body(&selection, snapshot);
-            if groups != self.inspector_groups {
-                if selection_changed || target != self.inspector_target {
-                    self.host
-                        .remove(DOCUMENT_READER)
-                        .expect("mounted Inspector groups");
-                    self.host
-                        .insert(
-                            DOCUMENT_SCROLL,
-                            stack(DOCUMENT_READER.0, inspector_sections(&groups, 10_010)),
-                        )
-                        .expect("Inspector scroll content");
-                } else {
-                    // AppHost cancels other panels before a click, invalidating
-                    // specimen geometry until its next paint. Keep unchanged
-                    // groups mounted through that transition, including the
-                    // value receiving this click and its native/AX text owner.
-                    let next_id = self
-                        .host
-                        .get(DOCUMENT_READER)
-                        .unwrap()
-                        .component::<StackContent>()
-                        .unwrap()
-                        .children
-                        .iter()
-                        .filter_map(|node| node.component::<KeyValueTableContent>())
-                        .flat_map(|table| table.cells().iter().map(|cell| cell.id().0))
-                        .max()
-                        .map_or(10_010, |id| id + 1);
-                    for (index, section) in
-                        inspector_sections(&groups, next_id).into_iter().enumerate()
-                    {
-                        let group = index / 2;
-                        if self.inspector_groups.get(group) == groups.get(group) {
-                            continue;
-                        }
-                        if self.inspector_groups[group]
-                            .rows
+            if selection_changed
+                || target != self.inspector_target
+                || self.inspector_groups.is_empty()
+                || snapshot != self.inspector_snapshot
+            {
+                self.inspector_snapshot = snapshot.clone();
+                let groups = inspector_body(&selection, snapshot);
+                if groups != self.inspector_groups {
+                    if selection_changed || target != self.inspector_target {
+                        self.host
+                            .remove(DOCUMENT_READER)
+                            .expect("mounted Inspector groups");
+                        self.host
+                            .insert(
+                                DOCUMENT_SCROLL,
+                                stack(DOCUMENT_READER.0, inspector_sections(&groups, 10_010)),
+                            )
+                            .expect("Inspector scroll content");
+                    } else {
+                        // AppHost cancels other panels before a click, invalidating
+                        // specimen geometry until its next paint. Keep unchanged
+                        // groups mounted through that transition, including the
+                        // value receiving this click and its native/AX text owner.
+                        let next_id = self
+                            .host
+                            .get(DOCUMENT_READER)
+                            .unwrap()
+                            .component::<StackContent>()
+                            .unwrap()
+                            .children
                             .iter()
-                            .map(|(label, _)| label)
-                            .eq(groups[group].rows.iter().map(|(label, _)| label))
+                            .filter_map(|node| node.component::<KeyValueTableContent>())
+                            .flat_map(|table| table.cells().iter().map(|cell| cell.id().0))
+                            .max()
+                            .map_or(10_010, |id| id + 1);
+                        for (index, section) in
+                            inspector_sections(&groups, next_id).into_iter().enumerate()
                         {
-                            if index % 2 == 1 {
-                                let values: Vec<_> = self
-                                    .host
-                                    .get(section.id())
-                                    .unwrap()
-                                    .component::<KeyValueTableContent>()
-                                    .unwrap()
-                                    .cells()
-                                    .chunks_exact(2)
-                                    .zip(&groups[group].rows)
-                                    .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
-                                    .collect();
-                                for (id, value) in values {
-                                    if self.host.text_surface(id).unwrap().text() == value {
-                                        continue;
-                                    }
-                                    let field = self
-                                        .host
-                                        .get_mut(id)
-                                        .unwrap()
-                                        .component_mut::<TextFieldContent>()
-                                        .unwrap();
-                                    let baseline = field.surface.input().external_baseline();
-                                    let revision = tekes_ui_controls::DraftRevision {
-                                        identity: "gallery-inspector-value".into(),
-                                        version: field
-                                            .surface
-                                            .input()
-                                            .external_value()
-                                            .map_or(1, |v| v.version + 1),
-                                        payload: value,
-                                    };
-                                    let result = field.surface.apply_external_value(
-                                        &baseline,
-                                        &revision,
-                                        tekes_ui_controls::ExternalSelection::Reset,
-                                        tekes_ui_controls::ExternalUndo::Reset,
-                                    );
-                                    assert!(
-                                        matches!(
-                                            result,
-                                            tekes_ui_controls::ExternalValueResult::Applied { .. }
-                                        ),
-                                        "synchronous Inspector value publication: {result:?}"
-                                    );
-                                }
+                            let group = index / 2;
+                            if self.inspector_groups.get(group) == groups.get(group) {
+                                continue;
                             }
-                            continue;
+                            if self.inspector_groups[group]
+                                .rows
+                                .iter()
+                                .map(|(label, _)| label)
+                                .eq(groups[group].rows.iter().map(|(label, _)| label))
+                            {
+                                if index % 2 == 1 {
+                                    let values: Vec<_> = self
+                                        .host
+                                        .get(section.id())
+                                        .unwrap()
+                                        .component::<KeyValueTableContent>()
+                                        .unwrap()
+                                        .cells()
+                                        .chunks_exact(2)
+                                        .zip(&groups[group].rows)
+                                        .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
+                                        .collect();
+                                    for (id, value) in values {
+                                        if self.host.text_surface(id).unwrap().text() == value {
+                                            continue;
+                                        }
+                                        let field = self
+                                            .host
+                                            .get_mut(id)
+                                            .unwrap()
+                                            .component_mut::<TextFieldContent>()
+                                            .unwrap();
+                                        let baseline = field.surface.input().external_baseline();
+                                        let revision = tekes_ui_controls::DraftRevision {
+                                            identity: "gallery-inspector-value".into(),
+                                            version: field
+                                                .surface
+                                                .input()
+                                                .external_value()
+                                                .map_or(1, |v| v.version + 1),
+                                            payload: value,
+                                        };
+                                        let result = field.surface.apply_external_value(
+                                            &baseline,
+                                            &revision,
+                                            tekes_ui_controls::ExternalSelection::Reset,
+                                            tekes_ui_controls::ExternalUndo::Reset,
+                                        );
+                                        assert!(
+                                            matches!(
+                                                result,
+                                                tekes_ui_controls::ExternalValueResult::Applied { .. }
+                                            ),
+                                            "synchronous Inspector value publication: {result:?}"
+                                        );
+                                    }
+                                }
+                                continue;
+                            }
+                            self.host
+                                .remove(section.id())
+                                .expect("mounted Inspector section");
+                            self.host
+                                .insert(DOCUMENT_READER, section)
+                                .expect("Inspector section");
                         }
+                        let order: Vec<_> = (0..groups.len() * 2)
+                            .map(|index| ComponentId(10_000 + index as u64))
+                            .collect();
                         self.host
-                            .remove(section.id())
-                            .expect("mounted Inspector section");
-                        self.host
-                            .insert(DOCUMENT_READER, section)
-                            .expect("Inspector section");
+                            .reorder(DOCUMENT_READER, &order)
+                            .expect("Inspector section order");
                     }
-                    let order: Vec<_> = (0..groups.len() * 2)
-                        .map(|index| ComponentId(10_000 + index as u64))
-                        .collect();
-                    self.host
-                        .reorder(DOCUMENT_READER, &order)
-                        .expect("Inspector section order");
+                    self.inspector_groups = groups;
                 }
-                self.inspector_groups = groups;
             }
             self.inspector_target = target;
         } else {
@@ -646,6 +654,7 @@ pub(super) fn panel_source(
         inspector,
         inspector_groups: Vec::new(),
         inspector_target: None,
+        inspector_snapshot: None,
         document_focus: Rc::new(Cell::new(None)),
     })
 }

@@ -10,7 +10,7 @@ pub struct ResolvedColorRead {
     pub palette: crate::Palette,
     pub value: crate::Rgba,
 }
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct TokenObservation {
     pub lookups: Vec<(String, String)>,
     pub colors: Vec<ResolvedColorRead>,

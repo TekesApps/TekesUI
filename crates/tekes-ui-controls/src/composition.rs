@@ -428,7 +428,7 @@ pub struct SemanticNode {
 
 /// Palette plus an optional inherited foreground for decorative action content.
 /// No colors are authored here: both values resolve from the JSON palette.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ContentTheme {
     pub palette: Palette,
     pub foreground: Option<Rgba>,

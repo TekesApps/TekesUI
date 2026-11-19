@@ -38,22 +38,33 @@ impl ContentTextInput {
                 .filter(|r| r.size.height > 0.)
         };
         let origin = surface.origin();
-        let carets = surface.paragraph.as_ref().map_or_else(Vec::new, |p| {
-            p.lines
-                .iter()
-                .flat_map(|line| {
-                    line.carets.iter().filter_map(|(index, x)| {
-                        let rect = Rect::new(
-                            origin.x + *x as f32,
-                            origin.y + line.top as f32,
-                            tekes_ui_tokens::Stroke::Rule.value(),
-                            line.height as f32,
-                        );
-                        visible(rect).map(|rect| (*index, rect))
+        let carets = match (clip, surface.paragraph.as_ref()) {
+            (Some(c), Some(p)) => {
+                // `p.lines` are ordered monotonically by `line.top`, so binary search
+                // skips off-viewport lines instead of scanning all carets on every scroll.
+                let start = p.lines.partition_point(|line| {
+                    origin.y + (line.top + line.height) as f32 <= c.min_y()
+                });
+                let end = p
+                    .lines
+                    .partition_point(|line| (origin.y + line.top as f32) < c.max_y());
+                p.lines[start.min(end)..end]
+                    .iter()
+                    .flat_map(|line| {
+                        line.carets.iter().filter_map(|(index, x)| {
+                            let rect = Rect::new(
+                                origin.x + *x as f32,
+                                origin.y + line.top as f32,
+                                tekes_ui_tokens::Stroke::Rule.value(),
+                                line.height as f32,
+                            );
+                            visible(rect).map(|rect| (*index, rect))
+                        })
                     })
-                })
-                .collect()
-        });
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
         Self {
             binding: Self::local_binding(surface),
             text: surface.input.text.clone(),
@@ -85,6 +96,21 @@ impl ContentTextLayout {
         }
         let paragraph = surface.paragraph.as_ref()?;
         let origin = surface.origin();
+        let total_carets: usize = paragraph.lines.iter().map(|line| line.carets.len()).sum();
+        let mut carets = Vec::with_capacity(total_carets);
+        for line in &paragraph.lines {
+            for &(index, x) in &line.carets {
+                carets.push((
+                    index,
+                    Rect::new(
+                        origin.x + x as f32,
+                        origin.y + line.top as f32,
+                        tekes_ui_tokens::Stroke::Rule.value(),
+                        line.height as f32,
+                    ),
+                ));
+            }
+        }
         Some(Self {
             input: ContentTextInput::from_surface(surface),
             multiline: surface.input.multiline,
@@ -93,23 +119,7 @@ impl ContentTextLayout {
                 .iter()
                 .map(|line| line.utf16.clone())
                 .collect(),
-            carets: paragraph
-                .lines
-                .iter()
-                .flat_map(|line| {
-                    line.carets.iter().map(move |(index, x)| {
-                        (
-                            *index,
-                            Rect::new(
-                                origin.x + *x as f32,
-                                origin.y + line.top as f32,
-                                tekes_ui_tokens::Stroke::Rule.value(),
-                                line.height as f32,
-                            ),
-                        )
-                    })
-                })
-                .collect(),
+            carets,
         })
     }
 }

@@ -36,6 +36,14 @@ struct ParagraphLayoutKey {
     width: u32,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct SurfaceLayoutKey {
+    text: String,
+    role: proposal::TextRole,
+    type_scale: u32,
+    width: Option<u32>,
+}
+
 /// Resolve the system or monospace [`TextStyle`] for a token [`proposal::TextRole`] at `type_scale`.
 pub fn role_style(role: proposal::TextRole, type_scale: f32) -> TextStyle {
     let metrics = role.style();
@@ -220,6 +228,7 @@ pub struct CoreTextHost {
     pub services_enabled: bool,
     pub paragraph_diagnostic: Option<ParagraphLayoutDiagnostic>,
     frame_paragraphs: Option<HashMap<ParagraphLayoutKey, (Rc<Paragraph>, f32)>>,
+    frame_surfaces: Option<HashMap<SurfaceLayoutKey, Rc<Paragraph>>>,
 }
 
 impl std::fmt::Debug for CoreTextHost {
@@ -254,6 +263,7 @@ impl CoreTextHost {
             services_enabled: true,
             paragraph_diagnostic: None,
             frame_paragraphs: None,
+            frame_surfaces: None,
         }
     }
 
@@ -376,6 +386,7 @@ impl CoreTextHost {
         self.frame_paragraphs
             .get_or_insert_with(HashMap::new)
             .clear();
+        self.frame_surfaces.get_or_insert_with(HashMap::new).clear();
         if let Some(stats) = &mut self.paragraph_diagnostic {
             *stats = ParagraphLayoutDiagnostic::default();
         }
@@ -388,6 +399,9 @@ impl CoreTextHost {
         }
         self.type_scale = scale;
         if let Some(cache) = &mut self.frame_paragraphs {
+            cache.clear();
+        }
+        if let Some(cache) = &mut self.frame_surfaces {
             cache.clear();
         }
         if let Some(stats) = &mut self.paragraph_diagnostic {
@@ -545,6 +559,22 @@ impl TextSurfaceHost for CoreTextHost {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> Rc<Paragraph> {
-        shape_surface(&mut self.shaper, value, role, self.type_scale, width)
+        let key = self.frame_surfaces.as_ref().map(|_| SurfaceLayoutKey {
+            text: value.to_owned(),
+            role,
+            type_scale: self.type_scale.to_bits(),
+            width: width.map(f32::to_bits),
+        });
+        if let Some(paragraph) = key
+            .as_ref()
+            .and_then(|key| self.frame_surfaces.as_ref()?.get(key))
+        {
+            return paragraph.clone();
+        }
+        let paragraph = shape_surface(&mut self.shaper, value, role, self.type_scale, width);
+        if let (Some(cache), Some(key)) = (&mut self.frame_surfaces, key) {
+            cache.insert(key, paragraph.clone());
+        }
+        paragraph
     }
 }
