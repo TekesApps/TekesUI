@@ -7,7 +7,7 @@ canonical names, paint and 24x24 artboards retain their original ownership.
 from pathlib import Path
 import argparse,hashlib,json,math,re,xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[3]
-REVIEW=ROOT/'design/reviews/icon-gold7-57'
+REVIEW=ROOT/'target/icon-gold7-57'
 ASSETS=ROOT/'crates/tekes-ui-icons/assets'
 APPROVED={'back','forward','settings','folder','file-generic','error'}
 # Explicit eligibility, not a blanket transformation of technical/semantic tips.

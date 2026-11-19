@@ -4,6 +4,8 @@
 
 pub mod animation;
 mod catalog;
+#[cfg(feature = "product-icons")]
+mod product_extensions;
 pub use catalog::Glyph;
 mod style;
 pub use style::{ARTBOARD_SIZE, REGULAR_STROKE_WIDTH};

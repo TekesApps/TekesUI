@@ -7,5 +7,9 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+product-icons = []
+
 [lints]
 workspace = true

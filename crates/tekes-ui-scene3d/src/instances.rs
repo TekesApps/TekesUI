@@ -261,8 +261,16 @@ impl GpuInstance {
             let &(offset, count) = routes
                 .get(r.route)
                 .ok_or_else(|| err("instance route index out of range"))?;
-            if r.speed < 0. || r.speed_variation < 0. || r.speed_variation > r.speed {
-                return Err(err("route speed must be nonnegative"));
+            if !r.speed.is_finite()
+                || !r.speed_variation.is_finite()
+                || !r.distance.is_finite()
+                || !r.phase.is_finite()
+                || !r.lateral_offset.is_finite()
+                || r.speed < 0.
+                || r.speed_variation < 0.
+                || r.speed_variation > r.speed
+            {
+                return Err(err("route speed must be finite and nonnegative"));
             }
             g.route = [offset as f32, count as f32, r.distance, r.speed];
             g.scale[3] = r.speed_variation;
@@ -341,7 +349,8 @@ impl GpuInstance {
                 door_slide,
                 route_window,
             } => {
-                if i.route.is_none()
+                if i.route
+                    .is_none_or(|r| !r.speed.is_finite() || r.speed <= 0.)
                     || !dwell_seconds.is_finite()
                     || dwell_seconds < 3.
                     || !acceleration_seconds.is_finite()
@@ -351,7 +360,7 @@ impl GpuInstance {
                     || !door_slide.is_finite()
                 {
                     return Err(err(
-                        "transit requires a route, dwell >=3, positive acceleration and nonnegative phase",
+                        "transit requires a route with positive speed, dwell >=3, positive acceleration and nonnegative phase",
                     ));
                 }
                 g.effect = [8., dwell_seconds, acceleration_seconds, phase_seconds];
@@ -670,5 +679,32 @@ mod tests {
             )
             .is_err()
         );
+    }
+    #[test]
+    fn transit_rejects_nonpositive_or_nonfinite_route_speed() {
+        for bad_speed in [0., -1., f32::NAN, f32::INFINITY] {
+            let instance = Instance3D {
+                route: Some(FollowRoute3D {
+                    route: 0,
+                    distance: 0.,
+                    speed: bad_speed,
+                    speed_variation: 0.,
+                    phase: 0.,
+                    lateral_offset: 0.,
+                }),
+                deformation: Deformation3D::Transit {
+                    dwell_seconds: 5.,
+                    acceleration_seconds: 1.5,
+                    phase_seconds: 0.,
+                    door_slide: 0.,
+                    route_window: None,
+                },
+                ..Default::default()
+            };
+            assert!(
+                GpuInstance::from_instance(&instance, &[(0, 4)]).is_err(),
+                "speed={bad_speed}"
+            );
+        }
     }
 }

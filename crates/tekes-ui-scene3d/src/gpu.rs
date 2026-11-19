@@ -6,14 +6,69 @@ use crate::{
 use tekes_ui_render::gpu::{GpuContext, GpuImage};
 use wgpu::util::DeviceExt;
 
+#[cfg(not(feature = "simulation"))]
+const BASIC_SCENE3D_PREAMBLE: &str = r#"
+struct Environment {
+    time_wind: vec4<f32>,
+    ambient_emission: vec4<f32>,
+    direction: vec4<f32>,
+    directional: vec4<f32>,
+    clocks: vec4<f32>,
+}
+@group(0) @binding(1) var<uniform> environment: Environment;
+struct MovedInstance { p: vec3<f32>, n: vec3<f32>, color: vec4<f32>, reveal: f32, visibility: f32 }
+fn move_instance(p: vec3<f32>, n: vec3<f32>, _instance: u32) -> MovedInstance {
+    return MovedInstance(p, n, vec4(1.0), 0.0, 1.0);
+}
+struct InteriorSample { state: vec4<f32>, lamp: vec3<f32>, fabric: vec3<f32> }
+fn interior_state(_uv: vec2<f32>, _world_normal: vec3<f32>) -> InteriorSample {
+    return InteriorSample(vec4(0.0, 1.0, 1.0, 0.0), vec3(1.0), vec3(0.0));
+}
+fn local_illumination(_world: vec3<f32>, _world_normal: vec3<f32>) -> vec3<f32> {
+    return vec3(0.0);
+}
+fn dimming_curve(_dimming: vec4<f32>) -> f32 {
+    return 1.0;
+}
+"#;
+
+fn scene_shader_source(local_shader: Option<&str>, extra: &str) -> String {
+    #[cfg(feature = "simulation")]
+    {
+        format!(
+            "{}\n{}\n{}\n{}\n{}\n{}",
+            include_str!("instance_motion.wgsl"),
+            local_shader.unwrap_or(include_str!("local_lighting.wgsl")),
+            include_str!("interior_styles.wgsl"),
+            include_str!("interior.wgsl"),
+            include_str!("scene3d.wgsl"),
+            extra
+        )
+    }
+    #[cfg(not(feature = "simulation"))]
+    {
+        let _ = local_shader;
+        format!(
+            "{}\n{}\n{}",
+            BASIC_SCENE3D_PREAMBLE,
+            include_str!("scene3d.wgsl"),
+            extra
+        )
+    }
+}
+
 /// Platform-neutral wgpu renderer. Backend selection belongs to wgpu and the
 /// host build configuration, not to component state or asset formats.
 /// Renders into GPU storage shared with the UI renderer; no CPU pixel transfer.
 #[derive(Debug)]
 pub struct Renderer3D {
+    #[cfg(feature = "simulation")]
     visibility_batch: Option<wgpu::BindGroup>,
+    #[cfg(feature = "simulation")]
     visibility_bounds_dirty: bool,
+    #[cfg(feature = "simulation")]
     visibility: crate::visibility::VisibilityGpu,
+    #[cfg(feature = "simulation")]
     visible_draws: Vec<Option<crate::visibility::VisibleDraw>>,
     asset_id: u64,
     context: GpuContext,
@@ -39,17 +94,31 @@ pub struct Renderer3D {
     blended_emission_scale: f32,
     deformer: Deformer,
     last_frame_pose_upload_bytes: u64,
+    #[cfg(feature = "simulation")]
     camera_layout: wgpu::BindGroupLayout,
+    #[cfg(feature = "simulation")]
     environment_buffer: wgpu::Buffer,
+    #[cfg(feature = "simulation")]
     environment_state: crate::Environment3D,
+    #[cfg(feature = "simulation")]
     lighting_state: crate::Lighting3D,
+    #[cfg(feature = "simulation")]
     motion_clocks: [f32; 4],
+    #[cfg(feature = "simulation")]
     local_lighting: crate::local_lighting::LocalLightingGpu,
+    #[cfg(not(feature = "simulation"))]
+    empty_lighting_bind: wgpu::BindGroup,
+    #[cfg(feature = "simulation")]
     interiors: crate::interiors::InteriorGpu,
+    #[cfg(feature = "simulation")]
     identity_instances: wgpu::Buffer,
+    #[cfg(feature = "simulation")]
     route_buffer: wgpu::Buffer,
+    #[cfg(feature = "simulation")]
     instance_batches: Vec<Option<GpuBatch>>,
+    #[cfg(feature = "simulation")]
     instance_upload_bytes: u64,
+    #[cfg(feature = "simulation")]
     environment_upload_bytes: u64,
     size: (u32, u32),
     color: GpuImage,
@@ -91,6 +160,7 @@ impl Renderer3D {
     }
     /// Total shared window styles evaluated on GPU. Each changed style-bank
     /// input evaluates 32 styles, independent of the number of visible windows.
+    #[cfg(feature = "simulation")]
     pub fn interior_style_evaluations(&self) -> u64 {
         self.interiors.evaluations
     }
@@ -114,24 +184,23 @@ impl Renderer3D {
         size: (u32, u32),
         samples: u32,
     ) -> Result<Self, Error> {
-        Self::with_lighting_shader(
-            context,
-            component,
-            size,
-            samples,
-            include_str!("local_lighting.wgsl"),
-        )
+        #[cfg(feature = "simulation")]
+        let local_shader = Some(include_str!("local_lighting.wgsl"));
+        #[cfg(not(feature = "simulation"))]
+        let local_shader = None;
+        Self::with_lighting_shader(context, component, size, samples, local_shader)
     }
     fn with_lighting_shader(
         context: &GpuContext,
         component: &Scene3D,
         size: (u32, u32),
         samples: u32,
-        local_shader: &str,
+        local_shader: Option<&str>,
     ) -> Result<Self, Error> {
         let device = context.device().clone();
         let queue = context.queue().clone();
         check_size(size, &device)?;
+        #[cfg(feature = "simulation")]
         let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("3D camera"),
             entries: &[
@@ -145,12 +214,21 @@ impl Renderer3D {
                 },
             ],
         });
+        #[cfg(not(feature = "simulation"))]
+        let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("3D camera"),
+            entries: &[
+                buffer_entry(0, wgpu::ShaderStages::VERTEX),
+                buffer_entry(1, wgpu::ShaderStages::FRAGMENT),
+            ],
+        });
         let camera = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("3D camera"),
             size: 128,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        #[cfg(feature = "simulation")]
         let environment_state = crate::Environment3D::default();
         let environment_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D environment clock"),
@@ -160,21 +238,25 @@ impl Renderer3D {
             ]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
+        #[cfg(feature = "simulation")]
         let identity_instances = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D identity instance"),
             contents: bytemuck::bytes_of(&crate::instances::GpuInstance::identity()),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
         });
+        #[cfg(feature = "simulation")]
         let route_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("3D default route"),
             contents: bytemuck::cast_slice(&[0_f32; 4]),
             usage: wgpu::BufferUsages::STORAGE,
         });
+        #[cfg(feature = "simulation")]
         let interiors = crate::interiors::InteriorGpu::new(
             &device,
             &environment_buffer,
             component.asset.materials.iter().any(|m| m.interior[0] > 0.),
         );
+        #[cfg(feature = "simulation")]
         let camera_bind = instance_binding(
             &device,
             &camera_layout,
@@ -184,6 +266,21 @@ impl Renderer3D {
             &route_buffer,
             &interiors.buffer,
         );
+        #[cfg(not(feature = "simulation"))]
+        let camera_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("3D camera and environment"),
+            layout: &camera_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: environment_buffer.as_entire_binding(),
+                },
+            ],
+        });
         let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("3D material"),
             entries: &[
@@ -217,27 +314,34 @@ impl Renderer3D {
             ],
         });
         let materials = upload_materials(&device, &queue, &material_layout, &component.asset)?;
+        #[cfg(feature = "simulation")]
         let local_lighting = crate::local_lighting::LocalLightingGpu::new(&device);
+        #[cfg(not(feature = "simulation"))]
+        let empty_lighting_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("3D unused lighting"),
+                entries: &[],
+            });
+        #[cfg(not(feature = "simulation"))]
+        let empty_lighting_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("3D unused lighting"),
+            layout: &empty_lighting_layout,
+            entries: &[],
+        });
+        #[cfg(feature = "simulation")]
+        let lighting_group_layout = &local_lighting.layout;
+        #[cfg(not(feature = "simulation"))]
+        let lighting_group_layout = &empty_lighting_layout;
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Scene3D"),
-            source: wgpu::ShaderSource::Wgsl(
-                format!(
-                    "{}\n{}\n{}\n{}\n{}",
-                    include_str!("instance_motion.wgsl"),
-                    local_shader,
-                    include_str!("interior_styles.wgsl"),
-                    include_str!("interior.wgsl"),
-                    include_str!("scene3d.wgsl")
-                )
-                .into(),
-            ),
+            source: wgpu::ShaderSource::Wgsl(scene_shader_source(local_shader, "").into()),
         });
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[
                 Some(&camera_layout),
                 Some(&material_layout),
-                Some(&local_lighting.layout),
+                Some(lighting_group_layout),
             ],
             immediate_size: 0,
         });
@@ -262,7 +366,7 @@ impl Renderer3D {
             bind_group_layouts: &[
                 Some(&camera_layout),
                 Some(&material_layout),
-                Some(&local_lighting.layout),
+                Some(lighting_group_layout),
                 Some(&flat_geometry_layout),
             ],
             immediate_size: 0,
@@ -323,11 +427,16 @@ impl Renderer3D {
         let color = context.create_image(size).map_err(|e| err(e.to_string()))?;
         let depth = depth_target(&device, size, samples);
         let msaa = (samples > 1).then(|| multisample_target(&device, size, samples));
+        #[cfg(feature = "simulation")]
         let visibility = crate::visibility::VisibilityGpu::new(&device);
         Ok(Self {
+            #[cfg(feature = "simulation")]
             visibility,
+            #[cfg(feature = "simulation")]
             visibility_batch: None,
+            #[cfg(feature = "simulation")]
             visibility_bounds_dirty: true,
+            #[cfg(feature = "simulation")]
             visible_draws: Vec::new(),
             asset_id: component.asset.id,
             context: context.clone(),
@@ -353,17 +462,31 @@ impl Renderer3D {
             blended_emission_scale: 1.,
             deformer,
             last_frame_pose_upload_bytes: 0,
+            #[cfg(feature = "simulation")]
             camera_layout,
+            #[cfg(feature = "simulation")]
             environment_buffer,
+            #[cfg(feature = "simulation")]
             environment_state,
+            #[cfg(feature = "simulation")]
             lighting_state: crate::Lighting3D::default(),
+            #[cfg(feature = "simulation")]
             motion_clocks: [0.; 4],
+            #[cfg(feature = "simulation")]
             local_lighting,
+            #[cfg(not(feature = "simulation"))]
+            empty_lighting_bind,
+            #[cfg(feature = "simulation")]
             interiors,
+            #[cfg(feature = "simulation")]
             identity_instances,
+            #[cfg(feature = "simulation")]
             route_buffer,
+            #[cfg(feature = "simulation")]
             instance_batches: vec![None; component.asset.meshes.len()],
+            #[cfg(feature = "simulation")]
             instance_upload_bytes: 0,
+            #[cfg(feature = "simulation")]
             environment_upload_bytes: 0,
             size,
             color,
@@ -378,6 +501,7 @@ impl Renderer3D {
     pub fn resize(&mut self, size: (u32, u32)) -> Result<(), Error> {
         check_size(size, &self.device)?;
         if size != self.size {
+            #[cfg(feature = "simulation")]
             self.queue.write_buffer(
                 &self.visibility.viewport,
                 0,
@@ -490,33 +614,36 @@ impl Renderer3D {
                 timestamp_writes: None,
             });
             self.deformer.encode_in_pass(&mut pass);
-            if let Some(batch_bind) = &self.visibility_batch {
-                if self.visibility_bounds_dirty || self.last_frame_pose_upload_bytes > 0 {
-                    pass.set_pipeline(&self.visibility.bounds_pipeline);
-                    for draw in self.visible_draws.iter().flatten() {
-                        pass.set_bind_group(0, &draw.compute, &[]);
-                        pass.dispatch_workgroups(1, 1, 1);
+            #[cfg(feature = "simulation")]
+            {
+                if let Some(batch_bind) = &self.visibility_batch {
+                    if self.visibility_bounds_dirty || self.last_frame_pose_upload_bytes > 0 {
+                        pass.set_pipeline(&self.visibility.bounds_pipeline);
+                        for draw in self.visible_draws.iter().flatten() {
+                            pass.set_bind_group(0, &draw.compute, &[]);
+                            pass.dispatch_workgroups(1, 1, 1);
+                        }
+                        self.visibility_bounds_dirty = false;
                     }
-                    self.visibility_bounds_dirty = false;
-                }
-                pass.set_pipeline(&self.visibility.pipeline);
-                pass.set_bind_group(0, batch_bind, &[]);
-                pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
-                if self.alpha_resolve.is_some() {
-                    pass.set_pipeline(&self.visibility.alpha_pipeline);
+                    pass.set_pipeline(&self.visibility.pipeline);
+                    pass.set_bind_group(0, batch_bind, &[]);
                     pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
+                    if self.alpha_resolve.is_some() {
+                        pass.set_pipeline(&self.visibility.alpha_pipeline);
+                        pass.dispatch_workgroups(self.visible_draws.len() as u32, 1, 1);
+                    }
                 }
-            }
-            self.interiors.encode_in_pass(
-                &mut pass,
-                [
-                    self.environment_state.time_seconds,
-                    self.lighting_state.effect_time_origin,
-                    self.lighting_state.emissive_strength,
-                ],
-            );
-            if self.lighting_state.emissive_strength > 0. {
-                self.local_lighting.encode_in_pass(&mut pass);
+                self.interiors.encode_in_pass(
+                    &mut pass,
+                    [
+                        self.environment_state.time_seconds,
+                        self.lighting_state.effect_time_origin,
+                        self.lighting_state.emissive_strength,
+                    ],
+                );
+                if self.lighting_state.emissive_strength > 0. {
+                    self.local_lighting.encode_in_pass(&mut pass);
+                }
             }
         }
         let msaa_view = &self.msaa_view;
@@ -558,31 +685,50 @@ impl Renderer3D {
                     (false, true) => &self.blend_pipeline,
                     (true, true) => &self.flat_blend_pipeline,
                 });
-                let batch = self.instance_batches.get(i).and_then(Option::as_ref);
-                let count = batch.map_or(1, |b| b.count);
-                let visible = self.visible_draws.get(i).and_then(Option::as_ref);
-                pass.set_bind_group(
-                    0,
-                    visible
-                        .map_or_else(|| batch.map_or(&self.camera_bind, |b| &b.bind), |v| &v.draw),
-                    &[],
-                );
-                pass.set_bind_group(1, &self.materials[draw.material].bind, &[]);
-                pass.set_bind_group(2, &self.local_lighting.bind, &[]);
-                if draw.flat_normals {
-                    pass.set_bind_group(3, &self.flat_bindings[i], &[]);
-                    if let Some(v) = visible {
-                        pass.draw_indirect(&v.args, v.args_offset);
+                #[cfg(feature = "simulation")]
+                {
+                    let batch = self.instance_batches.get(i).and_then(Option::as_ref);
+                    let count = batch.map_or(1, |b| b.count);
+                    let visible = self.visible_draws.get(i).and_then(Option::as_ref);
+                    pass.set_bind_group(
+                        0,
+                        visible.map_or_else(
+                            || batch.map_or(&self.camera_bind, |b| &b.bind),
+                            |v| &v.draw,
+                        ),
+                        &[],
+                    );
+                    pass.set_bind_group(1, &self.materials[draw.material].bind, &[]);
+                    pass.set_bind_group(2, &self.local_lighting.bind, &[]);
+                    if draw.flat_normals {
+                        pass.set_bind_group(3, &self.flat_bindings[i], &[]);
+                        if let Some(v) = visible {
+                            pass.draw_indirect(&v.args, v.args_offset);
+                        } else {
+                            pass.draw(0..draw.index_count, 0..count);
+                        }
                     } else {
-                        pass.draw(0..draw.index_count, 0..count);
+                        pass.set_vertex_buffer(0, draw.output.slice(..));
+                        pass.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
+                        if let Some(v) = visible {
+                            pass.draw_indexed_indirect(&v.args, v.args_offset);
+                        } else {
+                            pass.draw_indexed(0..draw.index_count, 0, 0..count);
+                        }
                     }
-                } else {
-                    pass.set_vertex_buffer(0, draw.output.slice(..));
-                    pass.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
-                    if let Some(v) = visible {
-                        pass.draw_indexed_indirect(&v.args, v.args_offset);
+                }
+                #[cfg(not(feature = "simulation"))]
+                {
+                    pass.set_bind_group(0, &self.camera_bind, &[]);
+                    pass.set_bind_group(1, &self.materials[draw.material].bind, &[]);
+                    pass.set_bind_group(2, &self.empty_lighting_bind, &[]);
+                    if draw.flat_normals {
+                        pass.set_bind_group(3, &self.flat_bindings[i], &[]);
+                        pass.draw(0..draw.index_count, 0..1);
                     } else {
-                        pass.draw_indexed(0..draw.index_count, 0, 0..count);
+                        pass.set_vertex_buffer(0, draw.output.slice(..));
+                        pass.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
+                        pass.draw_indexed(0..draw.index_count, 0, 0..1);
                     }
                 }
             }
@@ -633,10 +779,21 @@ impl Renderer3D {
         let mut pipeline_state = None;
         let mut material_state = None;
         let mut camera_state = None;
+        #[cfg(feature = "simulation")]
+        let lighting_bind = &self.local_lighting.bind;
+        #[cfg(not(feature = "simulation"))]
+        let lighting_bind = &self.empty_lighting_bind;
         for &i in &self.opaque_order {
             let draw = &self.deformer.meshes[i];
-            let batch = self.instance_batches.get(i).and_then(Option::as_ref);
-            let count = batch.map_or(1, |b| b.count);
+            #[cfg(feature = "simulation")]
+            let (batch, visible, count) = {
+                let batch = self.instance_batches.get(i).and_then(Option::as_ref);
+                let visible = self.visible_draws.get(i).and_then(Option::as_ref);
+                let count = batch.map_or(1, |b| b.count);
+                (batch, visible, count)
+            };
+            #[cfg(not(feature = "simulation"))]
+            let count = 1_u32;
             if count == 0 {
                 continue;
             }
@@ -646,41 +803,59 @@ impl Renderer3D {
                 } else {
                     &self.pipeline
                 });
-                bundle.set_bind_group(2, &self.local_lighting.bind, &[]);
+                bundle.set_bind_group(2, lighting_bind, &[]);
                 pipeline_state = Some(draw.flat_normals);
             }
-            let visible = self.visible_draws.get(i).and_then(Option::as_ref);
+            #[cfg(feature = "simulation")]
             let camera_key = if visible.is_some() {
                 Some(i)
             } else {
                 batch.map(|_| i)
             };
+            #[cfg(not(feature = "simulation"))]
+            let camera_key: Option<usize> = None;
             if camera_state != Some(camera_key) {
-                bundle.set_bind_group(
-                    0,
-                    visible
-                        .map_or_else(|| batch.map_or(&self.camera_bind, |b| &b.bind), |v| &v.draw),
-                    &[],
-                );
+                #[cfg(feature = "simulation")]
+                let bind = visible
+                    .map_or_else(|| batch.map_or(&self.camera_bind, |b| &b.bind), |v| &v.draw);
+                #[cfg(not(feature = "simulation"))]
+                let bind = &self.camera_bind;
+                bundle.set_bind_group(0, bind, &[]);
                 camera_state = Some(camera_key);
             }
             if material_state != Some(draw.material) {
                 bundle.set_bind_group(1, &self.materials[draw.material].bind, &[]);
                 material_state = Some(draw.material);
             }
+            #[cfg(feature = "simulation")]
+            let indirect = visible;
+            #[cfg(not(feature = "simulation"))]
+            let indirect: Option<&()> = None;
             if draw.flat_normals {
                 bundle.set_bind_group(3, &self.flat_bindings[i], &[]);
-                if let Some(v) = visible {
+                #[cfg(feature = "simulation")]
+                if let Some(v) = indirect {
                     bundle.draw_indirect(&v.args, v.args_offset);
                 } else {
+                    bundle.draw(0..draw.index_count, 0..count);
+                }
+                #[cfg(not(feature = "simulation"))]
+                {
+                    let _ = indirect;
                     bundle.draw(0..draw.index_count, 0..count);
                 }
             } else {
                 bundle.set_vertex_buffer(0, draw.output.slice(..));
                 bundle.set_index_buffer(draw.indices.slice(..), wgpu::IndexFormat::Uint32);
-                if let Some(v) = visible {
+                #[cfg(feature = "simulation")]
+                if let Some(v) = indirect {
                     bundle.draw_indexed_indirect(&v.args, v.args_offset);
                 } else {
+                    bundle.draw_indexed(0..draw.index_count, 0, 0..count);
+                }
+                #[cfg(not(feature = "simulation"))]
+                {
+                    let _ = indirect;
                     bundle.draw_indexed(0..draw.index_count, 0, 0..count);
                 }
             }
@@ -693,6 +868,7 @@ impl Renderer3D {
     /// Upload immutable instances/routes once. Omitted nodes retain one ordinary
     /// draw; an explicitly empty batch hides its node. Transparent instancing is
     /// rejected because primitive-center sorting cannot order its instances.
+    #[cfg(feature = "simulation")]
     pub fn configure_instances(
         &mut self,
         view: &Scene3D,
@@ -820,6 +996,7 @@ impl Renderer3D {
     /// Alpha primitives keep their existing cross-primitive order; up to 64
     /// instances within each primitive are depth-sorted on GPU. As with the
     /// existing center-based alpha path, intersecting primitives are not OIT.
+    #[cfg(feature = "simulation")]
     pub fn configure_screen_detail(
         &mut self,
         view: &Scene3D,
@@ -1029,6 +1206,7 @@ impl Renderer3D {
     }
     /// Upload local lights/analytic shadow proxies once. Motion evaluates on GPU
     /// and does not invalidate cached draw bundles or depend on instance setup order.
+    #[cfg(feature = "simulation")]
     pub fn configure_local_lighting(
         &mut self,
         recipe: &crate::LocalLighting3D,
@@ -1037,6 +1215,7 @@ impl Renderer3D {
             .configure(&self.device, &self.queue, &self.environment_buffer, recipe)
     }
     /// Cached 48-byte update on lighting changes; no mesh/material re-upload.
+    #[cfg(feature = "simulation")]
     pub fn set_lighting(&mut self, lighting: crate::Lighting3D) -> Result<(), Error> {
         let values = [
             lighting.ambient[0],
@@ -1076,6 +1255,7 @@ impl Renderer3D {
     }
     /// Four independent host clocks, shared by instance motion, visibility and
     /// material/local-light dimming. Frozen channels require no repeated upload.
+    #[cfg(feature = "simulation")]
     pub fn set_motion_clocks(&mut self, clocks: [f32; 4]) -> Result<(), Error> {
         if clocks.iter().any(|v| !v.is_finite() || *v < 0.) {
             return Err(err("motion clocks must be finite and nonnegative"));
@@ -1089,6 +1269,7 @@ impl Renderer3D {
         Ok(())
     }
     /// A 16-byte uniform update; all motion and normal calculations execute on GPU.
+    #[cfg(feature = "simulation")]
     pub fn set_environment(&mut self, environment: crate::Environment3D) -> Result<(), Error> {
         let values = [
             environment.time_seconds,
@@ -1122,6 +1303,7 @@ impl Renderer3D {
     /// write. Retains the current lighting fields between the two ranges.
     /// Uploads 80 bytes instead of two 16-byte writes, saving one staging
     /// allocation/queue operation when both clock ranges change every frame.
+    #[cfg(feature = "simulation")]
     pub fn set_environment_and_clocks(
         &mut self,
         environment: crate::Environment3D,
@@ -1183,8 +1365,16 @@ impl Renderer3D {
         Ok(())
     }
     pub fn instance_upload_bytes(&self) -> u64 {
-        self.instance_upload_bytes
+        #[cfg(feature = "simulation")]
+        {
+            self.instance_upload_bytes
+        }
+        #[cfg(not(feature = "simulation"))]
+        {
+            0
+        }
     }
+    #[cfg(feature = "simulation")]
     pub fn environment_upload_bytes(&self) -> u64 {
         self.environment_upload_bytes
     }
@@ -1217,12 +1407,14 @@ impl Renderer3D {
         self.last_frame_pose_upload_bytes
     }
 }
+#[cfg(feature = "simulation")]
 #[derive(Clone, Debug)]
 struct GpuBatch {
     _buffer: wgpu::Buffer,
     bind: wgpu::BindGroup,
     count: u32,
 }
+#[cfg(feature = "simulation")]
 fn storage_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
     wgpu::BindGroupLayoutEntry {
         binding,
@@ -1235,6 +1427,7 @@ fn storage_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
         count: None,
     }
 }
+#[cfg(feature = "simulation")]
 fn instance_binding(
     device: &wgpu::Device,
     layout: &wgpu::BindGroupLayout,
@@ -1682,6 +1875,7 @@ mod tests {
         )
         .unwrap()
     }
+    #[cfg(feature = "simulation")]
     fn read_gpu_bytes(gpu: &Renderer3D, source: &wgpu::Buffer, size: u64) -> Vec<u8> {
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("test-only visibility readback"),
@@ -1730,6 +1924,7 @@ mod tests {
         assert_eq!(gpu.geometry_upload_bytes(), geometry);
         assert_eq!(gpu.instance_upload_bytes(), instances);
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn gpu_visibility_bounds_follow_skin_morph_and_model_rotation() {
@@ -1761,6 +1956,7 @@ mod tests {
             }
         }
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn gpu_visibility_indirect_counts_fade_and_frustum_match_reference() {
@@ -1884,6 +2080,7 @@ mod tests {
             assert_eq!(gpu.geometry_upload_bytes(), geometry);
         }
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn shared_window_bank_updates_once_and_reuses_states_across_camera_frames() {
@@ -1943,6 +2140,7 @@ mod tests {
             "day/night changes invalidate the bank"
         );
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn culled_local_lights_and_shadows_match_full_scan_with_motion_and_fades() {
@@ -1969,9 +2167,14 @@ mod tests {
                 "let k=candidate;",
             );
         let mut gpu = Renderer3D::new_antialiased(&ui.gpu_context(), &view, (192, 192)).unwrap();
-        let mut full =
-            Renderer3D::with_lighting_shader(&ui.gpu_context(), &view, (192, 192), 4, &reference)
-                .unwrap();
+        let mut full = Renderer3D::with_lighting_shader(
+            &ui.gpu_context(),
+            &view,
+            (192, 192),
+            4,
+            Some(&reference),
+        )
+        .unwrap();
         full.local_lighting.enable_split_reference(&full.device);
         let actual_image = ui.register_gpu_image(gpu.output()).unwrap();
         let expected_image = ui.register_gpu_image(full.output()).unwrap();
@@ -2139,6 +2342,7 @@ mod tests {
             capture(&mut ui, &view, expected_image)
         );
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn environment_normals_match_numerical_reference_and_reuse_buffers() {
@@ -2413,24 +2617,20 @@ mod tests {
     // Test-only alternate fragment output preserves normal direction/sign in RGB,
     // so the production lighting's two-sided abs(dot(...)) cannot hide a flip.
     fn normal_pipelines(gpu: &mut Renderer3D) {
+        let lighting_layout = gpu.pipeline.get_bind_group_layout(2);
         let shader = gpu
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("test-only normal direction output"),
                 source: wgpu::ShaderSource::Wgsl(
-                    format!(
-                        "{}\n{}\n{}\n{}\n{}\n{}",
-                        include_str!("instance_motion.wgsl"),
-                        include_str!("local_lighting.wgsl"),
-                        include_str!("interior_styles.wgsl"),
-                        include_str!("interior.wgsl"),
-                        include_str!("scene3d.wgsl"),
+                    scene_shader_source(
+                        None,
                         r#"
                 @fragment fn fs_test_normals(i: Out) -> @location(0) vec4<f32> {
                     let n = i.normal/max(length(i.normal),0.00001);
                     return vec4(n*0.5+vec3(0.5),1.0);
                 }
-            "#
+            "#,
                     )
                     .into(),
                 ),
@@ -2442,11 +2642,7 @@ mod tests {
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &[
-                    Some(&camera),
-                    Some(&material),
-                    Some(&gpu.local_lighting.layout),
-                ],
+                bind_group_layouts: &[Some(&camera), Some(&material), Some(&lighting_layout)],
                 immediate_size: 0,
             });
         let flat_layout = gpu
@@ -2456,7 +2652,7 @@ mod tests {
                 bind_group_layouts: &[
                     Some(&camera),
                     Some(&material),
-                    Some(&gpu.local_lighting.layout),
+                    Some(&lighting_layout),
                     Some(&geometry),
                 ],
                 immediate_size: 0,
@@ -2480,6 +2676,7 @@ mod tests {
             false,
         );
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn transparent_instances_are_gpu_sorted_independently_of_recipe_order() {
@@ -2544,6 +2741,7 @@ mod tests {
         assert!(p[2] < p[50], "camera-facing +Z: negative Z must draw first");
         assert!(captures[0].chunks_exact(4).filter(|p| p[3] > 0).count() > 100);
     }
+    #[cfg(feature = "simulation")]
     #[test]
     #[ignore = "requires a real wgpu GPU adapter"]
     fn gpu_transit_stops_opens_doors_and_accelerates_without_cpu_updates() {
@@ -2680,7 +2878,10 @@ mod tests {
             });
             pass.set_pipeline(&gpu.pipeline);
             pass.set_bind_group(0, &gpu.camera_bind, &[]);
+            #[cfg(feature = "simulation")]
             pass.set_bind_group(2, &gpu.local_lighting.bind, &[]);
+            #[cfg(not(feature = "simulation"))]
+            pass.set_bind_group(2, &gpu.empty_lighting_bind, &[]);
             for (mesh, (buffer, count)) in gpu.deformer.meshes.iter().zip(&buffers) {
                 pass.set_bind_group(1, &gpu.materials[mesh.material].bind, &[]);
                 pass.set_vertex_buffer(0, buffer.slice(..));

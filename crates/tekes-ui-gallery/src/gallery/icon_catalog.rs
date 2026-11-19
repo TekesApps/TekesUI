@@ -485,7 +485,7 @@ mod tests {
     fn canonical_catalog_uses_every_published_svg_byte_without_a_source_directory() {
         let catalog = IconCatalog::canonical();
         assert_eq!(catalog.entries.len(), tekes_ui_icons::Glyph::ALL.len());
-        assert_eq!(catalog.entries.len(), 179);
+        assert_eq!(catalog.entries.len(), 133);
         assert!(catalog.notices.is_empty());
         for (entry, glyph) in catalog.entries.iter().zip(tekes_ui_icons::Glyph::ALL) {
             assert_eq!(entry.name, glyph.name);
@@ -501,7 +501,7 @@ mod tests {
     fn historical_mode_pairs_proposals_beneath_canonical_current_artwork() {
         let mut catalog = IconCatalog::canonical();
         catalog.add_historical_proposals();
-        assert_eq!(proposal_assets::ASSETS.len(), 51);
+        assert_eq!(proposal_assets::ASSETS.len(), 23);
         let mut different_artwork_count = 0;
         for &(name, label, _, proposal_svg) in proposal_assets::ASSETS {
             let entry = catalog
@@ -530,7 +530,7 @@ mod tests {
                 );
             }
         }
-        assert_eq!(different_artwork_count, 29);
+        assert_eq!(different_artwork_count, 15);
         // These two published templates were added after the historical proposal
         // set. They remain canonical-only; never invent a proposal baseline.
         for name in ["tekes-side-bar-collapsed", "tekes-side-panel-collapsed"] {
@@ -565,7 +565,7 @@ mod tests {
                 .svg
                 .contains("stroke-width=\"1.5\"")
         );
-        assert_eq!(catalog.entries.len(), 179);
+        assert_eq!(catalog.entries.len(), 133);
     }
 
     #[test]
@@ -623,8 +623,8 @@ mod tests {
         let report = canonical.catalog_report("canonical");
         assert_eq!(report["schema"], "tekesui-icon-catalog/1");
         assert_eq!(report["mode"], "canonical");
-        assert_eq!(report["count"], 179);
-        assert_eq!(report["entries"].as_array().unwrap().len(), 179);
+        assert_eq!(report["count"], 133);
+        assert_eq!(report["entries"].as_array().unwrap().len(), 133);
         for (entry, glyph) in report["entries"]
             .as_array()
             .unwrap()
@@ -684,7 +684,7 @@ mod tests {
             assert_eq!(entry.before.as_ref().unwrap().name, icon.name());
             assert_eq!(entry.kind, "refine");
         }
-        assert_eq!(catalog.entries.len(), 51);
+        assert_eq!(catalog.entries.len(), 23);
         assert_eq!(
             catalog
                 .entries
@@ -699,7 +699,7 @@ mod tests {
     fn proposals_merge_once_preserve_old_variants_and_work_without_local_assets() {
         let mut catalog = IconCatalog::fixture(&["tekes-settings", "tekes-memory", "tekes-search"]);
         catalog.add_proposals();
-        assert_eq!(catalog.entries.len(), 52);
+        assert_eq!(catalog.entries.len(), 24);
         assert_eq!(
             catalog
                 .entries
@@ -711,16 +711,16 @@ mod tests {
         let names: HashSet<_> = catalog.entries.iter().map(|e| &e.name).collect();
         assert_eq!(names.len(), catalog.entries.len());
         catalog.add_proposals();
-        assert_eq!(catalog.entries.len(), 52);
+        assert_eq!(catalog.entries.len(), 24);
         let mut embedded = IconCatalog::default();
         embedded.add_proposals();
-        assert_eq!(embedded.entries.len(), 51);
+        assert_eq!(embedded.entries.len(), 23);
         let mut renderer = Renderer::new_headless().unwrap();
         let visible: Vec<_> = (0..catalog.entries.len()).collect();
         catalog.prepare(&mut renderer, Theme::ALL[0], 1.0, &visible);
-        assert_eq!(renderer.image_count(), 54 * 3);
+        assert_eq!(renderer.image_count(), 26 * 3);
         catalog.prepare(&mut renderer, Theme::ALL[1], 2.0, &visible);
-        assert_eq!(renderer.image_count(), 54 * 3);
+        assert_eq!(renderer.image_count(), 26 * 3);
         assert!(
             catalog
                 .entries

@@ -39,6 +39,6 @@ After editing `design/source/base.tokens.json`, `design/brand/policy.json`, or `
    target/design-tools-venv/bin/python scripts/merge-design-system.py
    target/design-tools-venv/bin/python scripts/generate-theme-system.py --write-artifact-lock
    target/design-tools-venv/bin/python scripts/generate-component-capabilities.py
-   target/design-tools-venv/bin/python scripts/check-reference-alignment.py --output design/reviews/reference-alignment-20261028/report.json
+   target/design-tools-venv/bin/python scripts/check-reference-alignment.py --output design/evidence/reference-alignment/report.json
    ```
 3. Re-run `audit_gold7_calm.py --check` and the repository test suite.

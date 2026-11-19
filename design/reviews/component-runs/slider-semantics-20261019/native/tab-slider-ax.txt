@@ -1,2 +1,0 @@
-There has been no change in the accessibility tree for Window: "TekesUI Composition Consumer · slider".
-The focused UI element is 3 slider (settable, float) Description: Volume, Value: 50

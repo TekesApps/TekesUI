@@ -126,20 +126,20 @@
     "archive_integrity": "pass",
     "static_package_validation": "pass",
     "native_scope": "Original three calibration pages, forty fixed-state component illustrations, and live ScrollArea/Text/TextEditor/Icons/Motion foundation pages; full production control parity remains incomplete.",
-    "visual_review": "reviewed-integration-candidate; see reviews/proposal1/verification.json",
+    "visual_review": "reviewed-integration-candidate; see evidence/integration/proposal1-verification.json",
     "user_visual_approval": "not-claimed",
     "release": "not-requested",
     "evidence": {
-      "$ref": "./reviews/proposal1/verification.json"
+      "$ref": "./evidence/integration/proposal1-verification.json"
     },
     "component_showcase": "pass: 40 component IDs, 252 selectable base states, 8 new pages; fixed illustrations, not production controls",
     "component_showcase_evidence": {
-      "$ref": "./reviews/component-gallery/verification.json"
+      "$ref": "./evidence/integration/component-gallery-verification.json"
     },
     "foundation_integration": "reviewed candidate: 16 unified pages, real scroll/text/motion interactions; p99 performance and peak/untested limits recorded separately",
     "foundation_evidence": {
-      "$ref": "./reviews/text-foundation/verification.json"
+      "$ref": "./evidence/integration/text-foundation-verification.json"
     },
-    "workbench": "experimental native workbench; planned components explicit; see docs/gallery.md and reviews/workbench/evidence.json; no stable or sustained-120Hz acceptance claimed"
+    "workbench": "experimental native workbench; planned components explicit; see docs/gallery.md; no stable or sustained-120Hz acceptance claimed"
   }
 }

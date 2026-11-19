@@ -289,7 +289,7 @@
       "$ref": "../crates/tekes-ui-tokens/src/surface_palette.rs"
     },
     "component_contract": {
-      "$ref": "./reviews/notice-marker-theme-implementation-20261024/api-v1.9.0.md"
+      "$ref": "./theme/surface-component-contract.md"
     },
     "version_policy": {
       "theme_definition_schema": "2.0.0",

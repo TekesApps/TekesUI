@@ -11,6 +11,6 @@
   "boundary_entry_policy": {
     "finger": "Apply elastic resistance to the first out-of-bounds excess as well as subsequent finger deltas; reversing the same input must not accumulate extra travel.",
     "momentum": "Carry the first interior-to-boundary excess before subsequent elastic resistance; preserve measured OS momentum behavior.",
-    "evidence": "../reviews/scroll-repair/native-edge-reverse.json"
+    "evidence": "../../crates/tekes-ui-controls/tests/fixtures/scroll-repair/native-edge-reverse.json"
   }
 }

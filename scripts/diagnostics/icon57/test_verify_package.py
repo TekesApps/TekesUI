@@ -31,16 +31,16 @@ class CatalogEvidence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.manifest = json.loads((ROOT / 'crates/tekes-ui-icons/catalog.json').read_text())
-        cls.report = {'schema': 'tekesui-icon-catalog/1', 'mode': 'canonical', 'count': 177,
+        cls.report = {'schema': 'tekesui-icon-catalog/1', 'mode': 'canonical', 'count': 133,
                       'notices': [], 'entries': [
                           {'name': row['name'], 'svg': (ROOT / 'crates/tekes-ui-icons' / row['file']).read_text(),
                            'canonical_match': True, 'before': False}
                           for row in cls.manifest['icons']]}
 
-    def test_source_inventory_reproduces_the_original_29_overlaps(self):
+    def test_source_inventory_reproduces_the_original_overlaps(self):
         inventory = probe.source_inventory(ROOT)
         self.assertEqual((inventory['canonical_count'], inventory['proposal_overlap_count'],
-                          inventory['changed_overlaps']), (177, 51, 29))
+                          inventory['changed_overlaps']), (133, 23, 15))
         changed = [row for row in inventory['overlaps'] if row['different']]
         self.assertEqual(sum(row['reference_kind'] == 'shared_current'
                              for row in inventory['overlaps']), 8)
@@ -49,7 +49,7 @@ class CatalogEvidence(unittest.TestCase):
 
     def test_verifier_accepts_exact_default_and_never_claims_pixels(self):
         result = probe.verify_report(self.report, self.manifest)
-        self.assertEqual(result['count'], 177)
+        self.assertEqual(result['count'], 133)
         self.assertEqual(result['pixel_acceptance'], 'not_performed_by_this_probe')
 
     def test_count_only_or_self_reported_canonical_flag_cannot_hide_wrong_artwork(self):

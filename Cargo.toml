@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "examples/city-3d-demo/crates/*"]
+default-members = ["crates/*"]
 exclude = ["examples/composition-consumer"]
 
 [workspace.package]

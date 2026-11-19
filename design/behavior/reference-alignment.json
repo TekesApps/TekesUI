@@ -531,7 +531,7 @@
       "I13"
     ],
     "report": {
-      "$ref": "../reviews/reference-alignment-20261028/report.json"
+      "$ref": "../evidence/reference-alignment/report.json"
     }
   },
   "local_recipes": [

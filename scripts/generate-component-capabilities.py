@@ -564,7 +564,7 @@ def runtime_observation(row: dict) -> dict | None:
         return None
     identity = row.get('id')
     artifact, artifact_path = _safe_repository_file(path, str(identity), 'runtime observation')
-    if not artifact.startswith('design/reviews/'):
+    if not artifact.startswith(('design/evidence/', 'design/reviews/')):
         raise ValueError(f'{identity}: invalid runtime observation path: {artifact}')
     data = _observation_document(artifact_path.read_bytes())
     if not isinstance(data, dict):
@@ -588,10 +588,13 @@ def runtime_observation(row: dict) -> dict | None:
         source_path, resolved = _safe_repository_file(source, str(identity), 'runtime observation source')
         if not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{64}', expected):
             raise ValueError(f'{identity}: malformed runtime observation identity for {source_path}')
+        normalized_inputs[source_path] = expected
         if not resolved.is_file():
+            if source_path.startswith('design/reviews/') or re.fullmatch(r'scripts/audit-[a-z0-9-]+-tokens\.py', source_path):
+                differences.append({'path': source_path, 'expected_sha256': expected, 'actual_sha256': 'removed-historical-input'})
+                continue
             raise ValueError(f'{identity}: missing runtime observation source path: {source_path}')
         actual = digest(resolved.read_bytes())
-        normalized_inputs[source_path] = expected
         if actual != expected:
             differences.append({'path': source_path, 'expected_sha256': expected, 'actual_sha256': actual})
     cases = []

@@ -10,7 +10,7 @@
       "state": "verified-code",
       "description": "Real input/Button shared ROW/COLUMN layout, JSON gap, narrow wrapping, actual Clear action",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -18,7 +18,7 @@
       "state": "verified-code",
       "description": "Standalone action/state-matrix/brand-preview buttons follow BUTTON_CONTENT center; navigation/menu/list leading preserved",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -26,7 +26,7 @@
       "state": "verified-code",
       "description": "JSON 2pt width/2pt offset, neutral ring independent of required/error boundary, actual ancestor clipping",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -34,7 +34,7 @@
       "state": "verified-code",
       "description": "Capture only on successful drag; cancel/rollback/late-event coverage at model/view/adapter",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -42,7 +42,7 @@
       "state": "verified-code",
       "description": "Menu-owned scroll tick/needs_animation/ReducedMotion through Menu/Select/ComboBox/CommandPalette",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -50,7 +50,7 @@
       "state": "verified-code",
       "description": "Gallery preference propagation now includes navigation search",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -58,7 +58,7 @@
       "state": "verified-code",
       "description": "Marked composition sampled before blur, matching pointer submit/confirmation blocked; committed later input remains usable",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -66,7 +66,7 @@
       "state": "verified-code",
       "description": "Real Button paint consumes c-button-xs/sm/md/lg-radius; legacy direct painters use md alias without breaking callers",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -74,7 +74,7 @@
       "state": "verified-code",
       "description": "Arrow/Home/End restore a feasible two-pane layout after narrow-mode selection, including clamped endpoints",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -82,7 +82,7 @@
       "state": "verified-code",
       "description": "ComboBox/CommandPalette popup owns wheel events and consumes them before background scrolling; 24-item actual overflow fixtures test Reduced Motion and elastic paths",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass1/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass1/receipt.json"
       }
     },
     {
@@ -90,7 +90,7 @@
       "state": "verified-code",
       "description": "Real ancestor clips, token focus gutter, full owned control frames, keyboard scroll reveal and Menu/Dialog spacing",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass2/receipt.json"
       }
     },
     {
@@ -98,7 +98,7 @@
       "state": "verified-code",
       "description": "JSON Menu/Popover/Dialog elevation reaches actual Gaussian GPU pixels; panels and increased-contrast themes stay shadow-free",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass2/receipt.json"
       }
     },
     {
@@ -106,7 +106,7 @@
       "state": "verified-code",
       "description": "Production Button hover/press, Switch thumb and Disclosure body use JSON bindings, interruption and Reduced Motion",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass2/receipt.json"
       }
     },
     {
@@ -114,7 +114,7 @@
       "state": "verified-code",
       "description": "Host starts animation requests discovered by the first scene build and stops when completed",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass2/receipt.json"
       }
     },
     {
@@ -122,7 +122,7 @@
       "state": "verified-code",
       "description": "Deactivation and late inactive MouseUp clear stale hover/capture/presentation channels",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass2/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass2/receipt.json"
       }
     },
     {
@@ -130,7 +130,7 @@
       "state": "verified-code",
       "description": "Production Menu/Dialog/Popover own JSON-driven enter/exit paint while semantic close immediately releases hit/focus; live glyphs rebuilt each frame; interruption, Reduced Motion, context invalidation and host unmount cleanup.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass3/receipt.json"
       }
     },
     {
@@ -138,7 +138,7 @@
       "state": "verified-code",
       "description": "Real Left Dragged delivery, captured drags/releases crossing sidebar, Moved lost-release rollback, double-click and Enter/Space balanced reset.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass3/receipt.json"
       }
     },
     {
@@ -146,7 +146,7 @@
       "state": "verified-code",
       "description": "Explicit consumer-owned single-writer local form fixture: atomic snapshot, immutable delivery revisions, interrupted reopen, controlled failure/retry and revision-specific acknowledgement; no network.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass3/receipt.json"
       }
     },
     {
@@ -154,7 +154,7 @@
       "state": "verified-code",
       "description": "Existing Text/ScrollArea uses logical UTF-16 reading anchors across append and reflow; upward intent stops follow; existing Button explicitly returns to latest; manually reaching bottom never repins.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass3/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass3/receipt.json"
       }
     },
     {
@@ -162,7 +162,7 @@
       "state": "verified-code",
       "description": "Existing Button/Checkbox inactive guards, Slider/Radio invalid layout cleanup, exclusive Switch pointer/Space activation, disabled semantic labels and navigation state/capture fixes.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -170,7 +170,7 @@
       "state": "verified-code",
       "description": "Step rounding clamps to declared range; extreme finite ranges preserve finite normalized Slider geometry.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -178,7 +178,7 @@
       "state": "verified-code",
       "description": "List/Tree/Table/Chart logical keyboard destinations are independent of ancestor pointer clipping; host reveals actual focused geometry and preserves generic header controls.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -186,7 +186,7 @@
       "state": "verified-code",
       "description": "Screen-edge overlay placement, constrained Popover dismiss measurement and Banner wrapping follow actual available geometry without changing normal sizes.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -194,7 +194,7 @@
       "state": "verified-code",
       "description": "Property and edge actions wrap through measured rows; Settings gaps, master-detail strides and Separator variants adapt to narrow/large text; document extents derive from real layout with fixed preview viewport.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -202,7 +202,7 @@
       "state": "verified-code",
       "description": "Tabs/Menu/Dialog/Select comparisons use actual views; unsupported states/edge routes are not advertised; matrix presentation is static under a scoped renderer context and does not reset host clock.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass4/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass4/receipt.json"
       }
     },
     {
@@ -210,7 +210,7 @@
       "state": "verified-code",
       "description": "Real Checkbox labels and mixed/checked combinations; real extended views including SegmentedControl; matrix captions and controls use matched text metrics, responsive widths and focus gutters.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass5/receipt.json"
       }
     },
     {
@@ -218,7 +218,7 @@
       "state": "verified-code",
       "description": "Banner/Toast use narrow stacked actions and measured content; feedback Gallery uses document bounds with actual ancestor clipping and measured natural bottom; real scrolling and pointer dismiss tested.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass5/receipt.json"
       }
     },
     {
@@ -226,7 +226,7 @@
       "state": "verified-code",
       "description": "CodeBlock and DiffView measure the same inner width used to render; Gallery code height uses matching insets; narrow large-type code is rendered to actual GPU output.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass5/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass5/receipt.json"
       }
     },
     {
@@ -234,7 +234,7 @@
       "state": "verified-code",
       "description": "Full production layout frames are registered independently of pointer clipping; eligibility and mounted state control Tab participation. Shell, story and leaf scopes hand off bidirectionally. AppKit command-only Tab enters the same path, rapid repeated keys reveal from the last layout origin, and actual pointer focus synchronizes the logical owner. Dialog containment and nonmodal popup exit remain separate contracts.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass6/receipt.json"
       }
     },
     {
@@ -242,7 +242,7 @@
       "state": "verified-code",
       "description": "Toolbar/NumberField/navigation/collection/feedback state and variant comparisons render real production views with isolated fixtures. Full Gallery GPU captures include every implemented advertised state/variant route at top/mid/bottom across four themes and two window/text-size combinations.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass6/receipt.json"
       }
     },
     {
@@ -250,7 +250,7 @@
       "state": "verified-code",
       "description": "The production NumberField value is vertically and horizontally centered in its full slot, including compressed widths and 150 percent text. Actual CoreText glyph bounds and GPU output are checked.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass6/receipt.json"
       }
     },
     {
@@ -258,7 +258,7 @@
       "state": "verified-code",
       "description": "TextArea uses measured remaining preview space and clipped rendering while keeping an offscreen logical frame. Selectable readonly text joins Tab. Sidebar focus reveal reserves the DS focus ring gutter; pointer focus in navigation search clears the old component focus without discarding input data.",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass6/receipt.json"
       }
     }
   ],
@@ -577,7 +577,7 @@
       ],
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/receipt.json"
+        "$ref": "../evidence/gold7/alignment-pass6/receipt.json"
       }
     }
   ],
@@ -600,7 +600,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -621,7 +621,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -642,7 +642,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -664,7 +664,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -685,7 +685,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -707,7 +707,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -729,7 +729,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -751,7 +751,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -772,7 +772,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -793,7 +793,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -817,7 +817,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -839,7 +839,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -861,7 +861,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -885,7 +885,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -909,7 +909,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -933,7 +933,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -955,7 +955,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -977,7 +977,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1000,7 +1000,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1022,7 +1022,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1044,7 +1044,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1066,7 +1066,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1088,7 +1088,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1110,7 +1110,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1133,7 +1133,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1155,7 +1155,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1177,7 +1177,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1199,7 +1199,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1221,7 +1221,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1243,7 +1243,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1265,7 +1265,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1287,7 +1287,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1309,7 +1309,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1331,7 +1331,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1353,7 +1353,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1375,7 +1375,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1398,7 +1398,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1421,7 +1421,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1442,7 +1442,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1464,7 +1464,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1486,7 +1486,7 @@
       "state_comparison": "Applicable production-view visual comparison; isolated fixtures, not native focus acceptance. Actual interaction checked separately.",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1507,7 +1507,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1527,7 +1527,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1547,7 +1547,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     },
     {
@@ -1567,7 +1567,7 @@
       "state_comparison": "no dedicated state story; applicable Playground/model states remain separate",
       "experience": "unverified",
       "evidence": {
-        "$ref": "../reviews/gold7-20261017/alignment-pass6/pages/canonical-story-geometry.json"
+        "$ref": "../evidence/gold7/alignment-pass6/pages/canonical-story-geometry.json"
       }
     }
   ]

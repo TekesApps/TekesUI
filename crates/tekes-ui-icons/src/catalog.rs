@@ -1,11 +1,11 @@
-//! Complete published catalog. `Icon` remains the eight-icon animated compatibility API.
+//! Canonical public core catalog. `Icon` remains the eight-icon animated compatibility API.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Glyph {
     pub name: &'static str,
     pub svg: &'static str,
 }
 impl Glyph {
-    pub const ALL: &'static [Self] = &[
+    pub const CORE: &'static [Self] = &[
         Self {
             name: "tekes-access-full",
             svg: include_str!("../assets/tekes-access-full.svg"),
@@ -21,10 +21,6 @@ impl Glyph {
         Self {
             name: "tekes-advanced-params",
             svg: include_str!("../assets/tekes-advanced-params.svg"),
-        },
-        Self {
-            name: "tekes-agent-question",
-            svg: include_str!("../assets/tekes-agent-question.svg"),
         },
         Self {
             name: "tekes-ahead-behind",
@@ -51,10 +47,6 @@ impl Glyph {
             svg: include_str!("../assets/tekes-archive.svg"),
         },
         Self {
-            name: "tekes-ask-user",
-            svg: include_str!("../assets/tekes-ask-user.svg"),
-        },
-        Self {
             name: "tekes-attach",
             svg: include_str!("../assets/tekes-attach.svg"),
         },
@@ -73,62 +65,6 @@ impl Glyph {
         Self {
             name: "tekes-brief",
             svg: include_str!("../assets/tekes-brief.svg"),
-        },
-        Self {
-            name: "tekes-cad-arc",
-            svg: include_str!("../assets/tekes-cad-arc.svg"),
-        },
-        Self {
-            name: "tekes-cad-block",
-            svg: include_str!("../assets/tekes-cad-block.svg"),
-        },
-        Self {
-            name: "tekes-cad-compare",
-            svg: include_str!("../assets/tekes-cad-compare.svg"),
-        },
-        Self {
-            name: "tekes-cad-crossing-select",
-            svg: include_str!("../assets/tekes-cad-crossing-select.svg"),
-        },
-        Self {
-            name: "tekes-cad-dimension",
-            svg: include_str!("../assets/tekes-cad-dimension.svg"),
-        },
-        Self {
-            name: "tekes-cad-export",
-            svg: include_str!("../assets/tekes-cad-export.svg"),
-        },
-        Self {
-            name: "tekes-cad-layers",
-            svg: include_str!("../assets/tekes-cad-layers.svg"),
-        },
-        Self {
-            name: "tekes-cad-layout",
-            svg: include_str!("../assets/tekes-cad-layout.svg"),
-        },
-        Self {
-            name: "tekes-cad-line",
-            svg: include_str!("../assets/tekes-cad-line.svg"),
-        },
-        Self {
-            name: "tekes-cad-pdf-import",
-            svg: include_str!("../assets/tekes-cad-pdf-import.svg"),
-        },
-        Self {
-            name: "tekes-cad-polyline",
-            svg: include_str!("../assets/tekes-cad-polyline.svg"),
-        },
-        Self {
-            name: "tekes-cad-snap",
-            svg: include_str!("../assets/tekes-cad-snap.svg"),
-        },
-        Self {
-            name: "tekes-cad-table-extract",
-            svg: include_str!("../assets/tekes-cad-table-extract.svg"),
-        },
-        Self {
-            name: "tekes-cad-window-select",
-            svg: include_str!("../assets/tekes-cad-window-select.svg"),
         },
         Self {
             name: "tekes-clear-group",
@@ -197,62 +133,6 @@ impl Glyph {
         Self {
             name: "tekes-diff-split-v",
             svg: include_str!("../assets/tekes-diff-split-v.svg"),
-        },
-        Self {
-            name: "tekes-drama-audience",
-            svg: include_str!("../assets/tekes-drama-audience.svg"),
-        },
-        Self {
-            name: "tekes-drama-audio",
-            svg: include_str!("../assets/tekes-drama-audio.svg"),
-        },
-        Self {
-            name: "tekes-drama-brief",
-            svg: include_str!("../assets/tekes-drama-brief.svg"),
-        },
-        Self {
-            name: "tekes-drama-character",
-            svg: include_str!("../assets/tekes-drama-character.svg"),
-        },
-        Self {
-            name: "tekes-drama-collaboration",
-            svg: include_str!("../assets/tekes-drama-collaboration.svg"),
-        },
-        Self {
-            name: "tekes-drama-delivery",
-            svg: include_str!("../assets/tekes-drama-delivery.svg"),
-        },
-        Self {
-            name: "tekes-drama-directing",
-            svg: include_str!("../assets/tekes-drama-directing.svg"),
-        },
-        Self {
-            name: "tekes-drama-editing",
-            svg: include_str!("../assets/tekes-drama-editing.svg"),
-        },
-        Self {
-            name: "tekes-drama-production",
-            svg: include_str!("../assets/tekes-drama-production.svg"),
-        },
-        Self {
-            name: "tekes-drama-references",
-            svg: include_str!("../assets/tekes-drama-references.svg"),
-        },
-        Self {
-            name: "tekes-drama-script",
-            svg: include_str!("../assets/tekes-drama-script.svg"),
-        },
-        Self {
-            name: "tekes-drama-shot",
-            svg: include_str!("../assets/tekes-drama-shot.svg"),
-        },
-        Self {
-            name: "tekes-drama-storyboard",
-            svg: include_str!("../assets/tekes-drama-storyboard.svg"),
-        },
-        Self {
-            name: "tekes-drama-subtitles",
-            svg: include_str!("../assets/tekes-drama-subtitles.svg"),
         },
         Self {
             name: "tekes-edit",
@@ -331,28 +211,8 @@ impl Glyph {
             svg: include_str!("../assets/tekes-fullscreen.svg"),
         },
         Self {
-            name: "tekes-goal",
-            svg: include_str!("../assets/tekes-goal.svg"),
-        },
-        Self {
             name: "tekes-goal-completed",
             svg: include_str!("../assets/tekes-goal-completed.svg"),
-        },
-        Self {
-            name: "tekes-goal-state-active",
-            svg: include_str!("../assets/tekes-goal-state-active.svg"),
-        },
-        Self {
-            name: "tekes-goal-state-blocked",
-            svg: include_str!("../assets/tekes-goal-state-blocked.svg"),
-        },
-        Self {
-            name: "tekes-goal-state-completed",
-            svg: include_str!("../assets/tekes-goal-state-completed.svg"),
-        },
-        Self {
-            name: "tekes-goal-state-stopped",
-            svg: include_str!("../assets/tekes-goal-state-stopped.svg"),
         },
         Self {
             name: "tekes-hide",
@@ -381,14 +241,6 @@ impl Glyph {
         Self {
             name: "tekes-logout",
             svg: include_str!("../assets/tekes-logout.svg"),
-        },
-        Self {
-            name: "tekes-mcp",
-            svg: include_str!("../assets/tekes-mcp.svg"),
-        },
-        Self {
-            name: "tekes-memorize",
-            svg: include_str!("../assets/tekes-memorize.svg"),
         },
         Self {
             name: "tekes-memory",
@@ -479,10 +331,6 @@ impl Glyph {
             svg: include_str!("../assets/tekes-pull-request.svg"),
         },
         Self {
-            name: "tekes-queued-input",
-            svg: include_str!("../assets/tekes-queued-input.svg"),
-        },
-        Self {
             name: "tekes-quick-panel",
             svg: include_str!("../assets/tekes-quick-panel.svg"),
         },
@@ -497,10 +345,6 @@ impl Glyph {
         Self {
             name: "tekes-rebuild",
             svg: include_str!("../assets/tekes-rebuild.svg"),
-        },
-        Self {
-            name: "tekes-recall",
-            svg: include_str!("../assets/tekes-recall.svg"),
         },
         Self {
             name: "tekes-redo",
@@ -579,36 +423,16 @@ impl Glyph {
             svg: include_str!("../assets/tekes-side-panel-collapsed.svg"),
         },
         Self {
-            name: "tekes-skill",
-            svg: include_str!("../assets/tekes-skill.svg"),
-        },
-        Self {
-            name: "tekes-skills",
-            svg: include_str!("../assets/tekes-skills.svg"),
-        },
-        Self {
-            name: "tekes-slash-command",
-            svg: include_str!("../assets/tekes-slash-command.svg"),
-        },
-        Self {
             name: "tekes-sort",
             svg: include_str!("../assets/tekes-sort.svg"),
-        },
-        Self {
-            name: "tekes-steer",
-            svg: include_str!("../assets/tekes-steer.svg"),
-        },
-        Self {
-            name: "tekes-steering",
-            svg: include_str!("../assets/tekes-steering.svg"),
         },
         Self {
             name: "tekes-stop",
             svg: include_str!("../assets/tekes-stop.svg"),
         },
         Self {
-            name: "tekes-subagent",
-            svg: include_str!("../assets/tekes-subagent.svg"),
+            name: "tekes-swap-horizontal",
+            svg: include_str!("../assets/tekes-swap-horizontal.svg"),
         },
         Self {
             name: "tekes-tab-diffs",
@@ -687,10 +511,6 @@ impl Glyph {
             svg: include_str!("../assets/tekes-verify.svg"),
         },
         Self {
-            name: "tekes-waiting-user",
-            svg: include_str!("../assets/tekes-waiting-user.svg"),
-        },
-        Self {
             name: "tekes-warning",
             svg: include_str!("../assets/tekes-warning.svg"),
         },
@@ -718,21 +538,33 @@ impl Glyph {
             name: "tekes-zoom-out",
             svg: include_str!("../assets/tekes-zoom-out.svg"),
         },
-        Self {
-            name: "tekes-swap-horizontal",
-            svg: include_str!("../assets/tekes-swap-horizontal.svg"),
-        },
     ];
+    #[cfg(not(feature = "product-icons"))]
+    pub const ALL: &'static [Self] = Self::CORE;
+    #[cfg(feature = "product-icons")]
+    pub const ALL: &'static [Self] = crate::product_extensions::ALL;
+    #[cfg(feature = "product-icons")]
+    pub const PRODUCT_EXTENSIONS: &'static [Self] = crate::product_extensions::EXTENSIONS;
+
     pub fn named(name: &str) -> Option<Self> {
         Self::ALL.iter().copied().find(|icon| icon.name == name)
+    }
+
+    /// Resolve a canonical core icon first, then fall back to caller-supplied extension icons.
+    pub fn resolve_with_extensions(name: &str, extensions: &[Self]) -> Option<Self> {
+        Self::named(name).or_else(|| extensions.iter().copied().find(|icon| icon.name == name))
     }
 }
 #[cfg(test)]
 mod tests {
     use super::Glyph;
+
     #[test]
     fn full_catalog_is_unique_self_contained_and_tintable() {
         let mut names = std::collections::HashSet::new();
+        #[cfg(not(feature = "product-icons"))]
+        assert_eq!(Glyph::ALL.len(), 133);
+        #[cfg(feature = "product-icons")]
         assert_eq!(Glyph::ALL.len(), 179);
         for icon in Glyph::ALL {
             assert!(names.insert(icon.name));
@@ -745,5 +577,33 @@ mod tests {
         }
         assert!(Glyph::named("tekes-shell").is_some());
         assert!(Glyph::named("tekes-annotation").is_none());
+        #[cfg(not(feature = "product-icons"))]
+        {
+            assert_eq!(Glyph::named("tekes-cad-line"), None);
+            assert_eq!(Glyph::named("tekes-agent-question"), None);
+        }
+        #[cfg(feature = "product-icons")]
+        {
+            assert_eq!(Glyph::PRODUCT_EXTENSIONS.len(), 46);
+            assert!(Glyph::named("tekes-cad-line").is_some());
+            assert!(Glyph::named("tekes-agent-question").is_some());
+        }
+    }
+
+    #[test]
+    fn resolve_with_extensions_allows_consumer_injected_packs() {
+        const EXTRA: &[Glyph] = &[Glyph {
+            name: "custom-cad-tool",
+            svg: "<svg viewBox=\"0 0 24 24\"></svg>",
+        }];
+        assert_eq!(
+            Glyph::resolve_with_extensions("custom-cad-tool", EXTRA).map(|g| g.name),
+            Some("custom-cad-tool")
+        );
+        assert_eq!(
+            Glyph::resolve_with_extensions("tekes-shell", EXTRA).map(|g| g.name),
+            Some("tekes-shell")
+        );
+        assert_eq!(Glyph::resolve_with_extensions("missing", EXTRA), None);
     }
 }

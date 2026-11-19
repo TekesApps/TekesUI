@@ -88,7 +88,7 @@ gpu.render_camera(view, &camera)?;
 # Ok(()) }
 ```
 
-独立宿主见 [`tekes-ui-3d`](../tekes-ui-3d/README.md)，展示真实魔方 GLB 导入、拖动、滚轮、键盘与原生菜单。原有 `render(view, yaw, zoom)` 保留。
+独立宿主见 [`tekes-ui-3d`](../../examples/city-3d-demo/crates/tekes-ui-3d/README.md)，展示真实魔方 GLB 导入、拖动、滚轮、键盘与原生菜单。原有 `render(view, yaw, zoom)` 保留。
 
 旋转优化：以 clip / time 缓存已采样姿态；只有相机或整个模型朝向变化时，pose 上传与 compute dispatch 均为零。动画时间变化时再采样，并逐网格比较 model / joint palette / morph weights，只上传、变形发生变化的网格。`last_frame_deformed_meshes()` 提供最近帧的 compute 网格数。魔方初次执行 26 个网格；顶层转动只执行 9 个网格、上传 720 字节；停留关键帧期间变化为零。
 
