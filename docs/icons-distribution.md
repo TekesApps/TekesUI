@@ -2,7 +2,7 @@
 
 The TekesUI icon catalog is owned and distributed by `crates/tekes-ui-icons` under the MIT license, with no external application directory required for Rust, Gallery, or Web consumers.
 
-As of `v0.3.35`, the default build ships **133** canonical square core glyphs (`Glyph`) alongside **8** legacy `Icon` enum variants. An additional **46** domain/product-workflow glyphs (14 `tekes-cad-*`, 14 `tekes-drama-*`, and 18 agent/goal workflow icons) live in `crates/tekes-ui-icons/packs/product-extensions/` behind the opt-in Cargo feature `product-icons`, bringing the full enabled set to **179** canonical square glyphs.
+As of `v0.3.36`, the default build ships **133** canonical square core glyphs (`Glyph`) alongside **8** legacy `Icon` enum variants. An additional **46** domain/product-workflow glyphs (14 `tekes-cad-*`, 14 `tekes-drama-*`, and 18 agent/goal workflow icons) live in `crates/tekes-ui-icons/packs/product-extensions/` behind the opt-in Cargo feature `product-icons`, bringing the full enabled set to **179** canonical square glyphs.
 
 The 8 previously approved defaults retain their bytes, SVG black paint is normalized to `currentColor` while preserving source geometry, and `catalog.json` / `packs/product-extensions/catalog.json` record canonical provenance hashes.
 

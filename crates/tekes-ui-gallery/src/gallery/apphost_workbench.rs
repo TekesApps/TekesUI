@@ -90,6 +90,7 @@ pub struct WorkbenchState {
     current: u64,
     visits: Vec<Selection>,
     visit_sections: Vec<Option<usize>>,
+    pending_section: Option<(String, usize)>,
     pages: HashMap<String, Rc<RefCell<MountedPage>>>,
     pending: VecDeque<tekes_ui_app_host::navigation::Entry>,
     inspected: Option<(String, ComponentId, u64)>,
@@ -121,6 +122,13 @@ impl WorkbenchState {
     // Commands run inside a borrowed Focus host. Apply recording changes at the
     // next host operation, after that borrow ends, without replaying any event.
     pub(super) fn sync_inspection(&mut self) {
+        if let Some((target_page, section)) = self.pending_section.clone()
+            && let Some(mounted) = self.pages.get(&target_page)
+            && let Ok(mut guard) = mounted.try_borrow_mut()
+        {
+            guard.select_section(section);
+            self.pending_section = None;
+        }
         let selection = self.selection();
         let target = specimens(&selection.page)
             .iter()
@@ -219,7 +227,14 @@ impl WorkbenchState {
             );
         }
         if let Some(Some(section)) = self.visit_sections.get(visit as usize).copied() {
-            self.pages[&page].borrow_mut().select_section(section);
+            if let Ok(mut mounted) = self.pages[&page].try_borrow_mut() {
+                mounted.select_section(section);
+                self.pending_section = None;
+            } else {
+                self.pending_section = Some((page, section));
+            }
+        } else {
+            self.pending_section = None;
         }
         self.current = visit;
         Ok(())
@@ -236,6 +251,7 @@ impl WorkbenchState {
             self.pages.insert(page.clone(), Rc::new(RefCell::new(host)));
         }
         self.pages[&page].borrow_mut().select_section(section);
+        self.pending_section = None;
         if already {
             if let Some(slot) = self.visit_sections.get_mut(self.current as usize) {
                 *slot = explicit.then_some(section);
@@ -657,6 +673,14 @@ impl ContainerContent for FocusContent {
         let host = self.current_page();
         let mut page = host.borrow_mut();
         visit(&mut page);
+        let pending_section = self.0.borrow_mut().pending_section.take();
+        if let Some((target_page, section)) = pending_section {
+            if target_page == visited_page {
+                page.select_section(section);
+            } else if let Some(other) = self.0.borrow().pages.get(&target_page).cloned() {
+                other.borrow_mut().select_section(section);
+            }
+        }
         if self.0.borrow().selection().page != visited_page {
             // Navigation commands execute while borrowing this departing Host.
             // Stop it here; borrowing it again through WorkbenchState would panic.
@@ -971,6 +995,7 @@ fn assemble_for_route_internal(
         visit_sections: vec![story_section(
             raw_route.split_once('/').map_or("playground", |(_, s)| s),
         )],
+        pending_section: None,
         pages: HashMap::from([(page, Rc::new(RefCell::new(host)))]),
         pending: VecDeque::new(),
         inspected: None,
