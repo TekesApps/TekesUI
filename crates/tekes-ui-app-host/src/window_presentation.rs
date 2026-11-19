@@ -4314,4 +4314,175 @@ mod input_regressions {
         );
         assert!(host.open_toolbar().is_some());
     }
+
+    #[test]
+    fn others_containers_host_editable_markdown_and_readonly_diff_views() {
+        use tekes_ui_controls::{
+            ExternalSelection, ExternalUndo, ExternalValueResult, TextEditCommand,
+            composition::{
+                MarkdownEditorContent, RichBlockKind, RichContent, RichDocument, TextViewport,
+            },
+            extended::DiffView,
+        };
+        use tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot;
+
+        let focus_panel = LocalContainer::new(
+            "focus",
+            Content::new(ComponentId(5000), TextContent::new("Agent Focus")),
+        )
+        .unwrap()
+        .title("Focus");
+
+        let md_editor = MarkdownEditorContent::new(
+            "agent-notes",
+            1,
+            "# Notes\n\n- Check `diff`\n\n[Spec](spec.md)",
+        )
+        .unwrap()
+        .with_viewport(TextViewport::Fixed(240.));
+        let md_id = ComponentId(5001);
+        let md_panel = LocalContainer::new("agent-markdown", Content::new(md_id, md_editor))
+            .unwrap()
+            .title("Notes");
+
+        let diff = DiffView::between("let x = 1;\n", "let x = 2;\n");
+        let diff_doc = RichDocument::from_diff(&diff);
+        let diff_id = ComponentId(5002);
+        let diff_viewer = RichContent::new("agent-diff-doc", 1, diff_doc).unwrap();
+        let diff_panel = LocalContainer::new("agent-diff", Content::new(diff_id, diff_viewer))
+            .unwrap()
+            .title("Diff");
+
+        let mut host = Host::from_containers(
+            vec![focus_panel.into(), md_panel.into(), diff_panel.into()],
+            false,
+            None,
+            Some(
+                PresentationOptions::new("focus").others(OthersOptions::new(vec![
+                    "agent-markdown".into(),
+                    "agent-diff".into(),
+                ])),
+            ),
+        );
+        assert!(host.mount_columns());
+        let area = Rect::new(0., 0., 1100., 680.);
+        render_layout(&mut host, area);
+
+        let md_panel_idx = host
+            .panel_mgr
+            .panels
+            .iter()
+            .position(|p| p.module_id == "agent-markdown")
+            .unwrap();
+        let diff_panel_idx = host
+            .panel_mgr
+            .panels
+            .iter()
+            .position(|p| p.module_id == "agent-diff")
+            .unwrap();
+
+        // Active `agent-markdown` others panel exposes valid accessibility & unfocused collapsed text.
+        host.panel_mgr.panels[md_panel_idx]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |ch| {
+                let ax = ContentAccessibilitySnapshot::from_host(ch).unwrap();
+                assert!(ax.is_valid());
+                assert!(ch.focus(Some(md_id), true));
+
+                let ed = ch
+                    .get(md_id)
+                    .unwrap()
+                    .component::<MarkdownEditorContent>()
+                    .unwrap();
+                assert_eq!(ed.display_text(), "# Notes\n\n• Check diff\n\nSpec");
+
+                ch.event(&ContentEvent::Commit {
+                    text: "Updated ".into(),
+                    replacement: None,
+                });
+                let ed = ch
+                    .get(md_id)
+                    .unwrap()
+                    .component::<MarkdownEditorContent>()
+                    .unwrap();
+                assert_eq!(
+                    ed.source(),
+                    "Updated # Notes\n\n- Check `diff`\n\n[Spec](spec.md)"
+                );
+
+                ch.event(&ContentEvent::TextCommand(TextEditCommand::Undo));
+                let ed = ch
+                    .get(md_id)
+                    .unwrap()
+                    .component::<MarkdownEditorContent>()
+                    .unwrap();
+                assert_eq!(ed.source(), "# Notes\n\n- Check `diff`\n\n[Spec](spec.md)");
+
+                let v = ed.version();
+                let res = ch
+                    .get_mut(md_id)
+                    .unwrap()
+                    .component_mut::<MarkdownEditorContent>()
+                    .unwrap()
+                    .apply_external_source(
+                        &v,
+                        "# Notes\n\n- Check `diff`\n\n- Streamed item",
+                        2,
+                        ExternalSelection::Preserve,
+                        ExternalUndo::Preserve,
+                    )
+                    .unwrap();
+                assert!(matches!(
+                    res,
+                    ExternalValueResult::Applied { changed: true, .. }
+                ));
+            });
+
+        // Re-render `agent-markdown` after streaming update, then switch tab to `agent-diff`.
+        render_layout(&mut host, area);
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(OthersTab::Container("agent-diff".into()))
+            .unwrap();
+        render_layout(&mut host, area);
+
+        host.panel_mgr.panels[diff_panel_idx]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |ch| {
+                let ax = ContentAccessibilitySnapshot::from_host(ch).unwrap();
+                assert!(ax.is_valid());
+                assert!(ch.focus(Some(diff_id), true));
+                let before_text = ch.semantic_text_input_snapshot(diff_id).unwrap().text;
+                // Strictly read-only diff ignores Commit edits, while SelectAll selects lines cleanly.
+                ch.event(&ContentEvent::Commit {
+                    text: "MUTATE".into(),
+                    replacement: None,
+                });
+                ch.event(&ContentEvent::TextCommand(TextEditCommand::SelectAll));
+                let snap = ch.semantic_text_input_snapshot(diff_id).unwrap();
+                assert_eq!(snap.text, before_text);
+                assert!(snap.read_only);
+                assert_eq!(snap.selection, 0..before_text.encode_utf16().count());
+                let diff_rc = ch.get(diff_id).unwrap().component::<RichContent>().unwrap();
+                assert!(diff_rc.document().blocks().iter().any(|b| matches!(
+                    b.kind(),
+                    RichBlockKind::Diff {
+                        kind: tekes_ui_controls::extended::DiffKind::Removed
+                    }
+                )));
+                assert!(diff_rc.document().blocks().iter().any(|b| matches!(
+                    b.kind(),
+                    RichBlockKind::Diff {
+                        kind: tekes_ui_controls::extended::DiffKind::Added
+                    }
+                )));
+                assert!(snap.text.contains("let x = 1;") && snap.text.contains("let x = 2;"));
+            });
+    }
 }

@@ -1334,6 +1334,62 @@
       "reason": "Public keyed model, dataset/key, display/update, intent, reading, budget, reconcile or error support for the existing tui.list collection contract; not an independent component or route."
     },
     {
+      "api": "tekes_ui_controls::composition::MarkdownEditorContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Live-Preview projected Markdown editor adapter over one original TextFieldContent/TextSurface owner; canonical LF source, source undo/redo, IME/drag projection freeze, and controlled external updates."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownEditorError",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Projected Markdown editor version, identity, capacity, or conflict support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownEditorVersion",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Projected Markdown editor version, identity, capacity, or conflict support; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownInlineKind",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Bidirectional UTF-16 Live-Preview Markdown projection model and inline span metadata; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownInlineSpan",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Bidirectional UTF-16 Live-Preview Markdown projection model and inline span metadata; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownProjectedBlock",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Bidirectional UTF-16 Live-Preview Markdown projection model and block geometry metadata; not an independent component."
+    },
+    {
+      "api": "tekes_ui_controls::composition::MarkdownProjection",
+      "category": "component-support",
+      "components": [
+        "tui.markdown"
+      ],
+      "reason": "Bidirectional UTF-16 Live-Preview Markdown projection model between canonical LF source and display text; not an independent component."
+    },
+    {
       "api": "tekes_ui_controls::composition::MediaViewerCommand",
       "category": "optional-component-support",
       "components": [],

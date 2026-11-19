@@ -391,7 +391,7 @@ fn append_fragment(source: &str, text: &mut String, fragment: Fragment, map: &mu
     }
 }
 
-fn utf16_to_byte(text: &str, offset: usize) -> usize {
+pub(super) fn utf16_to_byte(text: &str, offset: usize) -> usize {
     let mut units = 0;
     for (byte, ch) in text.char_indices() {
         if units == offset {
@@ -405,13 +405,13 @@ fn utf16_to_byte(text: &str, offset: usize) -> usize {
     );
     text.len()
 }
-fn byte_to_utf16(text: &str, byte: usize) -> usize {
+pub(super) fn byte_to_utf16(text: &str, byte: usize) -> usize {
     text.get(..byte)
         .expect("internal source/display map uses a UTF-8 boundary")
         .encode_utf16()
         .count()
 }
-fn grapheme_boundary(text: &str, offset: usize) -> bool {
+pub(super) fn grapheme_boundary(text: &str, offset: usize) -> bool {
     let mut units = 0;
     for grapheme in text.graphemes(true) {
         if units == offset {
@@ -510,7 +510,7 @@ fn source_lines(source: &str) -> Vec<SourceLine> {
     }
     result
 }
-fn parse_fence_open(raw: &str) -> Option<(usize, &str)> {
+pub(super) fn parse_fence_open(raw: &str) -> Option<(usize, &str)> {
     let indent = raw.bytes().take_while(|&b| b == b' ').count();
     if indent > 3 {
         return None;
@@ -530,7 +530,7 @@ fn parse_fence_open(raw: &str) -> Option<(usize, &str)> {
         .unwrap_or("");
     Some((ticks, lang))
 }
-fn is_fence_close(raw: &str, open_ticks: usize) -> bool {
+pub(super) fn is_fence_close(raw: &str, open_ticks: usize) -> bool {
     let indent = raw.bytes().take_while(|&b| b == b' ').count();
     if indent > 3 {
         return false;
@@ -772,6 +772,77 @@ fn find_matching_bracket_close(value: &str, open: usize) -> Option<(usize, bool)
     None
 }
 
+pub(super) fn find_backtick_span(value: &str, open: usize) -> Result<(usize, usize, usize), usize> {
+    let bytes = value.as_bytes();
+    let ticks = bytes[open..].iter().take_while(|&&ch| ch == b'`').count();
+    let mut search = open + ticks;
+    while let Some(rel) = value[search..].find('`') {
+        let pos = search + rel;
+        let run = bytes[pos..].iter().take_while(|&&ch| ch == b'`').count();
+        if run == ticks {
+            return Ok((ticks, pos, pos + run));
+        }
+        search = pos + run;
+    }
+    Err(open + ticks)
+}
+
+pub(super) fn try_parse_simple_link<'a>(
+    value: &'a str,
+    open: usize,
+    prev_display: &str,
+) -> Result<(usize, &'a str, &'a str, usize), usize> {
+    let bytes = value.as_bytes();
+    let Some((close, has_nested)) = find_matching_bracket_close(value, open) else {
+        return Err(open + 1);
+    };
+    if !value[close + 1..].starts_with('(') {
+        return Err(close + 1);
+    }
+    let target_start = close + 2;
+    let Some(end_rel) = value[target_start..].find(')') else {
+        return Err(close + 1);
+    };
+    let end = target_start + end_rel;
+    let label = &value[open + 1..close];
+    let target = &value[target_start..end];
+    let mut slashes = 0;
+    let mut before = open;
+    while before > 0 && bytes[before - 1] == b'\\' {
+        slashes += 1;
+        before -= 1;
+    }
+    let next_display = &value[end + 1..];
+    let clean_display_boundaries = (prev_display.is_empty() || {
+        let combined = format!("{prev_display}{label}");
+        grapheme_boundary(&combined, byte_to_utf16(prev_display, prev_display.len()))
+    }) && (next_display.is_empty() || {
+        let combined = format!("{label}{next_display}");
+        grapheme_boundary(&combined, byte_to_utf16(label, label.len()))
+    });
+    let clean_source_boundaries = grapheme_boundary(value, byte_to_utf16(value, open))
+        && grapheme_boundary(value, byte_to_utf16(value, open + 1))
+        && grapheme_boundary(value, byte_to_utf16(value, close))
+        && grapheme_boundary(value, byte_to_utf16(value, end + 1));
+    let supported = slashes % 2 == 0
+        && !has_nested
+        && !label.is_empty()
+        && !target.is_empty()
+        && !label.chars().any(|c| matches!(c, '[' | ']' | '\\'))
+        && !target
+            .chars()
+            .any(|c| matches!(c, '(' | ')' | '[' | ']' | '\\'))
+        && !label.contains('`')
+        && !target.chars().any(char::is_whitespace)
+        && clean_display_boundaries
+        && clean_source_boundaries;
+    if supported {
+        Ok((close, label, target, end))
+    } else {
+        Err(end + 1)
+    }
+}
+
 fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
     let mut output: Vec<Fragment> = Vec::new();
     let mut links = Vec::new();
@@ -794,19 +865,9 @@ fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
         while scan < bytes.len() {
             let b = bytes[scan];
             if b == b'`' {
-                let ticks = bytes[scan..].iter().take_while(|&&ch| ch == b'`').count();
-                let mut search = scan + ticks;
-                let mut closed = None;
-                while let Some(rel) = value[search..].find('`') {
-                    let pos = search + rel;
-                    let run = bytes[pos..].iter().take_while(|&&ch| ch == b'`').count();
-                    if run == ticks {
-                        closed = Some(pos + run);
-                        break;
-                    }
-                    search = pos + run;
-                }
-                scan = closed.unwrap_or(scan + ticks);
+                scan = match find_backtick_span(value, scan) {
+                    Ok((_, _, closed)) | Err(closed) => closed,
+                };
                 continue;
             }
             if b != b'[' {
@@ -818,61 +879,19 @@ fn linkify(fragments: Vec<Fragment>) -> (Vec<Fragment>, Vec<PendingLink>) {
                 continue;
             }
             let open = scan;
-            let Some((close, has_nested)) = find_matching_bracket_close(value, open) else {
-                scan = open + 1;
-                continue;
-            };
-            if !value[close + 1..].starts_with('(') {
-                scan = close + 1;
-                continue;
-            }
-            let target_start = close + 2;
-            let Some(end_rel) = value[target_start..].find(')') else {
-                scan = close + 1;
-                continue;
-            };
-            let end = target_start + end_rel;
-            let label = &value[open + 1..close];
-            let target = &value[target_start..end];
-            let mut slashes = 0;
-            let mut before = open;
-            while before > 0 && bytes[before - 1] == b'\\' {
-                slashes += 1;
-                before -= 1;
-            }
             let prev_display = if plain_start < open {
                 &value[plain_start..open]
             } else {
                 output.last().map_or("", |last| last.text.as_str())
             };
-            let next_display = &value[end + 1..];
-            let clean_display_boundaries = (prev_display.is_empty() || {
-                let combined = format!("{prev_display}{label}");
-                grapheme_boundary(&combined, byte_to_utf16(prev_display, prev_display.len()))
-            }) && (next_display.is_empty() || {
-                let combined = format!("{label}{next_display}");
-                grapheme_boundary(&combined, byte_to_utf16(label, label.len()))
-            });
-            let clean_source_boundaries = grapheme_boundary(value, byte_to_utf16(value, open))
-                && grapheme_boundary(value, byte_to_utf16(value, open + 1))
-                && grapheme_boundary(value, byte_to_utf16(value, close))
-                && grapheme_boundary(value, byte_to_utf16(value, end + 1));
-            let supported = slashes % 2 == 0
-                && !has_nested
-                && !label.is_empty()
-                && !target.is_empty()
-                && !label.chars().any(|c| matches!(c, '[' | ']' | '\\'))
-                && !target
-                    .chars()
-                    .any(|c| matches!(c, '(' | ')' | '[' | ']' | '\\'))
-                && !label.contains('`')
-                && !target.chars().any(char::is_whitespace)
-                && clean_display_boundaries
-                && clean_source_boundaries;
-            if !supported {
-                scan = end + 1;
-                continue;
-            }
+            let (close, label, target, end) = match try_parse_simple_link(value, open, prev_display)
+            {
+                Ok(parsed) => parsed,
+                Err(next) => {
+                    scan = next;
+                    continue;
+                }
+            };
             if plain_start < open {
                 output.push(Fragment {
                     text: value[plain_start..open].to_owned(),

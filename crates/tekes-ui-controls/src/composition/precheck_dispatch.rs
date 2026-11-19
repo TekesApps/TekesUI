@@ -41,6 +41,9 @@ pub(crate) fn table_transaction_compatibility(
     if let Some(rich) = downcast::<rich_content::RichContent>(component) {
         return table_transaction_compatibility(rich.owner_field());
     }
+    if let Some(md) = downcast::<markdown_editor::MarkdownEditorContent>(component) {
+        return table_transaction_compatibility(md.owner_field());
+    }
     if downcast::<adapters::ListContent>(component).is_some()
         || downcast::<chart_content::ChartContent>(component).is_some()
         || downcast::<checkbox::CheckboxContent>(component).is_some()
@@ -93,6 +96,9 @@ pub(crate) fn prepared_effects_work(
     }
     if let Some(rich) = downcast::<rich_content::RichContent>(component) {
         return prepared_effects_work(rich.owner_field(), max_calls);
+    }
+    if let Some(md) = downcast::<markdown_editor::MarkdownEditorContent>(component) {
+        return prepared_effects_work(md.owner_field(), max_calls);
     }
     if let Some(search) = downcast::<search::SearchFieldContent>(component) {
         return search.search_effects_work(max_calls);
@@ -152,6 +158,9 @@ pub(crate) fn prepare_effects(
     }
     if let Some(rich) = downcast::<rich_content::RichContent>(component) {
         return prepare_effects(rich.owner_field(), hooks);
+    }
+    if let Some(md) = downcast::<markdown_editor::MarkdownEditorContent>(component) {
+        return prepare_effects(md.owner_field(), hooks);
     }
     if let Some(search) = downcast::<search::SearchFieldContent>(component) {
         return search.prepare_search_effects(hooks);
@@ -231,6 +240,10 @@ pub(crate) fn lifecycle_prepared(
         lifecycle_prepared(rich.owner_field_mut(), event, context);
         return;
     }
+    if let Some(md) = downcast_mut::<markdown_editor::MarkdownEditorContent>(component) {
+        lifecycle_prepared(md.owner_field_mut(), event, context);
+        return;
+    }
     if let Some(inner) = component.delegated_owner_mut() {
         lifecycle_prepared(inner, event, context);
         return;
@@ -280,6 +293,7 @@ pub(crate) fn action_transaction_compatibility(
         || downcast::<datatable::RowWrapper>(component).is_some()
         || downcast::<selectable_list::ListRowSlot>(component).is_some()
         || downcast::<rich_content::RichContent>(component).is_some()
+        || downcast::<markdown_editor::MarkdownEditorContent>(component).is_some()
     {
         return ActionTransactionCompatibility::Unsupported;
     }
@@ -361,6 +375,7 @@ pub(crate) fn prepare_action(
         || downcast::<datatable::RowWrapper>(component).is_some()
         || downcast::<selectable_list::ListRowSlot>(component).is_some()
         || downcast::<rich_content::RichContent>(component).is_some()
+        || downcast::<markdown_editor::MarkdownEditorContent>(component).is_some()
     {
         return ActionPreparation::Unsupported;
     }

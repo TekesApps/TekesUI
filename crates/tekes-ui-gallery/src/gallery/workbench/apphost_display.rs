@@ -222,7 +222,7 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
                     "Deterministic line-based LCS fixture; large inputs fall back to delete/add blocks."
                 }
             };
-            vec![
+            let mut items = vec![
                 Content::new(
                     ComponentId(96020),
                     ReadingSpecimen {
@@ -233,7 +233,38 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
                     },
                 ),
                 text(96021, footer),
-            ]
+            ];
+            if !variants && renderer == "markdown" {
+                items.push(text(
+                    96029,
+                    "Interactive Live Preview Editor (MarkdownEditorContent)",
+                ));
+                items.push(Content::new(
+                    ComponentId(96030),
+                    MarkdownEditorContent::new(
+                        "gallery-markdown-playground",
+                        1,
+                        "# Agent Notes\n\nFocus any block to edit **bold**, `inline code`, or [architecture docs](https://example.com/docs).\n\n- Live Preview block expansion\n- Canonical Markdown undo & copy\n\n```rust\nfn status() -> &'static str {\n    \"ready\"\n}\n```",
+                    )
+                    .expect("valid gallery markdown editor")
+                    .with_viewport(TextViewport::Fixed(220.)),
+                ));
+            } else if !variants && renderer == "diff-view" {
+                items.push(text(
+                    96029,
+                    "Selectable Diff Reader (RichContent::from_diff)",
+                ));
+                items.push(Content::new(
+                    ComponentId(96031),
+                    RichContent::new(
+                        "gallery-diff-playground",
+                        1,
+                        RichDocument::from_diff(&state.extended.diff),
+                    )
+                    .expect("valid gallery diff reader"),
+                ));
+            }
+            items
         }
         "surface" if variants => vec![text(
             96000,
