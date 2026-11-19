@@ -1,5 +1,9 @@
 //! Independent public consumer: original ContentHost owns all child measurement/layout.
-use tekes_ui_controls::{Insets, TextSurfacePresentation, composition::*, extended::{Axis, Stack}};
+use tekes_ui_controls::{
+    Insets, TextSurfacePresentation,
+    composition::*,
+    extended::{Axis, Stack},
+};
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::Theme;
 #[path = "support/coretext.rs"]
@@ -8,9 +12,7 @@ use coretext::Text;
 
 #[path = "support/panel_fixture.rs"]
 mod panel_fixture;
-use panel_fixture::{
-    ACTION, BODY, EDITOR, LABEL, ROOT, ROWS, SCROLL,
-};
+use panel_fixture::{ACTION, BODY, EDITOR, LABEL, ROOT, ROWS, SCROLL};
 
 const NEXT_ROW: ComponentId = ComponentId(8208);
 const LATEST_ROW: ComponentId = ComponentId(8209);
@@ -23,16 +25,19 @@ fn render(host: &mut ContentHost, text: &mut Text, width: f32, height: f32, them
 }
 
 fn stack(children: Vec<Content>, flexible_child: Option<ComponentId>) -> Content {
-    Content::new(BODY, StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 8.,
+    Content::new(
+        BODY,
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 8.,
+            },
+            children,
+            // TextViewport::Fill must be measured against the space remaining after
+            // fixed siblings so the later original ScrollContent stays visible.
+            flexible_child,
         },
-        children,
-        // TextViewport::Fill must be measured against the space remaining after
-        // fixed siblings so the later original ScrollContent stays visible.
-        flexible_child,
-    })
+    )
 }
 
 fn panel(tree: Content, zero_inset: bool) -> PanelContent {
@@ -488,7 +493,10 @@ fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effect
         .cloned()
         .expect("the original zero-inset Panel publishes its arranged curve");
     let surface_before = host.text_surface(ComponentId(8261)).unwrap();
-    assert_eq!(surface_before.presentation(), TextSurfacePresentation::Field);
+    assert_eq!(
+        surface_before.presentation(),
+        TextSurfacePresentation::Field
+    );
     assert!(surface_before.outer().size.width > 0. && surface_before.inner().size.width > 0.);
     let layout_before = host
         .semantic_text_layout_snapshot(ComponentId(8261), None)
@@ -530,14 +538,17 @@ fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effect
 
 #[test]
 fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
-    use tekes_ui_controls::{
-        composition::{SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewSlotIds},
+    use tekes_ui_controls::composition::{
+        SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewSlotIds,
     };
     let mut editor = TextFieldContent::new("Inline", "self-framed 😀 value");
     editor.surface.set_multiline(true);
     editor.show_metadata = false;
     editor.viewport = TextViewport::Fill;
-    assert_eq!(editor.surface.presentation(), TextSurfacePresentation::Field);
+    assert_eq!(
+        editor.surface.presentation(),
+        TextSurfacePresentation::Field
+    );
     let leading = Content::new(
         ComponentId(8230),
         panel(
@@ -557,17 +568,20 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
         ComponentId(8242),
         panel(Content::new(ComponentId(8241), editor), false),
     );
-    let outer_stack = Content::new(ComponentId(8243), StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 6.,
+    let outer_stack = Content::new(
+        ComponentId(8243),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 6.,
+            },
+            children: vec![
+                inner_editor_panel,
+                Content::new(ComponentId(8244), TextContent::new("nested panel sibling")),
+            ],
+            flexible_child: None,
         },
-        children: vec![
-            inner_editor_panel,
-            Content::new(ComponentId(8244), TextContent::new("nested panel sibling")),
-        ],
-        flexible_child: None,
-    });
+    );
     let trailing = Content::new(ComponentId(8240), panel(outer_stack, false));
     let split = SplitViewContent::try_new(SplitViewConstruction {
         config: SplitViewConfig {
@@ -606,16 +620,19 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
     assert!(
         host.focus(Some(ComponentId(8241)), true),
         "original nested editor focus admission failed after real Split/Panel layout; inspect arranged frame/clip, Panel curve geometry, text witness result, and hit candidates:\n{}",
-        layout_diagnostic(&host, &[
-            ComponentId(8229),
-            ComponentId(8250),
-            ComponentId(8251),
-            ComponentId(8240),
-            ComponentId(8243),
-            ComponentId(8242),
-            ComponentId(8241),
-            ComponentId(8244),
-        ],)
+        layout_diagnostic(
+            &host,
+            &[
+                ComponentId(8229),
+                ComponentId(8250),
+                ComponentId(8251),
+                ComponentId(8240),
+                ComponentId(8243),
+                ComponentId(8242),
+                ComponentId(8241),
+                ComponentId(8244),
+            ],
+        )
     );
     host.event_with_text(
         &ContentEvent::Preedit {

@@ -21,19 +21,19 @@ def source_inventory(root):
     icons = root / 'crates/tekes-ui-icons'
     manifest = json.loads((icons / 'catalog.json').read_text())
     expected = {item['name']: item['sha256'] for item in manifest['icons']}
-    if len(expected) != 177 or len(manifest['icons']) != 177:
-        raise ValueError('expected 177 unique canonical identities')
+    if len(expected) != 133 or len(manifest['icons']) != 133:
+        raise ValueError('expected 133 unique core canonical identities')
     glyphs = re.findall(r'name:\s*"([^"]+)",\s*svg:\s*include_str!\("([^"]+)"\)',
                         (icons / 'src/catalog.rs').read_text())
     actual = {name: digest((icons / 'src' / path).read_bytes()) for name, path in glyphs}
-    if len(glyphs) != 177 or actual != expected:
-        raise ValueError('Glyph::ALL bytes differ from the public catalog manifest')
+    if len(glyphs) != 133 or actual != expected:
+        raise ValueError('Glyph::CORE bytes differ from the public catalog manifest')
     proposal_file = root / 'crates/tekes-ui-gallery/src/gallery/proposal_assets.rs'
     proposals = re.findall(
         r'\(\s*"([^"]+)",\s*"[^"]*",\s*"[^"]*",\s*'
         r'(include_str!\(\s*"[^"]+"\s*\)|tekes_ui_icons::Icon::\w+\.svg\(\))',
         proposal_file.read_text())
-    if len(proposals) != 51:
+    if len(proposals) != 23:
         raise ValueError('proposal inventory syntax/count changed; inspect before interpreting')
     overlaps = []
     for name, expression in proposals:
@@ -65,12 +65,12 @@ def verify_report(report, manifest):
     entries = report['entries']
     expected = {row['name']: row['sha256'] for row in manifest['icons']}
     actual = {row['name']: digest(row['svg'].encode()) for row in entries}
-    if (len(expected) != 177 or len(manifest['icons']) != 177 or len(entries) != 177
-            or report.get('count') != 177 or actual != expected):
+    if (len(expected) != 133 or len(manifest['icons']) != 133 or len(entries) != 133
+            or report.get('count') != 133 or actual != expected):
         raise ValueError('runtime resolved count, names or artwork differ from packaged canonical manifest')
     if any(row['canonical_match'] is not True or row['before'] is not False for row in entries):
         raise ValueError('default runtime has a noncanonical or comparison entry')
-    return {'layer': 'runtime_catalog_resolution', 'count': 177, 'exact_artwork': True,
+    return {'layer': 'runtime_catalog_resolution', 'count': 133, 'exact_artwork': True,
             'pixel_acceptance': 'not_performed_by_this_probe'}
 
 

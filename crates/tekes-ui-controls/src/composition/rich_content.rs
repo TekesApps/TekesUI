@@ -1392,7 +1392,10 @@ mod tests {
         );
         let first_cache_ptr = cached.paint_cache.as_ref().unwrap().batches.as_ptr();
         let first_batches = cached.paint_cache.as_ref().unwrap().batches.len();
+        #[cfg(feature = "syntax-highlighting")]
         assert!(first_batches >= 5);
+        #[cfg(not(feature = "syntax-highlighting"))]
+        assert!(cached.paint_cache.as_ref().unwrap().plain && first_batches == 0);
         cached.paint(
             &mut Scene::new(),
             &mut host,

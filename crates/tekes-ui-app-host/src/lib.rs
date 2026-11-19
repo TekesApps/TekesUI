@@ -52,6 +52,7 @@ pub use navigation_window::NavigationOptions;
 pub use tekes_ui_module_runtime::{ComponentDefinition, ModuleDefinition, ProcessComponentOptions};
 
 /// Fixed build-time assembly, not a dynamic plugin registry.
+#[derive(Debug)]
 pub struct AppProfile {
     pub modules: Vec<ModuleDefinition>,
 }
@@ -200,9 +201,20 @@ pub struct AppWindow {
     presentation: Option<PresentationOptions>,
     container_factories: Vec<ContainerFactory>,
 }
+#[cfg(target_os = "macos")]
+impl std::fmt::Debug for AppWindow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppWindow")
+            .field("theme", &self.theme)
+            .field("profile", &self.profile)
+            .field("components", &self.components)
+            .finish_non_exhaustive()
+    }
+}
 /// A consumer-owned window declaration opened by the current native event loop.
 /// Requesting another window does not create a nested application or input owner.
 #[cfg(target_os = "macos")]
+#[derive(Debug)]
 pub struct WindowOpenRequest {
     pub app: AppWindow,
     pub config: tekes_ui_platform_macos::WindowConfig,

@@ -1,8 +1,5 @@
 use tekes_ui_controls::{
-    BarChart,
-    ButtonTextAlign,
-    ButtonTextRenderer,
-    ChartDatum,
+    BarChart, ButtonTextAlign, ButtonTextRenderer, ChartDatum,
     collections_view::{ChartOwnerCapacity, ChartOwnerFocusSpace, ChartView},
 };
 use tekes_ui_scene::{Rect, Scene, Size};

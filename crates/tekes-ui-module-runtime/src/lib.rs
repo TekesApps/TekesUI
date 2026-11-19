@@ -20,6 +20,7 @@ pub use parent::{ModuleProcess, ReceivedFrame, import_frame};
 #[cfg(target_os = "macos")]
 pub mod surface;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct ModuleState {
     pub revision: u64,
     pub toolbar: Vec<ToolbarItem>,
@@ -38,6 +39,14 @@ pub trait PanelModule {
 pub struct ModuleDefinition {
     pub id: &'static str,
     pub create: fn() -> Box<dyn PanelModule>,
+}
+
+impl std::fmt::Debug for ModuleDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModuleDefinition")
+            .field("id", &self.id)
+            .finish_non_exhaustive()
+    }
 }
 
 #[cfg(target_os = "macos")]

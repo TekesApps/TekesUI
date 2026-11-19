@@ -1030,8 +1030,9 @@ mod catalogue_review {
         let mut catalog = IconCatalog::fixture(&["tekes-settings", "tekes-search"]);
         catalog.add_proposals();
         assert_eq!(filtered(&catalog, "SETT").len(), 1);
-        assert_eq!(filtered(&catalog, "cad-").len(), 14);
-        assert_eq!(filtered(&catalog, "drama-").len(), 14);
+        assert_eq!(filtered(&catalog, "cad-").len(), 0);
+        assert_eq!(filtered(&catalog, "drama-").len(), 0);
+        assert_eq!(filtered(&catalog, "zoom").len(), 2);
         assert_eq!(filtered(&catalog, "SeArCh").len(), 2);
         assert_eq!(filtered(&catalog, "设置").len(), 1);
         let visible = visible_legacy(

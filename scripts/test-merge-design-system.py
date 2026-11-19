@@ -21,15 +21,14 @@ class MergeTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup);root=Path(temporary.name)
         for file in merge.SOURCE_FILES:
             path=root/file;path.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/file,path)
-        imported=root/merge.UPSTREAM;imported.parent.mkdir(parents=True,exist_ok=True);imported.symlink_to(ROOT/merge.UPSTREAM,target_is_directory=True)
         return root
     def current_bundle(self, config):
-        # Active author inputs can evolve; the imported ZIP is checked separately.
-        brand=sys.modules['brand']
+        brand, _ = merge.load_brand_compiler(ROOT)
         return brand.compile_config(config,
             base=merge.load(ROOT/'design/source/base.tokens.json'),
             policy=merge.load(ROOT/'design/brand/policy.json'),
-            metadata=merge.load(ROOT/'design/source/token-metadata.json'))[0]
+            metadata=merge.load(ROOT/'design/source/token-metadata.json'),
+            root=ROOT)[0]
     def test_selected_neutral_matches_current_author_inputs(self):
         expected=self.current_bundle(merge.load(ROOT/'design/brand/config.json'))
         self.assertEqual(self.reference['proposal']['tokens'],expected)
@@ -75,7 +74,7 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(merge.pointer(self.reference,'/tokens/motion/standard/state-change')['$value']['value'],merge.f32(.15))
         self.assertEqual(merge.pointer(self.reference,'/tokens/motion/standard/geometry')['$value']['value'],merge.f32(.12))
     def test_consumer_blue_brand_propagates_only_through_permitted_graph(self):
-        root=self.fixture();config=merge.load(ROOT/merge.UPSTREAM/'design/brand/examples/example-blue.json')
+        root=self.fixture();config=merge.load(ROOT/'scripts/fixtures/example-blue.json')
         (root/'design/brand/config.json').write_bytes(merge.bytes_json(config));blue,_=merge.merge(root)
         expected=self.current_bundle(config)
         self.assertEqual(blue['proposal']['tokens'],expected)
@@ -93,6 +92,6 @@ class MergeTests(unittest.TestCase):
         root=self.fixture();mapping=merge.load(root/'design/source/rust-mapping.json');mapping['bindings'][0]['target']='unknown-token';(root/'design/source/rust-mapping.json').write_bytes(merge.bytes_json(mapping))
         with self.assertRaisesRegex(ValueError,'unknown/duplicate'):merge.merge(root)
     def test_immutable_archive_is_not_written_by_import(self):
-        self.assertFalse(any((ROOT/merge.UPSTREAM).rglob('__pycache__')))
+        self.assertFalse(any((ROOT/'design/imports/v0.3.0-proposal1').rglob('__pycache__')))
 
 if __name__=='__main__':unittest.main()

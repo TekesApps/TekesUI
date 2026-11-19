@@ -94,7 +94,7 @@ def summarize(report, name, path):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--dir', default='target/symbol-perf')
-    p.add_argument('--out', default='design/reviews/symbols-performance/summary.json')
+    p.add_argument('--out', default='target/symbol-perf/summary.json')
     args = p.parse_args()
     rows = []
     for path in sorted(Path(args.dir).glob('*.json')):

@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     if cfg!(feature = "three-panels") {
         if cfg!(feature = "mixed-columns") {
-            use tekes_ui_controls::{composition::{ComponentId, Content, TextFieldContent}};
+            use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
             columns[2] = tekes_ui_app_host::LocalContainer::new(
                 "local-notes",
                 Content::new(

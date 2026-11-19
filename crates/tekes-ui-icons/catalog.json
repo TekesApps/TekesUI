@@ -46,13 +46,6 @@
       "sourceSha256": "4ad756368cb141df0618e1e400a03e261b43d6b265986650759c2b8113309aa8"
     },
     {
-      "name": "tekes-agent-question",
-      "file": "assets/tekes-agent-question.svg",
-      "sha256": "f24c43528f34021b9328d4aca5bbb24e15142351cad9ef36858544a60dd687ca",
-      "origin": "promoted-catalog",
-      "sourceSha256": "20118712faf2c324e3f6245b3a28aeb1a3e0cb9eaf7affb0fd724f30a8ab3bea"
-    },
-    {
       "name": "tekes-ahead-behind",
       "file": "assets/tekes-ahead-behind.svg",
       "sha256": "3ce43caf8bd515607c5656cdf30a59191450a7b629e14f86cd9e07adaabacf8d",
@@ -95,13 +88,6 @@
       "sourceSha256": "b6ed555e7d70b328406d762f8d0a399bff57abb102a574e219ac78edf916e3bc"
     },
     {
-      "name": "tekes-ask-user",
-      "file": "assets/tekes-ask-user.svg",
-      "sha256": "c39c5745a744aa0790e3a215e70164d80c5a4fe66dde0bec894d1f156b3b0243",
-      "origin": "promoted-catalog",
-      "sourceSha256": "e707da02abee4b69498e631602ccdf4bc35f62b8650f888e7b9d4b5693b57820"
-    },
-    {
       "name": "tekes-attach",
       "file": "assets/tekes-attach.svg",
       "sha256": "d87fa0c974caacac88d30da8a48fa59d27100520ab7ed9230aa0c3545e734d81",
@@ -136,104 +122,6 @@
       "sha256": "221fca47e39a63b8587f0c92609559876d19e258b2957302845e46120df61b96",
       "origin": "promoted-catalog",
       "sourceSha256": "41b9971e3465eec255281b57cfab47e8eb2c702e47bdf2058444cced1e045478"
-    },
-    {
-      "name": "tekes-cad-arc",
-      "file": "assets/tekes-cad-arc.svg",
-      "sha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c",
-      "origin": "published-proposal",
-      "sourceSha256": "a8197b6c8c0a9ed795c9876693abacb97a4dbb2784b6693340e85b7852ccb27c"
-    },
-    {
-      "name": "tekes-cad-block",
-      "file": "assets/tekes-cad-block.svg",
-      "sha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa",
-      "origin": "published-proposal",
-      "sourceSha256": "5693462cb432ea94f2b79d0c8d3cddedd01d68d591e39b5485b2f65e9e068bfa"
-    },
-    {
-      "name": "tekes-cad-compare",
-      "file": "assets/tekes-cad-compare.svg",
-      "sha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d",
-      "origin": "published-proposal",
-      "sourceSha256": "c1e337caf943d651c341b290354ee2b4471e321a30e4644329253453193a3e7d"
-    },
-    {
-      "name": "tekes-cad-crossing-select",
-      "file": "assets/tekes-cad-crossing-select.svg",
-      "sha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4",
-      "origin": "published-proposal",
-      "sourceSha256": "bc77022e35548c885b95074342da46ccf9972c2930c9be1b6bc282cd68a4e0a4"
-    },
-    {
-      "name": "tekes-cad-dimension",
-      "file": "assets/tekes-cad-dimension.svg",
-      "sha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a",
-      "origin": "published-proposal",
-      "sourceSha256": "852e9840bcf9989294553518e03af5d83eb4e0ab7875969c5e23de6b68802d5a"
-    },
-    {
-      "name": "tekes-cad-export",
-      "file": "assets/tekes-cad-export.svg",
-      "sha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106",
-      "origin": "published-proposal",
-      "sourceSha256": "24f0e92c2a5b9f6c5cd06b087fe1111a20f5306520e910c930535bfb4b538106"
-    },
-    {
-      "name": "tekes-cad-layers",
-      "file": "assets/tekes-cad-layers.svg",
-      "sha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c",
-      "origin": "published-proposal",
-      "sourceSha256": "698f048ddc1ddc4699c60ff7080cc93c8fbb730d4090729cbf4065fa6175363c"
-    },
-    {
-      "name": "tekes-cad-layout",
-      "file": "assets/tekes-cad-layout.svg",
-      "sha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141",
-      "origin": "published-proposal",
-      "sourceSha256": "599fe4a77c14ba2cf5405681801a59a0b724d9499b35c388173ecebf9c80f141"
-    },
-    {
-      "name": "tekes-cad-line",
-      "file": "assets/tekes-cad-line.svg",
-      "sha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237",
-      "origin": "published-proposal",
-      "sourceSha256": "bf733325d95f118c31db9cbfd0bb468e85895b557d9c65574cb3db8381463237"
-    },
-    {
-      "name": "tekes-cad-pdf-import",
-      "file": "assets/tekes-cad-pdf-import.svg",
-      "sha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d",
-      "origin": "published-proposal",
-      "sourceSha256": "9631d50fb98fa0772d979214f9cc57e951d8ce7524cdbee0d454366c3b93ab0d"
-    },
-    {
-      "name": "tekes-cad-polyline",
-      "file": "assets/tekes-cad-polyline.svg",
-      "sha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091",
-      "origin": "published-proposal",
-      "sourceSha256": "010cb6ab0cd0c37bb3d53c38e8fb0d7b7f0d537db140e5d9b3241cca76c1d091"
-    },
-    {
-      "name": "tekes-cad-snap",
-      "file": "assets/tekes-cad-snap.svg",
-      "sha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c",
-      "origin": "published-proposal",
-      "sourceSha256": "fca86c83b2bb56133926b83ce8a56cc8b8ad7dc0170d997880a215fa9ad3e50c"
-    },
-    {
-      "name": "tekes-cad-table-extract",
-      "file": "assets/tekes-cad-table-extract.svg",
-      "sha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53",
-      "origin": "published-proposal",
-      "sourceSha256": "33aa759c61fb318a9ca13c1f324db984366091ecff240b6d291bb6d98de89b53"
-    },
-    {
-      "name": "tekes-cad-window-select",
-      "file": "assets/tekes-cad-window-select.svg",
-      "sha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa",
-      "origin": "published-proposal",
-      "sourceSha256": "1e2b29b8b8b15017679e593c2d3900f254856ca96aba2c255a54e65f3e7d36fa"
     },
     {
       "name": "tekes-clear-group",
@@ -353,104 +241,6 @@
       "sha256": "a89c0776c474973e872790c44b2d09bdbee0266f2b33da7a80f1c66e4c54be53",
       "origin": "promoted-catalog",
       "sourceSha256": "b6924d25db17eff613aef8022bb7ef69a587bf5d71b62a8c8532eb344e1a945c"
-    },
-    {
-      "name": "tekes-drama-audience",
-      "file": "assets/tekes-drama-audience.svg",
-      "sha256": "99c819d138346cf0512bbf9bdb3451282d3e2935238ab1fdf67f04bd49b8999a",
-      "origin": "published-proposal",
-      "sourceSha256": "25148ff46a817504d0845e253aab4c96b445e967edf98ff1eac96bfca048419b"
-    },
-    {
-      "name": "tekes-drama-audio",
-      "file": "assets/tekes-drama-audio.svg",
-      "sha256": "819ad8fd3aba02a271c41967fffa5f85b6534020ef103f07c28c6a471a5eb7b2",
-      "origin": "published-proposal",
-      "sourceSha256": "cd6b9567d2be23f8344dbd440e2b6056e305e9372580bab0c69e00d4cf92b466"
-    },
-    {
-      "name": "tekes-drama-brief",
-      "file": "assets/tekes-drama-brief.svg",
-      "sha256": "24a8f4ab8d6d8f3bee3c9733563ed9b4b0f3273561df5f2ffe191f2cf5f3e07c",
-      "origin": "published-proposal",
-      "sourceSha256": "6c1f450c641ab0ab567da2b2f63cc6375827615972a62f9081eebe6a00854f03"
-    },
-    {
-      "name": "tekes-drama-character",
-      "file": "assets/tekes-drama-character.svg",
-      "sha256": "2a19effc32cb0a349b5bb53f09cb1aacc1772c847c9a25d01f717d6cf35cb8dd",
-      "origin": "published-proposal",
-      "sourceSha256": "677ff2edea561a0ad870ef915ec6cb34bec6f49c2658483010706edc13480b35"
-    },
-    {
-      "name": "tekes-drama-collaboration",
-      "file": "assets/tekes-drama-collaboration.svg",
-      "sha256": "b7f78d37124b24f3734da63ba17656970fe214d58d0f0c64bfbb0758833e02c7",
-      "origin": "published-proposal",
-      "sourceSha256": "f7e6d3574edf4ae8932fc61e089a6ecc60abbb332ebd606d04230468342b5562"
-    },
-    {
-      "name": "tekes-drama-delivery",
-      "file": "assets/tekes-drama-delivery.svg",
-      "sha256": "c2b2c47841a28a92642a03999f5e617ec3ef9b798384d1ff6a190c843d43a472",
-      "origin": "published-proposal",
-      "sourceSha256": "77e44de4aabd8c0b148c70a1fbbd8a3c48d72898ba7e8e1affe6d2ad06dfba1c"
-    },
-    {
-      "name": "tekes-drama-directing",
-      "file": "assets/tekes-drama-directing.svg",
-      "sha256": "43310d0c7d30ac5865c1028373e6f83dd817d00dba2259576a5bc7503fc14231",
-      "origin": "published-proposal",
-      "sourceSha256": "67d10ccf7d0914183cfe49c7650be59a7a49782c171b7e8de72c95e2096f9d27"
-    },
-    {
-      "name": "tekes-drama-editing",
-      "file": "assets/tekes-drama-editing.svg",
-      "sha256": "51074145263326080e9ba2ff8e9ccf278325ed14516267b2f52ab77100d422ef",
-      "origin": "published-proposal",
-      "sourceSha256": "cb107ac899241e22fff7989966c72502b92db385c989f7a76a0284aef9d631cc"
-    },
-    {
-      "name": "tekes-drama-production",
-      "file": "assets/tekes-drama-production.svg",
-      "sha256": "a3b5760ba452a7893503402785366e90ef0c608f9f060f3e94aa256c21fdb5d9",
-      "origin": "published-proposal",
-      "sourceSha256": "acb629e88ef0b39c88eb69817123ddeec0d8df8ba39916dd40f2147302e9188a"
-    },
-    {
-      "name": "tekes-drama-references",
-      "file": "assets/tekes-drama-references.svg",
-      "sha256": "0555c4ce30381b2996059a0a8ab04154fa7a585a56ad16cce6d67179efd55780",
-      "origin": "published-proposal",
-      "sourceSha256": "1a752bf2bb853cb95faf08eb853479dd8912b9060fd4005b46e5e470711967d9"
-    },
-    {
-      "name": "tekes-drama-script",
-      "file": "assets/tekes-drama-script.svg",
-      "sha256": "04d06f0a5be65e7de865ddec6a9332f4408fe37308d17defc52e656d0db33cc7",
-      "origin": "published-proposal",
-      "sourceSha256": "a7a6fe32db92606c1362957ed37f07f402d6152a41a8be64b4a807eb2f4b7759"
-    },
-    {
-      "name": "tekes-drama-shot",
-      "file": "assets/tekes-drama-shot.svg",
-      "sha256": "80605550ec2312f08ddf989d8baa7f911bf80daeedab4b970f0b6cdd97e4f334",
-      "origin": "published-proposal",
-      "sourceSha256": "928d880943e8a44e17915f9f6b84a6c558d2ff3647faa3938de08255cf81bed5"
-    },
-    {
-      "name": "tekes-drama-storyboard",
-      "file": "assets/tekes-drama-storyboard.svg",
-      "sha256": "0dffff17424eed8be3f5aca554f0e5d7372a8296b259cda6ddddf79f495564c2",
-      "origin": "published-proposal",
-      "sourceSha256": "df6d70971e4f474fa9cec4cfbe2b9db2ddb82f2585104189a97831021332f35a"
-    },
-    {
-      "name": "tekes-drama-subtitles",
-      "file": "assets/tekes-drama-subtitles.svg",
-      "sha256": "5837145e20271f420eccc6193a067408640cb10b8db59bd252f365004d1d007f",
-      "origin": "published-proposal",
-      "sourceSha256": "0459aef5dda10590cd66f9945716d58fe221dcb4c5e9bd99685b1e97650b0ff4"
     },
     {
       "name": "tekes-edit",
@@ -587,46 +377,11 @@
       "sourceSha256": "df19a72302291fdce7194cb25a2abe9e615e82ac488282341284073dd98b045d"
     },
     {
-      "name": "tekes-goal",
-      "file": "assets/tekes-goal.svg",
-      "sha256": "50b26ee375395bedf4d6fa80a58674f9093900e253f15c6fdbb795b2bf2e1751",
-      "origin": "promoted-catalog",
-      "sourceSha256": "7a1e2b9ed6b49f74b4b7d9ca86e296a24983bc5a2d2e4579f1f8f1c362253866"
-    },
-    {
       "name": "tekes-goal-completed",
       "file": "assets/tekes-goal-completed.svg",
       "sha256": "f8bed10c6662f25c57b522b63496dae794855aa3f8f7cf04408c70cd2e001922",
       "origin": "approved-default",
       "sourceSha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947"
-    },
-    {
-      "name": "tekes-goal-state-active",
-      "file": "assets/tekes-goal-state-active.svg",
-      "sha256": "59d779efd4a94c661e70e047f1e5b3311e31419c4bf19e561f60fe4e0f34e4e2",
-      "origin": "promoted-catalog",
-      "sourceSha256": "2cd75dedf6323e0c00c5bfe35f7d4a1ba6813af2d739ee33a12e1f2e952a49b6"
-    },
-    {
-      "name": "tekes-goal-state-blocked",
-      "file": "assets/tekes-goal-state-blocked.svg",
-      "sha256": "9df73bce6ebd568bd13f7c3a509b3338e8aeccad73cea40158a977510129a38a",
-      "origin": "promoted-catalog",
-      "sourceSha256": "3dd5a1e0eee1607608bcc50eef1302e6cbbc4e8852e4612d2db323071153dd7e"
-    },
-    {
-      "name": "tekes-goal-state-completed",
-      "file": "assets/tekes-goal-state-completed.svg",
-      "sha256": "6960bdd323a2819790757ad6407d81dace9288738575f2e3bfa986ae1fa73484",
-      "origin": "promoted-catalog",
-      "sourceSha256": "785fa10ba57054a2ceccb86d7f1b1a1419acc081bdce3b9ca4ec8cd03f2008c4"
-    },
-    {
-      "name": "tekes-goal-state-stopped",
-      "file": "assets/tekes-goal-state-stopped.svg",
-      "sha256": "ae06eef0219f041aaff31f53514746e35e13025971df53f9f4e2b428f982f9fd",
-      "origin": "promoted-catalog",
-      "sourceSha256": "f8a062d8320ff6391bdb2492f66685c7d2226516f5c3ceb954a5c8840437b552"
     },
     {
       "name": "tekes-hide",
@@ -676,20 +431,6 @@
       "sha256": "3353503ad6e9ca778be05e098210ef83a5be0f3709508c14ef901066049a749e",
       "origin": "promoted-catalog",
       "sourceSha256": "c0d2317032b7f62f3ead436a8a34b2b65db2a74fe9543c5f43a250efd10cf84d"
-    },
-    {
-      "name": "tekes-mcp",
-      "file": "assets/tekes-mcp.svg",
-      "sha256": "4c333e3b2d3c571e194a9f132c9bbc3900a8382c2ea263180d03675c699c1acd",
-      "origin": "promoted-catalog",
-      "sourceSha256": "bc147071c4e8ccfca75a40216fdc2bfd5f196eb68a6d30aa3d2726d1eb57bc6b"
-    },
-    {
-      "name": "tekes-memorize",
-      "file": "assets/tekes-memorize.svg",
-      "sha256": "517ee42a807bad8c1fd19822558c8c6babed63fa307d0166a130d0136869f4ed",
-      "origin": "promoted-catalog",
-      "sourceSha256": "dc4508eec9f8c1906c75b1dc7baf0aa8fd11cb10bd46ff9053cac7109a4d0400"
     },
     {
       "name": "tekes-memory",
@@ -846,13 +587,6 @@
       "sourceSha256": "b3e1662226b35f64803526f0e898d687a509e9460845e36ffbeebc0d3f23cbcf"
     },
     {
-      "name": "tekes-queued-input",
-      "file": "assets/tekes-queued-input.svg",
-      "sha256": "4dae452f78ac7986e2d3087b8dba5026f6964ddeb0e724795d80c3a861db6580",
-      "origin": "promoted-catalog",
-      "sourceSha256": "4fcf3bf4bd9f2a47ed7cfecb1433fd09745503cfe4ffa848fea1daf957b32df4"
-    },
-    {
       "name": "tekes-quick-panel",
       "file": "assets/tekes-quick-panel.svg",
       "sha256": "f5fb9579fefeb4c309682847b19f14f476cdfd54dee35abfea86c9425e75241a",
@@ -879,13 +613,6 @@
       "sha256": "7ff62cab3dd9b1173bf7f0ba0b1958c56d1e5bcbb5f37e3a26b1bebc08e11cc5",
       "origin": "promoted-catalog",
       "sourceSha256": "c8caf0311aa331605d1418c9e42eb3262eac5340ba9c7e3e0f7cd7ba198137c6"
-    },
-    {
-      "name": "tekes-recall",
-      "file": "assets/tekes-recall.svg",
-      "sha256": "ee8f2219330759dd9b0d3aa394a2887751f23b34801dfba90f13567987d3efe6",
-      "origin": "promoted-catalog",
-      "sourceSha256": "9214e7f924906074bf048bc39a1c5ef2840dcf5032f7401ca7d218c9179526b0"
     },
     {
       "name": "tekes-redo",
@@ -1023,27 +750,6 @@
       "sourceSha256": "86e3a168cfbfa398ee35a8c773913af5f88fbee6deadff90b6b0701f77abfe3a"
     },
     {
-      "name": "tekes-skill",
-      "file": "assets/tekes-skill.svg",
-      "sha256": "cc267c3d686178c88be43837a0698cf0194e5956a4ea36d82610a243cce03f52",
-      "origin": "promoted-catalog",
-      "sourceSha256": "e60f8bf3a29be9e0188b39c7ade0a48bbedfa5311194d7bb0e2a2302974cf811"
-    },
-    {
-      "name": "tekes-skills",
-      "file": "assets/tekes-skills.svg",
-      "sha256": "a62d764d6b81a4d6821404bd4f7e01c4982eb8aaa76c32eed3ea012950bd53e7",
-      "origin": "promoted-catalog",
-      "sourceSha256": "a8500eb5b670ce1ab6cbf152b7b9f41fc6f7ec7bd53872c323b82640eba482af"
-    },
-    {
-      "name": "tekes-slash-command",
-      "file": "assets/tekes-slash-command.svg",
-      "sha256": "8d3a1ea1b665557864d32ce96054dabda45a8b1d0ccc7857ee4dae1d01f127dc",
-      "origin": "promoted-catalog",
-      "sourceSha256": "1f9b3e7515769581afb1218e5fcbce1e4c5ffb7cfa80fa7cfa2afb6c4a2c0d2f"
-    },
-    {
       "name": "tekes-sort",
       "file": "assets/tekes-sort.svg",
       "sha256": "648ac4d066a2f44b5a74b864f5f7af580bee45938d1a53a5f76c0622c556577a",
@@ -1051,32 +757,11 @@
       "sourceSha256": "740c5320ac067975dcfd2d6a5a025cd64c919f199779ac7d4b3918988e8dd8ff"
     },
     {
-      "name": "tekes-steer",
-      "file": "assets/tekes-steer.svg",
-      "sha256": "fe50fee30a5677404ab91fe1536af00ef9060fa6ea45456c85fb9670d9cc96f8",
-      "origin": "promoted-catalog",
-      "sourceSha256": "2b097cea83a7d531f18426b8cd0bd1bb2f6342ca13832b3e06f13eb22f97f93f"
-    },
-    {
-      "name": "tekes-steering",
-      "file": "assets/tekes-steering.svg",
-      "sha256": "b138cdc116e5b5f13875aef25b7dbf66736ea291493d7c7b7a0f5bc39a678dd3",
-      "origin": "promoted-catalog",
-      "sourceSha256": "f772658b16ebf8a38215f0526f80be59bfb62a83d165305eb58c4dacb29529d9"
-    },
-    {
       "name": "tekes-stop",
       "file": "assets/tekes-stop.svg",
       "sha256": "8796e8799a5f72f674b19911adc5f50691248cb06c6d216e4814f2d363e2c956",
       "origin": "promoted-catalog",
       "sourceSha256": "fb56b4be42074153a0e3d16560e2be732c2763f9e2a9e1bc53bd2663d9473611"
-    },
-    {
-      "name": "tekes-subagent",
-      "file": "assets/tekes-subagent.svg",
-      "sha256": "a906330128ba12482650ac634e55e36cc9d0875866e1fa35fd2d54b90e34d825",
-      "origin": "promoted-catalog",
-      "sourceSha256": "a7772a191ab8ab7d91414c72f69cd76c0a832717fadc0b015cfde94f82718413"
     },
     {
       "name": "tekes-swap-horizontal",
@@ -1216,13 +901,6 @@
       "sha256": "204f5a7ecb86411bbb682acc807dc8fe5ab0f792d87ed646e4e065529bf5f648",
       "origin": "promoted-catalog",
       "sourceSha256": "1e7c0267e023b0064a5c7a1b0a3e0aadc7bbc4ffdd67962e09242e3c267bd539"
-    },
-    {
-      "name": "tekes-waiting-user",
-      "file": "assets/tekes-waiting-user.svg",
-      "sha256": "66ae325157f3070780fd8a587db76a3ceaf8988728e5d06b009cbdf760a9d54e",
-      "origin": "promoted-catalog",
-      "sourceSha256": "7469c8ae25c5b0ea840a8358b83dc72dd32ed04008772b0a43e3601b57e5732d"
     },
     {
       "name": "tekes-warning",

@@ -18,9 +18,259 @@ import sys
 import tempfile
 import unittest
 
-if sys.version_info < (3, 11):
-    raise SystemExit("check-pure-rust.py requires Python 3.11+ (tomllib); choose a newer python3 interpreter.")
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    tomllib = None
+
+
+def parse_toml(text: str) -> dict:
+    """Minimal self-contained TOML parser supporting Cargo.toml syntax on Python 3.9+."""
+    src = text.lstrip("\ufeff").replace("\r\n", "\n")
+    n = len(src)
+
+    def skip_hspace_and_comment(pos: int, skip_nl: bool) -> int:
+        while pos < n:
+            ch = src[pos]
+            if ch in (" ", "\t"):
+                pos += 1
+            elif ch == "#":
+                while pos < n and src[pos] != "\n":
+                    pos += 1
+            elif skip_nl and ch == "\n":
+                pos += 1
+            else:
+                break
+        return pos
+
+    def parse_basic_string(pos: int, multiline: bool) -> tuple[str, int]:
+        out = []
+        if multiline and pos < n and src[pos] == "\n":
+            pos += 1
+        escapes = {'"': '"', "\\": "\\", "n": "\n", "r": "\r", "t": "\t", "b": "\b", "f": "\f"}
+        while pos < n:
+            if multiline:
+                if src.startswith('"""', pos):
+                    end = pos + 3
+                    while end < n and src[end] == '"' and (end - (pos + 3)) < 2:
+                        out.append('"')
+                        end += 1
+                    return "".join(out), end
+            elif src[pos] == '"':
+                return "".join(out), pos + 1
+            elif src[pos] == "\n":
+                raise ValueError("unterminated basic string in TOML")
+            ch = src[pos]
+            if ch == "\\":
+                pos += 1
+                if pos >= n:
+                    raise ValueError("unterminated escape in TOML string")
+                esc = src[pos]
+                if esc in escapes:
+                    out.append(escapes[esc])
+                    pos += 1
+                elif multiline and esc in (" ", "\t", "\n"):
+                    while pos < n and src[pos] in (" ", "\t", "\n"):
+                        pos += 1
+                elif esc == "u" and pos + 5 <= n:
+                    out.append(chr(int(src[pos + 1:pos + 5], 16)))
+                    pos += 5
+                elif esc == "U" and pos + 9 <= n:
+                    out.append(chr(int(src[pos + 1:pos + 9], 16)))
+                    pos += 9
+                else:
+                    raise ValueError(f"unsupported escape \\{esc} in TOML")
+            else:
+                out.append(ch)
+                pos += 1
+        raise ValueError("unterminated string in TOML")
+
+    def parse_literal_string(pos: int, multiline: bool) -> tuple[str, int]:
+        if multiline and pos < n and src[pos] == "\n":
+            pos += 1
+        start = pos
+        if multiline:
+            end = src.find("'''", pos)
+            if end < 0:
+                raise ValueError("unterminated multiline literal string in TOML")
+            val = src[start:end]
+            end += 3
+            while end < n and src[end] == "'" and len(val) - len(val.rstrip("'")) >= 0 and (src[end - 1] == "'"):
+                if end < n and src[end] == "'":
+                    val += "'"
+                    end += 1
+                else:
+                    break
+            return val, end
+        while pos < n:
+            if src[pos] == "'":
+                return src[start:pos], pos + 1
+            if src[pos] == "\n":
+                raise ValueError("unterminated literal string in TOML")
+            pos += 1
+        raise ValueError("unterminated literal string in TOML")
+
+    def parse_key_part(pos: int) -> tuple[str, int]:
+        pos = skip_hspace_and_comment(pos, False)
+        if pos >= n:
+            raise ValueError("expected key in TOML")
+        if src[pos] == '"':
+            return parse_basic_string(pos + 1, False)
+        if src[pos] == "'":
+            return parse_literal_string(pos + 1, False)
+        start = pos
+        while pos < n and (src[pos].isalnum() or src[pos] in ("_", "-")):
+            pos += 1
+        if pos == start:
+            raise ValueError(f"unexpected key character {src[pos]!r} in TOML")
+        return src[start:pos], pos
+
+    def parse_dotted_key(pos: int) -> tuple[list[str], int]:
+        parts = []
+        while True:
+            part, pos = parse_key_part(pos)
+            parts.append(part)
+            pos = skip_hspace_and_comment(pos, False)
+            if pos < n and src[pos] == ".":
+                pos += 1
+                continue
+            return parts, pos
+
+    def parse_value(pos: int) -> tuple[object, int]:
+        pos = skip_hspace_and_comment(pos, False)
+        if pos >= n:
+            raise ValueError("missing value in TOML")
+        if src.startswith('"""', pos):
+            return parse_basic_string(pos + 3, True)
+        if src.startswith("'''", pos):
+            return parse_literal_string(pos + 3, True)
+        ch = src[pos]
+        if ch == '"':
+            return parse_basic_string(pos + 1, False)
+        if ch == "'":
+            return parse_literal_string(pos + 1, False)
+        if ch == "[":
+            pos += 1
+            items = []
+            while True:
+                pos = skip_hspace_and_comment(pos, True)
+                if pos >= n:
+                    raise ValueError("unterminated array in TOML")
+                if src[pos] == "]":
+                    return items, pos + 1
+                val, pos = parse_value(pos)
+                items.append(val)
+                pos = skip_hspace_and_comment(pos, True)
+                if pos < n and src[pos] == ",":
+                    pos += 1
+                    continue
+                if pos < n and src[pos] == "]":
+                    return items, pos + 1
+                raise ValueError("expected ',' or ']' in TOML array")
+        if ch == "{":
+            pos += 1
+            tbl = {}
+            while True:
+                pos = skip_hspace_and_comment(pos, True)
+                if pos >= n:
+                    raise ValueError("unterminated inline table in TOML")
+                if src[pos] == "}":
+                    return tbl, pos + 1
+                key_parts, pos = parse_dotted_key(pos)
+                pos = skip_hspace_and_comment(pos, False)
+                if pos >= n or src[pos] != "=":
+                    raise ValueError("expected '=' in inline table")
+                val, pos = parse_value(pos + 1)
+                set_path(tbl, key_parts, val)
+                pos = skip_hspace_and_comment(pos, True)
+                if pos < n and src[pos] == ",":
+                    pos += 1
+                    continue
+                if pos < n and src[pos] == "}":
+                    return tbl, pos + 1
+                raise ValueError("expected ',' or '}' in inline table")
+        start = pos
+        while pos < n and src[pos] not in ("\n", "#", ",", "]", "}", " ", "\t"):
+            pos += 1
+        token = src[start:pos]
+        if token == "true":
+            return True, pos
+        if token == "false":
+            return False, pos
+        if re.fullmatch(r"[+-]?\d(?:_?\d)*", token):
+            return int(token.replace("_", "")), pos
+        return token, pos
+
+    def set_path(target: dict, parts: list[str], value: object) -> None:
+        node = target
+        for part in parts[:-1]:
+            nxt = node.setdefault(part, {})
+            if not isinstance(nxt, dict):
+                raise ValueError(f"TOML key conflict at {part!r}")
+            node = nxt
+        node[parts[-1]] = value
+
+    def ensure_table(root_dict: dict, parts: list[str], array_item: bool) -> dict:
+        node = root_dict
+        for idx, part in enumerate(parts):
+            is_last = idx == len(parts) - 1
+            if is_last and array_item:
+                arr = node.setdefault(part, [])
+                if not isinstance(arr, list):
+                    raise ValueError(f"TOML array-of-tables conflict at {part!r}")
+                entry = {}
+                arr.append(entry)
+                return entry
+            existing = node.get(part)
+            if existing is None:
+                existing = {}
+                node[part] = existing
+            elif isinstance(existing, list):
+                existing = existing[-1]
+            if not isinstance(existing, dict):
+                raise ValueError(f"TOML table conflict at {part!r}")
+            node = existing
+        return node
+
+    root_doc: dict = {}
+    current = root_doc
+    pos = 0
+    while True:
+        pos = skip_hspace_and_comment(pos, True)
+        if pos >= n:
+            return root_doc
+        if src.startswith("[[", pos):
+            parts, pos = parse_dotted_key(pos + 2)
+            pos = skip_hspace_and_comment(pos, False)
+            if not src.startswith("]]", pos):
+                raise ValueError("expected ']]' closing array table header")
+            pos = skip_hspace_and_comment(pos + 2, False)
+            if pos < n and src[pos] != "\n":
+                raise ValueError("unexpected trailing tokens after table header")
+            current = ensure_table(root_doc, parts, True)
+        elif src[pos] == "[":
+            parts, pos = parse_dotted_key(pos + 1)
+            pos = skip_hspace_and_comment(pos, False)
+            if pos >= n or src[pos] != "]":
+                raise ValueError("expected ']' closing table header")
+            pos = skip_hspace_and_comment(pos + 1, False)
+            if pos < n and src[pos] != "\n":
+                raise ValueError("unexpected trailing tokens after table header")
+            current = ensure_table(root_doc, parts, False)
+        else:
+            parts, pos = parse_dotted_key(pos)
+            pos = skip_hspace_and_comment(pos, False)
+            if pos >= n or src[pos] != "=":
+                raise ValueError("expected '=' after key in TOML")
+            val, pos = parse_value(pos + 1)
+            pos = skip_hspace_and_comment(pos, False)
+            if pos < n and src[pos] != "\n":
+                raise ValueError("unexpected trailing tokens after value in TOML")
+            set_path(current, parts, val)
+
+
+def load_toml(text: str) -> dict:
+    return tomllib.loads(text) if tomllib is not None else parse_toml(text)
 
 FOREIGN_SUFFIXES = {".swift", ".m", ".mm", ".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"}
 FOREIGN_TOOLS = {"swift", "swiftc", "xcodebuild", "clang", "clang++", "gcc", "g++"}
@@ -142,7 +392,7 @@ def violations(root: Path, files: list[Path]) -> list[str]:
             candidate = directory / "Cargo.toml"
             if candidate.is_file():
                 try:
-                    document = tomllib.loads(candidate.read_text())
+                    document = load_toml(candidate.read_text())
                 except (OSError, ValueError):
                     continue  # The managed manifest pass reports syntax errors.
                 if "workspace" in document:
@@ -160,7 +410,7 @@ def violations(root: Path, files: list[Path]) -> list[str]:
             continue
         if path.name == "Cargo.toml":
             try:
-                manifest = tomllib.loads(path.read_text())
+                manifest = load_toml(path.read_text())
             except (OSError, ValueError) as error:
                 errors.append(f"{name}: invalid Cargo manifest: {error}")
                 continue
@@ -199,7 +449,7 @@ def violations(root: Path, files: list[Path]) -> list[str]:
                         if not resolved.is_relative_to(root):
                             errors.append(f"{name}: dependency path escapes public repository: {dep['path']}")
                         elif (resolved / "Cargo.toml").is_file():
-                            target = tomllib.loads((resolved / "Cargo.toml").read_text()).get("package", {}).get("name")
+                            target = load_toml((resolved / "Cargo.toml").read_text()).get("package", {}).get("name")
                             if package and target:
                                 local_graph[package].add(target)
         if suffix not in {".rs", ".py", ".sh", ".yml", ".yaml"}:
@@ -286,6 +536,32 @@ class GuardTests(unittest.TestCase):
 
     def test_indirect_gallery_compare_edge_fails(self):
         self.assertTrue(self.check({"Cargo.toml": '[package]\nname="tekes-ui-gallery"\n[dependencies]\ntekes-ui-text="1"', "crates/text/Cargo.toml": '[package]\nname="tekes-ui-text"\n[dependencies]\ntekes-ui-compare="1"'}))
+
+    def test_fallback_toml_parser_handles_workspace_and_inline_tables(self):
+        sample = (
+            '[workspace]\n'
+            'members = [\n'
+            '  "crates/*",\n'
+            '  "examples/brand-consumer", # trailing comment\n'
+            ']\n'
+            '[workspace.package]\n'
+            'version = "0.3.34"\n'
+            '[workspace.dependencies]\n'
+            'probe = { package = "tekes-ui-compare", path = "crates/compare", default-features = false }\n'
+            '[target.\'cfg(target_os = "macos")\'.dependencies.objc2]\n'
+            'version = "=0.6.5"\n'
+            'workspace = true\n'
+        )
+        parsed = parse_toml(sample)
+        self.assertEqual(parsed["workspace"]["package"]["version"], "0.3.34")
+        self.assertEqual(parsed["workspace"]["members"], ["crates/*", "examples/brand-consumer"])
+        self.assertEqual(parsed["workspace"]["dependencies"]["probe"]["default-features"], False)
+        self.assertTrue(parsed["target"]['cfg(target_os = "macos")']["dependencies"]["objc2"]["workspace"])
+        real_manifest = (Path(__file__).resolve().parents[1] / "Cargo.toml").read_text()
+        parsed_real = parse_toml(real_manifest)
+        self.assertIn("workspace", parsed_real)
+        if tomllib is not None:
+            self.assertEqual(parsed_real, tomllib.loads(real_manifest))
 
 
 def main() -> int:

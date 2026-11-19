@@ -4,20 +4,29 @@
 mod animation;
 mod asset;
 mod camera;
+#[cfg(feature = "simulation")]
 mod route_sample;
+#[cfg(feature = "simulation")]
 pub use route_sample::{RoutePose3D, RouteSampler3D};
 mod deform;
 mod gpu;
+#[cfg(feature = "simulation")]
 mod instances;
+#[cfg(feature = "simulation")]
 mod interiors;
+#[cfg(feature = "simulation")]
 mod visibility;
+#[cfg(feature = "simulation")]
 pub use visibility::ScreenDetail3D;
+#[cfg(feature = "simulation")]
 mod local_lighting;
+#[cfg(feature = "simulation")]
 pub use local_lighting::{Dimming3D, LocalLight3D, LocalLighting3D, ShadowProxy3D};
 
 pub use asset::{Asset3D, ClipInfo};
 pub use camera::Camera3D;
 pub use gpu::Renderer3D;
+#[cfg(feature = "simulation")]
 pub use instances::{
     Deformation3D, Environment3D, FollowRoute3D, Instance3D, InstanceBatch3D, InstanceScene3D,
     Lighting3D, Removal3D, Rolling3D, Route3D, RouteSchedule3D, Visibility3D,

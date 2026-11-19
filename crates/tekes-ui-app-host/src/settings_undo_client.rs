@@ -75,10 +75,12 @@ impl Client {
                     };
                     let mut ready = true;
                     let result = (|| -> std::result::Result<Snapshot, CommitFailure> {
-                        let failure = |e: anyhow::Error| CommitFailure {
-                            message: format!("{e:#}"),
-                            unknown: false,
-                        };
+                        fn failure(e: impl std::fmt::Display) -> CommitFailure {
+                            CommitFailure {
+                                message: e.to_string(),
+                                unknown: false,
+                            }
+                        }
                         let state = if restore {
                             let state = undo.current().map_err(failure)?;
                             ensure_result(

@@ -1,7 +1,6 @@
-use crate::{Draft, FieldPresentation, FieldType, Schema};
+use crate::{Draft, FieldPresentation, FieldType, Result, Schema, SettingsError};
 #[path = "form_row.rs"]
 mod form_row;
-use anyhow::{Context as _, Result};
 use tekes_ui_controls::{
     Button, ButtonTextRenderer, ScrollArea, TextSurface, TextSurfaceAlignment,
     TextSurfacePresentation,
@@ -93,7 +92,9 @@ fn validated_numeric_default(field: &crate::Field) -> Result<f64> {
         .or_else(|| field.default.as_integer().map(|v| v as f64))
         .or(field.min)
         .filter(|v| v.is_finite())
-        .with_context(|| format!("{}: invalid numeric default", field.id))
+        .ok_or_else(|| {
+            SettingsError::InvalidSchema(format!("{}: invalid numeric default", field.id))
+        })
 }
 fn parse_valid_numeric(field: &crate::Field, raw: &str) -> Option<f64> {
     field
@@ -103,12 +104,12 @@ fn parse_valid_numeric(field: &crate::Field, raw: &str) -> Option<f64> {
         .filter(|v| v.is_finite())
 }
 fn build_number_control(field: &crate::Field, initial: f64) -> Result<NumberFieldContent> {
-    let min = field
-        .min
-        .with_context(|| format!("{}: missing numeric min", field.id))?;
-    let max = field
-        .max
-        .with_context(|| format!("{}: missing numeric max", field.id))?;
+    let min = field.min.ok_or_else(|| {
+        SettingsError::InvalidSchema(format!("{}: missing numeric min", field.id))
+    })?;
+    let max = field.max.ok_or_else(|| {
+        SettingsError::InvalidSchema(format!("{}: missing numeric max", field.id))
+    })?;
     let step = field.step.unwrap_or(1.);
     match field.kind {
         FieldType::Integer => NumberFieldContent::new(
@@ -133,7 +134,12 @@ fn build_number_control(field: &crate::Field, initial: f64) -> Result<NumberFiel
         ),
         _ => None,
     }
-    .with_context(|| format!("{}: invalid numeric control configuration", field.id))
+    .ok_or_else(|| {
+        SettingsError::InvalidSchema(format!(
+            "{}: invalid numeric control configuration",
+            field.id
+        ))
+    })
 }
 /// One persistent component tree. Drafts contain values; TextField owns editing/IME.
 #[derive(Debug)]
@@ -236,7 +242,7 @@ impl SettingsForm {
                                     .map(|o| MenuEntry::item(&o.value, &o.label))
                                     .collect(),
                             )
-                            .map_err(|e| anyhow::anyhow!("Settings menu: {e:?}"))?;
+                            .map_err(|e| SettingsError::Ui(format!("Settings menu: {e:?}")))?;
                             Content::new(ids[index], menu)
                         }
                         FieldType::Integer | FieldType::Decimal
@@ -281,7 +287,7 @@ impl SettingsForm {
                         Content::new(ComponentId(base + 1), TextContent::new(&f.label))
                             .with_help(&f.description)
                             .with_label_layout(Default::default())
-                            .map_err(|e| anyhow::anyhow!("Text label layout: {e:?}"))?,
+                            .map_err(|e| SettingsError::Ui(format!("Text label layout: {e:?}")))?,
                     ];
                     rows.push(Content::new(
                         ComponentId(base),
@@ -333,8 +339,8 @@ impl SettingsForm {
         let mut root = stack(ROOT.0, Axis::Vertical, root_children);
         // The body alone shrinks on small windows; footer remains reachable.
         root.component_mut::<StackContent>().unwrap().flexible_child = Some(ComponentId(11));
-        let mut host =
-            ContentHost::new(root).map_err(|e| anyhow::anyhow!("Settings form: {e:?}"))?;
+        let mut host = ContentHost::new(root)
+            .map_err(|e| SettingsError::Ui(format!("Settings form: {e:?}")))?;
         host.set_action_events(true);
         Ok(Self {
             host,
@@ -369,7 +375,7 @@ impl SettingsForm {
         let body = Self::body_rect(text, frame);
         self.host
             .render(scene, text, body, frame, palette)
-            .map_err(|e| anyhow::anyhow!("Settings render: {e:?}"))
+            .map_err(|e| SettingsError::Ui(format!("Settings render: {e:?}")))
     }
     pub fn event(
         &mut self,
@@ -380,7 +386,7 @@ impl SettingsForm {
     ) -> Result<Vec<FormIntent>> {
         self.host
             .event_with_text(event, text)
-            .map_err(|e| anyhow::anyhow!("Settings input: {e:?}"))?;
+            .map_err(|e| SettingsError::Ui(format!("Settings input: {e:?}")))?;
         Ok(self.collect(schema, draft))
     }
     /// Also used after native accessibility actions; never replays pointer events.

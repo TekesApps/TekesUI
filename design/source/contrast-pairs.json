@@ -6,6 +6,65 @@
     "sha256": "fdfdf581d0ab0fc83a5d6bceab4dd8bcfe725f5c16b1a4a849d9a9fd26b9fa15"
   },
   "scope": "Declared token pairs and backgrounds only; not a rasterized UI or whole-app accessibility certification. Disabled content and decorative separators are not counted as text or essential boundaries.",
+  "thresholds": {
+    "surface_foreground": {
+      "normal": 4.5,
+      "ic": 4.5
+    },
+    "surface_non_text": {
+      "normal": 3.0,
+      "ic": 3.0
+    },
+    "readable_disabled_quiet": {
+      "normal": 3.5,
+      "ic": 7.0
+    },
+    "solid_status_foreground": {
+      "normal": 4.5,
+      "ic": 7.0
+    },
+    "badge_foreground": {
+      "normal": 4.5,
+      "ic": 7.0
+    },
+    "passive_badge_fill_parent": {
+      "normal": 3.0,
+      "ic": 3.0
+    },
+    "skeleton_boundary": {
+      "normal": 1.05,
+      "ic": 3.0
+    },
+    "progress_track_boundary": {
+      "normal": 1.05,
+      "ic": 3.0
+    },
+    "range_track_boundary": {
+      "normal": 3.0,
+      "ic": 3.0
+    },
+    "ic_floors": {
+      "text": 7.0,
+      "non_text": 3.0
+    },
+    "calm_windows": {
+      "primary_text": {
+        "min": 7.5,
+        "max": 13.5
+      },
+      "secondary_text": {
+        "min": 4.5,
+        "max": 6.6
+      },
+      "tertiary_text_surface": {
+        "min": 3.5,
+        "max": 4.8
+      },
+      "tertiary_text_transient": {
+        "min": 3.0
+      }
+    }
+  },
   "pairs": [
     {
       "foreground": "primary-text",

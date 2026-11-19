@@ -59,18 +59,29 @@ impl RouteSampler3D {
         }
         if i.effect[0] == 8. {
             let speed = i.route[3];
-            let ramp = i.effect[2].min(self.length() / speed);
-            let travel_time = self.length() / speed + ramp;
-            let q = (seconds + i.effect[3]).rem_euclid(travel_time + i.effect[1]);
-            let u = (q - i.effect[1]).clamp(0., travel_time);
-            let d = if u < ramp {
-                u * u / (2. * ramp)
-            } else if u > travel_time - ramp {
-                self.length() / speed - (travel_time - u) * (travel_time - u) / (2. * ramp)
+            let len = self.length();
+            if !speed.is_finite() || speed <= 0. || !len.is_finite() || len <= 0. {
+                travel = 0.;
             } else {
-                u - ramp * 0.5
-            };
-            travel = d * speed;
+                let ramp = i.effect[2].max(0.).min(len / speed);
+                let travel_time = len / speed + ramp;
+                let dwell = i.effect[1].max(0.);
+                let period = travel_time + dwell;
+                if period <= 0. {
+                    travel = 0.;
+                } else {
+                    let q = (seconds + i.effect[3]).rem_euclid(period);
+                    let u = (q - dwell).clamp(0., travel_time);
+                    let d = if ramp > 0. && u < ramp {
+                        u * u / (2. * ramp)
+                    } else if ramp > 0. && u > travel_time - ramp {
+                        len / speed - (travel_time - u) * (travel_time - u) / (2. * ramp)
+                    } else {
+                        u - ramp * 0.5
+                    };
+                    travel = d * speed;
+                }
+            }
         }
         self.at_distance(i.route[2] + travel)
     }
@@ -166,5 +177,47 @@ mod tests {
         assert!(
             (f.sample(7.001).unwrap().distance - f.sample(6.999).unwrap().distance).abs() < 1e-4
         );
+    }
+    #[test]
+    fn transit_sampler_guards_nonpositive_speed_and_zero_ramp_without_nan() {
+        let route = Route3D {
+            points: vec![[0., 0., 0.], [0., 0., 10.], [10., 0., 10.], [10., 0., 0.]],
+        };
+        let instance = Instance3D {
+            route: Some(FollowRoute3D {
+                route: 0,
+                distance: 1.,
+                speed: 0.,
+                speed_variation: 0.,
+                phase: 0.,
+                lateral_offset: 0.,
+            }),
+            ..Default::default()
+        };
+        let mut sampler = RouteSampler3D::new(&route, &instance).unwrap();
+        // Force packed Transit effect directly to verify CPU sampler defense-in-depth.
+        sampler.instance.effect = [8., 5., 0., 0.];
+        let pose = sampler.sample(2.0).unwrap();
+        assert!(pose.position.iter().all(|v| v.is_finite()));
+        assert_eq!(pose.distance, 1.);
+
+        // Zero ramp with positive speed must also avoid dividing by zero.
+        let positive = Instance3D {
+            route: Some(FollowRoute3D {
+                route: 0,
+                distance: 0.,
+                speed: 2.,
+                speed_variation: 0.,
+                phase: 0.,
+                lateral_offset: 0.,
+            }),
+            ..Default::default()
+        };
+        let mut sampler = RouteSampler3D::new(&route, &positive).unwrap();
+        sampler.instance.effect = [8., 0., 0., 0.];
+        for t in [0., 0.5, 5., 10.] {
+            let pose = sampler.sample(t).unwrap();
+            assert!(pose.position.iter().all(|v| v.is_finite()));
+        }
     }
 }

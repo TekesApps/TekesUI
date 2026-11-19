@@ -1,9 +1,10 @@
 //! Shared original Issue #82 Panel/Stack/Text/Scroll consumer fixture.
 use tekes_ui_controls::ScrollArea;
-use tekes_ui_controls::{
-    composition::{Button, ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent, TextSubmitPolicy, TextViewport},
+use tekes_ui_controls::composition::{
+    Button, ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent,
+    TextSubmitPolicy, TextViewport,
 };
-use tekes_ui_controls::{extended::{Axis, Stack}};
+use tekes_ui_controls::extended::{Axis, Stack};
 
 pub const ROOT: ComponentId = ComponentId(8200);
 pub const BODY: ComponentId = ComponentId(8201);

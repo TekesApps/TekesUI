@@ -4,15 +4,20 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 const THEMES: [&str; 4] = ["light", "dark", "light-ic", "dark-ic"];
-const FIXED_INPUTS: [&str; 8] = [
+const FIXED_INPUTS: [&str; 13] = [
     "design/source/base.tokens.json",
     "design/source/token-metadata.json",
+    "design/source/tokens.schema.json",
     "design/source/contrast-pairs.json",
     "design/brand/policy.json",
+    "design/brand/brand.schema.json",
+    "design/brand/policy.schema.json",
     "design/brand/gallery.json",
     "scripts/generate-gallery-brands.py",
-    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
-    "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
+    "scripts/tekesui_design/__init__.py",
+    "scripts/tekesui_design/brand_color.py",
+    "scripts/tekesui_design/brand_compiler.py",
+    "scripts/tekesui_design/validate_tokens.py",
 ];
 
 /// Reject malformed generated brand data before the token crate compiles it.

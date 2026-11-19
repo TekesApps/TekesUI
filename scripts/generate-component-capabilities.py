@@ -34,6 +34,37 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def normalized_digest(path_str: str, raw: bytes) -> str:
+    """Hash Cargo manifests/lockfiles without churning on workspace version strings."""
+    if path_str == 'Cargo.toml' or path_str.endswith('/Cargo.toml'):
+        text = raw.decode('utf-8')
+        out = []
+        section = None
+        for line in text.splitlines(keepends=True):
+            stripped = line.strip()
+            if stripped.startswith('[') and not stripped.startswith('[['):
+                section = stripped.strip('[]').strip()
+            if section == 'workspace.package' and re.match(r'^version\s*=\s*"[^"]+"', stripped):
+                line = re.sub(r'^(version\s*=\s*")[^"]+(")', r'\g<1>0.0.0-workspace\g<2>', line, count=1)
+            elif re.match(r'^tekes-ui-[a-z0-9-]+\s*=\s*\{[^}]*\bversion\s*=\s*"[^"]+"', stripped):
+                line = re.sub(r'(\bversion\s*=\s*")[^"]+(")', r'\g<1>0.0.0-workspace\g<2>', line, count=1)
+            out.append(line)
+        return digest(''.join(out).encode('utf-8'))
+    if path_str == 'Cargo.lock':
+        text = raw.decode('utf-8')
+        blocks = re.split(r'(?m)(?=^\[\[package\]\]$)', text)
+        out = []
+        for block in blocks:
+            if (
+                re.search(r'(?m)^name\s*=\s*"tekes-ui-[^"]+"', block)
+                and not re.search(r'(?m)^source\s*=', block)
+            ):
+                block = re.sub(r'(?m)^(version\s*=\s*")[^"]+(")', r'\g<1>0.0.0-workspace\g<2>', block, count=1)
+            out.append(block)
+        return digest(''.join(out).encode('utf-8'))
+    return digest(raw)
+
+
 def read_json(path: Path):
     return json.loads((ROOT / path).read_text())
 
@@ -558,13 +589,21 @@ def _safe_repository_file(raw: object, owner: str, description: str) -> tuple[st
     return relative.as_posix(), resolved
 
 
+def is_removed_historical_input(path_str: str) -> bool:
+    return (
+        path_str.startswith('design/reviews/')
+        or bool(re.fullmatch(r'scripts/audit-[a-z0-9-]+-tokens\.py', path_str))
+        or bool(re.fullmatch(r'examples/[^/]+/Cargo\.lock', path_str))
+    )
+
+
 def runtime_observation(row: dict) -> dict | None:
     path = row.get('runtime_token_observation')
     if path is None:
         return None
     identity = row.get('id')
     artifact, artifact_path = _safe_repository_file(path, str(identity), 'runtime observation')
-    if not artifact.startswith('design/reviews/'):
+    if not artifact.startswith(('design/evidence/', 'design/reviews/')):
         raise ValueError(f'{identity}: invalid runtime observation path: {artifact}')
     data = _observation_document(artifact_path.read_bytes())
     if not isinstance(data, dict):
@@ -588,10 +627,13 @@ def runtime_observation(row: dict) -> dict | None:
         source_path, resolved = _safe_repository_file(source, str(identity), 'runtime observation source')
         if not isinstance(expected, str) or not re.fullmatch(r'[0-9a-f]{64}', expected):
             raise ValueError(f'{identity}: malformed runtime observation identity for {source_path}')
-        if not resolved.is_file():
-            raise ValueError(f'{identity}: missing runtime observation source path: {source_path}')
-        actual = digest(resolved.read_bytes())
         normalized_inputs[source_path] = expected
+        if not resolved.is_file():
+            if is_removed_historical_input(source_path):
+                differences.append({'path': source_path, 'expected_sha256': expected, 'actual_sha256': 'removed-historical-input'})
+                continue
+            raise ValueError(f'{identity}: missing runtime observation source path: {source_path}')
+        actual = normalized_digest(source_path, resolved.read_bytes())
         if actual != expected:
             differences.append({'path': source_path, 'expected_sha256': expected, 'actual_sha256': actual})
     cases = []
@@ -985,7 +1027,7 @@ def generate(binding_override: bytes | None = None) -> dict:
     return {
         'format': 'tekesui-component-capabilities/1',
         'source_state': 'content-addressed by input SHA-256 hashes; Git HEAD is intentionally excluded',
-        'inputs_sha256': {p.as_posix(): digest(binding_override if p == BINDING_OUTPUT and binding_override is not None else (ROOT / p).read_bytes()) for p in sorted(set(input_paths))},
+        'inputs_sha256': {p.as_posix(): normalized_digest(p.as_posix(), binding_override if p == BINDING_OUTPUT and binding_override is not None else (ROOT / p).read_bytes()) for p in sorted(set(input_paths))},
         'counts': {'components': len(components), 'patterns': len(patterns), 'examples': len(examples)},
         'historical_registry': {
             'source': historical_path.as_posix(),

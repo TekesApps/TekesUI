@@ -23,6 +23,17 @@ pub struct ContainerRenderContext<'a> {
     pub motion: Option<ControlMotionContext>,
     pub palette: Palette,
 }
+impl std::fmt::Debug for ContainerRenderContext<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ContainerRenderContext")
+            .field("frame", &self.frame)
+            .field("clip", &self.clip)
+            .field("scale", &self.scale)
+            .field("motion", &self.motion)
+            .field("palette", &self.palette)
+            .finish_non_exhaustive()
+    }
+}
 
 /// Borrow a current original host for one operation. Shared application state
 /// can expose its own host without cloning controls or leaking RefCell guards.
@@ -78,6 +89,17 @@ pub struct LocalContainer {
     pub(crate) toolbar: Vec<tekes_ui_app_protocol::ToolbarItem>,
     pub(crate) frame: Rect,
     pub(crate) options: ContainerOptions,
+}
+impl std::fmt::Debug for LocalContainer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LocalContainer")
+            .field("id", &self.id)
+            .field("active", &self.active)
+            .field("toolbar", &self.toolbar)
+            .field("frame", &self.frame)
+            .field("options", &self.options)
+            .finish_non_exhaustive()
+    }
 }
 impl LocalContainer {
     pub fn new(id: impl Into<String>, content: Content) -> Result<Self> {
@@ -423,7 +445,7 @@ pub struct RetainedButton {
     pub command: u64,
     pub target: String,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum ProcessBacking {
     V1(crate::ModuleDefinition),
     V2 {
@@ -432,6 +454,7 @@ pub(crate) enum ProcessBacking {
     },
 }
 /// The factory remains compiled into the consumer; no runtime module discovery.
+#[derive(Debug)]
 pub struct ProcessContainer {
     pub(crate) backing: ProcessBacking,
     pub(crate) instance_id: String,
@@ -663,6 +686,7 @@ impl ContainerContent for V2ProcessContainerContent {
     }
 }
 /// A stable window container backed by local Content or a fixed process factory.
+#[derive(Debug)]
 pub enum Container {
     Local(LocalContainer),
     Process(ProcessContainer),
@@ -693,6 +717,7 @@ impl From<ProcessContainer> for Container {
 }
 /// Legacy horizontal assembly descriptor. Converts into the same runtime;
 /// new applications use Container and AppWindow::from_containers.
+#[derive(Debug)]
 pub enum Column {
     Container(LocalContainer),
     ProcessContainer(ProcessContainer),

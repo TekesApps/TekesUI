@@ -27,7 +27,7 @@ Detailed numeric windows and regeneration commands are documented in [calm-budge
   - `design/source/base.tokens.json` (ordinary `light` / `dark` primitive values)
   - `design/brand/policy.json` (ordinary `light` / `dark` brand derivation targets)
   - `design/source/contrast-pairs.json` (only if an ordinary contrast threshold needs explicit adjustment; keep `light-ic` / `dark-ic` untouched)
-  - Official derived projections and hashes: `design/system.json` (`pinned_inputs`), `design/gallery/brands.json`, `design/tokens.json`, `design/proposal-mapping.json`, `design/theme/generated/*`, `design/theme/artifact.lock.json`, `design/gallery/capabilities.json`, and `design/reviews/reference-alignment-20261028/report.json`
+  - Official derived projections and hashes: `design/system.json` (`pinned_inputs`), `design/gallery/brands.json`, `design/tokens.json`, `design/proposal-mapping.json`, `design/theme/generated/*`, `design/theme/artifact.lock.json`, `design/gallery/capabilities.json`, and `design/evidence/reference-alignment/report.json`
 - **Forbidden changes without explicit user approval**:
   - Never add, remove, or rename any `*.schema.json` file, Token ID, Rust `ColorRole` / `Theme` variant, or `Surface` binding in `design/theme/rules.json`.
   - Never modify `design/imports/v0.3.0-proposal1/`, `design/baseline/`, `scripts/fixtures/theme-v1.6.1-color-baseline.json`, or component Rust source files (`crates/`).

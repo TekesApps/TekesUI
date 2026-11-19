@@ -820,11 +820,11 @@ mod tests {
     fn replay_measured_native_top_and_bottom_momentum_traces() {
         for (source, tolerance) in [
             (
-                include_str!("../../../design/reviews/scroll-repair/native-top.json"),
+                include_str!("../tests/fixtures/scroll-repair/native-top.json"),
                 2.0,
             ),
             (
-                include_str!("../../../design/reviews/scroll-repair/native-momentum.json"),
+                include_str!("../tests/fixtures/scroll-repair/native-momentum.json"),
                 6.0,
             ),
         ] {
@@ -1002,7 +1002,7 @@ mod tests {
     #[test]
     fn finger_edge_reversal_matches_native_active_phase() {
         let data: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../design/reviews/scroll-repair/native-edge-reverse.json"
+            "../tests/fixtures/scroll-repair/native-edge-reverse.json"
         ))
         .unwrap();
         let mut s = ScrollView::default();

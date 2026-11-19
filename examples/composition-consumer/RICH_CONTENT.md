@@ -19,7 +19,7 @@ cargo +1.95.0 run --manifest-path examples/composition-consumer/Cargo.toml --exa
 
 Plain pointer gestures select text. Cmd-click and Cmd-Enter at a link emit a typed host callback; published AX Link parts emit the same callback with Accessibility provenance. Drain `RichContent::drain_link_actions()` after dispatch and apply host URL policy. The SDK does not open the target. Copy uses the original selected display text and the host clipboard bridge. The document stays readonly for commits, preedit and AX replacement.
 
-See [the contract](../../docs/design/selectable-rich-content-20261030.md) for source/display UTF16 mapping, version rejection, Markdown literal support, code/diff copy semantics and layered acceptance. A prepared native script does not constitute native or physical-IME acceptance.
+See [the contract](../../docs/archive/design-logs/selectable-rich-content-20261030.md) for source/display UTF16 mapping, version rejection, Markdown literal support, code/diff copy semantics and layered acceptance. A prepared native script does not constitute native or physical-IME acceptance.
 
 ## Physical-IME manual controls
 

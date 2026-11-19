@@ -4,8 +4,12 @@ description = "Experimental AppHost process messages, independent of UI and GPU 
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish = false
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+
+[lints]
+workspace = true

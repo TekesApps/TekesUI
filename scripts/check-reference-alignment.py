@@ -23,12 +23,15 @@ import tempfile
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 UPSTREAM = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1')
 merge_spec = importlib.util.spec_from_file_location('tekes_ref_merge', ROOT / 'scripts/merge-design-system.py')
 merge = importlib.util.module_from_spec(merge_spec)
 merge_spec.loader.exec_module(merge)
 brand, validate = merge.load_brand_compiler(ROOT)
-color = importlib.import_module('brand_color')
+from tekesui_design import brand_color as color  # noqa: E402
 
 
 def read(path):
@@ -124,14 +127,15 @@ def audit():
     known = {item['id'] for item in components + recipes} | local_ids
     errors = []
     inputs = [Path('design/behavior/reference-alignment.json'), Path('design/source/base.tokens.json'),
-              Path('design/source/token-metadata.json'), Path('design/source/layout.json'),
-              Path('design/source/contrast-pairs.json'),
-              Path('design/brand/policy.json'),
+              Path('design/source/token-metadata.json'), Path('design/source/tokens.schema.json'),
+              Path('design/source/layout.json'), Path('design/source/contrast-pairs.json'),
+              Path('design/brand/policy.json'), Path('design/brand/brand.schema.json'),
+              Path('design/brand/policy.schema.json'),
               Path('design/brand/config.json'), Path('design/tokens.json'),
               Path('design/gallery/brands.json'), Path('scripts/check-reference-alignment.py'),
-              Path('docs/design/reference-alignment-20261016.md'),
-              UPSTREAM / 'tools/brand.py', UPSTREAM / 'tools/brand_color.py',
-              UPSTREAM / 'tools/validate.py', UPSTREAM / 'design/quality/contrast-pairs.json',
+              Path('docs/archive/design-logs/reference-alignment-20261016.md'),
+              Path('scripts/tekesui_design/__init__.py'), Path('scripts/tekesui_design/brand_color.py'),
+              Path('scripts/tekesui_design/brand_compiler.py'), Path('scripts/tekesui_design/validate_tokens.py'),
               UPSTREAM / 'design/registry/components.json', UPSTREAM / 'design/registry/recipes.json']
     if len(contract['components']) != 15 or len({c['id'] for c in contract['components']}) != 15:
         errors.append('reference component inventory must contain 15 unique groups')
@@ -159,7 +163,7 @@ def audit():
         name = preset['id']
         config_path = Path(preset['config'])
         inputs.append(config_path)
-        tokens, _ = brand.compile_config(read(config_path), base=base, policy=policy, metadata=metadata)
+        tokens, _ = brand.compile_config(read(config_path), base=base, policy=policy, metadata=metadata, root=ROOT)
         expected_colors = next(p['color'] for p in gallery['presets'] if p['id'] == name)
         if name == registry['reference_brand'] and tokens['color'] != active['color']:
             errors.append(f'{name}: consumer reference differs from active tokens')

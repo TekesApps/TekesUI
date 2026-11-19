@@ -24,6 +24,15 @@ pub struct NavigationOptions {
     /// None keeps navigation independent of View data.
     pub view_command: Option<fn(&Entry) -> Result<u64>>,
 }
+impl std::fmt::Debug for NavigationOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NavigationOptions")
+            .field("directory", &self.directory)
+            .field("history_id", &self.history_id)
+            .field("initial_entries", &self.initial_entries)
+            .finish_non_exhaustive()
+    }
+}
 #[derive(Clone)]
 pub enum Publication {
     Restore(Offer),

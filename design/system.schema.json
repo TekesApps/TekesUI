@@ -52,7 +52,7 @@
           "type": "string"
         },
         "release_tag": {
-          "type": "null"
+          "type": ["string", "null"]
         },
         "change_policy": {
           "type": "string"

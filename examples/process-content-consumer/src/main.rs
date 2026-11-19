@@ -22,10 +22,7 @@ mod consumer {
     use std::time::{Duration, Instant};
     use tekes_ui_app_protocol::{InputKind, Request, VERSION};
     use tekes_ui_controls::{
-        ButtonTextAlign,
-        ButtonTextRenderer,
-        TextSurfaceHost,
-        TextSurfaceTextRenderer,
+        ButtonTextAlign, ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer,
         composition::*,
     };
     use tekes_ui_module_runtime::component::content as wire;

@@ -1,5 +1,4 @@
-use crate::Schema;
-use anyhow::Result;
+use crate::{Result, Schema, SettingsError};
 use std::collections::BTreeMap;
 use tekes_ui_controls::{
     ButtonTextRenderer,
@@ -134,7 +133,7 @@ impl SettingsSidebar {
                     max_staging_units: 100_000,
                 },
             )
-            .map_err(|error| anyhow::anyhow!("Settings list: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings list: {error:?}")))?;
             list.set_navigation_selection_fill_only(true);
             list.set_navigation_layout(true);
             items.insert(id, group_model);
@@ -174,8 +173,9 @@ impl SettingsSidebar {
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
             let mut search_button = Button::new(Content::new(
                 ComponentId(11),
-                IconContent::new("tekes-search")
-                    .map_err(|error| anyhow::anyhow!("Settings search icon: {error:?}"))?,
+                IconContent::new("tekes-search").map_err(|error| {
+                    SettingsError::Ui(format!("Settings search icon: {error:?}"))
+                })?,
             ))
             .with_accessible_name("搜索设置")
             .with_help("搜索设置");
@@ -228,8 +228,8 @@ impl SettingsSidebar {
         } else {
             scroll
         };
-        let mut host =
-            ContentHost::new(root).map_err(|e| anyhow::anyhow!("Settings sidebar: {e:?}"))?;
+        let mut host = ContentHost::new(root)
+            .map_err(|e| SettingsError::Ui(format!("Settings sidebar: {e:?}")))?;
         host.set_action_events(true);
         Ok(Self {
             host,
@@ -256,7 +256,7 @@ impl SettingsSidebar {
     /// Repeated declarations retain the same passive content and image lease.
     pub fn set_back_template_icon(&mut self, name: &str) -> Result<()> {
         let mut icon = IconContent::new(name)
-            .map_err(|error| anyhow::anyhow!("Settings Back icon: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings Back icon: {error:?}")))?;
         icon.set_ink_leading(true);
         let name = icon.glyph().name;
         if self.back_template == Some(name) {
@@ -289,20 +289,20 @@ impl SettingsSidebar {
         self.back_button = Some(
             self.host
                 .remove(ComponentId(4))
-                .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?,
+                .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?,
         );
         let editor = SearchFieldContent::new("搜索设置", "");
         self.search_button = Some(
             self.host
                 .remove(ComponentId(10))
-                .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?,
+                .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?,
         );
         self.host
             .insert(
                 ComponentId(5),
                 Content::new(ComponentId(6), editor).with_help("搜索设置"),
             )
-            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?;
         let header = self.host.get_mut(ComponentId(5)).unwrap();
         *header.stack_distribution_mut().unwrap() =
             tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
@@ -322,13 +322,13 @@ impl SettingsSidebar {
         let return_focus = self.host.focused() == Some(ComponentId(6));
         self.host
             .remove(ComponentId(6))
-            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?;
         self.host
             .insert(ComponentId(5), self.back_button.take().unwrap())
-            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?;
         self.host
             .insert(ComponentId(5), self.search_button.take().unwrap())
-            .map_err(|error| anyhow::anyhow!("Settings search: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?;
         let header = self.host.get_mut(ComponentId(5)).unwrap();
         *header.stack_distribution_mut().unwrap() =
             tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween;
@@ -371,7 +371,7 @@ impl SettingsSidebar {
         for (id, group) in &self.items {
             self.host
                 .replace_keyed_list(*id, &group.snapshot(&self.query), &mut group.rows(), None)
-                .map_err(|error| anyhow::anyhow!("Settings search rows: {error:?}"))?;
+                .map_err(|error| SettingsError::Ui(format!("Settings search rows: {error:?}")))?;
         }
         if let Some(selected) = self.selected_item.clone() {
             self.select(&selected);
@@ -423,7 +423,7 @@ impl SettingsSidebar {
         self.sync_search()?;
         self.host
             .render(scene, text, frame, frame, palette)
-            .map_err(|e| anyhow::anyhow!("Settings sidebar: {e:?}"))
+            .map_err(|e| SettingsError::Ui(format!("Settings sidebar: {e:?}")))
     }
     pub fn event(&mut self, event: &ContentEvent) -> Option<String> {
         self.host.event(event);
@@ -437,7 +437,7 @@ impl SettingsSidebar {
     ) -> Result<Option<String>> {
         self.host
             .event_with_text(event, text)
-            .map_err(|error| anyhow::anyhow!("Settings sidebar input: {error:?}"))?;
+            .map_err(|error| SettingsError::Ui(format!("Settings sidebar input: {error:?}")))?;
         self.sync_search()?;
         Ok(self.take_selection())
     }

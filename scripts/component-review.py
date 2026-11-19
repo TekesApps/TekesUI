@@ -13,7 +13,7 @@ import subprocess
 import sys
 from tekesui_build import ROOT, CACHE, assert_unused, build_lock, environment, prepare_cache, remove_owned
 
-RECEIPTS = ROOT / 'design/reviews/component-runs'
+RECEIPTS = ROOT / 'target/component-runs'
 RUNTIME = ROOT / 'target/component-review'
 MANIFEST = ROOT / 'examples/composition-consumer/Cargo.toml'
 LAYERS = ('api', 'consumer', 'gpu', 'native', 'gold7', 'gallery')
@@ -28,7 +28,7 @@ def inputs():
     """Include WIP and generated design inputs, not just HEAD or tracked Rust files."""
     names = subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
     return {name: digest(ROOT / name) for name in sorted(set(names)) if name
-            and not name.startswith(('design/reviews/', 'docs/', 'target/'))
+            and not name.startswith(('design/evidence/', 'design/reviews/', 'docs/', 'target/'))
             and (name.startswith(('crates/', 'design/', 'examples/composition-consumer/', 'scripts/'))
                  or name in ('Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml'))
             and (ROOT / name).is_file() and not (ROOT / name).is_symlink()}

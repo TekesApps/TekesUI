@@ -1175,11 +1175,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "tekes-ui-app-host-demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde_json",
+ "tekes-ui-app-host",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-panel-module-demo",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-settings",
+ "tekes-ui-tokens",
+]
+
+[[package]]
 name = "tekes-ui-app-protocol"
 version = "0.3.34"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "tekes-ui-brand-consumer"
+version = "0.0.0"
+dependencies = [
+ "png 0.17.16",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1198,6 +1228,22 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-composition-consumer"
+version = "0.0.0"
+dependencies = [
+ "resvg",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-macos-bridge",
+ "tekes-ui-platform-macos",
  "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-text",
@@ -1257,8 +1303,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "tekes-ui-host-reveal-consumer"
+version = "0.0.0"
+dependencies = [
+ "resvg",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-macos-bridge",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-icon-catalog-consumer"
+version = "0.0.0"
+dependencies = [
+ "tekes-ui-icons",
+]
+
+[[package]]
 name = "tekes-ui-icons"
 version = "0.3.34"
+
+[[package]]
+name = "tekes-ui-issue82-panel-consumer"
+version = "0.0.0"
+dependencies = [
+ "resvg",
+ "serde_json",
+ "tekes-ui-controls",
+ "tekes-ui-icons",
+ "tekes-ui-macos-bridge",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
 
 [[package]]
 name = "tekes-ui-macos-bridge"
@@ -1272,6 +1357,23 @@ dependencies = [
  "serde_json",
  "tekes-ui-controls",
  "tekes-ui-platform-macos",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
+name = "tekes-ui-media-viewer-content-consumer"
+version = "0.0.0"
+dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "resvg",
+ "tekes-ui-controls",
+ "tekes-ui-macos-bridge",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
  "tekes-ui-scene",
  "tekes-ui-text",
  "tekes-ui-tokens",
@@ -1303,6 +1405,19 @@ name = "tekes-ui-motion"
 version = "0.3.34"
 
 [[package]]
+name = "tekes-ui-panel-module-demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-module-runtime",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
+]
+
+[[package]]
 name = "tekes-ui-platform-macos"
 version = "0.3.34"
 dependencies = [
@@ -1315,6 +1430,23 @@ dependencies = [
  "objc2-metal",
  "objc2-quartz-core",
  "serde_json",
+]
+
+[[package]]
+name = "tekes-ui-process-content-consumer"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "serde_json",
+ "tekes-ui-app-protocol",
+ "tekes-ui-controls",
+ "tekes-ui-macos-bridge",
+ "tekes-ui-module-runtime",
+ "tekes-ui-platform-macos",
+ "tekes-ui-render",
+ "tekes-ui-scene",
+ "tekes-ui-text",
+ "tekes-ui-tokens",
 ]
 
 [[package]]
@@ -1363,7 +1495,6 @@ dependencies = [
 name = "tekes-ui-settings"
 version = "0.3.34"
 dependencies = [
- "anyhow",
  "serde",
  "tekes-ui-controls",
  "tekes-ui-scene",
@@ -1385,6 +1516,16 @@ dependencies = [
  "tekes-ui-scene",
  "tekes-ui-tokens",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "tekes-ui-theme-system-consumer"
+version = "0.0.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "tekes-ui-design-export",
+ "tekes-ui-tokens",
 ]
 
 [[package]]

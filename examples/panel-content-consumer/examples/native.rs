@@ -15,8 +15,9 @@ fn main() {
 #[cfg(target_os = "macos")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::{cell::Cell, rc::Rc};
-    use tekes_ui_controls::{
-        composition::{Content, ContentEvent, ContentHost, ContentResponse, PanelContent, PointerPhase, ScrollContent, TextFieldContent},
+    use tekes_ui_controls::composition::{
+        Content, ContentEvent, ContentHost, ContentResponse, PanelContent, PointerPhase,
+        ScrollContent, TextFieldContent,
     };
     use tekes_ui_macos_bridge::{
         WindowContentAccessibilityExt,
@@ -50,29 +51,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     impl Host {
         fn text_state(surface: &tekes_ui_controls::TextSurface) -> p::TextInputState {
             let caret = surface.caret();
-            let carets = surface
-                .paragraph()
-                .map_or_else(Vec::new, |paragraph| {
-                    paragraph
-                        .lines
-                        .iter()
-                        .flat_map(|line| {
-                            line.carets.iter().map(move |(index, x)| {
-                                (
-                                    *index,
-                                    p::Point {
-                                        x: surface.origin().x as f64 + x,
-                                        y: surface.origin().y as f64 + line.top,
-                                    },
-                                    p::Size {
-                                        width: tekes_ui_tokens::Stroke::Rule.value() as f64,
-                                        height: line.height,
-                                    },
-                                )
-                            })
+            let carets = surface.paragraph().map_or_else(Vec::new, |paragraph| {
+                paragraph
+                    .lines
+                    .iter()
+                    .flat_map(|line| {
+                        line.carets.iter().map(move |(index, x)| {
+                            (
+                                *index,
+                                p::Point {
+                                    x: surface.origin().x as f64 + x,
+                                    y: surface.origin().y as f64 + line.top,
+                                },
+                                p::Size {
+                                    width: tekes_ui_tokens::Stroke::Rule.value() as f64,
+                                    height: line.height,
+                                },
+                            )
                         })
-                        .collect()
-                });
+                    })
+                    .collect()
+            });
             p::TextInputState {
                 text: surface.text().to_owned(),
                 caret_index: surface.input().caret(),

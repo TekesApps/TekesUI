@@ -113,15 +113,11 @@ def compile_artifact(config_path, destination, theme_definitions_path=None, them
         if theme_lock_output == destination:
             raise ValueError('consumer Theme lock output must be a separate file')
     config = merge.load(config_path)
-    # Keep imported validator resources rooted in the immutable dependency, not
-    # a temporary staging path that disappears between repeated calls.
-    sys.path.insert(0, str(ROOT / merge.UPSTREAM / "tools"))
-    importlib.import_module("brand")
     # Stage the exact existing author/compiler inputs. Only the staged caller
-    # config differs; the dependency checkout and imported package stay untouched.
+    # config differs; the repository and historical import stay untouched.
     with tempfile.TemporaryDirectory(prefix='tekesui-brand-', dir=destination.parent) as temporary:
         staged = Path(temporary) / 'artifact'
-        for relative in [*map(Path, merge.SOURCE_FILES), *(merge.UPSTREAM / p for p in merge.UPSTREAM_INPUTS)]:
+        for relative in map(Path, merge.SOURCE_FILES):
             target = staged / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / relative, target)

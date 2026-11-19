@@ -29,7 +29,7 @@ Mount `ProcessContainer::new_view` through the original Content lifecycle. Forwa
 platform events/text queries through the existing bridge and publication adapter;
 do not duplicate text, focus, scroll or IPC state in the host. Keep the existing
 session/View/viewport/mount and text-binding fences. See the
-[negotiated View contract](../../docs/design/process-component-view-v2-20261021.md)
+[negotiated View contract](../../docs/archive/design-logs/process-component-view-v2-20261021.md)
 and the actual module/host examples in `src/main.rs` and `src/consumer/`.
 
 ## Normal execution map
@@ -74,9 +74,9 @@ that allocated native run was refused by HID admission and then withdrawn. The
 original startup timeout and later Native063 first-input failure remain failed
 historical results. PR213 published the subsequent input-clock adapter correction
 at the public revision above. The design's
-[scoped verification section](../../docs/design/process-component-view-v2-20261021.md#scoped-verification-and-remaining-observations-2026-11-01)
+[scoped verification section](../../docs/archive/design-logs/process-component-view-v2-20261021.md#scoped-verification-and-remaining-observations-2026-11-01)
 records CPU069/Native070 and the exact archived cohort; the
-[original six-AC map](../../docs/design/process-component-view-v2-20261021.md#original-issue-48-acceptance-map-after-pr213-2026-11-01)
+[original six-AC map](../../docs/archive/design-logs/process-component-view-v2-20261021.md#original-issue-48-acceptance-map-after-pr213-2026-11-01)
 records remaining scope. That archived native result includes diagnostic WIP and
 must not be relabeled as a clean run of this public pin or later Core libraries.
 The late AX samples are a publication-sampling evidence gap, not a demonstrated

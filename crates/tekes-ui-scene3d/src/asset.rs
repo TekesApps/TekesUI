@@ -84,6 +84,7 @@ pub(crate) struct PoseFrame {
 /// `.gltf` resolves adjacent resources; `.glb` can be self-contained.
 #[derive(Debug)]
 pub struct Asset3D {
+    #[cfg(feature = "simulation")]
     pub(crate) node_names: Vec<String>,
     pub(crate) id: u64,
     nodes: Vec<Node>,
@@ -385,6 +386,7 @@ impl Asset3D {
             .collect::<Result<_, _>>()?;
         static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut asset = Self {
+            #[cfg(feature = "simulation")]
             node_names: d
                 .nodes()
                 .map(|n| n.name().unwrap_or("").to_owned())

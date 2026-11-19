@@ -194,7 +194,19 @@ step = 1
     let bad_base = Snapshot {
         revision: 1,
         last_commit_id: "bad".into(),
-        overrides: toml::from_str("[reading]\ncount = \"bad\"\n").unwrap(),
+        overrides: [(
+            "reading".into(),
+            tekes_ui_settings::Value::Table(
+                [(
+                    "count".into(),
+                    tekes_ui_settings::Value::String("bad".into()),
+                )]
+                .into_iter()
+                .collect(),
+            ),
+        )]
+        .into_iter()
+        .collect(),
     };
     assert!(SettingsForm::new_autosave(&item, &Draft::new(bad_base)).is_err());
 

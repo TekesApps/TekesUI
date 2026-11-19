@@ -1,7 +1,7 @@
 //! Complete Surface × use × state colors. Composition owns parent context propagation.
 //! This is additive: existing `Theme` is the appearance/contrast mode selector.
 use crate::{Palette, Rgba};
-include!("../../../design/theme/generated/surface_rules.rs");
+include!(concat!(env!("OUT_DIR"), "/surface_rules.rs"));
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SurfaceColors {

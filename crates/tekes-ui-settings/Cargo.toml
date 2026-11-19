@@ -4,11 +4,32 @@ description = "Declarative Settings schema, drafts, local persistence and shared
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["fs-store", "ui"]
+fs-store = []
+ui = ["dep:tekes-ui-controls", "dep:tekes-ui-scene", "dep:tekes-ui-tokens"]
 
 [dependencies]
-anyhow = "1"
 serde.workspace = true
 toml = "0.8"
-tekes-ui-controls = { path = "../tekes-ui-controls" }
-tekes-ui-scene = { path = "../tekes-ui-scene" }
-tekes-ui-tokens = { path = "../tekes-ui-tokens" }
+tekes-ui-controls = { workspace = true, optional = true }
+tekes-ui-scene = { workspace = true, optional = true }
+tekes-ui-tokens = { workspace = true, optional = true }
+
+[[test]]
+name = "number_field"
+required-features = ["fs-store", "ui"]
+
+[[test]]
+name = "form_sidebar"
+required-features = ["ui"]
+
+[[test]]
+name = "model_store"
+required-features = ["fs-store"]
+
+[lints]
+workspace = true

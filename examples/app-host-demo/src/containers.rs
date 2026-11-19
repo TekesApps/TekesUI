@@ -7,8 +7,8 @@ use tekes_ui_app_host::{
     PresentationState, ProcessContainer,
 };
 use tekes_ui_app_protocol::ToolbarItem;
-use tekes_ui_controls::{
-    composition::{ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent},
+use tekes_ui_controls::composition::{
+    ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent,
 };
 
 const RETAIN_FIRST: u64 = 101;

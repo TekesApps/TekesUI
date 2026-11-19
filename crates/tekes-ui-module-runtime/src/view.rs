@@ -209,6 +209,14 @@ pub struct ViewFrame {
     curve: Option<crate::component::curve::FrameStamp>,
     layer: Option<crate::layer_raster::LayerRasterLayout>,
 }
+impl std::fmt::Debug for ViewFrame {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ViewFrame")
+            .field("metadata", self.metadata())
+            .field("curve", &self.curve)
+            .finish_non_exhaustive()
+    }
+}
 impl ViewFrame {
     pub fn metadata(&self) -> &Frame {
         &self.frame
@@ -258,6 +266,14 @@ pub struct ViewImage {
     lease: Option<Lease>,
     curve: Option<crate::component::curve::FrameStamp>,
     layer: Option<crate::layer_raster::LayerRasterLayout>,
+}
+impl std::fmt::Debug for ViewImage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ViewImage")
+            .field("metadata", &self.metadata)
+            .field("curve", &self.curve)
+            .finish_non_exhaustive()
+    }
 }
 impl ViewImage {
     pub fn metadata(&self) -> &Frame {
@@ -340,6 +356,11 @@ fn retire_loop(core: Weak<Core>, rx: mpsc::Receiver<Retired>) {
 /// changes independent of a rendered frame still require the V2 View adapter.
 pub struct ViewConnection {
     core: Arc<Core>,
+}
+impl std::fmt::Debug for ViewConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ViewConnection").finish_non_exhaustive()
+    }
 }
 impl ViewConnection {
     fn core(

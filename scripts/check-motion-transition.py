@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     source = root / 'crates/tekes-ui-motion/src'
-    output = args.output or root / 'design/reviews/component-runs' / ('motion-' + uuid.uuid4().hex)
+    output = args.output or root / 'target/component-runs' / ('motion-' + uuid.uuid4().hex)
     output.mkdir(parents=True, exist_ok=False)
     prepare_cache()
     # Keep normal Rust module resolution but use the actual source files, not

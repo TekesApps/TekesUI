@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -9,55 +12,126 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs-only changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            diff_range="${base_sha}...HEAD"
+          else
+            base_sha="${{ github.event.before }}"
+            diff_range="${base_sha}..HEAD"
+          fi
+          if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "$diff_range")
+          if [ -z "$changed" ]; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          non_doc=$(printf '%s\n' "$changed" | grep -vE '^(docs/.*|\.gitignore|.*\.md)$' || true)
+          if [ -z "$non_doc" ]; then
+            echo "code_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 安装工具链（读取 rust-toolchain.toml）
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
         run: rustup show
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: scripts/requirements-design.txt
+
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+
+      - name: Cache Cargo dependencies and build artifacts
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Public icon catalog projections and assets
         run: |
           python3 scripts/generate-icon-web-bindings.py --check
           node --test crates/tekes-ui-icons/web/icons.test.mjs
-      - name: Fetch pinned dependencies for offline consumers
+
+      - name: Design package, audit gates and Pure Rust boundaries
         run: |
-          rustup target add x86_64-unknown-linux-gnu
-          cargo fetch --locked
-          cargo fetch --locked --target x86_64-unknown-linux-gnu
-          cargo fetch --locked --manifest-path examples/composition-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/panel-content-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/brand-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/app-host-demo/Cargo.toml
-          cargo fetch --locked --manifest-path examples/process-content-consumer/Cargo.toml
-          cargo fetch --locked --manifest-path examples/media-viewer-content-consumer/Cargo.toml
-      - name: Design package, brand generation and Rust boundaries
-        run: |
-          python3 -m pip install -r design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt
+          python3 -m pip install -r scripts/requirements-design.txt
           python3 -m unittest discover -s scripts/tests
-          for test in scripts/test-*.py; do python3 "$test"; done
+          python3 scripts/diagnostics/icon57/test_verify_package.py
+          python3 scripts/diagnostics/icon57/verify_package.py inventory --root . --out "$RUNNER_TEMP/icon-inventory.json"
+          for test in scripts/test-*.py; do
+            if [ "$test" = "scripts/test-consumer-brand.py" ]; then continue; fi
+            python3 "$test"
+          done
           python3 scripts/generate-gallery-brands.py --check
           python3 scripts/generate-component-capabilities.py --check
           python3 scripts/check-reference-alignment.py --self-test
           python3 scripts/check-reference-alignment.py
           python3 scripts/check-gold7.py
+          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --check
+          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --scan-components --check
           python3 -I scripts/check-pure-rust.py --self-test
           python3 -I scripts/check-pure-rust.py
+          /usr/bin/python3 -I scripts/check-pure-rust.py --self-test
+          /usr/bin/python3 -I scripts/check-pure-rust.py
           python3 -I scripts/check-design-baseline.py --self-test
           python3 scripts/merge-design-system.py --check
           python3 scripts/check-design-system.py
           python3 scripts/generate-theme-system.py --check
-          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --check
-          python3 .agents/skills/gold7-calm-audit/scripts/audit_gold7_calm.py --scan-components --check
-          python3 scripts/test-gold7-calm-audit.py
           python3 scripts/check-composition-audit.py
-          cargo run --locked -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
-          cargo run --locked -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
-      - run: cargo fmt --check
+
+      - name: Fetch pinned workspace dependencies
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          cargo fetch --locked
+          cargo fetch --locked --target x86_64-unknown-linux-gnu
+
+      - name: Design export, consumer brands and publish packaging
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
+        run: |
+          python3 scripts/test-consumer-brand.py
+          cargo run --locked --offline -p tekes-ui-design-export -- --generate design/tokens.json "$RUNNER_TEMP/tokens.rs"
+          cargo run --locked --offline -p tekes-ui-design-export -- --check design/tokens.json "$RUNNER_TEMP/tokens.rs"
+          python3 scripts/check-cargo-package.py --offline
+
+      - if: ${{ steps.changes.outputs.code_changed == 'true' }}
+        run: cargo fmt --all --check
+
       - id: workspace_clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
+        run: cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+
       - name: Cross-platform boundary clippy (x86_64-unknown-linux-gnu, Issue 335)
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
         run: |
           cargo clippy --target x86_64-unknown-linux-gnu \
             -p tekes-ui-tokens \
@@ -72,30 +146,43 @@ jobs:
             --locked --offline -- -D warnings
           cargo clippy -p tekes-ui-text --no-default-features --all-targets --locked --offline -- -D warnings
           cargo test -p tekes-ui-text --no-default-features --locked --offline
-      - name: Workspace correctness tests (performance deferred)
+
+      - name: Workspace correctness tests (default members)
+        if: ${{ steps.changes.outputs.code_changed == 'true' }}
         env:
           TEKESUI_FRAGMENT_GPU_OUT: ${{ runner.temp }}/tekesui-fragment-gpu
         run: >-
-          cargo test --workspace --locked --no-fail-fast --
-          --skip timing_is_off_by_default_and_costs_nothing_to_drain
+          cargo test --locked --offline --no-fail-fast --
           --skip cpu_segments_are_consistent_and_frames_are_numbered
           --skip gpu_time_agrees_with_wall_clock_on_a_heavy_frame
 
+      - name: Optional feature matrix
+        if: ${{ steps.changes.outputs.code_changed == 'true' && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo clippy -p tekes-ui-controls --features syntax-highlighting --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-controls --features syntax-highlighting --lib --locked --offline
+          cargo clippy -p tekes-ui-icons --features product-icons --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-icons --features product-icons --locked --offline
+          cargo clippy -p tekes-ui-scene3d --features simulation --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-scene3d --features simulation --lib --test component --locked --offline
+          cargo clippy -p tekes-ui-settings --no-default-features --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-settings --no-default-features --locked --offline
+
       - name: Independent composition consumer (public API)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         env:
           TEKESUI_CHECKBOX_GPU_OUT: ${{ runner.temp }}/tekesui-checkbox-gpu/default
-        run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --no-fail-fast
+        run: cargo test --manifest-path examples/composition-consumer/Cargo.toml --locked --offline --no-fail-fast
 
       - name: Independent Panel consumer (Issue 82, no native windows)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy --manifest-path examples/panel-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
           cargo test --manifest-path examples/panel-content-consumer/Cargo.toml --test panel_content --locked --offline
           cargo build --manifest-path examples/panel-content-consumer/Cargo.toml --example native --locked --offline
 
       - name: Optional SVG IconContent (Issue 47)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy -p tekes-ui-controls --features svg-icons --all-targets --locked --offline -- -D warnings
           cargo test -p tekes-ui-controls --features svg-icons --test component_registry_api --locked --offline
@@ -103,12 +190,11 @@ jobs:
           cargo test --manifest-path examples/composition-consumer/Cargo.toml --features svg-icons --test icon_gpu --test icon_status_gpu --no-fail-fast --locked --offline
 
       - name: Independent Process Content consumer (Issue 48, no native windows)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy --manifest-path examples/process-content-consumer/Cargo.toml --all-targets --locked --offline -- -D warnings
           result=0
           cargo run -p tekes-ui-module-runtime --example process_component_services --locked --offline || result=1
-          # Default already includes the three mounted-container geometry scenario.
           cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline || result=1
           for mode in accessibility projection query-wake view-context three-surfaces overlay scroll reading-anchor reading-lifecycle; do
             cargo run --manifest-path examples/process-content-consumer/Cargo.toml --locked --offline -- "--$mode-only" || result=1
@@ -116,29 +202,25 @@ jobs:
           exit "$result"
 
       - name: Optional bitmap Content and local Image semantics (Issue 117)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
-          cargo clippy -p tekes-ui-controls --features bitmap-images --all-targets --locked -- -D warnings
-          cargo test -p tekes-ui-controls --features bitmap-images --lib --test component_registry_api --test bitmap_content_consumer --locked
-          cargo clippy -p tekes-ui-platform-macos --features selftest --all-targets --locked -- -D warnings
-          cargo clippy -p tekes-ui-macos-bridge --features selftest --all-targets --locked -- -D warnings
-          cargo clippy -p tekes-ui-app-host --features window-acceptance --all-targets --locked -- -D warnings
-          cargo clippy -p tekes-ui-gallery --features selftest --all-targets --locked -- -D warnings
-          cargo test --locked -p tekes-ui-platform-macos --features selftest --lib
-          cargo test --locked -p tekes-ui-platform-macos --features selftest --test link_native
-          cargo test --locked -p tekes-ui-macos-bridge --features selftest --test ax_modal_projection --test combobox_accessibility --test content_accessibility --test panel_projection --test link_native_publication
-          cargo test --locked -p tekes-ui-macos-bridge --features selftest --examples
-          # Compile the #205 staged AX entry point; native acceptance uses allocated local windows.
+          cargo clippy -p tekes-ui-controls --features bitmap-images --all-targets --locked --offline -- -D warnings
+          cargo test -p tekes-ui-controls --features bitmap-images --lib --test component_registry_api --test bitmap_content_consumer --locked --offline
+          cargo clippy -p tekes-ui-platform-macos --features selftest --all-targets --locked --offline -- -D warnings
+          cargo clippy -p tekes-ui-macos-bridge --features selftest --all-targets --locked --offline -- -D warnings
+          cargo clippy -p tekes-ui-app-host --features window-acceptance --all-targets --locked --offline -- -D warnings
+          cargo clippy -p tekes-ui-gallery --features selftest --all-targets --locked --offline -- -D warnings
+          cargo test --locked --offline -p tekes-ui-platform-macos --features selftest --lib
+          cargo test --locked --offline -p tekes-ui-platform-macos --features selftest --test link_native
+          cargo test --locked --offline -p tekes-ui-macos-bridge --features selftest --test ax_modal_projection --test combobox_accessibility --test content_accessibility --test panel_projection --test link_native_publication
+          cargo test --locked --offline -p tekes-ui-macos-bridge --features selftest --examples
           cargo build -p tekes-ui-macos-bridge --features selftest --example ax205_staged_acceptance --locked --offline
-          # Issue 127 AC5: compile the actual optional-bitmap proof consumer.
-          # GPU cases remain explicit local locked runs; the original Toolbar positive is still open.
           cargo clippy --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --locked --offline -- -D warnings
           cargo test --manifest-path examples/composition-consumer/Cargo.toml --features bitmap-images --test parent_boundary_proof --no-run --locked --offline
-          # Optional MediaViewer public CPU contract; GPU/native remain separately allocated.
-          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo test --manifest-path examples/media-viewer-content-consumer/Cargo.toml --test cpu_contract --locked --offline
+          cargo test --manifest-path examples/media-viewer-content-consumer/Cargo.toml --test cpu_contract --locked --offline
 
       - name: Independent AppWindow and Settings delivery (Issues 70, 229)
-        if: ${{ !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
         run: |
           cargo clippy --manifest-path examples/app-host-demo/Cargo.toml --all-targets --all-features --locked --offline -- -D warnings
           cargo test --manifest-path examples/app-host-demo/Cargo.toml --test settings_worker_entry --locked --offline
@@ -147,10 +229,59 @@ jobs:
             cargo build --manifest-path examples/app-host-demo/Cargo.toml --features "$profile" --locked --offline
           done
 
+      - name: Remaining workspace examples and demos
+        if: ${{ steps.changes.outputs.code_changed == 'true' && !cancelled() && steps.workspace_clippy.outcome == 'success' }}
+        run: |
+          cargo run -p tekes-ui-brand-consumer --locked --offline -- --check "$RUNNER_TEMP/brand-consumer-ci"
+          cargo test -p tekes-ui-host-reveal-consumer --test chart_owner_public --test panel_content --test window_publication --locked --offline
+          cargo run -p tekes-ui-icon-catalog-consumer --locked --offline
+          cargo run -p tekes-ui-theme-system-consumer --bin tekes-ui-theme-system-consumer --locked --offline
+          cargo run -p tekes-ui-theme-system-consumer --bin chart_data_theme --locked --offline
+          cargo run -p tekes-ui-theme-system-consumer --bin theme_identity --locked --offline -- design/theme
+          cargo test -p tekes-ui-panel-module-demo --lib --locked --offline
+          cargo build -p tekes-ui-panel-module-demo --examples --locked --offline
+          cargo test -p tekes-ui-city -p tekes-ui-3d --locked --offline
+
       - name: Preserve Checkbox GPU evidence
-        if: ${{ always() }}
+        if: ${{ always() && steps.changes.outputs.code_changed == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: checkbox-gpu-default
           path: ${{ runner.temp }}/tekesui-checkbox-gpu/default
           if-no-files-found: warn
+
+  release-verify:
+    needs: check
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装工具链（读取 rust-toolchain.toml）
+        run: rustup show
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Cache Cargo dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Verify package.json version matches release tag
+        run: |
+          node -e "const v = JSON.parse(require('fs').readFileSync('package.json','utf8')).version; if ('v' + v !== process.env.GITHUB_REF_NAME) { console.error('package.json version mismatch:', v, process.env.GITHUB_REF_NAME); process.exit(1); }"
+      - name: Build, sign, and verify TekesUI Gallery app bundle
+        run: |
+          cargo fetch --locked
+          python3 scripts/package-gallery.py --release --offline --verify-tag "${GITHUB_REF_NAME}"
+          python3 scripts/diagnostics/icon57/verify_package.py inventory --root . --out "$RUNNER_TEMP/release-icon-inventory.json"
+          python3 -c "import plistlib; info=plistlib.loads(open('target/TekesUI Gallery.app/Contents/Info.plist','rb').read()); tag='${GITHUB_REF_NAME}'.removeprefix('refs/tags/'); assert 'v'+info['CFBundleShortVersionString']==tag, info['CFBundleShortVersionString']"
+          codesign --verify --deep --strict "target/TekesUI Gallery.app"

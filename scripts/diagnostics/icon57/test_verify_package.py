@@ -31,16 +31,16 @@ class CatalogEvidence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.manifest = json.loads((ROOT / 'crates/tekes-ui-icons/catalog.json').read_text())
-        cls.report = {'schema': 'tekesui-icon-catalog/1', 'mode': 'canonical', 'count': 177,
+        cls.report = {'schema': 'tekesui-icon-catalog/1', 'mode': 'canonical', 'count': 133,
                       'notices': [], 'entries': [
                           {'name': row['name'], 'svg': (ROOT / 'crates/tekes-ui-icons' / row['file']).read_text(),
                            'canonical_match': True, 'before': False}
                           for row in cls.manifest['icons']]}
 
-    def test_source_inventory_reproduces_the_original_29_overlaps(self):
+    def test_source_inventory_reproduces_the_original_overlaps(self):
         inventory = probe.source_inventory(ROOT)
         self.assertEqual((inventory['canonical_count'], inventory['proposal_overlap_count'],
-                          inventory['changed_overlaps']), (177, 51, 29))
+                          inventory['changed_overlaps']), (133, 23, 15))
         changed = [row for row in inventory['overlaps'] if row['different']]
         self.assertEqual(sum(row['reference_kind'] == 'shared_current'
                              for row in inventory['overlaps']), 8)
@@ -49,7 +49,7 @@ class CatalogEvidence(unittest.TestCase):
 
     def test_verifier_accepts_exact_default_and_never_claims_pixels(self):
         result = probe.verify_report(self.report, self.manifest)
-        self.assertEqual(result['count'], 177)
+        self.assertEqual(result['count'], 133)
         self.assertEqual(result['pixel_acceptance'], 'not_performed_by_this_probe')
 
     def test_count_only_or_self_reported_canonical_flag_cannot_hide_wrong_artwork(self):
@@ -148,6 +148,24 @@ class PackageStructure(unittest.TestCase):
             self.assertTrue((contents / 'Resources/Assets.car').is_file())
             self.assertEqual([command[0] for command in commands], ['xcrun', 'codesign', 'codesign'])
             self.assertEqual(info['CFBundleIdentifier'], 'com.tekesui.gallery.dev')
+
+    def test_package_gallery_offline_opt_in_and_verify_tag(self):
+        with patch.dict(package.os.environ, {}, clear=True):
+            args_online = type('Args', (), {'offline': False, 'release': False})()
+            self.assertNotIn('--offline', package.resolve_build_command(args_online))
+            args_offline = type('Args', (), {'offline': True, 'release': True})()
+            cmd_offline = package.resolve_build_command(args_offline)
+            self.assertIn('--offline', cmd_offline)
+            self.assertIn('--release', cmd_offline)
+        with patch.dict(package.os.environ, {'TEKESUI_OFFLINE': '1'}, clear=True):
+            args_env = type('Args', (), {'offline': False, 'release': False})()
+            self.assertIn('--offline', package.resolve_build_command(args_env))
+
+        version = package.read_workspace_version(ROOT / 'Cargo.toml')
+        package.validate_release_tag(version, f'v{version}')
+        package.validate_release_tag(version, f'refs/tags/v{version}')
+        with self.assertRaises(SystemExit):
+            package.validate_release_tag(version, 'v0.0.0-mismatch')
 
 
 if __name__ == '__main__':

@@ -56,9 +56,12 @@ class CapabilityTests(unittest.TestCase):
                     if document.get('format') == 'tekesui-runtime-token-observation/1':
                         paths.update(document['inputs_sha256'])
             for relative in paths:
+                source_file = ROOT / relative
+                if not source_file.is_file() and capabilities.is_removed_historical_input(relative):
+                    continue
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(ROOT / relative, target)
+                shutil.copy2(source_file, target)
             target = root / capabilities.OUTPUT
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(json.dumps(self.data, indent=2, ensure_ascii=False, sort_keys=True) + '\n')
@@ -489,8 +492,11 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
                 if artifact:
                     paths.update([artifact, *json.loads((ROOT / artifact).read_text())['inputs_sha256']])
                 for path in paths:
+                    source_file = ROOT / path
+                    if not source_file.is_file() and capabilities.is_removed_historical_input(path):
+                        continue
                     (root / path).parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(ROOT / path, root / path)
+                    shutil.copy2(source_file, root / path)
             yield root
 
     def test_required_states_are_accounted_without_promoting_fixture_or_native_acceptance(self):
@@ -756,7 +762,7 @@ class ZeroLookupEvidenceTests(unittest.TestCase):
             root = Path(folder)
             source = root / 'fixture.rs'
             source.write_text('// isolated observation source\n')
-            relative = 'design/reviews/zero-lookups.json'
+            relative = 'design/evidence/zero-lookups.json'
             path = root / relative
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps({
@@ -795,6 +801,65 @@ class ZeroLookupEvidenceTests(unittest.TestCase):
             with self.subTest(case=case), self.observation(case) as row:
                 with self.assertRaisesRegex(ValueError, 'runtime lookup'):
                     capabilities.runtime_observation(row)
+
+    def test_runtime_observation_accepts_evidence_and_records_removed_historical_inputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / 'fixture.rs'
+            source.write_text('// current source\n')
+            artifact = root / 'design/evidence/probe.json'
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text(json.dumps({
+                'format': 'tekesui-runtime-token-observation/1',
+                'complete': False,
+                'scope': 'bounded probe',
+                'excluded': ['native experience'],
+                'inputs_sha256': {
+                    'fixture.rs': capabilities.digest(source.read_bytes()),
+                    'design/reviews/old-host/main.rs': 'a' * 64,
+                    'scripts/audit-old-tokens.py': 'b' * 64,
+                },
+                'cases': [{
+                    'component': 'tui.tooltip', 'content_state': 'rest',
+                    'state_asserted': True, 'theme': 'light',
+                    'lookups': [], 'no_dynamic_lookups': True,
+                    'zero_lookup_reason': 'Closed tooltip.',
+                }],
+            }))
+            with patch.object(capabilities, 'ROOT', root):
+                result = capabilities.runtime_observation({
+                    'id': 'tui.tooltip',
+                    'runtime_token_observation': 'design/evidence/probe.json',
+                })
+            self.assertEqual(result['status'], 'historical-stale')
+            self.assertEqual(
+                result['identity_differences'],
+                [
+                    {
+                        'path': 'design/reviews/old-host/main.rs',
+                        'expected_sha256': 'a' * 64,
+                        'actual_sha256': 'removed-historical-input',
+                    },
+                    {
+                        'path': 'scripts/audit-old-tokens.py',
+                        'expected_sha256': 'b' * 64,
+                        'actual_sha256': 'removed-historical-input',
+                    },
+                ],
+            )
+
+    def test_workspace_version_bump_does_not_churn_capability_digests(self):
+        toml_a = b'[workspace.package]\nversion = "0.3.34"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.34", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.0" }\n'
+        toml_b = b'[workspace.package]\nversion = "0.3.35"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.35", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.0" }\n'
+        toml_ext = b'[workspace.package]\nversion = "0.3.35"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.35", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.1" }\n'
+        self.assertEqual(capabilities.normalized_digest('Cargo.toml', toml_a), capabilities.normalized_digest('Cargo.toml', toml_b))
+        self.assertNotEqual(capabilities.normalized_digest('Cargo.toml', toml_b), capabilities.normalized_digest('Cargo.toml', toml_ext))
+
+        lock_a = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.34"\n\n[[package]]\nname = "serde"\nversion = "1.0.228"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        lock_b = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.35"\n\n[[package]]\nname = "serde"\nversion = "1.0.228"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        lock_ext = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.35"\n\n[[package]]\nname = "serde"\nversion = "1.0.229"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        self.assertEqual(capabilities.normalized_digest('Cargo.lock', lock_a), capabilities.normalized_digest('Cargo.lock', lock_b))
+        self.assertNotEqual(capabilities.normalized_digest('Cargo.lock', lock_b), capabilities.normalized_digest('Cargo.lock', lock_ext))
 
 
 if __name__ == '__main__':

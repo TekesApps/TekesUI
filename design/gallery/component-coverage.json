@@ -13,7 +13,7 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/layout-surface.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "bb488947e312a5a3caa262e96985a272f634108e",
@@ -70,7 +70,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/grid-layout.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/grid-layout.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "7120d5d272fc432950b622563481a4aa5ce7a90d",
@@ -127,7 +127,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/separator.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/separator.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "c7b4e511e6842137b09cf4a5f033fe37427dc1b5",
@@ -479,7 +479,7 @@
           "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/content-status.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "146a1c822e95e17bec355daa0d1356cec46fca9c",
@@ -534,7 +534,7 @@
           "note": "Actual public Stack geometry scope has asserted zero lookups; SurfaceView paint is captured separately,4themes/3brands/real scales/Canvas,Panel/ancestor clip. Caller scale forwarding has216real Gallery GPU cases and independent consumer tests; page/native maturity remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/layout-surface.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/layout-surface.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "7840faa7cfa15848b553ab5aea78e95841617ec3",
@@ -642,7 +642,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/toolbar.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/toolbar.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "228f2c8e98730df07a97370ea75dd058893b4a27",
@@ -870,7 +870,7 @@
           "note": "Exact required state asserted through public production render/event APIs in four themes and three existing brands; bounded lookup receipt, native/experience unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/action.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "63214beacbd3461d7c46cb70a1ca31df645b9bf4",
@@ -996,7 +996,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/action.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "b74e9f73b17a3c8864b75adc978ed27bf4d84f1c",
@@ -1108,7 +1108,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/action.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "be952dede5716f107801df2523aa5e8a69bb9d20",
@@ -1260,7 +1260,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/input.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "33b74b88d35c5d199fd826bca1f1d14d2fb74129",
@@ -1417,7 +1417,7 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/input.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "0bfbbdcf42532a9e0d6c46b16a31253acc4a4ee6",
@@ -1572,7 +1572,7 @@
         "owner": "tui.text-field",
         "reason": "These input variants already share the public TextSurface editor and input boundary roles. Reuse the existing text-field JSON contract as a partial family reference; this does not assert complete per-variant runtime dependencies."
       },
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/input.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/input.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "c28228b1a0f0f95feb6a727a2864b64ca276811a",
@@ -1734,7 +1734,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/combo-async.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "5227ff7d7a8233830e8f65f6eb5e019fded11137",
@@ -1856,7 +1856,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/slider-composition.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/slider-composition.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "b57d5806a9c19820c074502250f9feb5fad88326",
@@ -1996,7 +1996,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/selection.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "293b75127a66716bd4fb872e84d5de7f333466ab",
@@ -2123,7 +2123,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/selection.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "e89447f822e9c438da965dcc8b73efcea9ae5c71",
@@ -2252,7 +2252,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/selection.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/selection.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "611282ffadfec321c702aabad5ed2ae2c6d2be86",
@@ -2375,7 +2375,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/action.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/action.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "59ffc6e9557e6cc217cae29813c6cec69e151292",
@@ -2455,7 +2455,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/field.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/field.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "b3478f9d460cc40482d76504ea366a2349c38965",
@@ -2619,7 +2619,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/combo-async.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/combo-async.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "22cbc8e88e980e889f03afb10d36488bba3e79f5",
@@ -2727,7 +2727,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/number.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/number.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "398ac4e3fa74531a679becb75a3c4356d80e3c1d",
@@ -2870,7 +2870,7 @@
           "note": "Caller-owned status/refresh fixture lives in standalone examples/composition-consumer and is no longer injected into Gallery behind composition-review/test gating; Gallery renders identical component trees under cargo run and cargo test."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/content-status.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "08c3456b764be1589f652655d66f8f5d0dda6901",
@@ -2979,7 +2979,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/content-status.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/content-status.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "0608cb64ec7382fcea72e1265ddcd7bcb446e470",
@@ -3143,7 +3143,7 @@
           }
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/command-async.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/command-async.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "975303260d4f573bfb01e26bdb52bb8a5dfef30c",
@@ -3253,7 +3253,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/collection-focus.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "c40f147c206c5bd744509b137c2bddda858356ac",
@@ -3367,7 +3367,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/collection-focus.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "8db310b3d887eeaf92604b3da483652e640a6c91",
@@ -3474,7 +3474,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/collection-focus.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "6de619d5f3cc5730f383ace379dde30384055b30",
@@ -3576,7 +3576,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/collection-focus.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/collection-focus.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "b7634699b5b7026a28fa26cc2416b55f2235ff8d",
@@ -3725,7 +3725,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/menu-content.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/menu-content.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "57575e0b69e71aeb5b49a72eb4c09569f32ff939",
@@ -3785,7 +3785,7 @@
           "note": "Public TooltipView actual render,12asserted lifecycle scenarios across4themes/3brands; closed rest explicitly has zero dynamic reads. Fixture/native/Gold7 visual acceptance remain unverified."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/tooltip.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/tooltip.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "80e9c7bee554521c6e838665e4aa422d3d5477d0",
@@ -3849,7 +3849,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/popover-content.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/popover-content.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "e25f104675778fe656f0958432f4fff22a6c81e0",
@@ -4268,7 +4268,7 @@
           "note": "Required by the referenced design contract; no per-state fixture/runtime/native acceptance is inferred from a page existing. Prior evidence remains separate."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "f6085f869ead269981fcee13d8b44efc38fdd510",
@@ -4393,7 +4393,7 @@
           "note": "Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Host composition, native, VoiceOver and matched ClientKit/Gold7 remain unverified; no maturity promotion."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "3f13a1e1cccfa0afc82a89b580fdc26d64715311",
@@ -4534,7 +4534,7 @@
           "note": "Historical passive-painter observation: Actual public passive paint API, asserted geometry and runtime token reads across4themes/3brands/ancestor clip. Existing Progress loading consumer and StatusBadge shaped-label Gallery checks verified separately. Subsequent mixed-Host SkeletonContent acceptance is recorded separately by #77/b4fbed1 and practical_intake; native window, VoiceOver and matched ClientKit/Gold7 remain unverified. Original observation/source identity and maturity are unchanged."
         }
       ],
-      "runtime_token_observation": "design/reviews/number-field-release-20261022/probes-final/passive-feedback.json",
+      "runtime_token_observation": "design/evidence/runtime-token-probes/probes-final/passive-feedback.json",
       "practical_intake": {
         "status": "accepted-bounded-evidence",
         "baseline_commit": "23447d238d4cedafd69986ee3b22106be7631e7e",

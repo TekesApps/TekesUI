@@ -9,7 +9,7 @@
   "scope": "Design contract supplement and static mathematical audit; no blanket runtime or visual approval",
   "authority": "Existing explicit TekesUI decisions survive; fill absent contracts. Values in the attachment are not replacement tokens.",
   "specification": {
-    "$ref": "../../docs/design/reference-alignment-20261016.md"
+    "$ref": "../../docs/archive/design-logs/reference-alignment-20261016.md"
   },
   "themes": [
     "light",
@@ -417,7 +417,7 @@
   "media_viewer": {
     "status": "specified-not-implemented",
     "design_candidate": {
-      "$ref": "../../docs/design/media-viewer-design-20261031.md",
+      "$ref": "../../docs/archive/design-logs/media-viewer-design-20261031.md",
       "issue": "https://github.com/TekesApps/TekesUI/issues/201",
       "status": "proposed-not-runtime"
     },
@@ -531,7 +531,7 @@
       "I13"
     ],
     "report": {
-      "$ref": "../reviews/reference-alignment-20261028/report.json"
+      "$ref": "../evidence/reference-alignment/report.json"
     }
   },
   "local_recipes": [

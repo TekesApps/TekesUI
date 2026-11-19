@@ -31,6 +31,17 @@ pub struct NavigationModule {
     fault: Fault,
     in_process: bool,
 }
+impl std::fmt::Debug for NavigationModule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NavigationModule")
+            .field("ready", &self.ready)
+            .field("window", &self.window)
+            .field("registration", &self.registration)
+            .field("sequence", &self.sequence)
+            .field("in_process", &self.in_process)
+            .finish_non_exhaustive()
+    }
+}
 impl NavigationModule {
     pub fn new_in_process() -> Self {
         Self {

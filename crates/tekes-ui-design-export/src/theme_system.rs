@@ -6,6 +6,139 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+const SHARED_THEME_PIN_PATHS: [&str; 20] = [
+    "design/brand/brand.schema.json",
+    "design/brand/policy.json",
+    "design/brand/policy.schema.json",
+    "design/source/base.tokens.json",
+    "design/source/contrast-pairs.json",
+    "design/source/token-metadata.json",
+    "design/source/tokens.schema.json",
+    "design/system.schema.json",
+    "design/theme/artifact-lock.schema.json",
+    "design/theme/data-plot-pairs.json",
+    "design/theme/rules.json",
+    "design/theme/rules.schema.json",
+    "design/theme/theme.schema.json",
+    "scripts/generate-theme-system.py",
+    "scripts/merge-design-system.py",
+    "scripts/requirements-design.txt",
+    "scripts/tekesui_design/__init__.py",
+    "scripts/tekesui_design/brand_color.py",
+    "scripts/tekesui_design/brand_compiler.py",
+    "scripts/tekesui_design/validate_tokens.py",
+];
+
+#[derive(Clone, Copy, Debug)]
+struct ThresholdPair {
+    normal: f64,
+    ic: f64,
+}
+
+impl ThresholdPair {
+    fn for_mode(self, mode: &str) -> f64 {
+        if mode.ends_with("-ic") {
+            self.ic
+        } else {
+            self.normal
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ContrastThresholds {
+    surface_foreground: ThresholdPair,
+    surface_non_text: ThresholdPair,
+    readable_disabled_quiet: ThresholdPair,
+    solid_status_foreground: ThresholdPair,
+    badge_foreground: ThresholdPair,
+    passive_badge_fill_parent: ThresholdPair,
+    skeleton_boundary: ThresholdPair,
+    progress_track_boundary: ThresholdPair,
+    range_track_boundary: ThresholdPair,
+}
+
+impl ContrastThresholds {
+    fn parse_pair(thresholds: &Value, key: &str) -> Result<ThresholdPair, String> {
+        let entry = thresholds
+            .get(key)
+            .ok_or_else(|| format!("missing contrast threshold entry: {key}"))?;
+        let normal = entry["normal"]
+            .as_f64()
+            .filter(|v| v.is_finite() && *v >= 1.0)
+            .ok_or_else(|| format!("invalid normal threshold for {key}"))?;
+        let ic = entry["ic"]
+            .as_f64()
+            .filter(|v| v.is_finite() && *v >= 1.0)
+            .ok_or_else(|| format!("invalid ic threshold for {key}"))?;
+        Ok(ThresholdPair { normal, ic })
+    }
+
+    fn from_root(root: &Path) -> Result<Self, String> {
+        let doc: Value =
+            serde_json::from_slice(&read_safe_file(root, "design/source/contrast-pairs.json")?)
+                .map_err(|e| format!("design/source/contrast-pairs.json: {e}"))?;
+        let thresholds = doc
+            .get("thresholds")
+            .ok_or("missing thresholds section in design/source/contrast-pairs.json")?;
+        Ok(Self {
+            surface_foreground: Self::parse_pair(thresholds, "surface_foreground")?,
+            surface_non_text: Self::parse_pair(thresholds, "surface_non_text")?,
+            readable_disabled_quiet: Self::parse_pair(thresholds, "readable_disabled_quiet")?,
+            solid_status_foreground: Self::parse_pair(thresholds, "solid_status_foreground")?,
+            badge_foreground: Self::parse_pair(thresholds, "badge_foreground")?,
+            passive_badge_fill_parent: Self::parse_pair(thresholds, "passive_badge_fill_parent")?,
+            skeleton_boundary: Self::parse_pair(thresholds, "skeleton_boundary")?,
+            progress_track_boundary: Self::parse_pair(thresholds, "progress_track_boundary")?,
+            range_track_boundary: Self::parse_pair(thresholds, "range_track_boundary")?,
+        })
+    }
+}
+
+#[cfg(test)]
+impl Default for ContrastThresholds {
+    fn default() -> Self {
+        Self {
+            surface_foreground: ThresholdPair {
+                normal: 4.5,
+                ic: 4.5,
+            },
+            surface_non_text: ThresholdPair {
+                normal: 3.0,
+                ic: 3.0,
+            },
+            readable_disabled_quiet: ThresholdPair {
+                normal: 3.5,
+                ic: 7.0,
+            },
+            solid_status_foreground: ThresholdPair {
+                normal: 4.5,
+                ic: 7.0,
+            },
+            badge_foreground: ThresholdPair {
+                normal: 4.5,
+                ic: 7.0,
+            },
+            passive_badge_fill_parent: ThresholdPair {
+                normal: 3.0,
+                ic: 3.0,
+            },
+            skeleton_boundary: ThresholdPair {
+                normal: 1.05,
+                ic: 3.0,
+            },
+            progress_track_boundary: ThresholdPair {
+                normal: 1.05,
+                ic: 3.0,
+            },
+            range_track_boundary: ThresholdPair {
+                normal: 3.0,
+                ic: 3.0,
+            },
+        }
+    }
+}
 const CHANNELS: [&str; 7] = [
     "background",
     "text",
@@ -273,28 +406,7 @@ fn theme_input_contract(root: &Path, rules: &Value) -> Result<Value, String> {
     {
         return Err("stale or unsupported Theme input contract".into());
     }
-    let pin_paths = [
-        "design/brand/policy.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/brand.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/policy.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/contrast-pairs.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/tokens.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py",
-        "design/source/base.tokens.json",
-        "design/source/contrast-pairs.json",
-        "design/source/token-metadata.json",
-        "design/system.schema.json",
-        "design/theme/artifact-lock.schema.json",
-        "design/theme/data-plot-pairs.json",
-        "design/theme/rules.json",
-        "design/theme/rules.schema.json",
-        "design/theme/theme.schema.json",
-        "scripts/generate-theme-system.py",
-        "scripts/merge-design-system.py",
-    ];
+    let pin_paths = SHARED_THEME_PIN_PATHS;
     let pins = contract["pinned_inputs"]
         .as_object()
         .ok_or("missing Theme contract pins")?;
@@ -969,31 +1081,11 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         .as_object()
         .ok_or("missing Theme input hashes")?;
     let mut paths = vec![root.join(output), root.join(manifest)];
-    for required in [
-        "design/theme/data-plot-pairs.json",
-        "design/theme/rules.json",
-        "design/theme/rules.schema.json",
-        "design/theme/theme.schema.json",
-        "design/theme/artifact-lock.schema.json",
+    for required in SHARED_THEME_PIN_PATHS.iter().copied().chain([
         "design/theme/themes.json",
         "design/system.json",
-        "design/system.schema.json",
         "design/brand/config.json",
-        "scripts/merge-design-system.py",
-        "scripts/generate-theme-system.py",
-        "design/source/base.tokens.json",
-        "design/source/contrast-pairs.json",
-        "design/source/token-metadata.json",
-        "design/brand/policy.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/tokens.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/brand.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/policy.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/contrast-pairs.json",
-    ] {
+    ]) {
         if !hashes.contains_key(required) {
             return Err(format!("missing Theme input: {required}"));
         }
@@ -1037,12 +1129,21 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
         }
     }
     // Check the actual selected palette too, including explicit offline consumer artifacts.
+    let thresholds = ContrastThresholds::from_root(root)?;
     let data_contract = data_plot_contract(root)?;
     verify_data_plot_contrast(&rules, &tokens["proposal"]["tokens"], &data_contract)?;
-    verify_notice_marker_contrast(&rules, &tokens["proposal"]["tokens"])?;
-    verify_passive_status_contrast(&rules, &tokens["proposal"]["tokens"])?;
-    verify_track_boundaries(&rules, &tokens["proposal"]["tokens"])?;
-    verify_surface_foregrounds(&rules, &tokens["proposal"]["tokens"])?;
+    verify_notice_marker_contrast_with_thresholds(
+        &rules,
+        &tokens["proposal"]["tokens"],
+        &thresholds,
+    )?;
+    verify_passive_status_contrast_with_thresholds(
+        &rules,
+        &tokens["proposal"]["tokens"],
+        &thresholds,
+    )?;
+    verify_track_boundaries_with_thresholds(&rules, &tokens["proposal"]["tokens"], &thresholds)?;
+    verify_surface_foregrounds_with_thresholds(&rules, &tokens["proposal"]["tokens"], &thresholds)?;
     let gallery: Value =
         serde_json::from_slice(&read("design/gallery/brands.json")?).map_err(|e| e.to_string())?;
     for preset in gallery["presets"]
@@ -1054,10 +1155,26 @@ pub fn verify_theme_system(root: &Path, tokens: &Value) -> Result<Vec<PathBuf>, 
             &serde_json::json!({"color": preset["color"]}),
             &data_contract,
         )?;
-        verify_notice_marker_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
-        verify_passive_status_contrast(&rules, &serde_json::json!({"color": preset["color"]}))?;
-        verify_track_boundaries(&rules, &serde_json::json!({"color": preset["color"]}))?;
-        verify_surface_foregrounds(&rules, &serde_json::json!({"color": preset["color"]}))?;
+        verify_notice_marker_contrast_with_thresholds(
+            &rules,
+            &serde_json::json!({"color": preset["color"]}),
+            &thresholds,
+        )?;
+        verify_passive_status_contrast_with_thresholds(
+            &rules,
+            &serde_json::json!({"color": preset["color"]}),
+            &thresholds,
+        )?;
+        verify_track_boundaries_with_thresholds(
+            &rules,
+            &serde_json::json!({"color": preset["color"]}),
+            &thresholds,
+        )?;
+        verify_surface_foregrounds_with_thresholds(
+            &rules,
+            &serde_json::json!({"color": preset["color"]}),
+            &thresholds,
+        )?;
     }
     verify_instances(root, &rules, &instances, &input_contract)?;
     paths.extend([
@@ -1241,14 +1358,17 @@ fn color_luminance(color: &Value) -> Result<f64, String> {
 }
 
 /// Validate the existing solid status label/ground pairs, independently of Surface packets.
-fn verify_solid_status_foregrounds(palette: &Value) -> Result<(), String> {
+fn verify_solid_status_foregrounds_with_thresholds(
+    palette: &Value,
+    thresholds: &ContrastThresholds,
+) -> Result<(), String> {
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         let foreground = color_luminance(
             &resolved(palette, "c-status-badge-foreground", mode, 0).map_err(|error| {
                 format!("invalid solid status role {mode}/c-status-badge-foreground: {error}")
             })?,
         )?;
-        let minimum = if mode.ends_with("-ic") { 7.0 } else { 4.5 };
+        let minimum = thresholds.solid_status_foreground.for_mode(mode);
         for tone in ["info", "running", "succeeded", "failed"] {
             let role = format!("status-{tone}");
             let background =
@@ -1265,9 +1385,18 @@ fn verify_solid_status_foregrounds(palette: &Value) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(test)]
+fn verify_solid_status_foregrounds(palette: &Value) -> Result<(), String> {
+    verify_solid_status_foregrounds_with_thresholds(palette, &ContrastThresholds::default())
+}
+
 /// Mirror the shared generator's foreground constraints in the ordinary build,
 /// even when an author has consistently regenerated every output and hash.
-fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), String> {
+fn verify_surface_foregrounds_with_thresholds(
+    rules: &Value,
+    palette: &Value,
+    thresholds: &ContrastThresholds,
+) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         let mut cache = std::collections::BTreeMap::<String, f64>::new();
@@ -1318,11 +1447,11 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
                             background
                         };
                         let minimum = if readable_disabled_quiet {
-                            if mode.ends_with("-ic") { 7.0 } else { 3.5 }
+                            thresholds.readable_disabled_quiet.for_mode(mode)
                         } else if channel == "marker" || channel == "focus" {
-                            3.0
+                            thresholds.surface_non_text.for_mode(mode)
                         } else {
-                            4.5
+                            thresholds.surface_foreground.for_mode(mode)
                         };
                         if (ink.max(ground) + 0.05) / (ink.min(ground) + 0.05) < minimum {
                             return Err(format!(
@@ -1335,6 +1464,11 @@ fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), Stri
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+fn verify_surface_foregrounds(rules: &Value, palette: &Value) -> Result<(), String> {
+    verify_surface_foregrounds_with_thresholds(rules, palette, &ContrastThresholds::default())
 }
 
 /// Validate the finite data-pair contract bound by normal source input pins.
@@ -1460,10 +1594,15 @@ fn verify_data_plot_contrast(
 }
 
 /// Notice marker ink must contrast with the actual Surface parent, never a badge fill.
-fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+fn verify_notice_marker_contrast_with_thresholds(
+    rules: &Value,
+    palette: &Value,
+    thresholds: &ContrastThresholds,
+) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         let luminance = |role: &str| color_luminance(&resolved(palette, role, mode, 0)?);
+        let minimum = thresholds.surface_non_text.for_mode(mode);
         for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
             let parent = luminance(
                 definition["background"]
@@ -1476,7 +1615,7 @@ fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), S
                 }
                 let pair = &profiles[profile.as_str().ok_or("invalid profile")?]["rest"];
                 let ink = luminance(pair["marker"].as_str().ok_or("missing notice marker")?)?;
-                if (ink.max(parent) + 0.05) / (ink.min(parent) + 0.05) < 3.0 {
+                if (ink.max(parent) + 0.05) / (ink.min(parent) + 0.05) < minimum {
                     return Err(format!(
                         "insufficient notice marker-parent contrast: {mode}/{surface}/{usage}"
                     ));
@@ -1487,8 +1626,17 @@ fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), S
     Ok(())
 }
 
+#[cfg(test)]
+fn verify_notice_marker_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+    verify_notice_marker_contrast_with_thresholds(rules, palette, &ContrastThresholds::default())
+}
+
 /// Fixed passive packets have distinct solid/parent and necessary boundary constraints.
-fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+fn verify_passive_status_contrast_with_thresholds(
+    rules: &Value,
+    palette: &Value,
+    thresholds: &ContrastThresholds,
+) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         let luminance = |role: &str| color_luminance(&resolved(palette, role, mode, 0)?);
@@ -1514,7 +1662,7 @@ fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), 
                 let fill = color("background")?;
                 if usage == "skeleton" {
                     let edge = color("boundary")?;
-                    let minimum = if mode.ends_with("-ic") { 3.0 } else { 1.05 };
+                    let minimum = thresholds.skeleton_boundary.for_mode(mode);
                     for (side, ground) in [("fill", fill), ("parent", parent)] {
                         if ratio(edge, ground) < minimum {
                             return Err(format!(
@@ -1523,7 +1671,7 @@ fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), 
                         }
                     }
                 } else {
-                    let minimum = if mode.ends_with("-ic") { 7.0 } else { 4.5 };
+                    let minimum = thresholds.badge_foreground.for_mode(mode);
                     for channel in ["text", "icon"] {
                         if ratio(color(channel)?, fill) < minimum {
                             return Err(format!(
@@ -1531,7 +1679,7 @@ fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), 
                             ));
                         }
                     }
-                    if ratio(fill, parent) < 3.0 {
+                    if ratio(fill, parent) < thresholds.passive_badge_fill_parent.for_mode(mode) {
                         return Err(format!(
                             "insufficient badge fill-parent contrast: {mode}/{surface}/{usage}"
                         ));
@@ -1543,9 +1691,18 @@ fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), 
     Ok(())
 }
 
+#[cfg(test)]
+fn verify_passive_status_contrast(rules: &Value, palette: &Value) -> Result<(), String> {
+    verify_passive_status_contrast_with_thresholds(rules, palette, &ContrastThresholds::default())
+}
+
 /// A necessary range or passive progress rail must remain visible against both its own fill and parent.
 /// This is a compiler constraint, never an RGB-to-Surface identity inference.
-fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String> {
+fn verify_track_boundaries_with_thresholds(
+    rules: &Value,
+    palette: &Value,
+    thresholds: &ContrastThresholds,
+) -> Result<(), String> {
     let profiles = expanded_profiles(rules)?;
     for mode in ["light", "dark", "light-ic", "dark-ic"] {
         for (surface, definition) in rules["surfaces"].as_object().ok_or("missing surfaces")? {
@@ -1575,10 +1732,10 @@ fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String>
                         )?)
                     };
                     let edge = luminance("boundary")?;
-                    let minimum = if usage == "range-track" || mode.ends_with("-ic") {
-                        3.0
+                    let minimum = if usage == "range-track" {
+                        thresholds.range_track_boundary.for_mode(mode)
                     } else {
-                        1.05
+                        thresholds.progress_track_boundary.for_mode(mode)
                     };
                     for ground in [
                         luminance("background")?,
@@ -1600,6 +1757,11 @@ fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String>
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+fn verify_track_boundaries(rules: &Value, palette: &Value) -> Result<(), String> {
+    verify_track_boundaries_with_thresholds(rules, palette, &ContrastThresholds::default())
 }
 /// Theme instances are full outputs from the existing BrandConfig compiler;
 /// Palette consumes their complete role maps as its color inputs. Rust validates
@@ -1640,34 +1802,16 @@ fn verify_instances(
     if definitions.len() != instances.len() || definitions.is_empty() {
         return Err("incomplete generated Theme instances".into());
     }
-    let mut expected_input_paths = [
-        "design/system.json",
-        "design/system.schema.json",
-        "design/theme/data-plot-pairs.json",
-        "design/brand/config.json",
-        "scripts/merge-design-system.py",
-        "design/theme/rules.json",
-        "design/theme/rules.schema.json",
-        "design/theme/theme.schema.json",
-        "design/theme/artifact-lock.schema.json",
-        "design/theme/themes.json",
-        "scripts/generate-theme-system.py",
-        "design/source/base.tokens.json",
-        "design/source/contrast-pairs.json",
-        "design/source/token-metadata.json",
-        "design/brand/policy.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/brand_color.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/tools/validate.py",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/requirements.txt",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/tokens/tokens.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/brand.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/policy.schema.json",
-        "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/quality/contrast-pairs.json",
-    ]
-    .into_iter()
-    .map(str::to_owned)
-    .collect::<BTreeSet<_>>();
+    let mut expected_input_paths = SHARED_THEME_PIN_PATHS
+        .iter()
+        .copied()
+        .chain([
+            "design/theme/themes.json",
+            "design/system.json",
+            "design/brand/config.json",
+        ])
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
     for definition in definitions {
         expected_input_paths.insert(
             definition["brand_config"]
@@ -1780,12 +1924,13 @@ fn verify_instances(
             effective_tokens.push(serde_json::json!({"name":name,"value":values}));
         }
         let effective_roles = serde_json::json!({"color":{"tokens":effective_tokens}});
+        let thresholds = ContrastThresholds::from_root(root)?;
         verify_data_plot_contrast(rules, &effective_roles, &data_plot_contract(root)?)?;
-        verify_notice_marker_contrast(rules, &effective_roles)?;
-        verify_passive_status_contrast(rules, &effective_roles)?;
-        verify_track_boundaries(rules, &effective_roles)?;
-        verify_surface_foregrounds(rules, &effective_roles)?;
-        verify_solid_status_foregrounds(&effective_roles)?;
+        verify_notice_marker_contrast_with_thresholds(rules, &effective_roles, &thresholds)?;
+        verify_passive_status_contrast_with_thresholds(rules, &effective_roles, &thresholds)?;
+        verify_track_boundaries_with_thresholds(rules, &effective_roles, &thresholds)?;
+        verify_surface_foregrounds_with_thresholds(rules, &effective_roles, &thresholds)?;
+        verify_solid_status_foregrounds_with_thresholds(&effective_roles, &thresholds)?;
         let mut expected_modes = serde_json::Map::new();
         for mode in ["light", "dark", "light-ic", "dark-ic"] {
             let mut surfaces = serde_json::Map::new();
@@ -2946,6 +3091,58 @@ mod data_plot_tests {
             verify_data_plot_contrast(&rules, &palette, &one)
                 .unwrap_err()
                 .contains("M:P")
+        );
+    }
+}
+
+#[cfg(test)]
+mod contrast_threshold_tests {
+    use super::*;
+
+    struct TempRoot(PathBuf);
+    impl Drop for TempRoot {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn contrast_thresholds_load_from_contract_and_reject_missing_entries() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let thresholds = ContrastThresholds::from_root(&root).unwrap();
+        assert_eq!(thresholds.surface_foreground.normal, 4.5);
+        assert_eq!(thresholds.readable_disabled_quiet.normal, 3.5);
+        assert_eq!(thresholds.readable_disabled_quiet.ic, 7.0);
+        assert_eq!(thresholds.skeleton_boundary.normal, 1.05);
+
+        let dir = TempRoot(std::env::temp_dir().join(format!(
+            "tekes-thresholds-test-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        )));
+        let source_dir = dir.0.join("design/source");
+        fs::create_dir_all(&source_dir).unwrap();
+        fs::write(source_dir.join("contrast-pairs.json"), b"{}").unwrap();
+        assert!(
+            ContrastThresholds::from_root(&dir.0)
+                .unwrap_err()
+                .contains("missing thresholds section")
+        );
+
+        let mut malformed: Value = serde_json::from_slice(
+            &fs::read(root.join("design/source/contrast-pairs.json")).unwrap(),
+        )
+        .unwrap();
+        malformed["thresholds"]["readable_disabled_quiet"]["ic"] = Value::from(0.5);
+        fs::write(
+            source_dir.join("contrast-pairs.json"),
+            serde_json::to_vec(&malformed).unwrap(),
+        )
+        .unwrap();
+        assert!(
+            ContrastThresholds::from_root(&dir.0)
+                .unwrap_err()
+                .contains("invalid ic threshold for readable_disabled_quiet")
         );
     }
 }

@@ -32,14 +32,17 @@ fn dimming_curve(curve:vec4<f32>)->f32 {
 }
 // Integrate a trapezoidal speed profile exactly; no CPU position updates.
 fn transit_distance(t:f32,length:f32,speed:f32,dwell:f32,ramp:f32,phase:f32)->vec2<f32> {
-    let a=min(ramp,length/speed);
+    if speed<=0.0 || length<=0.0 { return vec2(0.0,0.0); }
+    let a=min(max(ramp,0.0),length/speed);
     let travel=length/speed+a;
-    let period=travel+dwell;
+    let d_dwell=max(dwell,0.0);
+    let period=travel+d_dwell;
+    if period<=0.0 { return vec2(0.0,0.0); }
     let q=(t+phase)-floor((t+phase)/period)*period;
-    let u=clamp(q-dwell,0.0,travel);
+    let u=clamp(q-d_dwell,0.0,travel);
     var d=u-a*0.5;
-    if u<a {d=u*u/(2.0*a);} else if u>travel-a {d=length/speed-(travel-u)*(travel-u)/(2.0*a);}
-    let doors=smoothstep(0.5,1.2,q)*(1.0-smoothstep(dwell-1.2,dwell-0.5,q));
+    if a>0.0 && u<a {d=u*u/(2.0*a);} else if a>0.0 && u>travel-a {d=length/speed-(travel-u)*(travel-u)/(2.0*a);}
+    let doors=smoothstep(0.5,1.2,q)*(1.0-smoothstep(d_dwell-1.2,d_dwell-0.5,q));
     return vec2(d*speed,doors);
 }
 fn scheduled_route(instance:Instance,t:f32)->vec3<f32> {
