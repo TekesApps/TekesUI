@@ -53,7 +53,7 @@ class ConsumerBrandTests(unittest.TestCase):
         self.assertEqual((ROOT / 'design/brand/config.json').read_bytes(), before)
 
     def test_consumer_theme_definitions_generate_full_artifact_and_independent_lock(self):
-        brand = ROOT / 'design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json'
+        brand = ROOT / 'scripts/fixtures/example-blue.json'
         project = self.directory / 'theme-consumer'
         project.mkdir()
         shutil.copyfile(brand, project / 'BrandConfig.json')
@@ -149,7 +149,8 @@ class ConsumerBrandTests(unittest.TestCase):
                 states = [result['roles'][r] for r in ['action-primary-ground','action-primary-hover','action-primary-pressed']]
                 self.assertEqual(len({tuple(c) for c in states}),3)
         baseline = json.loads((ROOT / 'design/tokens.json').read_text())['proposal']['tokens']
-        affected = sys.modules['brand'].dependency_names(baseline)
+        brand, _ = compiler.merge.load_brand_compiler(ROOT)
+        affected = brand.dependency_names(baseline)
         independent = {item['name'] for item in baseline['color']['tokens']} - affected
         for document in documents:
             tokens = document['proposal']['tokens']

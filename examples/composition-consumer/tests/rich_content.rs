@@ -647,6 +647,7 @@ fn mixed_reading_prepend_expand_and_reflow_use_existing_stable_item_transaction(
     }
 }
 
+#[cfg(feature = "syntax-highlighting")]
 #[test]
 fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
     let source = "let greeting = \"你好🦀\"; // comment\nlet n = 42;";
@@ -704,6 +705,28 @@ fn code_ink_uses_theme_tokens_without_changing_shaped_geometry_or_copy() {
             colored.text_surface(id).unwrap().input().selected_text(),
             source
         );
+    }
+}
+
+#[cfg(not(feature = "syntax-highlighting"))]
+#[test]
+fn code_ink_falls_back_to_plain_body_ink_without_syntax_highlighting() {
+    let source = "let greeting = \"你好🦀\"; // comment\nlet n = 42;";
+    let id = ComponentId(901);
+    for theme in [Theme::LIGHT, Theme::DARK] {
+        let make = |language: &str| {
+            let document = RichDocument::from_markdown(&format!("```{language}\n{source}\n```"));
+            ContentHost::new(Content::new(
+                id,
+                RichContent::new("syntax", 1, document).unwrap(),
+            ))
+            .unwrap()
+        };
+        let mut colored = make("rust");
+        let mut plain = make("unknown-language");
+        let scene = paint(&mut colored, 300., 1., theme);
+        let plain_scene = paint(&mut plain, 300., 1., theme);
+        assert_eq!(scene.primitives(), plain_scene.primitives());
     }
 }
 

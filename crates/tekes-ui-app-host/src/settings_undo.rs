@@ -431,6 +431,14 @@ pub struct UndoModule {
     revision: u64,
     failed: bool,
 }
+impl std::fmt::Debug for UndoModule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UndoModule")
+            .field("revision", &self.revision)
+            .field("failed", &self.failed)
+            .finish_non_exhaustive()
+    }
+}
 impl ProcessModule for UndoModule {
     fn handle(&mut self, request: RequestBody, e: &ComponentEmitter) -> Result<serde_json::Value> {
         let result = (|| -> Result<Reply> {

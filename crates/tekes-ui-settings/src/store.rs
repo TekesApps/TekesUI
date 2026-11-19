@@ -1,6 +1,8 @@
 //! Single-writer local provider. Run load/commit/query on a worker, never the UI thread.
-use crate::{Schema, Snapshot, Submission};
-use anyhow::{Context, Result, ensure};
+use crate::{
+    Result, Schema, SettingsError, Snapshot, Submission,
+    model::{from_toml_table, to_toml_table},
+};
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsString,
@@ -35,6 +37,11 @@ impl std::fmt::Display for CommitFailure {
     }
 }
 impl std::error::Error for CommitFailure {}
+impl From<CommitFailure> for SettingsError {
+    fn from(failure: CommitFailure) -> Self {
+        Self::RevisionConflict(failure.message)
+    }
+}
 fn parent_dir(path: &Path) -> &Path {
     path.parent()
         .filter(|p| !p.as_os_str().is_empty())
@@ -59,9 +66,9 @@ impl FileProvider {
             .read(true)
             .write(true)
             .open(sidecar_path(&path, ".lock"))?;
-        writer
-            .try_lock()
-            .context("Settings provider already has a writer")?;
+        writer.try_lock().map_err(|_| {
+            SettingsError::ProviderLocked("Settings provider already has a writer".into())
+        })?;
         Ok(Self {
             path,
             namespace,
@@ -78,27 +85,29 @@ impl FileProvider {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Snapshot::default()),
             Err(e) => return Err(e.into()),
         };
-        let mut table: toml::Table =
-            toml::from_str(&source).context("invalid Settings file; original preserved")?;
+        let mut table: toml::Table = toml::from_str(&source).map_err(|err| {
+            SettingsError::Format(format!("invalid Settings file; original preserved: {err}"))
+        })?;
         let metadata: Metadata = table
             .remove("_tekes")
-            .context("missing Settings metadata")?
+            .ok_or_else(|| SettingsError::Format("missing Settings metadata".into()))?
             .try_into()?;
-        ensure!(
-            metadata.namespace == self.namespace,
-            "Settings namespace mismatch"
-        );
+        if metadata.namespace != self.namespace {
+            return Err(SettingsError::InvalidSchema(
+                "Settings namespace mismatch".into(),
+            ));
+        }
         Ok(Snapshot {
             revision: metadata.revision,
             last_commit_id: metadata.last_commit_id,
-            overrides: table,
+            overrides: from_toml_table(table)?,
         })
     }
     pub fn load(&self) -> Result<Snapshot> {
         let _gate = self
             .gate
             .lock()
-            .map_err(|_| anyhow::anyhow!("provider poisoned"))?;
+            .map_err(|_| SettingsError::ProviderLocked("provider poisoned".into()))?;
         self.load_unlocked()
     }
     pub fn load_validated(&self, schema: &Schema) -> Result<Snapshot> {
@@ -119,38 +128,42 @@ impl FileProvider {
         })?;
         let mut replaced = false;
         let result = (|| -> Result<Snapshot> {
-            ensure!(
-                !submission.commit_id.trim().is_empty(),
-                "commit ID must not be empty"
-            );
+            if submission.commit_id.trim().is_empty() {
+                return Err(SettingsError::DraftState(
+                    "commit ID must not be empty".into(),
+                ));
+            }
             let current = self.load_unlocked()?;
             // Identify duplicates before comparing expected revision.
             if current.last_commit_id == submission.commit_id {
-                ensure!(
-                    current.overrides == submission.overrides,
-                    "commit ID reused with different input"
-                );
-                ensure!(
-                    current.revision == submission.expected_revision + 1,
-                    "commit ID reused with different revision"
-                );
+                if current.overrides != submission.overrides {
+                    return Err(SettingsError::RevisionConflict(
+                        "commit ID reused with different input".into(),
+                    ));
+                }
+                if current.revision != submission.expected_revision + 1 {
+                    return Err(SettingsError::RevisionConflict(
+                        "commit ID reused with different revision".into(),
+                    ));
+                }
                 replaced = true;
                 File::open(parent_dir(&self.path))?.sync_all()?;
                 return Ok(current);
             }
-            ensure!(
-                current.revision == submission.expected_revision,
-                "Settings revision conflict; reopen after resolving edits"
-            );
+            if current.revision != submission.expected_revision {
+                return Err(SettingsError::RevisionConflict(
+                    "Settings revision conflict; reopen after resolving edits".into(),
+                ));
+            }
             let next = Snapshot {
                 revision: current
                     .revision
                     .checked_add(1)
-                    .context("revision exhausted")?,
+                    .ok_or_else(|| SettingsError::RevisionConflict("revision exhausted".into()))?,
                 last_commit_id: submission.commit_id.clone(),
                 overrides: submission.overrides.clone(),
             };
-            let mut table = next.overrides.clone();
+            let mut table = to_toml_table(&next.overrides)?;
             let metadata = Metadata {
                 namespace: self.namespace.clone(),
                 revision: next.revision,
@@ -175,25 +188,31 @@ impl FileProvider {
             replaced = true;
             File::open(parent_dir(&self.path))?
                 .sync_all()
-                .context("replacement durability unknown; query original commit")?;
+                .map_err(|err| {
+                    SettingsError::Storage(std::io::Error::new(
+                        err.kind(),
+                        format!("replacement durability unknown; query original commit: {err}"),
+                    ))
+                })?;
             Ok(next)
         })();
         result.map_err(|e| CommitFailure {
-            message: format!("{e:#}"),
+            message: e.to_string(),
             unknown: replaced,
         })
     }
     /// Last unretired commit is sufficient for this serial, local-only prototype.
     /// This is not the full Host-crash journal for remote Provider/action recovery.
     pub fn query(&self, submission: &Submission) -> Result<Option<Snapshot>> {
-        ensure!(
-            !submission.commit_id.trim().is_empty(),
-            "commit ID must not be empty"
-        );
+        if submission.commit_id.trim().is_empty() {
+            return Err(SettingsError::DraftState(
+                "commit ID must not be empty".into(),
+            ));
+        }
         let _gate = self
             .gate
             .lock()
-            .map_err(|_| anyhow::anyhow!("provider poisoned"))?;
+            .map_err(|_| SettingsError::ProviderLocked("provider poisoned".into()))?;
         let current = self.load_unlocked()?;
         if current.last_commit_id == submission.commit_id
             && current.overrides == submission.overrides

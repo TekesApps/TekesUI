@@ -136,6 +136,17 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
     base = json.loads((root / "design/source/base.tokens.json").read_text(encoding="utf-8"))
     policy = json.loads((root / "design/brand/policy.json").read_text(encoding="utf-8"))
     contrast_pairs = json.loads((root / "design/source/contrast-pairs.json").read_text(encoding="utf-8"))
+    thresholds = contrast_pairs["thresholds"]
+    ic_text_min = float(thresholds["ic_floors"]["text"])
+    ic_non_text_min = float(thresholds["ic_floors"]["non_text"])
+    calm_windows = thresholds["calm_windows"]
+    primary_min = float(calm_windows["primary_text"]["min"])
+    primary_max = float(calm_windows["primary_text"]["max"])
+    secondary_min = float(calm_windows["secondary_text"]["min"])
+    secondary_max = float(calm_windows["secondary_text"]["max"])
+    tertiary_min = float(calm_windows["tertiary_text_surface"]["min"])
+    tertiary_max = float(calm_windows["tertiary_text_surface"]["max"])
+    tertiary_transient_min = float(calm_windows["tertiary_text_transient"]["min"])
 
     tokens = {entry["name"]: entry for entry in base["color"]["tokens"]}
     violations: list[dict[str, Any]] = []
@@ -146,25 +157,25 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
 
     # Verify localized contrast-pairs keeps IC untouched.
     for pair in contrast_pairs["pairs"]:
-        if pair["kind"] == "text" and pair["ic"] < 7.0:
+        if pair["kind"] == "text" and pair["ic"] < ic_text_min:
             _record(
                 violations,
                 "IC_THRESHOLD_WEAKENED",
                 "ic",
                 f"{pair['foreground']}/{pair['background']}",
-                "Increased-contrast text threshold must remain >= 7.0",
+                f"Increased-contrast text threshold must remain >= {ic_text_min}",
                 pair["ic"],
-                ">= 7.0",
+                f">= {ic_text_min}",
             )
-        if pair["kind"] == "non-text" and pair["ic"] < 3.0:
+        if pair["kind"] == "non-text" and pair["ic"] < ic_non_text_min:
             _record(
                 violations,
                 "IC_THRESHOLD_WEAKENED",
                 "ic",
                 f"{pair['foreground']}/{pair['background']}",
-                "Increased-contrast non-text threshold must remain >= 3.0",
+                f"Increased-contrast non-text threshold must remain >= {ic_non_text_min}",
                 pair["ic"],
-                ">= 3.0",
+                f">= {ic_non_text_min}",
             )
 
     for mode in ORDINARY_MODES:
@@ -175,7 +186,7 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
         for surface in SURFACES:
             bg = color(surface, mode)
             ratio = contrast_ratio(color("primary-text", mode), bg)
-            if ratio > 13.5:
+            if ratio > primary_max:
                 _record(
                     violations,
                     "GLARE_PRIMARY_TEXT",
@@ -183,9 +194,9 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
                     f"primary-text/{surface}",
                     f"Primary text glare exceeds ceiling on {surface}",
                     round(ratio, 3),
-                    "7.5 <= ratio <= 13.5",
+                    f"{primary_min} <= ratio <= {primary_max}",
                 )
-            elif ratio < 7.5:
+            elif ratio < primary_min:
                 _record(
                     violations,
                     "LOW_PRIMARY_TEXT",
@@ -193,14 +204,14 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
                     f"primary-text/{surface}",
                     f"Primary text contrast below calm reading floor on {surface}",
                     round(ratio, 3),
-                    "7.5 <= ratio <= 13.5",
+                    f"{primary_min} <= ratio <= {primary_max}",
                 )
 
         # 2. Ordinary secondary calm window
         for surface in SURFACES:
             bg = color(surface, mode)
             ratio = contrast_ratio(color("secondary-text", mode), bg)
-            if ratio > 6.6:
+            if ratio > secondary_max:
                 _record(
                     violations,
                     "OVER_CONTRAST_SECONDARY",
@@ -208,24 +219,24 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
                     f"secondary-text/{surface}",
                     f"Secondary text contrast exceeds calm ceiling on {surface}",
                     round(ratio, 3),
-                    "4.5 <= ratio <= 6.6",
+                    f"{secondary_min} <= ratio <= {secondary_max}",
                 )
-            elif ratio < 4.5:
+            elif ratio < secondary_min:
                 _record(
                     violations,
                     "LOW_SECONDARY_TEXT",
                     mode,
                     f"secondary-text/{surface}",
-                    f"Secondary text contrast below 4.5 floor on {surface}",
+                    f"Secondary text contrast below {secondary_min} floor on {surface}",
                     round(ratio, 3),
-                    "4.5 <= ratio <= 6.6",
+                    f"{secondary_min} <= ratio <= {secondary_max}",
                 )
 
         # 3. Ordinary tertiary calm window (Plan B)
         for surface in SURFACES:
             bg = color(surface, mode)
             ratio = contrast_ratio(color("tertiary-text", mode), bg)
-            if ratio > 4.8:
+            if ratio > tertiary_max:
                 _record(
                     violations,
                     "OVER_CONTRAST_TERTIARY",
@@ -233,31 +244,31 @@ def audit(root: Path = ROOT) -> dict[str, Any]:
                     f"tertiary-text/{surface}",
                     f"Tertiary text contrast exceeds calm ceiling on {surface}",
                     round(ratio, 3),
-                    "3.5 <= ratio <= 4.8",
+                    f"{tertiary_min} <= ratio <= {tertiary_max}",
                 )
-            elif ratio < 3.5:
+            elif ratio < tertiary_min:
                 _record(
                     violations,
                     "LOW_TERTIARY_TEXT",
                     mode,
                     f"tertiary-text/{surface}",
-                    f"Tertiary text contrast below 3.5 Plan B floor on {surface}",
+                    f"Tertiary text contrast below {tertiary_min} Plan B floor on {surface}",
                     round(ratio, 3),
-                    "3.5 <= ratio <= 4.8",
+                    f"{tertiary_min} <= ratio <= {tertiary_max}",
                 )
 
         for ground_name in TRANSIENT_GROUNDS:
             bg = color(ground_name, mode)
             ratio = contrast_ratio(color("tertiary-text", mode), bg)
-            if ratio < 3.0:
+            if ratio < tertiary_transient_min:
                 _record(
                     violations,
                     "LOW_TERTIARY_TRANSIENT",
                     mode,
                     f"tertiary-text/{ground_name}",
-                    f"Tertiary text below 3.0 on transient/diff surface {ground_name}",
+                    f"Tertiary text below {tertiary_transient_min} on transient/diff surface {ground_name}",
                     round(ratio, 3),
-                    ">= 3.0",
+                    f">= {tertiary_transient_min}",
                 )
 
         # 4. 4-tier typographic hierarchy & perceptual separation

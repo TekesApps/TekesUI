@@ -18,19 +18,36 @@ import sys
 # The upstream archive is immutable, including absence of Python cache artifacts.
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
-UPSTREAM = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1')
-THEMES = ['light','dark','light-ic','dark-ic']
-SOURCE_FILES = ['design/source/base.tokens.json','design/source/legacy.tokens.json',
-                'design/source/rust-mapping.json','design/source/motion.json','design/source/token-metadata.json',
-                'design/source/layout.json','design/source/interaction-contracts.json',
-                'design/source/contrast-pairs.json',
-                'design/brand/config.json','design/brand/policy.json','design/brand/gallery.json',
-                'scripts/merge-design-system.py','scripts/generate-gallery-brands.py',
-                'design/gallery/brands.json']
-UPSTREAM_INPUTS = ['tools/brand.py','tools/brand_color.py','tools/validate.py',
-                   'design/tokens/token-metadata.json','design/tokens/tokens.schema.json',
-                   'design/brand/brand.schema.json','design/brand/policy.schema.json',
-                   'design/quality/contrast-pairs.json']
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from tekesui_design import brand_compiler, validate_tokens  # noqa: E402
+
+THEMES = ['light', 'dark', 'light-ic', 'dark-ic']
+SOURCE_FILES = [
+    'design/source/base.tokens.json',
+    'design/source/legacy.tokens.json',
+    'design/source/rust-mapping.json',
+    'design/source/motion.json',
+    'design/source/token-metadata.json',
+    'design/source/tokens.schema.json',
+    'design/source/layout.json',
+    'design/source/interaction-contracts.json',
+    'design/source/contrast-pairs.json',
+    'design/brand/config.json',
+    'design/brand/policy.json',
+    'design/brand/brand.schema.json',
+    'design/brand/policy.schema.json',
+    'design/brand/gallery.json',
+    'scripts/merge-design-system.py',
+    'scripts/generate-gallery-brands.py',
+    'scripts/tekesui_design/__init__.py',
+    'scripts/tekesui_design/brand_color.py',
+    'scripts/tekesui_design/brand_compiler.py',
+    'scripts/tekesui_design/validate_tokens.py',
+    'design/gallery/brands.json',
+]
 
 
 def strict_pairs(items):
@@ -81,38 +98,7 @@ def pointer(d,path):
 
 
 def load_brand_compiler(root=ROOT):
-    tools_dir = str(root / UPSTREAM / 'tools')
-    if tools_dir not in sys.path:
-        sys.path.insert(0, tools_dir)
-    validate_mod = importlib.import_module('validate')
-    brand_mod = importlib.import_module('brand')
-    pairs_data = load(root / 'design/source/contrast-pairs.json')['pairs']
-
-    def local_contrast_results(tokens: dict):
-        result = []
-        for pair in pairs_data:
-            for theme in validate_mod.THEMES:
-                fg = validate_mod.rgb(validate_mod.resolve(tokens, 'color', pair['foreground'], theme))
-                bg = validate_mod.rgb(validate_mod.resolve(tokens, 'color', pair['background'], theme))
-                overlay = pair.get('overlay')
-                if overlay:
-                    oc = validate_mod.rgb(validate_mod.resolve(tokens, 'color', overlay['color'], theme))
-                    alpha = overlay.get('opacity_by_theme', {}).get(theme)
-                    if alpha is None:
-                        alpha = validate_mod.resolve(tokens, 'opacity', overlay['opacity'], theme)
-                    # Rendering contract: source-over in sRGB for these solid UI recipes.
-                    bg = tuple(alpha * c + (1 - alpha) * b for c, b in zip(oc, bg))
-                ratio = validate_mod.contrast(fg, bg)
-                minimum = pair['ic' if theme.endswith('-ic') else 'normal']
-                result.append({'theme': theme, 'foreground': pair['foreground'],
-                               'background': pair['background'], 'overlay': overlay,
-                               'ratio': ratio, 'minimum': minimum,
-                               'status': 'pass' if ratio >= minimum else 'fail'})
-        return result
-
-    validate_mod.contrast_results = local_contrast_results
-    brand_mod.contrast_results = local_contrast_results
-    return brand_mod, validate_mod
+    return brand_compiler, validate_tokens
 
 
 def merge(root=ROOT,config_path=None):
@@ -120,7 +106,8 @@ def merge(root=ROOT,config_path=None):
     config=load(config_path or root/'design/brand/config.json')
     base=load(root/'design/source/base.tokens.json');policy=load(root/'design/brand/policy.json')
     bundle,palette=brand.compile_config(config,base=base,policy=policy,
-                                      metadata=load(root/'design/source/token-metadata.json'))
+                                      metadata=load(root/'design/source/token-metadata.json'),
+                                      root=root)
     result=load(root/'design/source/legacy.tokens.json');mapping=load(root/'design/source/rust-mapping.json')
     motion=load(root/'design/source/motion.json')
     styles={style['name']:style for group in bundle['type']['groups'] for style in group['styles']}
@@ -149,8 +136,8 @@ def merge(root=ROOT,config_path=None):
     result['proposal']={'tokens':bundle,'render_opacity':mapping['render_opacity'],'motion':motion,'layout':load(root/'design/source/layout.json'),
                         'interaction':load(root/'design/source/interaction-contracts.json'),
                         'brand':{'config':config,'reference_brand':gallery['reference_brand'],'gallery':gallery,'policy':policy,'palette':palette}}
-    inputs={str(path):hashlib.sha256((root/path).read_bytes()).hexdigest()
-            for path in [*map(Path,SOURCE_FILES),*(UPSTREAM/Path(p) for p in UPSTREAM_INPUTS)]}
+    inputs={path:hashlib.sha256((root/path).read_bytes()).hexdigest()
+            for path in SOURCE_FILES}
     if config_path is not None and config_path.resolve()!=(root/'design/brand/config.json').resolve():
         raise ValueError('Use --root with a copied source tree for isolated consumer builds; config authority is design/brand/config.json')
     projection_sha=hashlib.sha256(semantic_bytes(result)).hexdigest()
@@ -168,13 +155,17 @@ def main():
     parser.add_argument('--check',action='store_true')
     args=parser.parse_args();root=args.root.resolve()
     document,report=merge(root)
-    outputs={root/'design/tokens.json':bytes_json(document),root/'design/proposal-mapping.json':bytes_json(report)}
+    token_bytes = bytes_json(document)
+    outputs={root/'design/tokens.json':token_bytes,root/'design/proposal-mapping.json':bytes_json(report)}
+    if (root/'crates/tekes-ui-tokens/Cargo.toml').is_file():
+        outputs[root/'crates/tekes-ui-tokens/assets/tokens.json'] = token_bytes
     if args.check:
         stale=[str(p.relative_to(root)) for p,data in outputs.items() if not p.is_file() or p.read_bytes()!=data]
         if stale:raise ValueError('STALE_MERGED_OUTPUT: '+', '.join(stale))
         print('Proposal + consumer brand + legacy merge is current; no native or release approval implied.')
     else:
         for path,data in outputs.items():
+            path.parent.mkdir(parents=True,exist_ok=True)
             tmp=path.with_suffix(path.suffix+'.tmp');tmp.write_bytes(data);tmp.replace(path)
         print('Generated design/tokens.json and proposal-mapping.json; native review still required.')
 

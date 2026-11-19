@@ -242,7 +242,16 @@ fn provider_appends_lock_rejects_empty_commit_id_and_handles_bare_relative_path(
     let bad_snap = Snapshot {
         revision: 1,
         last_commit_id: "bad".into(),
-        overrides: toml::from_str("[reading]\nfont_size = \"oops\"\n").unwrap(),
+        overrides: [(
+            "reading".into(),
+            Value::Table(
+                [("font_size".into(), Value::String("oops".into()))]
+                    .into_iter()
+                    .collect(),
+            ),
+        )]
+        .into_iter()
+        .collect(),
     };
     let req = tekes_ui_settings::Submission::replacement(&Snapshot::default(), &bad_snap).unwrap();
     provider.commit(&req).unwrap();

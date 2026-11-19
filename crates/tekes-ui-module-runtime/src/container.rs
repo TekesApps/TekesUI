@@ -181,6 +181,18 @@ pub struct ProcessContainerFrameHandle {
     frame: Rect,
     clip: Rect,
 }
+impl std::fmt::Debug for ProcessContainerFrameHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProcessContainerFrameHandle")
+            .field("session", &self.session)
+            .field("view", &self.view)
+            .field("request", &self.request)
+            .field("transaction", &self.transaction)
+            .field("frame", &self.frame)
+            .field("clip", &self.clip)
+            .finish_non_exhaustive()
+    }
+}
 impl ProcessContainerFrameHandle {
     /// Receive only a current immutable child frame. UI events, toolbar changes
     /// and semantic scopes remain on the ordinary mutable Host path.

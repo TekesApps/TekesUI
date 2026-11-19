@@ -1363,7 +1363,6 @@ dependencies = [
 name = "tekes-ui-settings"
 version = "0.3.34"
 dependencies = [
- "anyhow",
  "serde",
  "tekes-ui-controls",
  "tekes-ui-scene",

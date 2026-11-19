@@ -1,7 +1,6 @@
 //! Syntax scopes become shared semantic ink; parsing never changes the document.
-use super::{RichBlockKind, RichDocument};
-use std::{ops::Range, sync::OnceLock};
-use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
+use super::RichDocument;
+use std::ops::Range;
 
 #[derive(Debug)]
 pub(super) struct CodeSpan {
@@ -9,7 +8,12 @@ pub(super) struct CodeSpan {
     pub token: &'static str,
 }
 
+#[cfg(feature = "syntax-highlighting")]
 pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
+    use super::RichBlockKind;
+    use std::sync::OnceLock;
+    use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
+
     static SYNTAXES: OnceLock<SyntaxSet> = OnceLock::new();
     let mut spans = Vec::new();
     let units: Vec<_> = document.text().encode_utf16().collect();
@@ -47,7 +51,19 @@ pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
     Ok(spans)
 }
 
-fn append(spans: &mut Vec<CodeSpan>, stack: &ScopeStack, text: &str, offset: &mut usize) {
+#[cfg(not(feature = "syntax-highlighting"))]
+pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
+    let _ = document;
+    Ok(Vec::new())
+}
+
+#[cfg(feature = "syntax-highlighting")]
+fn append(
+    spans: &mut Vec<CodeSpan>,
+    stack: &syntect::parsing::ScopeStack,
+    text: &str,
+    offset: &mut usize,
+) {
     let start = *offset;
     *offset += text.encode_utf16().count();
     if text.is_empty() {
@@ -92,6 +108,7 @@ fn append(spans: &mut Vec<CodeSpan>, stack: &ScopeStack, text: &str, offset: &mu
 mod tests {
     use super::*;
 
+    #[cfg(feature = "syntax-highlighting")]
     #[test]
     fn rust_scopes_preserve_unicode_offsets_and_multiline_comment_state() {
         let source =
@@ -118,6 +135,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "syntax-highlighting")]
     #[test]
     fn unknown_or_omitted_languages_are_plain_and_each_fence_resets_parser_state() {
         for language in ["", "not-a-real-language"] {
@@ -133,5 +151,14 @@ mod tests {
                 .iter()
                 .any(|span| span.token == "c-code-number" && second.contains(&span.display.start))
         );
+    }
+
+    #[cfg(not(feature = "syntax-highlighting"))]
+    #[test]
+    fn plain_text_fallback_emits_no_syntax_spans_when_feature_disabled() {
+        let source = "```rust\nlet n = 12;\n```";
+        let document = RichDocument::from_markdown(source);
+        assert!(parse(&document).unwrap().is_empty());
+        assert_eq!(document.source(), source);
     }
 }

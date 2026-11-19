@@ -1,7 +1,9 @@
 use std::{env, fs, path::PathBuf};
 
 fn main() {
-    let root = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("../..");
+    let manifest_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let root = manifest_dir.join("../..");
+    let assets_dir = manifest_dir.join("assets");
     println!("cargo:rerun-if-env-changed=TEKESUI_DESIGN_ARTIFACT");
     println!("cargo:rerun-if-env-changed=TEKESUI_THEME_LOCK");
     let artifact = env::var_os("TEKESUI_DESIGN_ARTIFACT").map(PathBuf::from);
@@ -17,10 +19,19 @@ fn main() {
             "locked Theme builds require absolute TEKESUI_DESIGN_ARTIFACT and TEKESUI_THEME_LOCK paths"
         );
     }
-    let json = artifact
-        .as_ref()
-        .unwrap_or(&root)
-        .join("design/tokens.json");
+    let workspace_mode = root.join("design/tokens.json").is_file();
+    if artifact.is_some() && !workspace_mode {
+        panic!(
+            "TEKESUI_DESIGN_ARTIFACT is only supported from a full TekesUI workspace checkout with design/"
+        );
+    }
+    let json = if let Some(artifact) = &artifact {
+        artifact.join("design/tokens.json")
+    } else if workspace_mode {
+        root.join("design/tokens.json")
+    } else {
+        assets_dir.join("tokens.json")
+    };
     println!("cargo:rerun-if-changed={}", json.display());
     // Unit migration checks compare against the selected author projection,
     // including an explicit consumer artifact, rather than the default brand.
@@ -31,35 +42,51 @@ fn main() {
     let text = fs::read_to_string(&json)
         .expect("design/tokens.json must be available when building tokens");
     let document = tekes_ui_design_export::parse_json(&text).expect("parse merged token JSON");
-    let watched = match (&artifact, &theme_lock) {
-        (Some(artifact), Some(lock)) => {
-            let package_root = root
-                .canonicalize()
-                .expect("canonicalize package design root");
-            let artifact_root = artifact
-                .canonicalize()
-                .expect("canonicalize consumer Theme artifact root");
-            tekes_ui_design_export::theme_system::verify_consumer_theme_system(
-                &package_root,
-                &artifact_root,
-                lock,
-                &document,
-            )
-            .map_err(|error| vec![error])
+    if workspace_mode {
+        let watched = match (&artifact, &theme_lock) {
+            (Some(artifact), Some(lock)) => {
+                let package_root = root
+                    .canonicalize()
+                    .expect("canonicalize package design root");
+                let artifact_root = artifact
+                    .canonicalize()
+                    .expect("canonicalize consumer Theme artifact root");
+                tekes_ui_design_export::theme_system::verify_consumer_theme_system(
+                    &package_root,
+                    &artifact_root,
+                    lock,
+                    &document,
+                )
+                .map_err(|error| vec![error])
+            }
+            (Some(artifact), None) => {
+                println!(
+                    "cargo:rerun-if-changed={}",
+                    root.join("design/tokens.json").display()
+                );
+                tekes_ui_design_export::verify_consumer_inputs(&root, artifact, &document)
+            }
+            (None, None) => {
+                let asset_tokens = assets_dir.join("tokens.json");
+                println!("cargo:rerun-if-changed={}", asset_tokens.display());
+                assert_eq!(
+                    fs::read(&asset_tokens).expect("packaged assets/tokens.json missing"),
+                    text.as_bytes(),
+                    "crates/tekes-ui-tokens/assets/tokens.json is out of sync with design/tokens.json; run scripts/merge-design-system.py"
+                );
+                tekes_ui_design_export::verify_inputs(&root, &document)
+            }
+            (None, Some(_)) => {
+                unreachable!("Theme lock without consumer artifact was rejected above")
+            }
         }
-        (Some(artifact), None) => {
-            println!(
-                "cargo:rerun-if-changed={}",
-                root.join("design/tokens.json").display()
-            );
-            tekes_ui_design_export::verify_consumer_inputs(&root, artifact, &document)
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
+        for path in watched {
+            println!("cargo:rerun-if-changed={}", path.display());
         }
-        (None, None) => tekes_ui_design_export::verify_inputs(&root, &document),
-        (None, Some(_)) => unreachable!("Theme lock without consumer artifact was rejected above"),
-    }
-    .unwrap_or_else(|e| panic!("{}", e.join("\n")));
-    for path in watched {
-        println!("cargo:rerun-if-changed={}", path.display());
+    } else {
+        tekes_ui_design_export::validate_document(&document)
+            .unwrap_or_else(|e| panic!("invalid packaged tokens.json:\n{}", e.join("\n")));
     }
     let theme_artifact_root = match (&artifact, &theme_lock) {
         (Some(artifact), Some(_)) => artifact
@@ -67,37 +94,63 @@ fn main() {
             .expect("canonical Theme artifact root"),
         _ => root.clone(),
     };
-    if theme_lock.is_none() {
+    if workspace_mode && theme_lock.is_none() {
         for path in tekes_ui_design_export::theme_system::verify_theme_system(&root, &document)
             .unwrap_or_else(|error| panic!("invalid Theme system: {error}"))
         {
             println!("cargo:rerun-if-changed={}", path.display());
         }
     }
-    let theme_manifest = theme_artifact_root.join("design/theme/generated/instances.json");
-    let package_theme_lock = theme_artifact_root.join("design/theme/artifact.lock.json");
+    let theme_manifest = if workspace_mode {
+        theme_artifact_root.join("design/theme/generated/instances.json")
+    } else {
+        assets_dir.join("instances.json")
+    };
+    let surface_rules_path = if workspace_mode {
+        theme_artifact_root.join("design/theme/generated/surface_rules.rs")
+    } else {
+        assets_dir.join("surface_rules.rs")
+    };
     println!("cargo:rerun-if-changed={}", theme_manifest.display());
-    if theme_lock.is_none() {
+    println!("cargo:rerun-if-changed={}", surface_rules_path.display());
+    if workspace_mode && theme_lock.is_none() {
+        let package_theme_lock = theme_artifact_root.join("design/theme/artifact.lock.json");
         println!("cargo:rerun-if-changed={}", package_theme_lock.display());
+        if artifact.is_none() {
+            let asset_instances = assets_dir.join("instances.json");
+            let asset_rules = assets_dir.join("surface_rules.rs");
+            println!("cargo:rerun-if-changed={}", asset_instances.display());
+            println!("cargo:rerun-if-changed={}", asset_rules.display());
+            assert_eq!(
+                fs::read(&asset_instances).expect("packaged assets/instances.json missing"),
+                fs::read(&theme_manifest)
+                    .expect("workspace design/theme/generated/instances.json missing"),
+                "crates/tekes-ui-tokens/assets/instances.json is out of sync; run scripts/generate-theme-system.py --write-artifact-lock"
+            );
+            assert_eq!(
+                fs::read(&asset_rules).expect("packaged assets/surface_rules.rs missing"),
+                fs::read(&surface_rules_path)
+                    .expect("workspace design/theme/generated/surface_rules.rs missing"),
+                "crates/tekes-ui-tokens/assets/surface_rules.rs is out of sync; run scripts/generate-theme-system.py --write-artifact-lock"
+            );
+        }
     }
+    let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let theme_instances: serde_json::Value =
         serde_json::from_slice(&fs::read(&theme_manifest).expect("read verified Theme instances"))
             .expect("parse verified Theme instances");
     let theme_source = compile_theme_definition_colors(&theme_instances);
-    fs::write(
-        PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("theme_definition_colors.rs"),
-        theme_source,
-    )
-    .expect("write compiled Theme-definition color table");
+    fs::write(out_dir.join("theme_definition_colors.rs"), theme_source)
+        .expect("write compiled Theme-definition color table");
+    let surface_rules =
+        fs::read_to_string(&surface_rules_path).expect("read verified surface_rules.rs");
+    fs::write(out_dir.join("surface_rules.rs"), surface_rules)
+        .expect("write generated surface rules");
     // Parsing belongs to the independent compiler, so tokens have no runtime JSON dependency.
     let output = tekes_ui_design_export::compile_json(&text).unwrap_or_else(|errors| {
         panic!("invalid authoritative tokens.json:\n{}", errors.join("\n"))
     });
-    fs::write(
-        PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("tokens.rs"),
-        output,
-    )
-    .expect("write generated tokens");
+    fs::write(out_dir.join("tokens.rs"), output).expect("write generated tokens");
 }
 
 fn compile_theme_definition_colors(instances: &serde_json::Value) -> String {

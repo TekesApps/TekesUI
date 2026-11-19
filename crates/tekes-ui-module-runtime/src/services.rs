@@ -49,6 +49,14 @@ pub struct ComponentDefinition {
     pub capabilities: Capabilities,
     pub create: fn() -> Box<dyn ProcessModule>,
 }
+impl std::fmt::Debug for ComponentDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentDefinition")
+            .field("id", &self.id)
+            .field("capabilities", &self.capabilities)
+            .finish_non_exhaustive()
+    }
+}
 struct Sink {
     writer: Box<dyn Write + Send>,
     serial: u64,
@@ -62,6 +70,16 @@ pub struct ComponentEmitter {
     view: Option<NativeViewOptions>,
     window: Option<u64>,
     sink: Arc<Mutex<Sink>>,
+}
+impl std::fmt::Debug for ComponentEmitter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentEmitter")
+            .field("session", &self.session)
+            .field("capabilities", &self.capabilities)
+            .field("view", &self.view)
+            .field("window", &self.window)
+            .finish_non_exhaustive()
+    }
 }
 impl ComponentEmitter {
     pub(crate) fn output(&self, output: Output) -> Result<()> {
@@ -774,6 +792,14 @@ pub struct ProcessComponent {
     window: Option<u64>,
     backend: Backend,
 }
+impl std::fmt::Debug for ProcessComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProcessComponent")
+            .field("session", &self.session)
+            .field("window", &self.window)
+            .finish_non_exhaustive()
+    }
+}
 enum Backend {
     Service(Arc<Shared>),
     #[cfg(target_os = "macos")]
@@ -878,7 +904,6 @@ impl ProcessComponent {
                     shared.wake.clone(),
                     work,
                 ))
-                .ok()
                 .expect("new View slot");
         }
         let worker = shared.clone();

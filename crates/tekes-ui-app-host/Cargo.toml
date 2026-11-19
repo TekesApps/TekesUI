@@ -1,10 +1,11 @@
 [package]
 name = "tekes-ui-app-host"
 description = "Experimental native TekesUI Host with isolated native Panel processes"
-publish = false
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [features]
 default = []
@@ -14,19 +15,22 @@ window-acceptance = ["tekes-ui-platform-macos/selftest", "tekes-ui-macos-bridge/
 anyhow = "1"
 serde.workspace = true
 serde_json.workspace = true
-tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
-tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
-tekes-ui-settings = { path = "../tekes-ui-settings" }
+tekes-ui-app-protocol.workspace = true
+tekes-ui-module-runtime.workspace = true
+tekes-ui-settings.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
-tekes-ui-render = { path = "../tekes-ui-render", features = ["macos-shared-surface"] }
-tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos" }
-tekes-ui-macos-bridge = { path = "../tekes-ui-macos-bridge" }
-tekes-ui-controls = { path = "../tekes-ui-controls", features = ["svg-icons"] }
-tekes-ui-scene = { path = "../tekes-ui-scene" }
-tekes-ui-tokens = { path = "../tekes-ui-tokens" }
-tekes-ui-text = { path = "../tekes-ui-text" }
-tekes-ui-motion = { path = "../tekes-ui-motion" }
+wgpu.workspace = true
+tekes-ui-render = { workspace = true, features = ["macos-shared-surface"] }
+tekes-ui-platform-macos.workspace = true
+tekes-ui-macos-bridge.workspace = true
+tekes-ui-controls = { workspace = true, features = ["svg-icons"] }
+tekes-ui-scene.workspace = true
+tekes-ui-tokens.workspace = true
+tekes-ui-text.workspace = true
+tekes-ui-motion.workspace = true
 resvg = { version = "0.48.0", default-features = false }
-tekes-ui-icons = { path = "../tekes-ui-icons" }
+tekes-ui-icons.workspace = true
+
+[lints]
+workspace = true

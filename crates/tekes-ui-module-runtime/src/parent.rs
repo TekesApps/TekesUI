@@ -42,6 +42,14 @@ pub struct ModuleProcess {
     ports: crate::transport::Receiver,
     failed: bool,
 }
+impl std::fmt::Debug for ModuleProcess {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModuleProcess")
+            .field("pid", &self.pid)
+            .field("failed", &self.failed)
+            .finish_non_exhaustive()
+    }
+}
 impl ModuleProcess {
     pub fn spawn(module: &str) -> Result<Self> {
         Self::spawn_with_control(module, crate::ProcessControl::new())

@@ -152,12 +152,17 @@ def contrast(a, b):
     return (b+.05)/(a+.05)
 
 
-def verify_solid_status_foregrounds(bundle):
+def load_contrast_thresholds():
+    return merge.load(ROOT / 'design/source/contrast-pairs.json')['thresholds']
+
+
+def verify_solid_status_foregrounds(bundle, thresholds=None):
+    thresholds = load_contrast_thresholds() if thresholds is None else thresholds
     # Solid status label ink is a different use from passive status text on a Surface.
-    # Follow the existing quality text thresholds: normal 4.5, enhanced 7.0.
+    rule = thresholds['solid_status_foreground']
     for mode in MODES:
         foreground = merge.token_value(bundle, 'color', 'c-status-badge-foreground', mode)
-        minimum = 7.0 if mode.endswith('-ic') else 4.5
+        minimum = rule['ic' if mode.endswith('-ic') else 'normal']
         for tone in ['info', 'running', 'succeeded', 'failed']:
             background = merge.token_value(bundle, 'color', 'status-' + tone, mode)
             if contrast(foreground, background) < minimum:
@@ -174,21 +179,25 @@ def verify_profile_color_references(profiles, bundle):
                     raise ValueError(f'unknown color role: {role} in shared profile {name}/{state}/{channel}')
 
 
-def verify_notice_marker_contrast(usage, mode, colors, parent):
-    if usage in NOTICE_MARKERS and (colors['marker'] is None or contrast(colors['marker'],parent) < 3.0):
+def verify_notice_marker_contrast(usage, mode, colors, parent, thresholds=None):
+    thresholds = load_contrast_thresholds() if thresholds is None else thresholds
+    minimum = thresholds['surface_non_text']['ic' if mode.endswith('-ic') else 'normal']
+    if usage in NOTICE_MARKERS and (colors['marker'] is None or contrast(colors['marker'],parent) < minimum):
         raise ValueError('insufficient notice marker-parent contrast: ' + mode + '/' + usage)
 
 
-def verify_passive_status_contrast(usage, mode, colors, parent):
+def verify_passive_status_contrast(usage, mode, colors, parent, thresholds=None):
+    thresholds = load_contrast_thresholds() if thresholds is None else thresholds
+    key = 'ic' if mode.endswith('-ic') else 'normal'
     if usage in BADGE_USES:
-        minimum = 7.0 if mode.endswith('-ic') else 4.5
+        minimum = thresholds['badge_foreground'][key]
         for channel in ['text','icon']:
             if contrast(colors[channel],colors['background']) < minimum:
                 raise ValueError('insufficient badge solid foreground contrast: ' + mode + '/' + usage + '/' + channel)
-        if contrast(colors['background'],parent) < 3.0:
+        if contrast(colors['background'],parent) < thresholds['passive_badge_fill_parent'][key]:
             raise ValueError('insufficient badge fill-parent contrast: ' + mode + '/' + usage)
     if usage == 'skeleton':
-        minimum = 3.0 if mode.endswith('-ic') else 1.05
+        minimum = thresholds['skeleton_boundary'][key]
         for side, ground in [('fill',colors['background']),('parent',parent)]:
             if colors['boundary'] is None or contrast(colors['boundary'],ground) < minimum:
                 raise ValueError('insufficient skeleton boundary-' + side + ' contrast: ' + mode)
@@ -243,12 +252,28 @@ def theme_input_contract(rules):
     for field, value in actual.items():
         if contract.get(field) != value: raise ValueError('stale or unsupported Theme input contract field: ' + field)
     if contract.get('supported_modes') != MODES or rules.get('modes') != MODES: raise ValueError('unsupported Theme input modes')
-    required_pins = {'design/source/base.tokens.json','design/source/token-metadata.json','design/source/contrast-pairs.json','design/brand/policy.json',
-                     'design/theme/data-plot-pairs.json','design/theme/rules.json','design/theme/rules.schema.json','design/theme/theme.schema.json','design/system.schema.json',ARTIFACT_LOCK_SCHEMA,
-                     'scripts/generate-theme-system.py','scripts/merge-design-system.py', str(merge.UPSTREAM / 'requirements.txt'),
-                     str(merge.UPSTREAM / 'tools/brand.py'), str(merge.UPSTREAM / 'tools/brand_color.py'), str(merge.UPSTREAM / 'tools/validate.py'),
-                     str(merge.UPSTREAM / 'design/tokens/tokens.schema.json'), str(merge.UPSTREAM / 'design/brand/brand.schema.json'),
-                     str(merge.UPSTREAM / 'design/brand/policy.schema.json'), str(merge.UPSTREAM / 'design/quality/contrast-pairs.json')}
+    required_pins = {
+        'design/brand/brand.schema.json',
+        'design/brand/policy.json',
+        'design/brand/policy.schema.json',
+        'design/source/base.tokens.json',
+        'design/source/contrast-pairs.json',
+        'design/source/token-metadata.json',
+        'design/source/tokens.schema.json',
+        'design/system.schema.json',
+        ARTIFACT_LOCK_SCHEMA,
+        'design/theme/data-plot-pairs.json',
+        'design/theme/rules.json',
+        'design/theme/rules.schema.json',
+        'design/theme/theme.schema.json',
+        'scripts/generate-theme-system.py',
+        'scripts/merge-design-system.py',
+        'scripts/requirements-design.txt',
+        'scripts/tekesui_design/__init__.py',
+        'scripts/tekesui_design/brand_color.py',
+        'scripts/tekesui_design/brand_compiler.py',
+        'scripts/tekesui_design/validate_tokens.py',
+    }
     for rel, digest in contract['pinned_inputs'].items():
         path_parts = Path(rel)
         if path_parts.is_absolute() or '\\' in rel or '..' in path_parts.parts or path_parts.as_posix() != rel:
@@ -286,6 +311,7 @@ def generate():
     base = merge.load(ROOT / 'design/source/base.tokens.json')
     policy = merge.load(ROOT / 'design/brand/policy.json')
     metadata = merge.load(ROOT / 'design/source/token-metadata.json')
+    thresholds = merge.load(ROOT / 'design/source/contrast-pairs.json')['thresholds']
     definitions = merge.load(ROOT / 'design/theme/themes.json')
     if not isinstance(definitions, list) or not definitions:
         raise ValueError('Theme definitions must be a non-empty array')
@@ -306,20 +332,21 @@ def generate():
         sources.append(config_path)
         config = merge.load(ROOT / config_path)
         effective = effective_base(base, metadata, contract, definition['inputs']['overrides'])
-        bundle, _ = brand.compile_config(config, base=effective, policy=policy, metadata=metadata)
+        bundle, _ = brand.compile_config(config, base=effective, policy=policy, metadata=metadata, root=ROOT)
         verify_profile_color_references(expand_profiles(rules), bundle)
         verify_data_plot_contrast(rules, bundle, data_plot_contract())
-        verify_solid_status_foregrounds(bundle)
+        verify_solid_status_foregrounds(bundle, thresholds)
         # Check geometry constraints before overlapping Surface/track guards.
         for mode in MODES:
             for surface, usage, state, roles in rows:
                 if usage in PASSIVE_USES or usage in NOTICE_MARKERS:
                     colors = {k: None if v is None else merge.token_value(bundle,'color',v,mode) for k,v in roles.items()}
-                    verify_notice_marker_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode))
-                    verify_passive_status_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode))
+                    verify_notice_marker_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode), thresholds)
+                    verify_passive_status_contrast(usage, mode, colors, merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode), thresholds)
         modes = {}
         for mode in MODES:
             surfaces = {}
+            mode_key = 'ic' if mode.endswith('-ic') else 'normal'
             for surface, usage, state, roles in rows:
                 colors = {k: None if v is None else merge.token_value(bundle,'color',v,mode) for k,v in roles.items()}
                 # Quiet labels remain readable even when their action is unavailable
@@ -328,20 +355,26 @@ def generate():
                 if 'disabled' not in state or readable_disabled_quiet:
                     for fg in ['text','icon','marker']:
                         if colors[fg] is None: continue
-                        threshold = (7.0 if mode.endswith('-ic') else 3.5) if readable_disabled_quiet else (3.0 if fg == 'marker' else 4.5)
+                        if readable_disabled_quiet:
+                            threshold = thresholds['readable_disabled_quiet'][mode_key]
+                        elif fg == 'marker':
+                            threshold = thresholds['surface_non_text'][mode_key]
+                        else:
+                            threshold = thresholds['surface_foreground'][mode_key]
                         if contrast(colors[fg],colors['background']) < threshold:
                             raise ValueError(f'insufficient foreground contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}/{fg}')
                 if colors['helper'] is not None and 'disabled' not in state:
                     label_background = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
-                    if contrast(colors['helper'],label_background) < 4.5:
+                    if contrast(colors['helper'],label_background) < thresholds['surface_foreground'][mode_key]:
                         raise ValueError('insufficient helper foreground contrast')
                 if colors['focus'] is not None and 'disabled' not in state:
                     parent = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
-                    if contrast(colors['focus'],parent) < 3.0:
+                    if contrast(colors['focus'],parent) < thresholds['surface_non_text'][mode_key]:
                         raise ValueError(f'insufficient focus contrast: {definition["id"]}/{mode}/{surface}/{usage}/{state}')
                 if usage in ['range-track','progress-track'] and state != 'disabled':
                     parent = merge.token_value(bundle,'color',rules['surfaces'][surface]['background'],mode)
-                    minimum = 3.0 if (usage == 'range-track' or mode.endswith('-ic')) else 1.05
+                    boundary_key = 'range_track_boundary' if usage == 'range-track' else 'progress_track_boundary'
+                    minimum = thresholds[boundary_key][mode_key]
                     if colors['boundary'] is None or min(contrast(colors['boundary'],colors['background']),contrast(colors['boundary'],parent)) < minimum:
                         raise ValueError(f'insufficient {"range" if usage == "range-track" else "progress"} boundary contrast: {definition["id"]}/{mode}/{surface}/{state}')
                 surfaces.setdefault(surface,{}).setdefault(usage,{})[state] = colors
@@ -392,9 +425,15 @@ def main():
     group.add_argument('--write-artifact-lock',action='store_true',help='explicitly refresh the reviewed source lock after inspecting the candidate artifacts')
     args = p.parse_args()
     outputs = generate()
+    synced_assets = {}
+    if (ROOT / 'crates/tekes-ui-tokens/Cargo.toml').is_file():
+        synced_assets = {
+            'crates/tekes-ui-tokens/assets/instances.json': outputs['design/theme/generated/instances.json'],
+            'crates/tekes-ui-tokens/assets/surface_rules.rs': outputs['design/theme/generated/surface_rules.rs'],
+        }
     lock_bytes = artifact_lock_bytes(outputs) if args.check or args.write_artifact_lock else None
     if args.check:
-        for path, expected in outputs.items():
+        for path, expected in {**outputs, **synced_assets}.items():
             file = ROOT / path
             if not file.is_file() or file.read_bytes() != expected:
                 raise ValueError('stale Theme output: ' + path)
@@ -403,7 +442,7 @@ def main():
             raise ValueError('stale Theme artifact lock: ' + ARTIFACT_LOCK)
         print('Theme system and reviewed artifact lock match authoritative inputs.')
         return
-    for path, expected in outputs.items():
+    for path, expected in {**outputs, **synced_assets}.items():
         file = ROOT / path
         file.parent.mkdir(parents=True,exist_ok=True)
         file.write_bytes(expected)

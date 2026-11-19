@@ -3321,7 +3321,7 @@
       "source": "crates/tekes-ui-controls/src/scroll_view.rs",
       "statement": "include!(concat!(env!(\"OUT_DIR\"), \"/scroll_tokens.rs\"));",
       "generator": "crates/tekes-ui-controls/build.rs",
-      "generator_sha256": "561c2afc5e6911039bc7d385847c2e4bd262cf7bc79c0f944f5da66698a747ab",
+      "generator_sha256": "a61e0634a00dc2c24cab5a942ed88f66b2072872dba00a3a7d1e0fdcbea3d478",
       "reason": "Reviewed build script emits seven private numeric scroll constants only. Any generator change requires renewed review; no public types are emitted."
     }
   ]

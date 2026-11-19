@@ -6,11 +6,12 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+publish = false
 
 [dependencies]
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
-tekes-ui-text = { path = "../tekes-ui-text", features = ["qa"] }
+tekes-ui-text = { workspace = true, features = ["qa"] }
 tekes-ui-render.workspace = true
 serde.workspace = true
 serde_json.workspace = true

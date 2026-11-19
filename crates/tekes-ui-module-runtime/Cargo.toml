@@ -4,19 +4,20 @@ description = "Experimental native Panel module lifecycle and isolated process r
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish = false
+repository.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 anyhow = "1"
 serde_json.workspace = true
-tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
+tekes-ui-app-protocol.workspace = true
 tekes-ui-scene.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-controls.workspace = true
-tekes-ui-platform-macos = { path = "../tekes-ui-platform-macos" }
-tekes-ui-macos-bridge = { path = "../tekes-ui-macos-bridge" }
-tekes-ui-render = { path = "../tekes-ui-render", features = ["macos-shared-surface"] }
+tekes-ui-platform-macos.workspace = true
+tekes-ui-macos-bridge.workspace = true
+tekes-ui-render = { workspace = true, features = ["macos-shared-surface"] }
 tekes-ui-tokens.workspace = true
 wgpu.workspace = true
 mach2 = "0.5"
@@ -49,3 +50,6 @@ required-features = ["svg-icons"]
 name = "table_gpu"
 path = "examples/table_gpu.rs"
 required-features = ["svg-icons"]
+
+[lints]
+workspace = true

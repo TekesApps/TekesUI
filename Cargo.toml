@@ -12,19 +12,27 @@ repository = "https://github.com/TekesApps/TekesUI"
 rust-version = "1.95"
 
 [workspace.dependencies]
-tekes-ui-controls = { path = "crates/tekes-ui-controls" }
-tekes-ui-tokens = { path = "crates/tekes-ui-tokens" }
-tekes-ui-scene = { path = "crates/tekes-ui-scene" }
-tekes-ui-render = { path = "crates/tekes-ui-render" }
-tekes-ui-text = { path = "crates/tekes-ui-text" }
+tekes-ui-controls = { version = "0.3.34", path = "crates/tekes-ui-controls" }
+tekes-ui-tokens = { version = "0.3.34", path = "crates/tekes-ui-tokens" }
+tekes-ui-design-export = { version = "0.3.34", path = "crates/tekes-ui-design-export" }
+tekes-ui-scene = { version = "0.3.34", path = "crates/tekes-ui-scene" }
+tekes-ui-render = { version = "0.3.34", path = "crates/tekes-ui-render" }
+tekes-ui-text = { version = "0.3.34", path = "crates/tekes-ui-text" }
+tekes-ui-motion = { version = "0.3.34", path = "crates/tekes-ui-motion" }
+tekes-ui-icons = { version = "0.3.34", path = "crates/tekes-ui-icons" }
+tekes-ui-scene3d = { version = "0.3.34", path = "crates/tekes-ui-scene3d" }
+tekes-ui-platform-macos = { version = "0.3.34", path = "crates/tekes-ui-platform-macos" }
+tekes-ui-macos-bridge = { version = "0.3.34", path = "crates/tekes-ui-macos-bridge" }
+tekes-ui-app-protocol = { version = "0.3.34", path = "crates/tekes-ui-app-protocol" }
+tekes-ui-module-runtime = { version = "0.3.34", path = "crates/tekes-ui-module-runtime" }
+tekes-ui-settings = { version = "0.3.34", path = "crates/tekes-ui-settings" }
+tekes-ui-app-host = { version = "0.3.34", path = "crates/tekes-ui-app-host" }
 tekes-ui-compare = { path = "crates/tekes-ui-compare" }
 wgpu = { version = "30.0.1", default-features = false, features = ["metal", "wgsl", "std"] }
 bytemuck = { version = "1", features = ["derive"] }
 pollster = "1"
 png = "0.17"
 sha2 = "0.11"
-tekes-ui-platform-macos = { path = "crates/tekes-ui-platform-macos" }
-tekes-ui-macos-bridge = { path = "crates/tekes-ui-macos-bridge" }
 objc2 = { version = "0.6.5", default-features = false, features = ["std"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std"] }
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std"] }

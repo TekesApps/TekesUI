@@ -7,6 +7,7 @@ publish = false
 [features]
 svg-icons = ["tekes-ui-controls/svg-icons"]
 bitmap-images = ["tekes-ui-controls/bitmap-images"]
+syntax-highlighting = ["tekes-ui-controls/syntax-highlighting"]
 token-audit = ["tekes-ui-controls/token-audit"]
 
 [dependencies]

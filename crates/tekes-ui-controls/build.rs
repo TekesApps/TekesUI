@@ -1,9 +1,19 @@
 use std::{env, fs, path::PathBuf};
 fn main() {
-    let path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
-        .join("../../design/behavior/scroll.json");
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let path = manifest_dir.join("assets/scroll.json");
     println!("cargo:rerun-if-changed={}", path.display());
-    let data: serde_json::Value = serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+    let text = fs::read_to_string(&path).expect("packaged assets/scroll.json missing");
+    let workspace_scroll = manifest_dir.join("../../design/behavior/scroll.json");
+    if workspace_scroll.is_file() {
+        println!("cargo:rerun-if-changed={}", workspace_scroll.display());
+        assert_eq!(
+            fs::read(&workspace_scroll).unwrap(),
+            text.as_bytes(),
+            "crates/tekes-ui-controls/assets/scroll.json is out of sync with design/behavior/scroll.json"
+        );
+    }
+    let data: serde_json::Value = serde_json::from_str(&text).unwrap();
     let mut generated = String::new();
     for key in [
         "stiffness",

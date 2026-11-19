@@ -9,7 +9,6 @@ import sys
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
-UPSTREAM = Path('design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1')
 
 
 def generate():
@@ -44,12 +43,17 @@ def generate():
     sources = [
         'design/source/base.tokens.json',
         'design/source/token-metadata.json',
+        'design/source/tokens.schema.json',
         'design/source/contrast-pairs.json',
         'design/brand/policy.json',
+        'design/brand/brand.schema.json',
+        'design/brand/policy.schema.json',
         registry_path,
         'scripts/generate-gallery-brands.py',
-        str(UPSTREAM / 'tools' / 'brand.py'),
-        str(UPSTREAM / 'tools' / 'brand_color.py'),
+        'scripts/tekesui_design/__init__.py',
+        'scripts/tekesui_design/brand_color.py',
+        'scripts/tekesui_design/brand_compiler.py',
+        'scripts/tekesui_design/validate_tokens.py',
     ]
     compiled = []
     for preset in presets:
@@ -57,7 +61,7 @@ def generate():
         config = load(config_path)
         sources.append(config_path)
         bundle, _report = brand.compile_config(
-            config, base=base, policy=policy, metadata=metadata
+            config, base=base, policy=policy, metadata=metadata, root=ROOT
         )
         compiled.append({
             'id': preset['id'],

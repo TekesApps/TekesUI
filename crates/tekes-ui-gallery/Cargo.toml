@@ -12,20 +12,20 @@ publish = false
 selftest = ["tekes-ui-platform-macos/selftest", "tekes-ui-macos-bridge/selftest"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tekes-ui-module-runtime = { path = "../tekes-ui-module-runtime" }
+tekes-ui-module-runtime.workspace = true
 anyhow = "1"
-tekes-ui-app-host = { path = "../tekes-ui-app-host" }
-tekes-ui-app-protocol = { path = "../tekes-ui-app-protocol" }
-tekes-ui-controls = { workspace = true, features = ["inspection"] }
-tekes-ui-scene3d = { path = "../tekes-ui-scene3d" }
-tekes-ui-icons = { path = "../tekes-ui-icons" }
-tekes-ui-motion = {path="../tekes-ui-motion"}
+tekes-ui-app-host.workspace = true
+tekes-ui-app-protocol.workspace = true
+tekes-ui-controls = { workspace = true, features = ["inspection", "syntax-highlighting"] }
+tekes-ui-scene3d.workspace = true
+tekes-ui-icons.workspace = true
+tekes-ui-motion.workspace = true
 tekes-ui-tokens.workspace = true
 tekes-ui-scene.workspace = true
-tekes-ui-platform-macos = { workspace = true }
-tekes-ui-macos-bridge = { workspace = true }
+tekes-ui-platform-macos.workspace = true
+tekes-ui-macos-bridge.workspace = true
 tekes-ui-render.workspace = true
-tekes-ui-text = { path = "../tekes-ui-text", features = ["qa"] }
+tekes-ui-text = { workspace = true, features = ["qa"] }
 png.workspace = true
 serde_json.workspace = true
 unicode-segmentation = "1"
@@ -37,7 +37,7 @@ workspace = true
 [build-dependencies]
 serde_json.workspace = true
 sha2.workspace = true
-tekes-ui-design-export = { path = "../tekes-ui-design-export" }
+tekes-ui-design-export.workspace = true
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2-foundation = { workspace = true, features = ["NSUserDefaults", "NSString", "NSArray"] }

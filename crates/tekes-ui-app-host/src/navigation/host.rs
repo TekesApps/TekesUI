@@ -17,6 +17,16 @@ pub struct NavigationHost {
     failures: HashMap<String, (Transaction, String)>,
     offer: Option<RecoveryApplied>,
 }
+impl std::fmt::Debug for NavigationHost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NavigationHost")
+            .field("session", &self.session)
+            .field("target", &self.target)
+            .field("context", &self.context)
+            .field("input_open", &self.input_open)
+            .finish_non_exhaustive()
+    }
+}
 impl NavigationHost {
     pub fn new(session: Session) -> Self {
         Self {

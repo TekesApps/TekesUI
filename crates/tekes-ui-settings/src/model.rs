@@ -1,7 +1,194 @@
-use anyhow::{Context, Result, bail, ensure};
+use crate::{Result, SettingsError};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
-use toml::Value;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+    ops::Index,
+};
+
+/// Map of settings override keys to typed [`Value`]s.
+pub type Table = BTreeMap<String, Value>;
+
+/// Owned, format-agnostic configuration value used in settings schemas and overrides.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum Value {
+    Boolean(bool),
+    Integer(i64),
+    Float(f64),
+    String(String),
+    Array(Vec<Value>),
+    Table(Table),
+}
+
+impl Value {
+    pub fn is_bool(&self) -> bool {
+        matches!(self, Self::Boolean(_))
+    }
+    pub fn is_str(&self) -> bool {
+        matches!(self, Self::String(_))
+    }
+    pub fn is_integer(&self) -> bool {
+        matches!(self, Self::Integer(_))
+    }
+    pub fn is_float(&self) -> bool {
+        matches!(self, Self::Float(_))
+    }
+    pub fn is_table(&self) -> bool {
+        matches!(self, Self::Table(_))
+    }
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Self::Boolean(v) => Some(*v),
+            _ => None,
+        }
+    }
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Self::String(v) => Some(v.as_str()),
+            _ => None,
+        }
+    }
+    pub fn as_integer(&self) -> Option<i64> {
+        match self {
+            Self::Integer(v) => Some(*v),
+            _ => None,
+        }
+    }
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Self::Float(v) => Some(*v),
+            _ => None,
+        }
+    }
+    pub fn as_array(&self) -> Option<&[Value]> {
+        match self {
+            Self::Array(v) => Some(v.as_slice()),
+            _ => None,
+        }
+    }
+    pub fn as_array_mut(&mut self) -> Option<&mut Vec<Value>> {
+        match self {
+            Self::Array(v) => Some(v),
+            _ => None,
+        }
+    }
+    pub fn as_table(&self) -> Option<&Table> {
+        match self {
+            Self::Table(v) => Some(v),
+            _ => None,
+        }
+    }
+    pub fn as_table_mut(&mut self) -> Option<&mut Table> {
+        match self {
+            Self::Table(v) => Some(v),
+            _ => None,
+        }
+    }
+}
+
+impl Index<&str> for Value {
+    type Output = Value;
+    fn index(&self, key: &str) -> &Self::Output {
+        self.as_table()
+            .and_then(|table| table.get(key))
+            .expect("settings key lookup")
+    }
+}
+
+impl From<bool> for Value {
+    fn from(v: bool) -> Self {
+        Self::Boolean(v)
+    }
+}
+impl From<i64> for Value {
+    fn from(v: i64) -> Self {
+        Self::Integer(v)
+    }
+}
+impl From<f64> for Value {
+    fn from(v: f64) -> Self {
+        Self::Float(v)
+    }
+}
+impl From<String> for Value {
+    fn from(v: String) -> Self {
+        Self::String(v)
+    }
+}
+impl From<&str> for Value {
+    fn from(v: &str) -> Self {
+        Self::String(v.to_owned())
+    }
+}
+impl From<Vec<Value>> for Value {
+    fn from(v: Vec<Value>) -> Self {
+        Self::Array(v)
+    }
+}
+impl From<Table> for Value {
+    fn from(v: Table) -> Self {
+        Self::Table(v)
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Boolean(v) => fmt::Display::fmt(v, f),
+            Self::Integer(v) => fmt::Display::fmt(v, f),
+            Self::Float(v) => fmt::Display::fmt(v, f),
+            Self::String(v) => f.write_str(v),
+            Self::Array(_) | Self::Table(_) => match to_toml_value(self) {
+                Ok(value) => f.write_str(&value.to_string()),
+                Err(_) => f.write_str("<invalid>"),
+            },
+        }
+    }
+}
+
+pub(crate) fn from_toml_value(value: toml::Value) -> Result<Value> {
+    match value {
+        toml::Value::Boolean(v) => Ok(Value::Boolean(v)),
+        toml::Value::Integer(v) => Ok(Value::Integer(v)),
+        toml::Value::Float(v) => Ok(Value::Float(v)),
+        toml::Value::String(v) => Ok(Value::String(v)),
+        toml::Value::Array(items) => items
+            .into_iter()
+            .map(from_toml_value)
+            .collect::<Result<Vec<_>>>()
+            .map(Value::Array),
+        toml::Value::Table(map) => from_toml_table(map).map(Value::Table),
+        toml::Value::Datetime(dt) => Ok(Value::String(dt.to_string())),
+    }
+}
+
+pub(crate) fn from_toml_table(map: toml::Table) -> Result<Table> {
+    map.into_iter()
+        .map(|(k, v)| Ok((k, from_toml_value(v)?)))
+        .collect()
+}
+
+pub(crate) fn to_toml_value(value: &Value) -> Result<toml::Value> {
+    match value {
+        Value::Boolean(v) => Ok(toml::Value::Boolean(*v)),
+        Value::Integer(v) => Ok(toml::Value::Integer(*v)),
+        Value::Float(v) => Ok(toml::Value::Float(*v)),
+        Value::String(v) => Ok(toml::Value::String(v.clone())),
+        Value::Array(items) => items
+            .iter()
+            .map(to_toml_value)
+            .collect::<Result<Vec<_>>>()
+            .map(toml::Value::Array),
+        Value::Table(map) => to_toml_table(map).map(toml::Value::Table),
+    }
+}
+
+pub(crate) fn to_toml_table(map: &Table) -> Result<toml::Table> {
+    map.iter()
+        .map(|(k, v)| Ok((k.clone(), to_toml_value(v)?)))
+        .collect()
+}
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -107,7 +294,7 @@ impl Schema {
         let (_, item) = self
             .items()
             .find(|(id, _)| id == item_id)
-            .context("unknown Settings item")?;
+            .ok_or_else(|| SettingsError::InvalidSchema("unknown Settings item".into()))?;
         let mut selected = self.clone();
         selected.pages[0].label = item.label.clone();
         selected.settings.retain(|f| f.item == item_id);
@@ -127,7 +314,8 @@ impl Schema {
     }
 
     pub fn parse(source: &str) -> Result<Self> {
-        let mut schema: Self = toml::from_str(source).context("Settings TOML")?;
+        let mut schema: Self = toml::from_str(source)
+            .map_err(|err| SettingsError::InvalidSchema(format!("Settings TOML: {err}")))?;
         if schema.pages.is_empty() {
             schema.pages.push(Page {
                 id: "settings".into(),
@@ -142,20 +330,23 @@ impl Schema {
         let mut item_ids = BTreeSet::new();
         for group in &mut schema.groups {
             for item in &mut group.items {
-                ensure!(
-                    !item.id.is_empty()
-                        && !item.label.trim().is_empty()
-                        && item_ids.insert(format!("{}/{}", group.id, item.id)),
-                    "invalid/duplicate item {}",
-                    item.id
-                );
+                if !(!item.id.is_empty()
+                    && !item.label.trim().is_empty()
+                    && item_ids.insert(format!("{}/{}", group.id, item.id)))
+                {
+                    return Err(SettingsError::InvalidSchema(format!(
+                        "invalid/duplicate item {}",
+                        item.id
+                    )));
+                }
                 let mut field_ids = BTreeSet::new();
                 for field in &mut item.fields {
-                    ensure!(
-                        !field.id.is_empty() && field_ids.insert(field.id.clone()),
-                        "duplicate item field {}",
-                        field.id
-                    );
+                    if field.id.is_empty() || !field_ids.insert(field.id.clone()) {
+                        return Err(SettingsError::InvalidSchema(format!(
+                            "duplicate item field {}",
+                            field.id
+                        )));
+                    }
                     field.item = format!("{}/{}", group.id, item.id);
                     field.id = format!("{}/{}", field.item, field.id);
                     field.group = group.id.clone();
@@ -163,48 +354,61 @@ impl Schema {
                 }
             }
         }
-        ensure!(
-            schema.schema_version == 1,
-            "unsupported Settings schema version"
-        );
-        ensure!(
-            !schema.namespace.trim().is_empty() && !schema.provider.trim().is_empty(),
-            "namespace/provider required"
-        );
+        if schema.schema_version != 1 {
+            return Err(SettingsError::InvalidSchema(
+                "unsupported Settings schema version".into(),
+            ));
+        }
+        if schema.namespace.trim().is_empty() || schema.provider.trim().is_empty() {
+            return Err(SettingsError::InvalidSchema(
+                "namespace/provider required".into(),
+            ));
+        }
         // The first form has one page; reject rather than silently losing other pages.
-        ensure!(
-            schema.pages.len() == 1,
-            "prototype supports exactly one Settings page"
-        );
-        ensure!(
-            !schema.pages[0].id.is_empty() && !schema.pages[0].label.trim().is_empty(),
-            "page ID/label required"
-        );
+        if schema.pages.len() != 1 {
+            return Err(SettingsError::InvalidSchema(
+                "prototype supports exactly one Settings page".into(),
+            ));
+        }
+        if schema.pages[0].id.is_empty() || schema.pages[0].label.trim().is_empty() {
+            return Err(SettingsError::InvalidSchema(
+                "page ID/label required".into(),
+            ));
+        }
         let mut ids = BTreeSet::new();
         for group in &schema.groups {
-            ensure!(
-                !group.id.is_empty() && !group.label.trim().is_empty() && ids.insert(&group.id),
-                "invalid/duplicate group: {}",
-                group.id
-            );
-            ensure!(
-                group.page == schema.pages[0].id,
-                "unknown page for group {}",
-                group.id
-            );
+            if !(!group.id.is_empty() && !group.label.trim().is_empty() && ids.insert(&group.id)) {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "invalid/duplicate group: {}",
+                    group.id
+                )));
+            }
+            if group.page != schema.pages[0].id {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "unknown page for group {}",
+                    group.id
+                )));
+            }
         }
         for group in &schema.groups {
             let mut visiting = BTreeSet::new();
             let mut current = Some(group);
             while let Some(g) = current {
-                ensure!(visiting.insert(&g.id), "cyclic Settings group: {}", g.id);
+                if !visiting.insert(&g.id) {
+                    return Err(SettingsError::InvalidSchema(format!(
+                        "cyclic Settings group: {}",
+                        g.id
+                    )));
+                }
                 current = if let Some(parent) = &g.parent {
                     Some(
                         schema
                             .groups
                             .iter()
                             .find(|g| &g.id == parent)
-                            .with_context(|| format!("unknown parent {parent}"))?,
+                            .ok_or_else(|| {
+                                SettingsError::InvalidSchema(format!("unknown parent {parent}"))
+                            })?,
                     )
                 } else {
                     None
@@ -214,71 +418,85 @@ impl Schema {
         let mut field_ids = BTreeSet::new();
         let mut paths: Vec<&Vec<String>> = Vec::new();
         for field in &schema.settings {
-            ensure!(
-                !field.id.is_empty()
-                    && !field.label.trim().is_empty()
-                    && field_ids.insert(&field.id),
-                "invalid/duplicate field: {}",
-                field.id
-            );
-            ensure!(ids.contains(&field.group), "unknown group: {}", field.group);
-            ensure!(
-                !field.path.is_empty()
-                    && field.path.iter().all(|p| !p.is_empty())
-                    && field.path[0] != "_tekes",
-                "invalid/reserved path: {}",
-                field.id
-            );
-            ensure!(
-                paths
-                    .iter()
-                    .all(|p| !p.starts_with(&field.path) && !field.path.starts_with(p)),
-                "overlapping Settings path: {}",
-                field.id
-            );
-            paths.push(&field.path);
-            ensure!(
-                field.min.is_none_or(f64::is_finite) && field.max.is_none_or(f64::is_finite),
-                "invalid range"
-            );
-            ensure!(
-                field.min.zip(field.max).is_none_or(|(a, b)| a <= b),
-                "reversed range"
-            );
-            if field.step.is_some() || !field.suffix.is_empty() {
-                ensure!(
-                    matches!(field.kind, FieldType::Integer | FieldType::Decimal),
-                    "numeric format on nonnumeric field"
-                );
-                ensure!(
-                    field.min.is_some() && field.max.is_some(),
-                    "numeric control requires explicit bounds"
-                );
-                ensure!(
-                    field.step.is_none_or(|s| s.is_finite() && s > 0.),
-                    "invalid numeric step"
-                );
-                ensure!(
-                    field.kind != FieldType::Integer || field.step.is_none_or(|s| s.fract() == 0.),
-                    "integer step must be integral"
-                );
+            if !(!field.id.is_empty()
+                && !field.label.trim().is_empty()
+                && field_ids.insert(&field.id))
+            {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "invalid/duplicate field: {}",
+                    field.id
+                )));
             }
-            ensure!(
-                field.presentation != FieldPresentation::Radio || field.kind == FieldType::Enum,
-                "radio presentation requires enum field: {}",
-                field.id
-            );
+            if !ids.contains(&field.group) {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "unknown group: {}",
+                    field.group
+                )));
+            }
+            if field.path.is_empty()
+                || !field.path.iter().all(|p| !p.is_empty())
+                || field.path[0] == "_tekes"
+            {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "invalid/reserved path: {}",
+                    field.id
+                )));
+            }
+            if !paths
+                .iter()
+                .all(|p| !p.starts_with(&field.path) && !field.path.starts_with(p))
+            {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "overlapping Settings path: {}",
+                    field.id
+                )));
+            }
+            paths.push(&field.path);
+            if !(field.min.is_none_or(f64::is_finite) && field.max.is_none_or(f64::is_finite)) {
+                return Err(SettingsError::InvalidSchema("invalid range".into()));
+            }
+            if !field.min.zip(field.max).is_none_or(|(a, b)| a <= b) {
+                return Err(SettingsError::InvalidSchema("reversed range".into()));
+            }
+            if field.step.is_some() || !field.suffix.is_empty() {
+                if !matches!(field.kind, FieldType::Integer | FieldType::Decimal) {
+                    return Err(SettingsError::InvalidSchema(
+                        "numeric format on nonnumeric field".into(),
+                    ));
+                }
+                if field.min.is_none() || field.max.is_none() {
+                    return Err(SettingsError::InvalidSchema(
+                        "numeric control requires explicit bounds".into(),
+                    ));
+                }
+                if !field.step.is_none_or(|s| s.is_finite() && s > 0.) {
+                    return Err(SettingsError::InvalidSchema("invalid numeric step".into()));
+                }
+                if !(field.kind != FieldType::Integer || field.step.is_none_or(|s| s.fract() == 0.))
+                {
+                    return Err(SettingsError::InvalidSchema(
+                        "integer step must be integral".into(),
+                    ));
+                }
+            }
+            if !(field.presentation != FieldPresentation::Radio || field.kind == FieldType::Enum) {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "radio presentation requires enum field: {}",
+                    field.id
+                )));
+            }
             let mut options = BTreeSet::new();
-            ensure!(
-                field.options.iter().all(|o| !o.value.is_empty()
-                    && !o.label.trim().is_empty()
-                    && options.insert(&o.value)),
-                "invalid/duplicate option: {}",
-                field.id
-            );
-            field
-                .validate(&field.default)
-                .with_context(|| format!("default {}", field.id))?;
+            if !field.options.iter().all(|o| {
+                !o.value.is_empty() && !o.label.trim().is_empty() && options.insert(&o.value)
+            }) {
+                return Err(SettingsError::InvalidSchema(format!(
+                    "invalid/duplicate option: {}",
+                    field.id
+                )));
+            }
+            field.validate(&field.default).map_err(|err| {
+                SettingsError::InvalidSchema(format!("default {}: {err}", field.id))
+            })?;
         }
         Ok(schema)
     }
@@ -294,33 +512,40 @@ impl Field {
                 .as_str()
                 .is_some_and(|v| self.options.iter().any(|o| o.value == v)),
         };
-        ensure!(valid, "{}: invalid {:?} value", self.label, self.kind);
+        if !valid {
+            return Err(SettingsError::InvalidFieldValue(format!(
+                "{}: invalid {:?} value",
+                self.label, self.kind
+            )));
+        }
         let number = value
             .as_float()
             .or_else(|| value.as_integer().map(|v| v as f64));
-        if let Some(n) = number {
-            ensure!(
-                n.is_finite() && self.min.is_none_or(|m| n >= m) && self.max.is_none_or(|m| n <= m),
+        if let Some(n) = number
+            && !(n.is_finite()
+                && self.min.is_none_or(|m| n >= m)
+                && self.max.is_none_or(|m| n <= m))
+        {
+            return Err(SettingsError::InvalidFieldValue(format!(
                 "{}: value outside allowed range",
                 self.label
-            );
+            )));
         }
         Ok(())
     }
     pub fn parse_input(&self, raw: &str) -> Result<Value> {
         let value = match self.kind {
             FieldType::String | FieldType::Enum => Value::String(raw.into()),
-            FieldType::Boolean => Value::Boolean(raw.parse().context("expected boolean")?),
-            FieldType::Integer => Value::Integer(
-                raw.trim()
-                    .parse()
-                    .with_context(|| format!("{}: expected integer", self.label))?,
+            FieldType::Boolean => Value::Boolean(
+                raw.parse()
+                    .map_err(|_| SettingsError::InvalidFieldValue("expected boolean".into()))?,
             ),
-            FieldType::Decimal => Value::Float(
-                raw.trim()
-                    .parse()
-                    .with_context(|| format!("{}: expected number", self.label))?,
-            ),
+            FieldType::Integer => Value::Integer(raw.trim().parse().map_err(|_| {
+                SettingsError::InvalidFieldValue(format!("{}: expected integer", self.label))
+            })?),
+            FieldType::Decimal => Value::Float(raw.trim().parse().map_err(|_| {
+                SettingsError::InvalidFieldValue(format!("{}: expected number", self.label))
+            })?),
         };
         self.validate(&value)?;
         Ok(value)
@@ -338,20 +563,21 @@ pub struct Snapshot {
     pub revision: u64,
     pub last_commit_id: String,
     #[serde(with = "snapshot_table")]
-    pub overrides: toml::Table,
+    pub overrides: Table,
 }
 // JSON alone cannot preserve TOML datetime or non-finite float variants. The
 // typed snapshot envelope carries its unknown-key payload as lossless TOML.
 mod snapshot_table {
+    use super::{Table, from_toml_table, to_toml_table};
     use serde::{Deserialize, Deserializer, Serializer};
-    pub fn serialize<S: Serializer>(value: &toml::Table, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&toml::to_string(value).map_err(serde::ser::Error::custom)?)
+    pub fn serialize<S: Serializer>(value: &Table, serializer: S) -> Result<S::Ok, S::Error> {
+        let toml_table = to_toml_table(value).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(&toml::to_string(&toml_table).map_err(serde::ser::Error::custom)?)
     }
-    pub fn deserialize<'de, D: Deserializer<'de>>(
-        deserializer: D,
-    ) -> Result<toml::Table, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Table, D::Error> {
         let source = String::deserialize(deserializer)?;
-        toml::from_str(&source).map_err(serde::de::Error::custom)
+        let toml_table: toml::Table = toml::from_str(&source).map_err(serde::de::Error::custom)?;
+        from_toml_table(toml_table).map_err(serde::de::Error::custom)
     }
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -372,7 +598,7 @@ pub struct Submission {
     pub commit_id: String,
     pub expected_revision: u64,
     edit_session: u64,
-    pub overrides: toml::Table,
+    pub overrides: Table,
     edits: BTreeMap<String, Edit>,
     versions: BTreeMap<String, u64>,
 }
@@ -380,15 +606,15 @@ impl Submission {
     /// Restore a complete saved snapshot through the same single-writer Provider.
     /// History still requires its own durable confirmation after this write.
     pub fn replacement(before: &Snapshot, after: &Snapshot) -> Result<Self> {
-        ensure!(
-            after.revision
-                == before
-                    .revision
-                    .checked_add(1)
-                    .context("revision exhausted")?
-                && !after.last_commit_id.is_empty(),
-            "invalid replacement identity"
-        );
+        let expected = before
+            .revision
+            .checked_add(1)
+            .ok_or_else(|| SettingsError::RevisionConflict("revision exhausted".into()))?;
+        if after.revision != expected || after.last_commit_id.is_empty() {
+            return Err(SettingsError::DraftState(
+                "invalid replacement identity".into(),
+            ));
+        }
         Ok(Self {
             commit_id: after.last_commit_id.clone(),
             expected_revision: before.revision,
@@ -453,7 +679,9 @@ impl Draft {
         self.versions.clear();
     }
     pub fn submit(&self, schema: &Schema, commit_id: String) -> Result<Submission> {
-        ensure!(self.dirty(), "no changes to apply");
+        if !self.dirty() {
+            return Err(SettingsError::DraftState("no changes to apply".into()));
+        }
         let mut overrides = self.base.overrides.clone();
         for f in &schema.settings {
             match self.edits.get(&f.id) {
@@ -477,12 +705,14 @@ impl Draft {
         submission: &Submission,
         snapshot: Snapshot,
     ) -> Result<()> {
-        ensure!(
-            snapshot.last_commit_id == submission.commit_id
-                && snapshot.revision == submission.expected_revision + 1
-                && snapshot.overrides == submission.overrides,
-            "mismatched Settings receipt"
-        );
+        if !(snapshot.last_commit_id == submission.commit_id
+            && snapshot.revision == submission.expected_revision + 1
+            && snapshot.overrides == submission.overrides)
+        {
+            return Err(SettingsError::RevisionConflict(
+                "mismatched Settings receipt".into(),
+            ));
+        }
         // Only retire edits in this batch. Newer typing stays dirty.
         let same_session = self.edit_session == submission.edit_session;
         let newer: Vec<_> = schema
@@ -522,7 +752,7 @@ impl Draft {
         Ok(())
     }
 }
-pub(crate) fn get<'a>(table: &'a toml::Table, path: &[String]) -> Option<&'a Value> {
+pub(crate) fn get<'a>(table: &'a Table, path: &[String]) -> Option<&'a Value> {
     let (first, rest) = path.split_first()?;
     let value = table.get(first)?;
     if rest.is_empty() {
@@ -531,8 +761,10 @@ pub(crate) fn get<'a>(table: &'a toml::Table, path: &[String]) -> Option<&'a Val
         get(value.as_table()?, rest)
     }
 }
-fn set(table: &mut toml::Table, path: &[String], value: Option<Value>) -> Result<()> {
-    let (first, rest) = path.split_first().context("empty path")?;
+fn set(table: &mut Table, path: &[String], value: Option<Value>) -> Result<()> {
+    let (first, rest) = path
+        .split_first()
+        .ok_or_else(|| SettingsError::InvalidSchema("empty path".into()))?;
     if rest.is_empty() {
         if let Some(value) = value {
             table.insert(first.clone(), value);
@@ -544,11 +776,13 @@ fn set(table: &mut toml::Table, path: &[String], value: Option<Value>) -> Result
             if value.is_none() {
                 return Ok(());
             }
-            table.insert(first.clone(), Value::Table(toml::Table::new()));
+            table.insert(first.clone(), Value::Table(Table::new()));
         }
         let child = table.get_mut(first).unwrap().as_table_mut();
         let Some(child) = child else {
-            bail!("non-object at {first}");
+            return Err(SettingsError::InvalidSchema(format!(
+                "non-object at {first}"
+            )));
         };
         set(child, rest, value)?;
         if child.is_empty() {
@@ -556,4 +790,27 @@ fn set(table: &mut toml::Table, path: &[String], value: Option<Value>) -> Result
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn headless_model_validates_schema_drafts_and_submissions_without_store_or_ui() {
+        let schema = Schema::parse(include_str!("../tests/fixtures/layout.schema.toml")).unwrap();
+        let mut draft = Draft::new(Snapshot::default());
+        assert!(!draft.dirty());
+        let field = schema.settings[0].clone();
+        draft.edit(&field, "false".into());
+        assert!(draft.dirty());
+        let submission = draft.submit(&schema, "headless-1".into()).unwrap();
+        let next = Snapshot {
+            revision: 1,
+            last_commit_id: "headless-1".into(),
+            overrides: submission.overrides.clone(),
+        };
+        draft.accept(&schema, &submission, next).unwrap();
+        assert!(!draft.dirty());
+    }
 }

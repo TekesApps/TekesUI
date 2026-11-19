@@ -4,6 +4,7 @@ description = "Platform-independent Rust control and scrolling state models"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 rust-version.workspace = true
 [lints]
 workspace = true
@@ -11,20 +12,21 @@ workspace = true
 default = []
 svg-icons = ["dep:tekes-ui-render", "dep:resvg"]
 bitmap-images = ["dep:tekes-ui-render"]
+syntax-highlighting = ["dep:syntect"]
 token-audit = ["tekes-ui-tokens/token-audit"]
 inspection = ["token-audit"]
 
 [dependencies]
-tekes-ui-icons = { path = "../tekes-ui-icons" }
+tekes-ui-icons.workspace = true
 resvg = { version = "0.48.0", default-features = false, optional = true }
 tekes-ui-scene.workspace = true
-tekes-ui-render = { path = "../tekes-ui-render", optional = true }
+tekes-ui-render = { workspace = true, optional = true }
 tekes-ui-tokens.workspace = true
 tekes-ui-text.workspace = true
-tekes-ui-motion = { path = "../tekes-ui-motion" }
+tekes-ui-motion.workspace = true
 unicode-segmentation = "1.13.3"
 unicode-normalization = "0.1.25"
-syntect = { version = "5.3.0", default-features = false, features = ["default-syntaxes", "regex-fancy"] }
+syntect = { version = "5.3.0", default-features = false, features = ["default-syntaxes", "regex-fancy"], optional = true }
 
 [build-dependencies]
 serde_json.workspace = true
