@@ -76,8 +76,6 @@ def main():
     if binary is None:
         prepare_cache()
         command = resolve_build_command(args)
-        if args.release:
-            command.append('--release')
         subprocess.run(command, cwd=ROOT, env=environment(), check=True)
         binary = CACHE / ('release' if args.release else 'debug') / 'tekes-ui-gallery'
     binary = binary.resolve(strict=True)
