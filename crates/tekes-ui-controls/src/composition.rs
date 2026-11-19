@@ -84,8 +84,14 @@ mod content_reveal_plan;
 pub use content_reveal_plan::{
     HostRevealBudget, HostRevealError, HostRevealOutcome, HostRevealPlan, HostRevealVerticalClip,
 };
+mod markdown_editor;
+mod markdown_projection;
 mod rich_content;
 mod rich_document;
+pub use markdown_editor::{MarkdownEditorContent, MarkdownEditorError, MarkdownEditorVersion};
+pub use markdown_projection::{
+    MarkdownInlineKind, MarkdownInlineSpan, MarkdownProjectedBlock, MarkdownProjection,
+};
 pub use rich_content::{
     RichBlockGeometry, RichContent, RichContentError, RichContentVersion, RichLinkAction,
 };

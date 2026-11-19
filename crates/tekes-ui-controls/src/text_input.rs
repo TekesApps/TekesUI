@@ -167,6 +167,20 @@ impl TextInput {
         self.marked = None;
         self.composition = None;
     }
+
+    /// Synchronize projected display text and selection without disturbing active
+    /// IME state or accumulating projection-only steps in TextInput's undo stack.
+    pub(crate) fn sync_projection(&mut self, value: &str, anchor: usize, caret: usize) {
+        self.advance_edit_epoch();
+        self.text = self.normalize_value(value);
+        let len = self.len();
+        self.anchor = self.boundary(anchor.min(len));
+        self.caret = self.boundary(caret.min(len));
+        self.marked = None;
+        self.composition = None;
+        self.undo.clear();
+        self.redo.clear();
+    }
     pub fn append_text(&mut self, suffix: &str) {
         let normalized = self.normalize_value(suffix);
         if normalized.is_empty() {

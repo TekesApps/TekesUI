@@ -1265,6 +1265,34 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::ListRowDisplay",
     );
+    public_type::<tekes_ui_controls::composition::MarkdownEditorContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownEditorContent",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownEditorError>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownEditorError",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownEditorVersion>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownEditorVersion",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownInlineKind>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownInlineKind",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownInlineSpan>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownInlineSpan",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownProjectedBlock>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownProjectedBlock",
+    );
+    public_type::<tekes_ui_controls::composition::MarkdownProjection>(
+        &mut actual,
+        "tekes_ui_controls::composition::MarkdownProjection",
+    );
     #[cfg(feature = "bitmap-images")]
     {
         public_type::<tekes_ui_controls::composition::MediaViewerCommand>(
@@ -1333,7 +1361,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_193<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_200<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -2206,7 +2234,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_410<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_417<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

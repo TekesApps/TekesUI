@@ -11,7 +11,7 @@ use std::{
 };
 use tekes_ui_text::Paragraph;
 
-mod syntax;
+pub(super) mod syntax;
 use syntax::CodeSpan;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -71,31 +71,34 @@ impl RichInk {
 }
 
 #[derive(Debug)]
-struct CachedRichPaint {
+pub(super) struct CachedRichPaint {
     source: Weak<Paragraph>,
     plain: bool,
     batches: Vec<(RichInk, Paragraph)>,
 }
 
 impl CachedRichPaint {
-    fn matches(&self, paragraph: &Paragraph) -> bool {
+    pub(super) fn matches(&self, paragraph: &Paragraph) -> bool {
         self.source.strong_count() > 0 && std::ptr::eq(self.source.as_ptr(), paragraph)
     }
 
-    fn build(paragraph: &Rc<Paragraph>, document: &RichDocument, code_spans: &[CodeSpan]) -> Self {
-        Self::build_with_weak(Rc::downgrade(paragraph), paragraph, document, code_spans)
-    }
-
-    fn build_with_weak(
-        source: Weak<Paragraph>,
-        paragraph: &Paragraph,
-        document: &RichDocument,
+    pub(super) fn build_ranges(
+        paragraph: &Rc<Paragraph>,
+        blocks: &[(Range<usize>, RichBlockKind)],
         code_spans: &[CodeSpan],
     ) -> Self {
-        let blocks = document.blocks();
-        let has_diff_ink = blocks.iter().any(|block| {
+        Self::build_ranges_with_weak(Rc::downgrade(paragraph), paragraph, blocks, code_spans)
+    }
+
+    pub(super) fn build_ranges_with_weak(
+        source: Weak<Paragraph>,
+        paragraph: &Paragraph,
+        blocks: &[(Range<usize>, RichBlockKind)],
+        code_spans: &[CodeSpan],
+    ) -> Self {
+        let has_diff_ink = blocks.iter().any(|(_, kind)| {
             matches!(
-                block.kind,
+                kind,
                 RichBlockKind::Diff {
                     kind: crate::extended::DiffKind::Added | crate::extended::DiffKind::Removed
                 }
@@ -116,30 +119,32 @@ impl CachedRichPaint {
         let mut block_span_range = 0..0usize;
 
         for line in &paragraph.lines {
-            while block_idx < blocks.len() && blocks[block_idx].display.end <= line.utf16.start {
+            while block_idx < blocks.len() && blocks[block_idx].0.end <= line.utf16.start {
                 block_idx += 1;
             }
-            let Some(block) = blocks.get(block_idx) else {
-                break;
+            let Some((block_display, block_kind)) = blocks.get(block_idx) else {
+                buckets[RichInk::Default.slot_index()].push(line.clone());
+                continue;
             };
-            if !(line.utf16.start < block.display.end && line.utf16.end > block.display.start) {
+            if !(line.utf16.start < block_display.end && line.utf16.end > block_display.start) {
+                buckets[RichInk::Default.slot_index()].push(line.clone());
                 continue;
             }
             if cached_block_idx != block_idx {
                 cached_block_idx = block_idx;
                 while span_idx < code_spans.len()
-                    && code_spans[span_idx].display.end <= block.display.start
+                    && code_spans[span_idx].display.end <= block_display.start
                 {
                     span_idx += 1;
                 }
                 let mut end = span_idx;
-                while end < code_spans.len() && code_spans[end].display.start < block.display.end {
+                while end < code_spans.len() && code_spans[end].display.start < block_display.end {
                     end += 1;
                 }
                 block_span_range = span_idx..end;
                 span_idx = end;
             }
-            let base_ink = RichInk::from_diff(block.kind);
+            let base_ink = RichInk::from_diff(*block_kind);
             let block_spans = &code_spans[block_span_range.clone()];
             if block_spans.is_empty() {
                 buckets[base_ink.slot_index()].push(line.clone());
@@ -405,70 +410,21 @@ impl RichContent {
     /// Original paragraph geometry, in host coordinates. Use this with the
     /// existing Content reading transaction; no consumer pixel compensation.
     pub fn block_geometry(&self) -> Vec<RichBlockGeometry> {
-        let surface = &self.field.surface;
-        let Some(paragraph) = surface
-            .paragraph
-            .as_ref()
-            .filter(|_| surface.shaped == surface.input.text)
-        else {
-            return Vec::new();
-        };
-        let origin = surface.origin();
-        self.document
+        let ranges: Vec<_> = self
+            .document
             .blocks()
             .iter()
-            .enumerate()
-            .filter_map(|(index, block)| {
-                let lines = block_lines(&paragraph.lines, &block.display);
-                let first = lines.first()?;
-                let last = lines.last()?;
-                let inset = code_inset(block.kind);
-                let frame = Rect::new(
-                    origin.x,
-                    origin.y + first.top as f32 - inset,
-                    surface.inner.size.width,
-                    (last.top + last.height - first.top) as f32 + 2. * inset,
-                );
-                Some(RichBlockGeometry {
-                    index,
-                    display: block.display.clone(),
-                    frame,
-                    visible: surface
-                        .visible_frame()
-                        .and_then(|clip| clip.intersection(&frame)),
-                })
-            })
-            .collect()
+            .map(|b| (b.display.clone(), b.kind))
+            .collect();
+        block_geometry_for_ranges(&self.field.surface, &ranges)
     }
     fn link_rects(&self, index: usize) -> Vec<Rect> {
-        let surface = &self.field.surface;
-        let Some(link) = self.document.links().get(index) else {
-            return Vec::new();
-        };
-        let Some(p) = surface
-            .paragraph
-            .as_ref()
-            .filter(|_| surface.shaped == surface.input.text)
-        else {
-            return Vec::new();
-        };
-        let origin = surface.origin();
-        p.selection_rects(
-            link.display.clone(),
-            Rect::new(0., 0., surface.inner.size.width, p.height as f32),
-        )
-        .into_iter()
-        .filter_map(|r| {
-            surface.visible_frame().and_then(|clip| {
-                clip.intersection(&Rect::new(
-                    r.min_x() + origin.x,
-                    r.min_y() + origin.y,
-                    r.size.width,
-                    r.size.height,
-                ))
+        self.document
+            .links()
+            .get(index)
+            .map_or_else(Vec::new, |link| {
+                surface_link_rects(&self.field.surface, &link.display)
             })
-        })
-        .collect()
     }
 }
 
@@ -508,21 +464,24 @@ impl Component for RichContent {
         Some(layout)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+        let specs = document_specs(&self.document);
         self.field.measure(
-            &mut RichRenderer::new(t, &self.document, &self.code_spans, None, None),
+            &mut RichRenderer::new(t, &specs, &[], &self.code_spans, None, None),
             a,
         )
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+        let specs = document_specs(&self.document);
         self.field.arrange(
-            &mut RichRenderer::new(t, &self.document, &self.code_spans, None, None),
+            &mut RichRenderer::new(t, &specs, &[], &self.code_spans, None, None),
             f,
             c,
         )
     }
     fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
+        let specs = document_specs(&self.document);
         self.field.prepare_text_input(
-            &mut RichRenderer::new(t, &self.document, &self.code_spans, None, None),
+            &mut RichRenderer::new(t, &specs, &[], &self.code_spans, None, None),
             f,
             c,
         );
@@ -532,9 +491,15 @@ impl Component for RichContent {
                 .as_ref()
                 .is_none_or(|cache| !cache.matches(paragraph))
             {
-                self.paint_cache = Some(CachedRichPaint::build(
+                let ranges: Vec<_> = self
+                    .document
+                    .blocks()
+                    .iter()
+                    .map(|b| (b.display.clone(), b.kind))
+                    .collect();
+                self.paint_cache = Some(CachedRichPaint::build_ranges(
                     paragraph,
-                    &self.document,
+                    &ranges,
                     &self.code_spans,
                 ));
             }
@@ -553,26 +518,22 @@ impl Component for RichContent {
         // Prepare the same retained layout before painting surfaces. TextSurface
         // paints selection before glyphs, so backgrounds must precede its paint.
         self.prepare_text_input(t, f, c);
-        for block in self.block_geometry() {
-            if self.document.blocks()[block.index].kind == RichBlockKind::Code
-                && let Some(visible) = block.visible
-            {
-                s.push_clip(visible);
-                crate::paint::surface_kind_at_scale(
-                    s,
-                    block.frame,
-                    theme.palette,
-                    crate::paint::SurfaceKind::Code,
-                    t.backing_scale(),
-                );
-                s.pop_clip();
-            }
-        }
+        paint_code_surfaces(s, t, theme, &self.block_geometry(), |index| {
+            self.document.blocks()[index].kind
+        });
+        let block_ranges: Vec<_> = self
+            .document
+            .blocks()
+            .iter()
+            .map(|b| (b.display.clone(), b.kind))
+            .collect();
+        let specs = document_specs(&self.document);
         self.field.paint(
             s,
             &mut RichRenderer::new(
                 t,
-                &self.document,
+                &specs,
+                &block_ranges,
                 &self.code_spans,
                 self.paint_cache.as_ref(),
                 Some(theme.palette),
@@ -581,103 +542,21 @@ impl Component for RichContent {
             c,
             theme,
         );
-        if let Some(content_clip) = self
-            .field
-            .surface
-            .visible_frame()
-            .and_then(|vf| vf.intersection(&c))
-            && let Some(paragraph) = self.field.surface.paragraph.as_ref()
-        {
-            let origin = self.field.surface.origin();
-            let caption = proposal::TextRole::UiCaption;
-            let sample = line_number_sample(&self.document);
-            let gutter = if let Some(host) = t.text_surface_host() {
-                host.shape_surface(&sample, caption, None).width as f32
-            } else {
-                t.measure(&sample, caption, f32::MAX).width
-            };
-            let secondary_ink = tekes_ui_tokens::surface_palette::resolve_surface(
-                theme.palette,
-                "code",
-                "action-quiet",
-                "disabled",
-            )
-            .expect("code gutter Surface ink")
-            .text;
-            let mut number = 1;
-            for block in self.document.blocks() {
-                if !matches!(block.kind, RichBlockKind::Code | RichBlockKind::Diff { .. }) {
-                    continue;
-                }
-                if block.kind == RichBlockKind::Code {
-                    number = 1;
-                }
-                if block.display.is_empty() {
-                    continue;
-                }
-                let mut first = true;
-                for line in block_lines(&paragraph.lines, &block.display) {
-                    if first {
-                        let frame = Rect::new(
-                            origin.x + code_inset(block.kind),
-                            origin.y + line.top as f32,
-                            gutter,
-                            line.height as f32,
-                        );
-                        if let Some(visible) = frame.intersection(&content_clip) {
-                            let label = number.to_string();
-                            s.push_clip(visible);
-                            if let Some(host) = t.text_surface_host() {
-                                let num_para = host.shape_surface(&label, caption, None);
-                                let num_origin = num_para.origin_in(frame, true);
-                                host.push_visible(s, &num_para, num_origin, secondary_ink, visible);
-                            } else {
-                                t.draw(
-                                    s,
-                                    &label,
-                                    caption,
-                                    frame,
-                                    ButtonTextAlign::Leading,
-                                    secondary_ink,
-                                );
-                            }
-                            s.pop_clip();
-                        }
-                        number += 1;
-                    }
-                    first = line.has_newline;
-                }
-            }
-        }
-        for index in 0..self.document.links().len() {
-            for rect in self.link_rects(index) {
-                s.push_clip(c);
-                // Inline links share the paragraph's text/selection paint. The
-                // standalone Link painter also paints an opaque control ground;
-                // invoking it here, after text, would cover the retained glyphs.
-                let ink = tekes_ui_tokens::surface_palette::resolve_surface(
-                    theme.palette,
-                    theme.surface(),
-                    "link",
-                    "rest",
-                )
-                .expect("validated inline Link Surface")
-                .text;
-                let thickness = proposal::metric("stroke", "stroke-rule")
-                    .expect("Link underline stroke")
-                    .min(rect.size.height);
-                s.push_quad(tekes_ui_scene::Quad::new(
-                    Rect::new(
-                        rect.min_x(),
-                        rect.max_y() - thickness,
-                        rect.size.width,
-                        thickness,
-                    ),
-                    ink,
-                ));
-                s.pop_clip();
-            }
-        }
+        let numbered: Vec<_> = self
+            .document
+            .blocks()
+            .iter()
+            .filter(|b| matches!(b.kind, RichBlockKind::Code | RichBlockKind::Diff { .. }))
+            .map(|b| (b.display.clone(), b.kind))
+            .collect();
+        paint_code_line_numbers(s, t, &self.field.surface, c, theme, &numbered);
+        paint_link_underlines(
+            s,
+            &self.field.surface,
+            c,
+            theme,
+            self.document.links().iter().map(|link| &link.display),
+        );
     }
     fn focusable(&self) -> bool {
         self.field.focusable()
@@ -701,32 +580,11 @@ impl Component for RichContent {
         self.field.semantic_frame(f)
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
-        self.document
-            .links()
-            .iter()
-            .enumerate()
-            .flat_map(|(index, link)| {
-                let mut semantics = ContentSemantics::new(ContentRole::Link, &link.target);
-                semantics.value = Some(link.target.clone());
-                self.link_rects(index)
-                    .into_iter()
-                    .reduce(|a, b| {
-                        Rect::new(
-                            a.min_x().min(b.min_x()),
-                            a.min_y().min(b.min_y()),
-                            a.max_x().max(b.max_x()) - a.min_x().min(b.min_x()),
-                            a.max_y().max(b.max_y()) - a.min_y().min(b.min_y()),
-                        )
-                    })
-                    .map(|frame| SemanticPart {
-                        index: self.link_part_base + index,
-                        frame,
-                        focused: false,
-                        semantics,
-                    })
-                    .into_iter()
-            })
-            .collect()
+        link_semantic_parts(
+            &self.field.surface,
+            self.document.links(),
+            self.link_part_base,
+        )
     }
     fn semantic_part_preserves_activation_focus(&self, _: usize) -> bool {
         true
@@ -795,9 +653,10 @@ impl Component for RichContent {
     }
 }
 
-struct RichRenderer<'a> {
+pub(super) struct RichRenderer<'a> {
     host: &'a mut dyn ButtonTextRenderer,
-    document: &'a RichDocument,
+    specs: &'a [ShapedBlockSpec],
+    block_ranges: &'a [(Range<usize>, RichBlockKind)],
     code_spans: &'a [CodeSpan],
     paint_cache: Option<&'a CachedRichPaint>,
     palette: Option<Palette>,
@@ -853,16 +712,17 @@ impl TextSurfaceHost for RichRenderer<'_> {
         width: Option<f32>,
     ) -> Rc<Paragraph> {
         let host = self.host.text_surface_host().expect("checked text service");
-        if self.document.blocks().is_empty() {
+        if self.specs.is_empty() {
             return host.shape_surface(text, role, width);
         }
-        Rc::new(shape_document(host, self.document, width))
+        Rc::new(shape_block_sequence(host, text, self.specs, width))
     }
 }
 impl RichRenderer<'_> {
-    fn new<'a>(
+    pub(super) fn new<'a>(
         host: &'a mut dyn ButtonTextRenderer,
-        document: &'a RichDocument,
+        specs: &'a [ShapedBlockSpec],
+        block_ranges: &'a [(Range<usize>, RichBlockKind)],
         code_spans: &'a [CodeSpan],
         paint_cache: Option<&'a CachedRichPaint>,
         palette: Option<Palette>,
@@ -872,7 +732,8 @@ impl RichRenderer<'_> {
             .map_or((1., true), |text| (text.type_scale(), text.caret_visible()));
         RichRenderer {
             host,
-            document,
+            specs,
+            block_ranges,
             code_spans,
             paint_cache,
             palette,
@@ -890,10 +751,10 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
             let cache = if let Some(cached) = self.paint_cache.filter(|c| c.matches(p)) {
                 cached
             } else {
-                fallback = CachedRichPaint::build_with_weak(
+                fallback = CachedRichPaint::build_ranges_with_weak(
                     Weak::new(),
                     p,
-                    self.document,
+                    self.block_ranges,
                     self.code_spans,
                 );
                 &fallback
@@ -911,7 +772,7 @@ impl TextSurfaceTextRenderer for RichRenderer<'_> {
     }
 }
 
-fn block_lines<'a>(
+pub(super) fn block_lines<'a>(
     lines: &'a [tekes_ui_text::Line],
     display: &Range<usize>,
 ) -> &'a [tekes_ui_text::Line] {
@@ -927,12 +788,34 @@ fn block_lines<'a>(
     &lines[start..start + len]
 }
 
-fn shape_document(
+#[derive(Clone, Debug)]
+pub(super) struct ShapedBlockSpec {
+    pub display: Range<usize>,
+    pub role: proposal::TextRole,
+    pub kind: RichBlockKind,
+    pub gap_after: bool,
+}
+
+fn document_specs(document: &RichDocument) -> Vec<ShapedBlockSpec> {
+    document
+        .blocks()
+        .iter()
+        .map(|block| ShapedBlockSpec {
+            display: block.display.clone(),
+            role: block.role,
+            kind: block.kind,
+            gap_after: true,
+        })
+        .collect()
+}
+
+pub(super) fn shape_block_sequence(
     host: &mut dyn TextSurfaceHost,
-    document: &RichDocument,
+    text: &str,
+    specs: &[ShapedBlockSpec],
     width: Option<f32>,
 ) -> Paragraph {
-    let units: Vec<_> = document.text().encode_utf16().collect();
+    let units: Vec<_> = text.encode_utf16().collect();
     let mut result = Paragraph {
         lines: vec![],
         height: 0.,
@@ -941,13 +824,12 @@ fn shape_document(
         fonts: vec![],
         utf16_len: units.len(),
     };
-    let has_gutter = document
-        .blocks()
+    let has_gutter = specs
         .iter()
         .any(|block| matches!(block.kind, RichBlockKind::Code | RichBlockKind::Diff { .. }));
     let code_gutter = if has_gutter {
         host.shape_surface(
-            &line_number_sample(document),
+            &line_number_sample_str(text),
             proposal::TextRole::UiCaption,
             None,
         )
@@ -958,9 +840,8 @@ fn shape_document(
     };
     let mut byte_offset = 0;
     let mut y = 0.;
-    for (index, block) in document.blocks().iter().enumerate() {
-        let end = document
-            .blocks()
+    for (index, block) in specs.iter().enumerate() {
+        let end = specs
             .get(index + 1)
             .map_or(result.utf16_len, |next| next.display.start);
         let value = String::from_utf16(&units[block.display.start..end])
@@ -990,7 +871,7 @@ fn shape_document(
         for line in &paragraph.lines {
             // A block-final hard break is already represented by the preceding
             // line. Its synthetic trailing empty line belongs to the next block.
-            if index + 1 < document.blocks().len()
+            if index + 1 < specs.len()
                 && line.utf16.is_empty()
                 && line.utf16.start == end - block.display.start
             {
@@ -1066,7 +947,7 @@ fn shape_document(
             result.width = result.width.max(text_offset + inset);
         }
         y = result.lines.last().map_or(y, |line| line.top + line.height) + inset;
-        if index + 1 < document.blocks().len() {
+        if index + 1 < specs.len() && block.gap_after {
             y += proposal::metric("spacing", "space-relaxed").unwrap_or(12.) as f64;
         }
         byte_offset += value.len();
@@ -1076,7 +957,7 @@ fn shape_document(
 }
 
 // Match the existing CodeBlockView surface inset; it is part of text geometry.
-fn code_inset(kind: RichBlockKind) -> f32 {
+pub(super) fn code_inset(kind: RichBlockKind) -> f32 {
     if kind == RichBlockKind::Code {
         proposal::metric("spacing", "space-button-md-inset").expect("code surface inset")
     } else {
@@ -1085,15 +966,257 @@ fn code_inset(kind: RichBlockKind) -> f32 {
 }
 
 // Actual host typography measures the decoration; it never enters copy/ranges.
-fn line_number_sample(document: &RichDocument) -> String {
-    "0".repeat(document.text().lines().count().max(1).to_string().len())
+fn line_number_sample_str(text: &str) -> String {
+    "0".repeat(text.lines().count().max(1).to_string().len())
 }
 
 // A line-end and the next line's start can share a UTF16 index. The native
 // firstRect start must use Paragraph::caret_rect's downstream-line affinity,
 // while retaining both original coordinates for a preceding line's range end.
-fn order_document_carets(carets: &mut [(usize, Rect)]) {
+pub(super) fn order_document_carets(carets: &mut [(usize, Rect)]) {
     carets.sort_by(|(ai, a), (bi, b)| ai.cmp(bi).then_with(|| b.min_y().total_cmp(&a.min_y())));
+}
+
+pub(super) fn block_geometry_for_ranges(
+    surface: &TextSurface,
+    ranges: &[(Range<usize>, RichBlockKind)],
+) -> Vec<RichBlockGeometry> {
+    let Some(paragraph) = surface
+        .paragraph
+        .as_ref()
+        .filter(|_| surface.shaped == surface.input.text)
+    else {
+        return Vec::new();
+    };
+    let origin = surface.origin();
+    ranges
+        .iter()
+        .enumerate()
+        .filter_map(|(index, (display, kind))| {
+            let lines = block_lines(&paragraph.lines, display);
+            let first = lines.first()?;
+            let last = lines.last()?;
+            let inset = code_inset(*kind);
+            let frame = Rect::new(
+                origin.x,
+                origin.y + first.top as f32 - inset,
+                surface.inner.size.width,
+                (last.top + last.height - first.top) as f32 + 2. * inset,
+            );
+            Some(RichBlockGeometry {
+                index,
+                display: display.clone(),
+                frame,
+                visible: surface
+                    .visible_frame()
+                    .and_then(|clip| clip.intersection(&frame)),
+            })
+        })
+        .collect()
+}
+
+pub(super) fn surface_link_rects(surface: &TextSurface, display: &Range<usize>) -> Vec<Rect> {
+    let Some(p) = surface
+        .paragraph
+        .as_ref()
+        .filter(|_| surface.shaped == surface.input.text)
+    else {
+        return Vec::new();
+    };
+    let origin = surface.origin();
+    p.selection_rects(
+        display.clone(),
+        Rect::new(0., 0., surface.inner.size.width, p.height as f32),
+    )
+    .into_iter()
+    .filter_map(|r| {
+        surface.visible_frame().and_then(|clip| {
+            clip.intersection(&Rect::new(
+                r.min_x() + origin.x,
+                r.min_y() + origin.y,
+                r.size.width,
+                r.size.height,
+            ))
+        })
+    })
+    .collect()
+}
+
+pub(super) fn paint_code_surfaces(
+    s: &mut Scene,
+    t: &mut dyn ButtonTextRenderer,
+    theme: ContentTheme,
+    geometry: &[RichBlockGeometry],
+    kind_at: impl Fn(usize) -> RichBlockKind,
+) {
+    for block in geometry {
+        if kind_at(block.index) == RichBlockKind::Code
+            && let Some(visible) = block.visible
+        {
+            s.push_clip(visible);
+            crate::paint::surface_kind_at_scale(
+                s,
+                block.frame,
+                theme.palette,
+                crate::paint::SurfaceKind::Code,
+                t.backing_scale(),
+            );
+            s.pop_clip();
+        }
+    }
+}
+
+pub(super) fn paint_code_line_numbers(
+    s: &mut Scene,
+    t: &mut dyn ButtonTextRenderer,
+    surface: &TextSurface,
+    clip: Rect,
+    theme: ContentTheme,
+    blocks: &[(Range<usize>, RichBlockKind)],
+) {
+    if blocks.is_empty() {
+        return;
+    }
+    let Some(content_clip) = surface
+        .visible_frame()
+        .and_then(|vf| vf.intersection(&clip))
+    else {
+        return;
+    };
+    let Some(paragraph) = surface.paragraph.as_ref() else {
+        return;
+    };
+    let origin = surface.origin();
+    let caption = proposal::TextRole::UiCaption;
+    let sample = line_number_sample_str(&surface.input.text);
+    let gutter = if let Some(host) = t.text_surface_host() {
+        host.shape_surface(&sample, caption, None).width as f32
+    } else {
+        t.measure(&sample, caption, f32::MAX).width
+    };
+    let gutter_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+        theme.palette,
+        "code",
+        "action-quiet",
+        "disabled",
+    )
+    .expect("code gutter Surface ink")
+    .text;
+    let mut number = 1usize;
+    for (display, kind) in blocks {
+        if !matches!(kind, RichBlockKind::Code | RichBlockKind::Diff { .. }) {
+            continue;
+        }
+        if *kind == RichBlockKind::Code {
+            number = 1;
+        }
+        if display.is_empty() {
+            continue;
+        }
+        let mut first = true;
+        for line in block_lines(&paragraph.lines, display) {
+            if first {
+                let frame = Rect::new(
+                    origin.x + code_inset(*kind),
+                    origin.y + line.top as f32,
+                    gutter,
+                    line.height as f32,
+                );
+                if let Some(visible) = frame.intersection(&content_clip) {
+                    let label = number.to_string();
+                    s.push_clip(visible);
+                    if let Some(host) = t.text_surface_host() {
+                        let num_para = host.shape_surface(&label, caption, None);
+                        let num_origin = num_para.origin_in(frame, true);
+                        host.push_visible(s, &num_para, num_origin, gutter_ink, visible);
+                    } else {
+                        t.draw(
+                            s,
+                            &label,
+                            caption,
+                            frame,
+                            ButtonTextAlign::Leading,
+                            gutter_ink,
+                        );
+                    }
+                    s.pop_clip();
+                }
+                number += 1;
+            }
+            first = line.has_newline;
+        }
+    }
+}
+
+pub(super) fn paint_link_underlines<'a>(
+    s: &mut Scene,
+    surface: &TextSurface,
+    clip: Rect,
+    theme: ContentTheme,
+    displays: impl IntoIterator<Item = &'a Range<usize>>,
+) {
+    let mut style: Option<(Rgba, f32)> = None;
+    for display in displays {
+        for rect in surface_link_rects(surface, display) {
+            let (ink, rule) = *style.get_or_insert_with(|| {
+                let ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                    theme.palette,
+                    theme.surface(),
+                    "link",
+                    "rest",
+                )
+                .expect("validated inline Link Surface")
+                .text;
+                let rule =
+                    proposal::metric("stroke", "stroke-rule").expect("Link underline stroke");
+                (ink, rule)
+            });
+            s.push_clip(clip);
+            let thickness = rule.min(rect.size.height);
+            s.push_quad(tekes_ui_scene::Quad::new(
+                Rect::new(
+                    rect.min_x(),
+                    rect.max_y() - thickness,
+                    rect.size.width,
+                    thickness,
+                ),
+                ink,
+            ));
+            s.pop_clip();
+        }
+    }
+}
+
+pub(super) fn link_semantic_parts(
+    surface: &TextSurface,
+    links: &[RichLink],
+    base: usize,
+) -> Vec<SemanticPart> {
+    links
+        .iter()
+        .enumerate()
+        .flat_map(|(index, link)| {
+            let mut semantics = ContentSemantics::new(ContentRole::Link, &link.target);
+            semantics.value = Some(link.target.clone());
+            surface_link_rects(surface, &link.display)
+                .into_iter()
+                .reduce(|a, b| {
+                    Rect::new(
+                        a.min_x().min(b.min_x()),
+                        a.min_y().min(b.min_y()),
+                        a.max_x().max(b.max_x()) - a.min_x().min(b.min_x()),
+                        a.max_y().max(b.max_y()) - a.min_y().min(b.min_y()),
+                    )
+                })
+                .map(|frame| SemanticPart {
+                    index: base + index,
+                    frame,
+                    focused: false,
+                    semantics,
+                })
+                .into_iter()
+        })
+        .collect()
 }
 
 #[cfg(test)]

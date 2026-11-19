@@ -16,8 +16,8 @@ Each DiffLine contains Equal, Added or Removed and its text. RichContent keeps s
 
 ## Composition and limitations
 
-The bounded LCS algorithm falls back to a removed block followed by an added block above its work budget; a minimal edit sequence is not guaranteed. Parent layout owns scrolling. There is no inline-character diff, conflict resolution, patch application or file writing. The application supplies both source versions.
+The bounded LCS algorithm falls back to a removed block followed by an added block above its work budget; a minimal edit sequence is not guaranteed. Parent layout owns scrolling. `RichContent::new(..., RichDocument::from_diff(&diff))` mounts directly into `AppHost` `others` panels (for example alongside `MarkdownEditorContent`) without bridge changes. There is no inline-character diff, conflict resolution, patch application or file writing. The application supplies both source versions.
 
 ## Related APIs
 
-[Code Block](code-block.md)
+[Code Block](code-block.md) · [Markdown](markdown.md)

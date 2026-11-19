@@ -1625,6 +1625,26 @@ fn apphost_reading_pages_measure_original_documents_inside_narrow_focus() {
                     .accessibility_action(ComponentId(96020), None, AccessibilityAction::Press)
                     .consumed
             );
+            if route == "component-markdown" {
+                let editor = host.get(ComponentId(96030)).unwrap().frame();
+                assert!(editor.size.height > 0. && editor.size.width <= frame.size.width);
+                assert!(editor.min_y() >= footer.max_y());
+                assert!(host.focus(Some(ComponentId(96030)), true));
+                assert!(
+                    host.semantic_text_input_snapshot(ComponentId(96030))
+                        .is_some_and(
+                            |snap| !snap.read_only && snap.text.starts_with("# Agent Notes")
+                        )
+                );
+            } else if route == "component-diff-view" {
+                let diff_reader = host.get(ComponentId(96031)).unwrap().frame();
+                assert!(diff_reader.size.height > 0. && diff_reader.size.width <= frame.size.width);
+                assert!(diff_reader.min_y() >= footer.max_y());
+                assert!(
+                    host.semantic_text_input_snapshot(ComponentId(96031))
+                        .is_some_and(|snap| snap.read_only && !snap.text.is_empty())
+                );
+            }
         });
     }
 }

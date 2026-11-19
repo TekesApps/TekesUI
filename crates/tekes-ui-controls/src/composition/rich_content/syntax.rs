@@ -2,19 +2,63 @@
 use super::RichDocument;
 use std::ops::Range;
 
-#[derive(Debug)]
-pub(super) struct CodeSpan {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(in crate::composition) struct CodeSpan {
     pub display: Range<usize>,
     pub token: &'static str,
 }
 
 #[cfg(feature = "syntax-highlighting")]
-pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
-    use super::RichBlockKind;
+pub(in crate::composition) fn parse_code_slice(
+    language: &str,
+    text: &str,
+    display_start: usize,
+) -> Result<Vec<CodeSpan>, String> {
     use std::sync::OnceLock;
     use syntect::parsing::{ParseState, ScopeStack, SyntaxSet};
 
     static SYNTAXES: OnceLock<SyntaxSet> = OnceLock::new();
+    if language.is_empty() {
+        return Ok(Vec::new());
+    }
+    let syntaxes = SYNTAXES.get_or_init(SyntaxSet::load_defaults_newlines);
+    let Some(syntax) = syntaxes.find_syntax_by_token(language) else {
+        return Ok(Vec::new()); // Unknown language is explicitly plain text.
+    };
+    let mut spans = Vec::new();
+    let mut parser = ParseState::new(syntax);
+    let mut stack = ScopeStack::new();
+    let mut offset = display_start;
+    for line in text.split_inclusive('\n') {
+        let operations = parser
+            .parse_line(line, syntaxes)
+            .map_err(|error| format!("{language} code at UTF-16 {offset}: {error}"))?;
+        let mut previous = 0;
+        for (position, operation) in operations {
+            append(&mut spans, &stack, &line[previous..position], &mut offset);
+            stack
+                .apply(&operation)
+                .map_err(|error| format!("{language} scope at UTF-16 {offset}: {error}"))?;
+            previous = position;
+        }
+        append(&mut spans, &stack, &line[previous..], &mut offset);
+    }
+    Ok(spans)
+}
+
+#[cfg(not(feature = "syntax-highlighting"))]
+pub(in crate::composition) fn parse_code_slice(
+    _language: &str,
+    _text: &str,
+    _display_start: usize,
+) -> Result<Vec<CodeSpan>, String> {
+    Ok(Vec::new())
+}
+
+#[cfg(feature = "syntax-highlighting")]
+pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
+    use super::RichBlockKind;
+
     let mut spans = Vec::new();
     let units: Vec<_> = document.text().encode_utf16().collect();
     for block in document
@@ -25,28 +69,8 @@ pub(super) fn parse(document: &RichDocument) -> Result<Vec<CodeSpan>, String> {
         let Some(language) = block.language().filter(|language| !language.is_empty()) else {
             continue;
         };
-        let syntaxes = SYNTAXES.get_or_init(SyntaxSet::load_defaults_newlines);
-        let Some(syntax) = syntaxes.find_syntax_by_token(language) else {
-            continue; // Unknown language is explicitly plain text.
-        };
         let text = String::from_utf16(&units[block.display()]).expect("validated block boundaries");
-        let mut parser = ParseState::new(syntax);
-        let mut stack = ScopeStack::new();
-        let mut offset = block.display().start;
-        for line in text.split_inclusive('\n') {
-            let operations = parser
-                .parse_line(line, syntaxes)
-                .map_err(|error| format!("{language} code at UTF-16 {offset}: {error}"))?;
-            let mut previous = 0;
-            for (position, operation) in operations {
-                append(&mut spans, &stack, &line[previous..position], &mut offset);
-                stack
-                    .apply(&operation)
-                    .map_err(|error| format!("{language} scope at UTF-16 {offset}: {error}"))?;
-                previous = position;
-            }
-            append(&mut spans, &stack, &line[previous..], &mut offset);
-        }
+        spans.extend(parse_code_slice(language, &text, block.display().start)?);
     }
     Ok(spans)
 }

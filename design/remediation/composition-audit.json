@@ -1919,7 +1919,8 @@
       "protocol": {
         "status": "已实现",
         "public_adapters": [
-          "tekes_ui_controls::composition::RichContent"
+          "tekes_ui_controls::composition::RichContent",
+          "tekes_ui_controls::composition::MarkdownEditorContent"
         ],
         "representation": "owned-content"
       },
@@ -1927,12 +1928,12 @@
       "content_capacity": "不适用",
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
-      "state_identity": "One original TextFieldContent/TextSurface owner with immutable document identity/revision, controlled replacement and original selection/native query layout.",
-      "limits": "Bounded readonly Markdown blocks, simple links, code and diff. RichContent colors recognized fenced code through shared semantic tokens without reshaping; unknown/omitted languages are plain. Original source mapping, selection and copy retained. No full CommonMark, inline font shaping, arbitrary child slots, editing or virtualization; passive legacy views are not upgraded to this reader.",
+      "state_identity": "Readonly reader uses RichContent over one TextFieldContent/TextSurface owner with immutable document identity/revision; editable Live-Preview uses MarkdownEditorContent over one TextFieldContent/TextSurface owner retaining canonical LF source, source UTF-16 selection, canonical source Undo/Redo history and source_epoch.",
+      "limits": "Readonly RichContent supports bounded Markdown, simple links, code and diff without editing or full CommonMark. Editable MarkdownEditorContent adds Obsidian-style block/line Live-Preview expansion, canonical Undo/Redo, IME/pointer-drag projection freeze and controlled streaming updates; full CommonMark tables, HTML, remote images, physical IME (#12) and VoiceOver (#5) remain unsupported/unverified; passive legacy views are not upgraded.",
       "native_acceptance": "未验证",
       "accessibility": "Original text owner and source-tagged link parts; scoped software-native selection/query/copy verified. Physical IME and VoiceOver remain unverified.",
-      "requires_internal_source_edit": "Public RichDocument and RichContent APIs; independent composition consumer.",
-      "compatibility": "Existing passive model/View APIs retained; shared parser regression verified.",
+      "requires_internal_source_edit": "Public RichDocument / RichContent and MarkdownEditorContent / MarkdownProjection APIs; independent composition consumer.",
+      "compatibility": "Existing passive model/View APIs and strictly readonly RichContent reader retained; MarkdownEditorContent adds opt-in Live-Preview editing; shared parser/editor regressions verified.",
       "evidence": [
         {
           "api": "tekes_ui_controls::collections_view::MarkdownView",
@@ -1949,8 +1950,14 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 281,
+          "line": 286,
           "anchor": "pub struct RichContent {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::MarkdownEditorContent",
+          "path": "crates/tekes-ui-controls/src/composition/markdown_editor.rs",
+          "line": 60,
+          "anchor": "pub struct MarkdownEditorContent {"
         }
       ]
     },
@@ -1992,7 +1999,7 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 281,
+          "line": 286,
           "anchor": "pub struct RichContent {"
         }
       ]
@@ -2035,7 +2042,7 @@
         {
           "api": "tekes_ui_controls::composition::RichContent",
           "path": "crates/tekes-ui-controls/src/composition/rich_content.rs",
-          "line": 281,
+          "line": 286,
           "anchor": "pub struct RichContent {"
         }
       ]
@@ -2054,7 +2061,7 @@
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e8050200118efefecf897425fbc4c203c35e5e5021c37e898128fee9f31a3fc1",
     "crates/tekes-ui-controls/src/composite.rs": "bb5acca080ae3de83a5f2659c342929cb89df2217fca636a83885a08913c95bf",
-    "crates/tekes-ui-controls/src/composition.rs": "773c10027e31b9dab23a2882a5787817f56457dc0a615f02589d29505b7a1056",
+    "crates/tekes-ui-controls/src/composition.rs": "2b81be790ad5ddc0627e42db0d9659d069785c5ef58f601606d96093aefa8e58",
     "crates/tekes-ui-controls/src/composition/actions.rs": "8a2b48240dcc17f99f2b26922a7178d29ff3e3474c3885af491ba5eca7c52651",
     "crates/tekes-ui-controls/src/composition/adapters.rs": "2bd14fc84d4ba906a1b39c36105805de57e38ca8c7caf132857ff7d97bd29f31",
     "crates/tekes-ui-controls/src/composition/button.rs": "cf6206784a26472f955ef95fee4259fab6e0e6b3054307e632b4e96e8871a254",
@@ -2081,8 +2088,8 @@
     "crates/tekes-ui-controls/src/composition/popover.rs": "75aac294720911ec9aeb52f68c6df7711d80ad497d7e76fb44f074cfe0d5460e",
     "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
     "crates/tekes-ui-controls/src/composition/radio.rs": "909379d98f21b9516a1669416eedd266a3369f952b080c64d86ec1373a1dcda6",
-    "crates/tekes-ui-controls/src/composition/rich_content.rs": "12aa7efc72a0f1ceb8d0a14d48cfadb0d8fda64e842278bc610950cf22324d2d",
-    "crates/tekes-ui-controls/src/composition/rich_document.rs": "fe5e5b03c324dd312ef3bfe8823604fbb95dc97d1ab0948ba1434e13e2304f5a",
+    "crates/tekes-ui-controls/src/composition/rich_content.rs": "592702730dede0c5ade3b766d3726092638cc6ee35d7e08216bd83f974a5ec15",
+    "crates/tekes-ui-controls/src/composition/rich_document.rs": "62dce8c4d2ea9110608b3a9ac5c8162aea124be63cfff923960f6a12d25dde91",
     "crates/tekes-ui-controls/src/composition/segmented.rs": "dd2396a7272ed772fb27f1c2072dad4162d11a95ef28d9aa14f5eca9c18cd6d7",
     "crates/tekes-ui-controls/src/composition/separator.rs": "ee15265a2e2eb1592f5e1585999e0ad70e98cefec6024529be17cb3ee2cb6a30",
     "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
@@ -2098,7 +2105,7 @@
     "crates/tekes-ui-controls/src/scroll_view.rs": "18eb948347178bfcfe5780399103c3194d80584db632822943816b72d8e0d5b0",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
     "crates/tekes-ui-controls/src/selection.rs": "a766cef56acf3e37ff1590e20c2a0af7597cec297d620036d1a81bcaa96930d9",
-    "crates/tekes-ui-controls/src/text_input.rs": "7ca9109a7770e0c35dac97b56d3c1f3e8129b732b31de800623aa5ddb6387468",
+    "crates/tekes-ui-controls/src/text_input.rs": "5394dee44e0ac623a5c1e52b3df0551d48e514f0925e52975db144c6b031c247",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "1bef0ea893a3d1d35a1a67bfa5d8d17f560fe7d823a6af4729a6f6166220779c",
     "crates/tekes-ui-controls/src/toolbar.rs": "356ffcffaab30b134638bbf73848cbf7be75e269e6d9d6a251c4c8b59e9694ed",
@@ -2111,7 +2118,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "4a009719c900e57b68d50b5113c398ad5ac501738477abf0e8e893552e3aa7de",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "76afff4e7ed19af00e20336a030cd1be48f126ae0dff8221b2300fe297cc367c",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "18c9e46992879abd9c014242b78deca061ff1c65f7ff0871465e15c025f39e0b",
     "crates/tekes-ui-controls/tests/composition.rs": "24f225a13028162f44275a6387fd840359ebf7419239b4a3cc525f5dc24e8269",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "d7d24015e597b89178fc9332d32f2ada9e1d16e425d5ca89fb295b5ee3d86ec0",
@@ -2149,7 +2156,7 @@
     "crates/tekes-ui-text/src/label.rs": "9bd7489ea5fb5929f165c6041617ebb317c41fe0d654b491a55e9fdb05c35155",
     "crates/tekes-ui-text/src/lib.rs": "9363c8874af1f9601d4c449d5794d73684d700b369ed0ce54a05f6b0b52c60d8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "81b6de145c0afe2f33be13f50c33916d3d89a9045401f9fba51a633277f95eec",
+    "design/gallery/public-api-surface.json": "727547dafc8d202c68431c214c019a07280706ac5e11baac9410ceed6a72451b",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/archive/design-logs/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/archive/design-logs/menu-declarations-20261021.md": "5abc201ec9ed24dab456f1eaf0092f8357da52e11dcd59a43f374f18b70996dd",
@@ -2226,7 +2233,7 @@
     "docs/archive/design-logs/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
     "crates/tekes-ui-app-host/src/columns.rs": "1d0e0f1c72cfe3a2d3709593a82efa39fd9113e58368256ec9d5be019048b6ae",
     "crates/tekes-ui-app-host/src/presentation.rs": "18f2bf9bd591f971da1579eac4c5f4f57f8d844fa88312d6453e22599acfb9a9",
-    "crates/tekes-ui-app-host/src/window_presentation.rs": "03ab4a1e4c25ecafca2c553e537847497f440e1b9897edbcebf5fa6019e7237b",
+    "crates/tekes-ui-app-host/src/window_presentation.rs": "5fcf6d88c23745893069b6da9fc4184490d42f2863a272735260f933c73ee0ba",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "723d10887bf219561580d8bdd4a1c96c4cafef401c4429bd2c8b6b333cb7df76",
     "crates/tekes-ui-controls/src/composition/inspection.rs": "3617aee5acba9f29bdc36714d453c01de44a058823e7bd9f102a8919c6e0e8bf",
@@ -2270,7 +2277,14 @@
     "examples/composition-consumer/examples/controlled_acceptance.rs": "4ef6141384b92c895f480951bc145fddbac1d1818ebcb76db438004a79bdd380",
     "examples/composition-consumer/examples/viewport_acceptance.rs": "0315e0621530283d7844c9853835f7088b18e545ada97945e4a5bdc006d6e21e",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "3fa922a78b41958306c66adee77179d4102667c1a1bcd64447152b2108dc622c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs": "f90c8cfed48fe719187dd966e46b1ba2010c6fd86301d35f587be99b7e13594f"
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs": "f90c8cfed48fe719187dd966e46b1ba2010c6fd86301d35f587be99b7e13594f",
+    "crates/tekes-ui-controls/src/composition/markdown_editor.rs": "4120a7c9c385b395c9d3209e2b717263c96147e2f7a4db185b77e3421be78839",
+    "crates/tekes-ui-controls/src/composition/markdown_projection.rs": "5f0080352e36c01dcb84b75bcfbd64f2e99a8ade2b941aab38e0704aa9f555c8",
+    "crates/tekes-ui-controls/src/composition/rich_content/syntax.rs": "9a68d16346a5233148d339d0912ce281253d3f8ee0ad7fe9c9def9841cf5cfd6",
+    "crates/tekes-ui-controls/tests/markdown_projected_editing.rs": "269d780e6426591d5e4f46e210b697c6e4188f64bada9222b0f4209b29be3e8c",
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "ea12353ec4d9a8082a3c1a0060c45f4d28b5dd73349f4511a9e5238f1e702eea",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "350480d1d4627628ab91caf68d3aa6309610abad07e151b9b8980ddeb6e96c51",
+    "docs/design/markdown-projected-editing.md": "8e375ca74864c2c7d26dc4919b490327747e005c12f2499ed3a2c7a7d02ec254"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2282,7 +2296,7 @@
   "shared_evidence": [
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 487,
+      "line": 493,
       "anchor": "pub trait Component: Debug + Any {"
     },
     {
@@ -2498,7 +2512,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 678,
+      "line": 684,
       "anchor": "fn paints_children(&self) -> bool {",
       "purpose": "Optional child paint ownership; default preserves automatic traversal"
     },
@@ -2675,7 +2689,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 881,
+      "line": 887,
       "anchor": "fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {"
     },
     {
