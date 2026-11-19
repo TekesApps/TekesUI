@@ -3,7 +3,6 @@ name = "tekes-ui-composition-consumer"
 version = "0.0.0"
 edition = "2024"
 publish = false
-[workspace]
 [features]
 svg-icons = ["tekes-ui-controls/svg-icons"]
 bitmap-images = ["tekes-ui-controls/bitmap-images"]

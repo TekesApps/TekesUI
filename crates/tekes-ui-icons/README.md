@@ -1,6 +1,6 @@
 # TekesUI public icons
 
-The complete 177-icon catalog is owned and distributed by TekesUI under MIT.
+The canonical core icon catalog (**133** square core glyphs via `Glyph`, alongside **8** legacy animated `Icon` enum variants) is owned and distributed by TekesUI under MIT. Enabling `features = ["product-icons"]` adds **46** optional domain/product-workflow glyphs (14 `tekes-cad-*`, 14 `tekes-drama-*`, and 18 agent/goal workflow icons from `packs/product-extensions/`), for **179** total canonical square glyphs.
 All SVGs are self-contained, use a square 24×24pt canvas, optically tuned rounded strokes and
 `currentColor`. There is no private directory, network fetch or generation step
 needed to consume the published catalog.

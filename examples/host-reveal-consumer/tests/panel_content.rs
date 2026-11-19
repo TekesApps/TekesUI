@@ -1,11 +1,7 @@
 //! Public original Host + real original text editor; no native window or GPU.
 use std::rc::Rc;
 use tekes_ui_controls::{
-    ButtonTextAlign,
-    ButtonTextRenderer,
-    Insets,
-    TextSurfaceHost,
-    TextSurfaceTextRenderer,
+    ButtonTextAlign, ButtonTextRenderer, Insets, TextSurfaceHost, TextSurfaceTextRenderer,
     composition::*,
     extended::{Axis, Stack},
 };

@@ -2047,8 +2047,8 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "0085e260e7f5e511470dc90a2a7ae1d91671b92b7c928864ff160d0bd0a6167b",
-    "crates/tekes-ui-app-host/src/lib.rs": "ff5918caf262e0c6cc917ced3169e989cf1757447dde65d3b62746c06f96d5fc",
+    "DESIGN.md": "c2799039cc36bb21976e138bb2b7d76260a8dd241391cd24bf84317195011624",
+    "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
     "crates/tekes-ui-app-host/src/window.rs": "a0a2399642f73356605ae503293270c58de19b45f7ee16423f4ff1b716abe6c8",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
@@ -2081,7 +2081,7 @@
     "crates/tekes-ui-controls/src/composition/popover.rs": "75aac294720911ec9aeb52f68c6df7711d80ad497d7e76fb44f074cfe0d5460e",
     "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
     "crates/tekes-ui-controls/src/composition/radio.rs": "909379d98f21b9516a1669416eedd266a3369f952b080c64d86ec1373a1dcda6",
-    "crates/tekes-ui-controls/src/composition/rich_content.rs": "ac40197c1c68fd18852f07af40a40d96bb8167896ee86d20cd5918881c6f0443",
+    "crates/tekes-ui-controls/src/composition/rich_content.rs": "12aa7efc72a0f1ceb8d0a14d48cfadb0d8fda64e842278bc610950cf22324d2d",
     "crates/tekes-ui-controls/src/composition/rich_document.rs": "fe5e5b03c324dd312ef3bfe8823604fbb95dc97d1ab0948ba1434e13e2304f5a",
     "crates/tekes-ui-controls/src/composition/segmented.rs": "dd2396a7272ed772fb27f1c2072dad4162d11a95ef28d9aa14f5eca9c18cd6d7",
     "crates/tekes-ui-controls/src/composition/separator.rs": "ee15265a2e2eb1592f5e1585999e0ad70e98cefec6024529be17cb3ee2cb6a30",
@@ -2095,7 +2095,7 @@
     "crates/tekes-ui-controls/src/layout_view.rs": "35b7c748ba179d2d5ec98c12ed8a9e52a47a83d575deaf55d4fb4a226478d8a4",
     "crates/tekes-ui-controls/src/lib.rs": "d9f4f3d26c1fc71a6d0faf25562ceac8433ceafeab0d94f559db6a877080cd6d",
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
-    "crates/tekes-ui-controls/src/scroll_view.rs": "b9995921f7dc57b122214b2117d2eedb2e6b6250fdeb3e947a84b800c79aa4d8",
+    "crates/tekes-ui-controls/src/scroll_view.rs": "18eb948347178bfcfe5780399103c3194d80584db632822943816b72d8e0d5b0",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
     "crates/tekes-ui-controls/src/selection.rs": "a766cef56acf3e37ff1590e20c2a0af7597cec297d620036d1a81bcaa96930d9",
     "crates/tekes-ui-controls/src/text_input.rs": "7ca9109a7770e0c35dac97b56d3c1f3e8129b732b31de800623aa5ddb6387468",
@@ -2125,7 +2125,7 @@
     "crates/tekes-ui-controls/tests/separator_scale.rs": "8391916da3f98b9aa57d7c1960a3c9f3eb1d9c84008b7663acf47b5d92923117",
     "crates/tekes-ui-controls/tests/toolbar_contract.rs": "60dbdbfc9c8b13237b1b0c819f84df12c067b820399cde51b3cc0ba3a684783b",
     "crates/tekes-ui-design-export/src/effects.rs": "e0b75279195f9f04cc0cf91a178855f06aafd2e7420b5cdcc2daff50482e0bda",
-    "crates/tekes-ui-gallery/Cargo.toml": "698a198c3cac33b5960381c30bd2f28ce85d23aec4eff98e6e23df8aac2ab543",
+    "crates/tekes-ui-gallery/Cargo.toml": "d1af8bd0748a86f1049f4263f4906bb80f90024e4712a4f23ce817103ddd1477",
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "eb0c324ed8604cae733bcfd450792872d124ef6535a699f6e614f550604ed6fc",
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "53bf12ad64ebacd58ef20958042798462bdc7dc85c3ddc126c2e6abc8e75619b",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "f628665eb32b4469def3390e466571d025b6c31417347c0289b3d90bb023c4b5",
@@ -2149,12 +2149,12 @@
     "crates/tekes-ui-text/src/label.rs": "9bd7489ea5fb5929f165c6041617ebb317c41fe0d654b491a55e9fdb05c35155",
     "crates/tekes-ui-text/src/lib.rs": "9363c8874af1f9601d4c449d5794d73684d700b369ed0ce54a05f6b0b52c60d8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "3b72342f018c258584e9331935c3da5322d951018bc9208835d7036f410bb666",
+    "design/gallery/public-api-surface.json": "81b6de145c0afe2f33be13f50c33916d3d89a9045401f9fba51a633277f95eec",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
-    "docs/design/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
-    "docs/design/menu-declarations-20261021.md": "5abc201ec9ed24dab456f1eaf0092f8357da52e11dcd59a43f374f18b70996dd",
+    "docs/archive/design-logs/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
+    "docs/archive/design-logs/menu-declarations-20261021.md": "5abc201ec9ed24dab456f1eaf0092f8357da52e11dcd59a43f374f18b70996dd",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
-    "examples/composition-consumer/Cargo.toml": "c9fe3c4d4612e54706c8313edb0e2ce8b9de2d2ddf8d6c560e329e436b229ca4",
+    "examples/composition-consumer/Cargo.toml": "0f3becd46122911e118c0012048ca607133e3a5992440bb0748db755827938f3",
     "examples/composition-consumer/examples/native.rs": "7ae270e9fd5d7f96af201295b0100c2b2ad7c1beab45c3a6af0595ed1e61c4a9",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "d8a62435b91f3199c77d5f4fb654fa6a27e504c5bcf32e90807e7a9fdf17ada7",
@@ -2211,20 +2211,20 @@
     "examples/composition-consumer/tests/slider_content.rs": "6b5bb596050ba55a1ea17b07680c1dadfd4e1fa83703a7e026355afd75c43e75",
     "examples/composition-consumer/tests/slider_states.rs": "41298e5700f72059ddb669dec5f3da3c84d771295e3587d3935f0b34243bfe1e",
     "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
-    "scripts/audit-menu-content-tokens.py": "c6c66ffd9939c61b2069cdafc9f798ea72b7aa58f1c7d8c0b3f55dc67765f867",
+    "scripts/audit-component-tokens.py": "ca6231136c73c4fd8b2307f826724fa711e45b0c7b27961cd831585aa12bf312",
     "crates/tekes-ui-controls/src/composition/select.rs": "1dc7448ed10db1ae563fb740fa8d44b69e2d69e8a440ce399f67a3e11b503845",
     "crates/tekes-ui-controls/src/composition/search.rs": "36ec97a846ff8e85420ae089861863ae1c77dac41afccaea20583637c2e7c6fc",
-    "docs/design/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
+    "docs/archive/design-logs/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "1b9970e990e968d8953350292b830be11d24a4bc492116eb8884450b70c317a1",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "e2c0b7fc7e00cbf7025304f0b218217a1060ad3ca07dc90b6ab9287e1d487455",
     "crates/tekes-ui-controls/src/composition/tree.rs": "3ee15d0f004cdd58b5c992756f8c18d23be802be116a44b5097a3612cdcfeb46",
     "crates/tekes-ui-controls/src/composition/datatable.rs": "09db9c5f42da52d389933eb45ce76f6c6c394ee06d9e21494e5927d5fa11482f",
-    "docs/design/selectable-list-public-content-20261024.md": "caa3246925653bd620cc586b5ddfc4b8061538d50d39b5b4dd55229827327cfe",
-    "docs/design/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
-    "docs/design/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
-    "docs/design/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
-    "docs/design/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "35be61ff9c84c0d20366845cf20a70d5883ea8aac3c92eaddaf2b0b2a0bc7f9a",
+    "docs/archive/design-logs/selectable-list-public-content-20261024.md": "caa3246925653bd620cc586b5ddfc4b8061538d50d39b5b4dd55229827327cfe",
+    "docs/archive/design-logs/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
+    "docs/archive/design-logs/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
+    "docs/archive/design-logs/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
+    "docs/archive/design-logs/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
+    "crates/tekes-ui-app-host/src/columns.rs": "1d0e0f1c72cfe3a2d3709593a82efa39fd9113e58368256ec9d5be019048b6ae",
     "crates/tekes-ui-app-host/src/presentation.rs": "18f2bf9bd591f971da1579eac4c5f4f57f8d844fa88312d6453e22599acfb9a9",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "03ab4a1e4c25ecafca2c553e537847497f440e1b9897edbcebf5fa6019e7237b",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
@@ -2238,7 +2238,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "bfbe571c2a41f0f292f87bc007d98e998e51c1014ad16521cfb32baa9921dcb6",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "e47e3e260ebd3049c13e50c35e64242938296895d4f97710ec0ede76e40e2e3a",
     "crates/tekes-ui-app-host/src/window_columns.rs": "f7836ab42863f01bc6f3c21bd5d6a73908923dde7b560d831ff7427acb1c492b",
-    "examples/composition-consumer/tests/rich_content.rs": "bb252ae666552203ebbb94f7185f2b09108f03d76db6fe52e4358d96052b6762",
+    "examples/composition-consumer/tests/rich_content.rs": "310e19734aa7bba669ceb5e11093b1cafc4f5379e5bcb9d398f3a1569d915849",
     "crates/tekes-ui-controls/src/composition/key_value_table.rs": "66d2ba0a6e22eac40290c61634fdee2f584044e06ea5597d0043ca52dee2995e",
     "crates/tekes-ui-app-host/src/window_panels.rs": "dc62a7d6a86576b80939836aee5c640e49dfa04f30d248a8a7c1b8043ec1afeb",
     "crates/tekes-ui-controls/src/composition/containers.rs": "7d66ba2a7ab6bb1eb112e641bd3faf3087d26467b58f0475f4c430a3e8b18116",
@@ -2690,7 +2690,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/lib.rs",
-      "line": 253,
+      "line": 265,
       "anchor": "pub fn from_containers("
     },
     {
@@ -2710,7 +2710,7 @@
     },
     {
       "path": "crates/tekes-ui-app-host/src/columns.rs",
-      "line": 72,
+      "line": 83,
       "anchor": "pub struct LocalContainer {"
     },
     {
@@ -2871,7 +2871,7 @@
       "evidence": [
         "examples/composition-consumer/tests/controlled_text.rs",
         "examples/composition-consumer/tests/controlled_fixture.rs",
-        "docs/design/controlled-editor-20261018.md"
+        "docs/archive/design-logs/controlled-editor-20261018.md"
       ],
       "generated_bindings_review": "Regenerated binding test only adds five reviewed support type references; component identities and dimensions remain unchanged.",
       "gallery_adapter_review": "Both opt-in audit hosts import the same crate-level existing reading_key/reading_pointer modules; removed duplicate compilation rather than suppressing Clippy. No data translation behavior changes."
@@ -2890,7 +2890,7 @@
       ],
       "evidence": [
         "examples/composition-consumer/tests/text_viewport.rs",
-        "docs/design/text-viewport-20261018.md"
+        "docs/archive/design-logs/text-viewport-20261018.md"
       ],
       "generated_review": "Generated public binding adds one reviewed TextViewport support type; registered original adapter line numbers updated after insertion;45 component identities unchanged."
     },
@@ -2905,7 +2905,7 @@
       ],
       "evidence": [
         "examples/composition-consumer/tests/content_actions.rs",
-        "docs/design/content-actions-20261018.md"
+        "docs/archive/design-logs/content-actions-20261018.md"
       ],
       "generated_review": "Regenerated binding adds3 reviewed composition data types; original45 component identities/dimensions unchanged; actual registered source line changes reviewed."
     },
@@ -3175,7 +3175,7 @@
     {
       "batch": "pub69fa-actual-metadata-r3-20261031",
       "conclusion": "Reviewed actual admitted PUB69fa fixture/reference and #195canonical delivery changes. Workbench test keeps clear editor focus and explicitly calls original Workbench.clear_focus before unfocused-placeholder phase; no production source or acceptance promotion. Navigation doc records bounded PR200 delivery, retains oldGPU/program/unverified limits. SourceSHA only refreshed for these reviewed bytes; all existinganchors unchanged; no new runtime on26role candidate claimed.",
-      "evidence": "crates/tekes-ui-gallery/src/gallery/workbench.rs SHA7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c; docs/design/navigation-content-combo17-recovery-20261031.md SHAcab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090; base69fa3499c99359a2581f9821910aa16d05e1d20c"
+      "evidence": "crates/tekes-ui-gallery/src/gallery/workbench.rs SHA7cac72f56fb2cbe48194f822d8342cea07d6d8b53125ab5b987309f688bced0c; docs/archive/design-logs/navigation-content-combo17-recovery-20261031.md SHAcab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090; base69fa3499c99359a2581f9821910aa16d05e1d20c"
     },
     {
       "batch": "pub313ff-actual-metadata-r4-20261031",
@@ -3196,7 +3196,7 @@
       "batch": "collections-disclosure-publicationf4df-metadata-20261031",
       "source_head": "f4df3ca4205f1c9873ad9c835761b6d50d19766f",
       "conclusion": "Actual immutable55path candidate contains49 additive Controls public types under existing List/Tree/DataTable identities, plus Disclosure-under-Tabs consumer/doc. Preserve original391 classifications and registry bindings/routes; classify new4adapters/45support and restore sorted440. Source audit records finite passive slots and original model/View owner contracts, refreshes actualpins/anchors, and preserves every native status as未验证. No Media or unrelated AX TEMP metadata imported.",
-      "evidence": "Actual design docs: docs/design/selectable-list-public-content-20261024.md, docs/design/tree-public-content-20261024.md, docs/design/datatable-public-content-20261024.md, docs/design/disclosure-public-content-20261024.md. Their appended receipts retain original cbe/70ee/089dc collection and e406 Disclosure CPU04 identities, including historical failures; no currentf4df runtime or broader/native/Gold7 promotion."
+      "evidence": "Actual design docs: docs/archive/design-logs/selectable-list-public-content-20261024.md, docs/archive/design-logs/tree-public-content-20261024.md, docs/archive/design-logs/datatable-public-content-20261024.md, docs/archive/design-logs/disclosure-public-content-20261024.md. Their appended receipts retain original cbe/70ee/089dc collection and e406 Disclosure CPU04 identities, including historical failures; no currentf4df runtime or broader/native/Gold7 promotion."
     },
     {
       "batch": "apphost-container-ownership-229-v0.2.0",
@@ -3267,7 +3267,7 @@
     "status": "已实现待验收",
     "public_snapshot": "03721866a362b1d31261ebbbc86140eb07e9e23320871c325234a5212591213d",
     "review": "design/reviews/agentkit-final-acceptance-20261019",
-    "report": "docs/design/agentkit-final-acceptance-20261019.md",
+    "report": "docs/archive/design-logs/agentkit-final-acceptance-20261019.md",
     "functional": "public/real consumer/offscreen/native/physical IME separately recorded; current VO human three steps passed; real two-page anchors0pt",
     "remaining": "AgentKit consumer session receive/promote; authorized public immutable pin",
     "supersedes_current_remaining_notes": [
@@ -3748,7 +3748,7 @@
       "composition matrix stale after event propagation/cursor/text changes",
       "ToolbarControl keyboard focus only seeded by pointer click"
     ],
-    "source_review": "docs/design/stage40-audit-refresh-20261021.md",
+    "source_review": "docs/archive/design-logs/stage40-audit-refresh-20261021.md",
     "applicable": "All original Content ordinary event routing; existing ToolbarControl users; SplitView hosts; TextSurface/CoreText consumers. No Agent-specific presentation duplicated.",
     "exceptions": [
       "legacy ToolbarView retained separately",
@@ -3761,7 +3761,7 @@
     "public_api": "crates/tekes-ui-controls/tests/toolbar_contract.rs"
   },
   "review_note": "Current review: composition/button.rs deliberately consolidates image/text/custom-content presentation into one Button over the original ButtonModel action state; obsolete ButtonContent/CompoundButton/IconButton entry points have no aliases. AppHost Issue229 now mounts a shared ToolbarHost in each runtime Container; Window routes stable source/presenter identities, optional focus/others/Tabs/List and explicit navigation targets. Source review and focused regression do not re-sign historical native evidence. General multi-window lifecycle, arbitrary-content overflow, full per-action native semantics and VoiceOver remain unverified. ContentTheme passes Palette and canonical Surface through the mounted tree while foreground forwarding is explicit. No family native status is promoted. Coordinator review also reconciles the already accepted checked SplitViewContent panes and local PanelContent body, and pins the from_containers constructor, container-owned mounted toolbar and actual toolbar render/sync paths. B2 remains open; no native promotion or new implementation is inferred.",
-  "review_note_history_20261021": "Reviewed Toolbar typography/slots/short splitter marker/native cursor delta against main09b4bab; reran public probes and consumer regressions. Other component classifications stay bounded; source audit does not promote native acceptance. See docs/design/toolbar-split-accepted-20261022.md.",
+  "review_note_history_20261021": "Reviewed Toolbar typography/slots/short splitter marker/native cursor delta against main09b4bab; reran public probes and consumer regressions. Other component classifications stay bounded; source audit does not promote native acceptance. See docs/archive/design-logs/toolbar-split-accepted-20261022.md.",
   "recovery_batch_20261031": {
     "baseline": "96804afb96b450125f1065a16bd06712ba0af49d",
     "scope": "Combo, Selection, Navigation/Link complete original-source cohort: 8 families/21 added public type paths. Source audit reflects finite accepted Content protocol only; generated public bindings and batchCI/publicdelivery remain required.",
@@ -4263,7 +4263,7 @@
     "before_sha256": "56fde068bc1da484e6c2025e81c9f39d196d5ca46bb7a09de438a59cafccc901",
     "after_sha256": "1ed7c871088fdff83ba201a187f83e7a5103767430ea7212a4d94a9d39bd665a",
     "review": "Only structural Layout publication changes: current native roots payload and actual unignored ancestor sender. Content dimensions, mounted semantics, Focus/Value/SelectedText, publication authority and close revocation are unchanged. No existing API evidence anchor in this view file requires relocation.",
-    "classification": "All 45 component classifications and source-audit native_acceptance values unchanged. Bounded external AX verification is recorded separately in docs/design/ax-modal-lifecycle-20261030.md; source hashes do not promote broad native acceptance."
+    "classification": "All 45 component classifications and source-audit native_acceptance values unchanged. Bounded external AX verification is recorded separately in docs/archive/design-logs/ax-modal-lifecycle-20261030.md; source hashes do not promote broad native acceptance."
   },
   "reference_metadata_review_20261106": {
     "source_commit": "989e1a21b9c4d70381d1cf26a6b2119d88497e8a",
@@ -4500,7 +4500,7 @@
       "crates/tekes-ui-controls/src/composite.rs",
       "crates/tekes-ui-controls/src/toolbar.rs",
       "crates/tekes-ui-controls/tests/popup_placement.rs",
-      "docs/design/menu-declarations-20261021.md",
+      "docs/archive/design-logs/menu-declarations-20261021.md",
       "examples/app-host-demo/Cargo.lock",
       "examples/brand-consumer/Cargo.lock",
       "examples/composition-consumer/Cargo.lock",
@@ -4603,7 +4603,7 @@
       "crates/tekes-ui-app-host/src/window_columns.rs",
       "crates/tekes-ui-controls/src/toolbar.rs",
       "crates/tekes-ui-controls/tests/toolbar_menu_contract.rs",
-      "docs/design/menu-declarations-20261021.md",
+      "docs/archive/design-logs/menu-declarations-20261021.md",
       "docs/design/process-container-apphost-migration.md",
       "examples/app-host-demo/Cargo.lock",
       "examples/app-host-demo/src/containers.rs",
@@ -4983,7 +4983,7 @@
       ],
       "scope": "Gallery AppHost migration: real original route content, shared fixture extraction, receiving text/icon resources, same-Host overlays, local secondary-pointer capture, shared palette and explicit child-window request. Rebind only changed reviewed source hashes and unchanged exact evidence anchors. Component protocol statuses and native_acceptance are unchanged. Final entry candidate defaults ordinary launch to AppHost; explicit --legacy and original selftest/performance/snapshot paths are retained. Version-only workspace bump to 0.3.31 does not constitute release.",
       "verification": "Scoped CPU/strict checks through Check380 and release build Check381 passed. Earlier scoped GPU/native evidence retains its original program identity. Current r3 native acceptance remains in progress. No physical IME, VoiceOver, performance, public-release or Dock-adoption claim. Check382 passed all11 locked version manifests, default-entry argument contract and Gallery strict; runtime page implementations unchanged from r3.",
-      "report": "docs/design/gallery-apphost-coverage-20261116.md",
+      "report": "docs/archive/design-logs/gallery-apphost-coverage-20261116.md",
       "capability_promotion": false,
       "prior_current_summary": {
         "source": "Reviewed static PR200-compatible Search/Select plus Settings207 candidate;391 classified paths. Exact candidate sourceSHA/anchors are authority. Original611a/70ee/7414 programs retain identity. New candidate has not run Cargo/CI/native.",

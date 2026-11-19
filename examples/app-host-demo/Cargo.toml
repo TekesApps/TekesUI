@@ -27,5 +27,3 @@ tekes-ui-app-protocol = { path = "../../crates/tekes-ui-app-protocol" }
 tekes-ui-render = { path = "../../crates/tekes-ui-render" }
 tekes-ui-scene = { path = "../../crates/tekes-ui-scene" }
 tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }
-
-[workspace]

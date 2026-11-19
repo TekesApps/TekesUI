@@ -15,5 +15,8 @@ fn main() {
         assert!(!icon.animation_layers().is_empty());
     }
     assert!(Glyph::named("missing-icon").is_none());
-    println!("{} square canonical glyphs; all 8 animated defaults share the exact public artwork", names.len());
+    println!(
+        "{} square canonical glyphs; all 8 animated defaults share the exact public artwork",
+        names.len()
+    );
 }

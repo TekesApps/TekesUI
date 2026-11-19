@@ -1,11 +1,7 @@
 //! Consumer-owned app. Public crates only; no Gallery imports or runtime JSON input.
 use std::{fs, path::PathBuf};
 use tekes_ui_controls::{
-    ButtonModel,
-    ButtonSize,
-    ButtonTextAlign,
-    ButtonTextRenderer,
-    ControlState,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlState,
 };
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{GlyphAtlas, Point, Primitive, Rect, Scene, Size};
@@ -138,14 +134,18 @@ fn main() {
             text.scale = scale as f32;
             let mut scene = Scene::new();
             let bounds = Rect::new(0., 0., 800., 320.);
-            tekes_ui_controls::feedback_view::SurfaceView::paint(&mut scene, bounds, palette, false);
+            tekes_ui_controls::feedback_view::SurfaceView::paint(
+                &mut scene, bounds, palette, false,
+            );
             text.draw(
                 &mut scene,
                 &format!("{} / {name}", proposal::BRAND_ID),
                 proposal::TextRole::UiBody,
                 Rect::new(24., 16., 750., 36.),
                 ButtonTextAlign::Leading,
-                palette.color("primary-text").unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
+                palette
+                    .color("primary-text")
+                    .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
             );
             for (row, variant) in [
                 tekes_ui_controls::ButtonVariant::Primary,
@@ -207,7 +207,9 @@ fn main() {
                         &mut text.atlas,
                         (800 * scale, 320 * scale),
                         scale as f32,
-                        palette.color("surface-0").unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
+                        palette
+                            .color("surface-0")
+                            .unwrap_or(tekes_ui_tokens::Rgba::new(0., 0., 0., 0.)),
                     )
                     .unwrap();
                 let mut png = png::Encoder::new(

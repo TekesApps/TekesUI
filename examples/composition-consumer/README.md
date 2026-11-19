@@ -37,7 +37,7 @@ consumer on macOS with `cargo run --manifest-path examples/composition-consumer/
 (or `-- dialog`). It uses public platform/CoreText/Metal APIs, never Gallery types.
 The new scene adapters remain experimental: composed Dialog presence transitions,
 physical IME/candidate acceptance and native control accessibility are pending.
-See `docs/design/composition-list-dialog-20261017.md` in the repository for the
+See `docs/archive/design-logs/composition-list-dialog-20261017.md` in the repository for the
 separate API, GPU, native and Gold7 evidence.
 
 ## Ordinary decorative Separator (#54)
@@ -74,7 +74,7 @@ lane, Rust 1.95.0 and locked/offline dependencies. The GPU check opens no window
 It records actual mixed-font runs, measured-layout identity, retained reflow,
 Theme ink and visible glyph pixels. Independent native CTLine truncation and
 Unicode cluster oracles remain in the text package's existing label tests.
-See [the label contract and evidence](../../docs/design/label-content-integration-20261021.md)
+See [the label contract and evidence](../../docs/archive/design-logs/label-content-integration-20261021.md)
 for the exact verification identity and boundaries.
 
 
@@ -98,4 +98,4 @@ The phase journal distinguishes original public semantic old-token rejection,
 programmatic MenuView opening, actual native AX Press, and synthetic marked-text
 input. These do not certify physical IME or VoiceOver speech. The coordinator
 schedules native execution using the existing desktop occupancy/idle guards.
-See [the Menu contract and evidence](../../docs/design/menu-declarations-20261021.md).
+See [the Menu contract and evidence](../../docs/archive/design-logs/menu-declarations-20261021.md).

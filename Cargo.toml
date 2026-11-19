@@ -1,8 +1,20 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "examples/city-3d-demo/crates/*"]
+members = [
+    "crates/*",
+    "examples/app-host-demo",
+    "examples/brand-consumer",
+    "examples/composition-consumer",
+    "examples/host-reveal-consumer",
+    "examples/icon-catalog-consumer",
+    "examples/media-viewer-content-consumer",
+    "examples/panel-content-consumer",
+    "examples/panel-module-demo",
+    "examples/process-content-consumer",
+    "examples/theme-system-consumer",
+    "examples/city-3d-demo/crates/*",
+]
 default-members = ["crates/*"]
-exclude = ["examples/composition-consumer"]
 
 [workspace.package]
 # 版本号的唯一权威来源；各 crate 使用 version.workspace = true。

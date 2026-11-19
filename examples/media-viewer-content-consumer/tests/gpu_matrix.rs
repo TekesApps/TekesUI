@@ -5,7 +5,7 @@ use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::{Rgba, Theme};
 #[path = "support/coretext.rs"]
 mod coretext;
-#[path = "support/viewer_fixture.rs"]
+#[path = "support/viewer_core.rs"]
 mod fixture;
 #[path = "support/pixel_oracle.rs"]
 mod pixel_oracle;

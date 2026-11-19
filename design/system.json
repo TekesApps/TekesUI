@@ -10,7 +10,7 @@
       "$ref": "./baseline/manifest.json"
     },
     "design_baseline_name": "v0.3.0-proposal1 integration over approved Gallery foundation",
-    "release_tag": null,
+    "release_tag": "v0.3.34",
     "change_policy": "Package definitions take precedence where present; existing definitions survive only where absent. The earlier a8 baseline remains historical evidence. Integration is not a release or blanket native-component acceptance.",
     "proposal": {
       "$ref": "./integration.json"
@@ -300,7 +300,7 @@
     },
     "legacy_modes_policy": "The top-level themes array is retained as the legacy appearance/contrast mode list, not four independent concrete Themes.",
     "semantic_policy": "Theme inputs use existing neutral/base and semantic roles plus BrandConfig. Shared compiler owns derived state colors and constraints. Consumers inherit explicit Surface identities and complete semantic results, never infer Surface from RGB or author state color tables.",
-    "delivery_status": "foundation-api-only; concrete component/Gallery Theme migration and current visual acceptance remain tracked separately in #62/#55/#56",
+    "delivery_status": "theme-and-surface-packets-active; resolve_surface* bindings and calm contrast tokens are active across tekes-ui-controls and tekes-ui-gallery as of v0.3.34, while full visual and native acceptance remain tracked in #55/#56/#12",
     "theme_input_contract": {
       "contract_version": "1.0.0",
       "definition_schema_version": "2.0.0",
@@ -321,7 +321,7 @@
         "design/source/contrast-pairs.json": "b2b35b235bd562fd548780d25e5d6acb980c7d9ded0aa0119f76054c21f587cd",
         "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
         "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
-        "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+        "design/system.schema.json": "f21ca873c5b035d2e09da924bc1cb20e73e76e54987edff66d58a6cdb598001c",
         "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
         "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
         "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",

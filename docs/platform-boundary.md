@@ -58,7 +58,7 @@ flowchart TD
 | #113 私有 `current387-B-derived-button-label-cache88`，manifest `6830c89572f01fc52de590a415205f0da22816492d7651ddfcf60ffe67964214` | 实际 Gallery/Public Button witness、来源绑定及两缓存负例已通过 | 完整首根、全部 52 根或 main 分支通过 |
 | 未接收审查笔记/候选 | 作为下一次差量审查输入，保留各自源身份 | 凭笔记数量、测试成功或提交赋予 graph `reviewed` |
 
-当前验证已安全结束。#113 离线证据绑定的首次失败及第二次成功均保留；独立清单仍未证明完整引用全集，14 个 render 首切口的笔记不是可整合片段。详细来源放 SSD `artifacts/architecture-audit-20261026/` 及原 Issue 产物目录；本轮不运行 Cargo/GPU/native、不清理缓存或 worktree，不启动新的实施任务。
+当前边界文档记录仓库层级约束与验证范围；#113 离线证据及后续审计结论以 GitHub Issues 和仓库内受控检查脚本追踪。
 
 ## 历史实际职责与依赖（e39 快照）
 
@@ -101,7 +101,7 @@ flowchart TD
 | [component semantics](../crates/tekes-ui-controls/src/composition.rs)、[platform accessibility](../crates/tekes-ui-platform-macos/src/accessibility.rs) | controls 声明真实语义/动作；平台 crate 提供 AccessibilityNode 等快照类型及原生桥；应用负责两种表示的映射 | 当前已有 native adapter，但中性角色/动作到系统节点的完整映射、通知和残留节点是具体风险，需沿 #5 验证。新建 a11y crate 本身不能解决它 |
 | [Gallery manifest](../crates/tekes-ui-gallery/Cargo.toml)、[consumer example](../examples/composition-consumer/Cargo.toml) | Gallery 为 publish=false 的消费者/展示与验收应用，正常 macOS 依赖中也包含独立 composition-consumer。examples 为消费者、适配样例或测试夹具 | 能暴露公共 API 缺口；Gallery 与示例耦合需如实说明。基础 controls/text/scene/render 不得反向依赖 Gallery/examples，不能把 Gallery 私有 TextEngine 当公共组件契约 |
 | [app-host](../crates/tekes-ui-app-host/Cargo.toml)、[module-runtime](../crates/tekes-ui-module-runtime/Cargo.toml)、[protocol](../crates/tekes-ui-app-protocol/src/lib.rs) | 实验宿主、固定原生模块进程、序列化数据/资源及窗口集成；runtime 的 PanelModule 是子进程内 Rust 接口，macOS 层组合 controls/render | 是同仓可选的集成层，不是基础库必须采用的 App 框架；进程故障边界不等于安全沙箱、任意插件或完整远端交互。#48 原 AC 不因“可选”降低 |
-| [scene3d](../crates/tekes-ui-scene3d/Cargo.toml)、[3d app](../crates/tekes-ui-3d/Cargo.toml)、[city](../crates/tekes-ui-city/Cargo.toml) | 可选 3D/glTF 预览及专门夹具/应用；scene3d 实际依赖 render/wgpu，不是另一个纯 Scene 数据层 | 可独立消费与展示；不把城市/产品场景的需求反向变成每个 UI 控件的依赖 |
+| [scene3d](../crates/tekes-ui-scene3d/Cargo.toml)、[3d app](../examples/city-3d-demo/crates/tekes-ui-3d/Cargo.toml)、[city](../examples/city-3d-demo/crates/tekes-ui-city/Cargo.toml) | 可选 3D/glTF 预览（`tekes-ui-scene3d`，城市/公寓仿真位于 `simulation` feature 后）及 `examples/city-3d-demo/` 下的独立 3D 示例 | 可独立消费与展示；演示应用与领域场景独立于基础 UI 控件库之外 |
 
 实际数据流与 Cargo 依赖方向不同：平台事件由应用 handler 转为控件/ContentHost 操作；状态 owner 提交布局/paint，文本适配器用 shaper/rasterizer/atlas 向 Scene 写入字形；renderer 消费 Scene/atlas。平台提供窗口/layer，应用负责将它与 renderer 连接。这里描述职责，不重签任何原生验收。
 
@@ -111,7 +111,7 @@ Gold7、Theme Schema、具体 Theme、Surface 规则、组件契约属于同一 
 
 作者 JSON / BrandConfig / policy → 离线合并 token 投影与 Theme instances → 正常 Cargo freshness/Theme verifier → typed Rust、品牌/Theme 表 → Palette / Surface resolver → 真实组件。依据 [生成入口](../design/README.md)、[build.rs](../crates/tekes-ui-tokens/build.rs)、[Theme validator](../crates/tekes-ui-design-export/src/theme_system.rs)、[Palette](../crates/tekes-ui-tokens/src/palette.rs)、[Surface resolver](../crates/tekes-ui-tokens/src/surface_palette.rs)。token 颜色消费不在运行时调用 Python 或编译 Theme JSON；这不表示 Gallery 不解析自己的 registry 等数据。
 
-main 的 `delivery_status` 明确是 `foundation-api-only`。当前 controls 尚无 `resolve_surface*` 调用，仍有直接 proposal/Palette 绘制；Root 已验收的组件迁移不得改签为 main 已闭合。差距首先是 **#136 接收已有产出**，而非重新开发 #62/#104/#92 已有成果。
+当前 `v0.3.34` 的 `delivery_status` 为 `theme-and-surface-packets-active`：`tekes-ui-controls` 已通过 43 处 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 调用消费 `tekes-ui-tokens::surface_palette`（同时 `tekes-ui-controls` 与 Gallery 的底层迁移已在持续收敛）；完整整页视觉、无障碍与原生体验验收仍按 [#5](https://github.com/TekesApps/TekesUI/issues/5)、[#12](https://github.com/TekesApps/TekesUI/issues/12)、[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56) 单独追踪。
 
 已有原则继续执行：声明 Surface 解剖/语义用途的组件绘制必须消费完整共享结果，不能维护组件私有状态色表或由 RGB 反推身份。typed metric/layout/motion API 仍是生成投影的一部分；文本颜色也不自动豁免其实际 Surface 契约。组件行为、状态、输入和生命周期属于组件契约，不能被主题 JSON 或静态颜色检查替代。Gold7 验设计、接线和实际体验；#113 的依赖闭包也不能代替 Gold7/原生验收。
 

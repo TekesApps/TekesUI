@@ -354,7 +354,7 @@
               "$ref": "../behavior/reference-alignment.json#/components"
             },
             {
-              "$ref": "../../docs/design/reference-alignment-20261016.md"
+              "$ref": "../../docs/archive/design-logs/reference-alignment-20261016.md"
             }
           ]
         },
@@ -402,7 +402,7 @@
               "$ref": "../../crates/tekes-ui-controls/src/text_surface.rs"
             },
             {
-              "$ref": "../../docs/design/reference-alignment-20261016.md"
+              "$ref": "../../docs/archive/design-logs/reference-alignment-20261016.md"
             }
           ]
         },
@@ -430,7 +430,7 @@
               "$ref": "../behavior/reference-alignment.json#/media_viewer"
             },
             {
-              "$ref": "../../docs/design/reference-alignment-20261016.md"
+              "$ref": "../../docs/archive/design-logs/reference-alignment-20261016.md"
             }
           ]
         },

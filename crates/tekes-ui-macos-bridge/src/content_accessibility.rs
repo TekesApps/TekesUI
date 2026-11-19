@@ -307,6 +307,9 @@ fn project_content_nodes(host: &ContentHost) -> Option<Vec<AccessibilityNode>> {
 pub fn content_text_layouts(
     host: &ContentHost,
 ) -> HashMap<AccessibilityKey, AccessibilityTextLayout> {
+    if host.requires_curve_geometry() {
+        return HashMap::new();
+    }
     project_host_accessibility(host, true)
         .map(|projected| projected.text_layouts)
         .unwrap_or_default()
@@ -424,6 +427,17 @@ fn project(
 }
 
 pub fn content_action(
+    host: &mut ContentHost,
+    target: AccessibilityKey,
+    action: AccessibilityAction,
+) -> ContentResponse {
+    if host.requires_curve_geometry() {
+        return ContentResponse::default();
+    }
+    content_action_raw(host, target, action)
+}
+
+pub(crate) fn content_action_raw(
     host: &mut ContentHost,
     target: AccessibilityKey,
     action: AccessibilityAction,

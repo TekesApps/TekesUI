@@ -3,7 +3,6 @@ name = "tekes-ui-brand-consumer"
 version = "0.0.0"
 edition = "2024"
 publish = false
-[workspace]
 [dependencies]
 tekes-ui-controls = { path = "../../crates/tekes-ui-controls" }
 tekes-ui-tokens = { path = "../../crates/tekes-ui-tokens" }

@@ -43,7 +43,11 @@ fn main() -> Result<(), String> {
         if args.len() != 4 {
             return Err("verify package artifact lock".into());
         }
-        verify(Path::new(&args[1]), Path::new(&args[2]), Path::new(&args[3]))?;
+        verify(
+            Path::new(&args[1]),
+            Path::new(&args[2]),
+            Path::new(&args[3]),
+        )?;
         println!("{{\"verified\":true}}");
         return Ok(());
     }
@@ -69,7 +73,8 @@ fn main() -> Result<(), String> {
             let palette = Palette::for_theme_definition(mode, definition["id"].as_str().unwrap())
                 .ok_or("missing compiled public Theme")?;
             for surface in surface_names() {
-                let p = resolve_data_plot_surface(palette, surface).map_err(|e| format!("{e:?}"))?;
+                let p =
+                    resolve_data_plot_surface(palette, surface).map_err(|e| format!("{e:?}"))?;
                 for pair in contract["pairs"].as_array().unwrap() {
                     if pair["applicability"] != "owner-band" {
                         continue;

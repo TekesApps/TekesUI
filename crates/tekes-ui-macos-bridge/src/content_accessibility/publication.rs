@@ -172,7 +172,7 @@ impl WindowAccessibilityPublication {
         if host.semantic_mount(id) != Some(mount) {
             return ContentResponse::default();
         }
-        content_action(
+        content_action_raw(
             host,
             AccessibilityKey {
                 component: mount,

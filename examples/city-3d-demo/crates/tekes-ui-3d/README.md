@@ -110,7 +110,7 @@ Ground-floor walls are actual aperture shells around a recessed core. Storefront
 
 City Block now joins the northern apartment/office frontage at a party wall and keeps 1.0m/1.4m walkable service alleys. Four additional GPU-driven pedestrians use the alleys; geometry audits check the complete routes, building footprints and outward door/garage corridors. The original generated asset is currently about 12 MB.
 
-The viewer renders autonomous district animation at up to 60Hz while retaining display cadence for input/drag/auto-rotation. Time still advances on every display callback; this reduces redundant frames rather than slowing actors. Opaque GPU bundles also omit repeated pipeline/material/camera bindings. Native CPU/Metal measurements, scope and replay commands are in [the layout/performance report](../../docs/design/city-block-tight-layout-performance-20261021.md). `scripts/summarize-metal-trace.py` filters one PID and merges overlapping GPU intervals; its activity percentage is not whole-device utilization and Metal memory overlaps process unified memory.
+The viewer renders autonomous district animation at up to 60Hz while retaining display cadence for input/drag/auto-rotation. Time still advances on every display callback; this reduces redundant frames rather than slowing actors. Opaque GPU bundles also omit repeated pipeline/material/camera bindings. Native CPU/Metal measurements, scope and replay commands are in [the layout/performance report](../../../../docs/archive/design-logs/city-block-tight-layout-performance-20261021.md). `scripts/summarize-metal-trace.py` filters one PID and merges overlapping GPU intervals; its activity percentage is not whole-device utilization and Metal memory overlaps process unified memory.
 
 
 City Block 支持 `Lighting → Day / Night` 或 **N** 切换昼夜，命令行 `--night` 可用于夜景快照。四栋楼分别使用确定性随机的窗景：部分窗内有站立、坐着或看书的室内人物剪影，百叶窗与家具遮挡保留；夜晚部分窗户、招牌和路灯自发光。人物是 GPU 计算的原创窗内剪影，可走动、坐下、阅读；不是可进入房间中的活动 NPC。切换只更新通用 GPU 光照参数，不重建资产；自主动画默认上限 60 FPS，交互由原生显示同步回调驱动；当前 macOS host 最高请求 120Hz。实际帧率受屏幕、系统调度与 GPU 负载影响，移动到不同刷新率屏幕时无需手动切换。`Animation → Limit to 60 FPS (H)` 可限制街区自主动画与自动旋转到 60 FPS，再按 H 恢复自动；`--benchmark-120hz` 仍保留用于指定 120Hz 的测试上限。右上角 FPS 为已取得 drawable 并提交的帧率，不是屏幕标称刷新率。昼夜与系统 UI 主题独立，夜间 HUD 保持可读。可在暂停时切换，恢复播放后沿原时间继续。
@@ -146,7 +146,7 @@ The viewer defaults to a 60 FPS ceiling for autonomous animation and automatic r
 
 The upper-right HUD updates twice per second and counts acquired, submitted drawable frames rather than animation callbacks. Its milliseconds show average frame interval, not GPU execution time or display scanout timing. Idle resets the sample without running a separate HUD timer. Numeric labels do not accumulate in the text cache.
 
-Native 60-second near/far 120 Hz measurements are in [the report](../../docs/design/city-block-120hz-20261021.md); screen switching checks are in [the automatic refresh report](../../docs/design/city-block-auto-refresh-20261021.md). Those native results use the full working demo assets and city/night WIP, not only this scoped commit.
+Native 60-second near/far 120 Hz measurements are in [the report](../../../../docs/archive/design-logs/city-block-120hz-20261021.md); screen switching checks are in [the automatic refresh report](../../../../docs/archive/design-logs/city-block-auto-refresh-20261021.md). Those native results use the full working demo assets and city/night WIP, not only this scoped commit.
 
 ## Ground railway and station
 

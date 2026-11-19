@@ -3,10 +3,7 @@ mod text;
 use anyhow::Result;
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem};
 use tekes_ui_controls::{
-    ButtonModel,
-    ButtonSize,
-    ButtonTextAlign,
-    ButtonVariant,
+    ButtonModel, ButtonSize, ButtonTextAlign, ButtonVariant,
     composition::{Component, ContentEvent, TextContent, TextFieldContent},
 };
 use tekes_ui_module_runtime::{ModuleDefinition, ModuleState, PanelModule};
@@ -136,11 +133,7 @@ impl PanelModule for Demo {
             proposal::TextRole::UiBody,
             ButtonTextAlign::Center,
         );
-        let lines = self
-            .body
-            .surface
-            .paragraph()
-            .map_or(0, |p| p.lines.len());
+        let lines = self.body.surface.paragraph().map_or(0, |p| p.lines.len());
         let mut status = TextContent::new(format!(
             "{} · {:.0} pt · {} 行\n组件排版 {:.2} ms",
             ["中文长文", "English prose", "Unicode 混排"][self.identity as usize],

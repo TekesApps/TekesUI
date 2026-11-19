@@ -119,10 +119,21 @@ class ConsumerBrandTests(unittest.TestCase):
         for name, seed in [('consumer-apricot','#B57251'),('consumer-seaglass','#367F7B')]:
             project = self.directory / name
             shutil.copytree(ROOT / 'examples/brand-consumer', project, ignore=shutil.ignore_patterns('target'))
-            manifest = project / 'Cargo.toml'; manifest.write_text(manifest.read_text().replace('../../crates/',str(ROOT / 'crates') + '/'))
+            manifest = project / 'Cargo.toml'
+            manifest_text = manifest.read_text().replace('../../crates/', str(ROOT / 'crates') + '/')
+            if '[workspace]' not in manifest_text:
+                manifest_text = manifest_text.rstrip() + '\n\n[workspace]\n'
+            manifest.write_text(manifest_text)
+            if (ROOT / 'Cargo.lock').is_file():
+                shutil.copy2(ROOT / 'Cargo.lock', project / 'Cargo.lock')
             own_config = self.config(name,seed); shutil.copy2(own_config, project / 'BrandConfig.json')
             artifact = compiler.compile_artifact(project / 'BrandConfig.json', project / 'offline-design')
             env = dict(environment(), TEKESUI_DESIGN_ARTIFACT=str(artifact))
+            lock_sync = subprocess.run(
+                ['cargo', 'generate-lockfile', '--offline', '--manifest-path', str(manifest)],
+                env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            )
+            self.assertEqual(lock_sync.returncode, 0, lock_sync.stdout[-5000:])
             output = output_root / name
             command = ['cargo','run','--locked','--offline','--manifest-path',str(manifest),'--'] + ([] if evidence else ['--check']) + [str(output)]
             run = subprocess.run(command, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

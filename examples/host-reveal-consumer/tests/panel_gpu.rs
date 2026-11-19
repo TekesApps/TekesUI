@@ -1,9 +1,5 @@
 use tekes_ui_controls::{
-    ButtonTextAlign,
-    ButtonTextRenderer,
-    Insets,
-    composition::*,
-    layout::MeasuredChild,
+    ButtonTextAlign, ButtonTextRenderer, Insets, composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::*;
 use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -150,15 +146,10 @@ fn actual_original_panel_subtree_clips_all_pipelines_at_five_scales() {
                 std::fs::write(
                     out.join(format!("{kind}-{name}-{scale}.scene.txt")),
                     format!("{actual_scene:#?}"),
-                ).unwrap();
+                )
+                .unwrap();
                 let pixels = renderer
-                    .render_to_rgba8(
-                        &actual_scene,
-                        &mut atlas,
-                        size,
-                        scale,
-                        clear,
-                    )
+                    .render_to_rgba8(&actual_scene, &mut atlas, size, scale, clear)
                     .unwrap();
                 std::fs::write(out.join(format!("{kind}-{name}-{scale}.rgba")), &pixels).unwrap();
                 assert_eq!(&pixels[..4], &base[..4], "curve gap leaked {kind} {scale}");

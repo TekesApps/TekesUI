@@ -2,7 +2,6 @@
 """Tests for evidence-bound current capability inventory."""
 import copy
 import json
-import re
 import shutil
 import subprocess
 import sys
@@ -58,10 +57,7 @@ class CapabilityTests(unittest.TestCase):
                         paths.update(document['inputs_sha256'])
             for relative in paths:
                 source_file = ROOT / relative
-                if not source_file.is_file() and (
-                    relative.startswith('design/reviews/')
-                    or re.fullmatch(r'scripts/audit-[a-z0-9-]+-tokens\.py', relative)
-                ):
+                if not source_file.is_file() and capabilities.is_removed_historical_input(relative):
                     continue
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -497,10 +493,7 @@ const RAW: &str = r#"pub struct LiteralOnly; { [ ] }"#;
                     paths.update([artifact, *json.loads((ROOT / artifact).read_text())['inputs_sha256']])
                 for path in paths:
                     source_file = ROOT / path
-                    if not source_file.is_file() and (
-                        path.startswith('design/reviews/')
-                        or re.fullmatch(r'scripts/audit-[a-z0-9-]+-tokens\.py', path)
-                    ):
+                    if not source_file.is_file() and capabilities.is_removed_historical_input(path):
                         continue
                     (root / path).parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(source_file, root / path)
@@ -854,6 +847,19 @@ class ZeroLookupEvidenceTests(unittest.TestCase):
                     },
                 ],
             )
+
+    def test_workspace_version_bump_does_not_churn_capability_digests(self):
+        toml_a = b'[workspace.package]\nversion = "0.3.34"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.34", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.0" }\n'
+        toml_b = b'[workspace.package]\nversion = "0.3.35"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.35", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.0" }\n'
+        toml_ext = b'[workspace.package]\nversion = "0.3.35"\n[workspace.dependencies]\ntekes-ui-tokens = { version = "0.3.35", path = "crates/tekes-ui-tokens" }\nserdes = { version = "1.0.1" }\n'
+        self.assertEqual(capabilities.normalized_digest('Cargo.toml', toml_a), capabilities.normalized_digest('Cargo.toml', toml_b))
+        self.assertNotEqual(capabilities.normalized_digest('Cargo.toml', toml_b), capabilities.normalized_digest('Cargo.toml', toml_ext))
+
+        lock_a = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.34"\n\n[[package]]\nname = "serde"\nversion = "1.0.228"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        lock_b = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.35"\n\n[[package]]\nname = "serde"\nversion = "1.0.228"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        lock_ext = b'[[package]]\nname = "tekes-ui-controls"\nversion = "0.3.35"\n\n[[package]]\nname = "serde"\nversion = "1.0.229"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        self.assertEqual(capabilities.normalized_digest('Cargo.lock', lock_a), capabilities.normalized_digest('Cargo.lock', lock_b))
+        self.assertNotEqual(capabilities.normalized_digest('Cargo.lock', lock_b), capabilities.normalized_digest('Cargo.lock', lock_ext))
 
 
 if __name__ == '__main__':

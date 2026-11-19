@@ -149,6 +149,24 @@ class PackageStructure(unittest.TestCase):
             self.assertEqual([command[0] for command in commands], ['xcrun', 'codesign', 'codesign'])
             self.assertEqual(info['CFBundleIdentifier'], 'com.tekesui.gallery.dev')
 
+    def test_package_gallery_offline_opt_in_and_verify_tag(self):
+        with patch.dict(package.os.environ, {}, clear=True):
+            args_online = type('Args', (), {'offline': False, 'release': False})()
+            self.assertNotIn('--offline', package.resolve_build_command(args_online))
+            args_offline = type('Args', (), {'offline': True, 'release': True})()
+            cmd_offline = package.resolve_build_command(args_offline)
+            self.assertIn('--offline', cmd_offline)
+            self.assertIn('--release', cmd_offline)
+        with patch.dict(package.os.environ, {'TEKESUI_OFFLINE': '1'}, clear=True):
+            args_env = type('Args', (), {'offline': False, 'release': False})()
+            self.assertIn('--offline', package.resolve_build_command(args_env))
+
+        version = package.read_workspace_version(ROOT / 'Cargo.toml')
+        package.validate_release_tag(version, f'v{version}')
+        package.validate_release_tag(version, f'refs/tags/v{version}')
+        with self.assertRaises(SystemExit):
+            package.validate_release_tag(version, 'v0.0.0-mismatch')
+
 
 if __name__ == '__main__':
     unittest.main()

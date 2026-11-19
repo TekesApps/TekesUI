@@ -11,8 +11,8 @@
     "design/source/contrast-pairs.json": "b2b35b235bd562fd548780d25e5d6acb980c7d9ded0aa0119f76054c21f587cd",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
-    "design/system.json": "9b24759d2fcf987b912b140dc7a7720b69f7c3ff5a9768abd2f94bcfc1b2ff5f",
-    "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+    "design/system.json": "cf6d6072acaa2049d5df8192bc0cc676e61012360683a63198c189fa40cb405d",
+    "design/system.schema.json": "f21ca873c5b035d2e09da924bc1cb20e73e76e54987edff66d58a6cdb598001c",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
     "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
@@ -53881,7 +53881,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "c4ba8fa7952ccf23055523a5875fe5db86200b3893754eea91df0e79a53fbdd4",
+        "contract_sha256": "2419cf9bf30366b3b9d3895855172c0fb8f182b69e4812f8b670dcda967f15fc",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -107744,7 +107744,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "c4ba8fa7952ccf23055523a5875fe5db86200b3893754eea91df0e79a53fbdd4",
+        "contract_sha256": "2419cf9bf30366b3b9d3895855172c0fb8f182b69e4812f8b670dcda967f15fc",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -161607,7 +161607,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "c4ba8fa7952ccf23055523a5875fe5db86200b3893754eea91df0e79a53fbdd4",
+        "contract_sha256": "2419cf9bf30366b3b9d3895855172c0fb8f182b69e4812f8b670dcda967f15fc",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -215562,7 +215562,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "c4ba8fa7952ccf23055523a5875fe5db86200b3893754eea91df0e79a53fbdd4",
+        "contract_sha256": "2419cf9bf30366b3b9d3895855172c0fb8f182b69e4812f8b670dcda967f15fc",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -215704,7 +215704,7 @@
       "design/source/contrast-pairs.json": "b2b35b235bd562fd548780d25e5d6acb980c7d9ded0aa0119f76054c21f587cd",
       "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
       "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
-      "design/system.schema.json": "af11f7ef0f9f4b495181d72f0b8b4a3cb274e79fe3ce9e98d4d82b6aaa396393",
+      "design/system.schema.json": "f21ca873c5b035d2e09da924bc1cb20e73e76e54987edff66d58a6cdb598001c",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
       "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
       "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",

@@ -5,7 +5,6 @@ use tekes_ui_scene::{
     AtlasConfig, FontKey, GlyphAtlas, GlyphKey, ImageQuad, RasterFormat, RasterGlyph, Rect, Scene,
     TransformedImageQuad,
 };
-use tekes_ui_tokens::Rgba;
 
 #[test]
 #[ignore = "explicit GPU validation under the existing build/GPU locks"]
@@ -121,6 +120,7 @@ fn independent_surface_matches_same_raster_parent_mask_at_fractional_placement_a
     use tekes_ui_scene::{
         ClipShape, CornerRadii, FragmentBudget, FragmentTransform, Point, Quad, ShapeTable,
     };
+    use tekes_ui_tokens::Rgba;
     let root = PathBuf::from(
         std::env::var_os("TEKESUI_LAYER_TEST_OUTPUT").expect("fresh evidence directory required"),
     );

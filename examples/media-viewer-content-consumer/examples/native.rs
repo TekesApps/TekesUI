@@ -1167,7 +1167,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 read_only: s.input().is_read_only(),
                 carets: s
                     .paragraph()
-                    
                     .map(|paragraph| {
                         paragraph
                             .lines

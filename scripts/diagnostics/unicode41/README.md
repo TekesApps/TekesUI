@@ -159,7 +159,7 @@ Pinyin pair failed strictly: standard NSTextField reproduced first Commit(`n`)
 and final `n i好`; SDK produced first Preedit(`n`) and final `你好`. Both saw the
 same keys; neither control was repeated to obtain green. This is not an SDK-unique
 reproduction or a stable Pinyin pass. Actual CUA typeText and physical IME remain
-unverified. See `docs/design/unicode-input-comparison-20261030.md` for the complete
+unverified. See `docs/archive/design-logs/unicode-input-comparison-20261030.md` for the complete
 matrix, source boundaries and retained failure history.
 
 

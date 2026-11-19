@@ -133,7 +133,7 @@ def audit():
               Path('design/brand/policy.schema.json'),
               Path('design/brand/config.json'), Path('design/tokens.json'),
               Path('design/gallery/brands.json'), Path('scripts/check-reference-alignment.py'),
-              Path('docs/design/reference-alignment-20261016.md'),
+              Path('docs/archive/design-logs/reference-alignment-20261016.md'),
               Path('scripts/tekesui_design/__init__.py'), Path('scripts/tekesui_design/brand_color.py'),
               Path('scripts/tekesui_design/brand_compiler.py'), Path('scripts/tekesui_design/validate_tokens.py'),
               UPSTREAM / 'design/registry/components.json', UPSTREAM / 'design/registry/recipes.json']

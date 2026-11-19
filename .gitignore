@@ -1,4 +1,10 @@
 target/
+node_modules/
+
+# Large demo 3D assets are generated via scripts under examples/city-3d-demo/
+examples/city-3d-demo/crates/tekes-ui-3d/assets/city-block.glb
+examples/city-3d-demo/crates/tekes-ui-3d/assets/manhattan.glb
+examples/city-3d-demo/crates/tekes-ui-3d/assets/health-cabin.glb
 
 # Offline design tooling caches
 __pycache__/

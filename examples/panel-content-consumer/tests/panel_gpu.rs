@@ -1,9 +1,7 @@
 //! Actual Metal/CoreText consumer and a one-shape coverage oracle over the exact arranged glyphs.
 //! Current-main reception of the preserved R19 consumer; GPU output stays in this SSD intake epoch.
 use tekes_ui_controls::{
-    ButtonTextRenderer,
-    Insets,
-    ScrollArea,
+    ButtonTextRenderer, Insets, ScrollArea,
     composition::*,
     extended::{Axis, Stack},
     layout::MeasuredChild,
@@ -109,17 +107,20 @@ fn build_host(pipeline: Pipeline, nested: bool, image: ImageId) -> ContentHost {
     let child = if matches!(pipeline, Pipeline::Glyph) {
         Content::new(ComponentId(8303), body)
     } else {
-        Content::new(ComponentId(8302), StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
+        Content::new(
+            ComponentId(8302),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                children: vec![
+                    Content::new(ComponentId(8301), PipelineInk { pipeline, image }),
+                    Content::new(ComponentId(8303), body),
+                ],
+                flexible_child: None,
             },
-            children: vec![
-                Content::new(ComponentId(8301), PipelineInk { pipeline, image }),
-                Content::new(ComponentId(8303), body),
-            ],
-            flexible_child: None,
-        })
+        )
     };
     let mut panel = PanelContent::new(child).unwrap();
     panel.set_padding(Some(Insets::default())).unwrap();
