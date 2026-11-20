@@ -130,10 +130,7 @@ pub(super) fn children(renderer: &str, variants: bool) -> Vec<Content> {
             .into_iter()
             .enumerate()
             {
-                if variants {
-                    children.push(text(92700 + i as u64, format!("Gap: {gap:.0} pt")));
-                }
-                children.push(fixture(
+                let item = fixture(
                     92600 + (gap / 8.) as u64,
                     LayoutModel::Stack(Stack {
                         axis: Axis::Horizontal,
@@ -146,7 +143,17 @@ pub(super) fn children(renderer: &str, variants: bool) -> Vec<Content> {
                     } else {
                         vec!["Leading".into(), "Center".into(), "Trailing".into()]
                     },
-                ));
+                );
+                children.push(if variants {
+                    StackContent::labeled_specimen(
+                        ComponentId(92750 + i as u64),
+                        ComponentId(92700 + i as u64),
+                        format!("Gap: {gap:.0} pt"),
+                        item,
+                    )
+                } else {
+                    item
+                });
             }
             if !variants {
                 children.push(text(
@@ -160,13 +167,10 @@ pub(super) fn children(renderer: &str, variants: bool) -> Vec<Content> {
                 .into_iter()
                 .enumerate()
             {
-                if variants {
-                    children.push(text(92700 + i as u64, format!("{columns} columns")));
-                }
                 let mut model = Grid::new(columns);
                 model.gap_x = 8.;
                 model.gap_y = 8.;
-                children.push(fixture(
+                let item = fixture(
                     92600 + columns as u64 - 2,
                     LayoutModel::Grid(model),
                     if variants { columns * 2 } else { 9 },
@@ -176,39 +180,51 @@ pub(super) fn children(renderer: &str, variants: bool) -> Vec<Content> {
                     } else {
                         (1..=9).map(|i| format!("Item {i:02}")).collect()
                     },
-                ));
+                );
+                children.push(if variants {
+                    StackContent::labeled_specimen(
+                        ComponentId(92750 + i as u64),
+                        ComponentId(92700 + i as u64),
+                        format!("{columns} columns"),
+                        item,
+                    )
+                } else {
+                    item
+                });
             }
         }
         "separator" => {
-            children.push(text(
-                92700,
+            children.push(StackContent::labeled_specimen(
+                ComponentId(92750),
+                ComponentId(92700),
                 if variants {
                     "Horizontal"
                 } else {
                     "Account settings"
                 },
+                fixture(
+                    92600,
+                    LayoutModel::Separator(Axis::Horizontal),
+                    1,
+                    12.,
+                    vec![],
+                ),
             ));
-            children.push(fixture(
-                92600,
-                LayoutModel::Separator(Axis::Horizontal),
-                1,
-                12.,
-                vec![],
-            ));
-            children.push(text(
-                92701,
+            children.push(StackContent::labeled_specimen(
+                ComponentId(92751),
+                ComponentId(92701),
                 if variants {
                     "Vertical"
                 } else {
                     "Profile and preferences"
                 },
-            ));
-            children.push(fixture(
-                92601,
-                LayoutModel::Separator(Axis::Vertical),
-                1,
-                160.,
-                vec![],
+                fixture(
+                    92601,
+                    LayoutModel::Separator(Axis::Vertical),
+                    1,
+                    160.,
+                    vec![],
+                ),
             ));
         }
         _ => unreachable!("registered layout story"),

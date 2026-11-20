@@ -40,8 +40,6 @@ pub struct StoryState {
     pub(super) draft_attempt: Option<(u64, u64)>,
     pub(super) focus: Option<usize>,
     pub section: usize,
-    #[cfg(test)]
-    pub(super) brand: usize,
     pub(super) disabled: bool,
     pub(super) loading: bool,
     pub(super) error: bool,
@@ -84,8 +82,6 @@ impl Default for StoryState {
             draft_attempt: None,
             focus: None,
             section: 1,
-            #[cfg(test)]
-            brand: 0,
             disabled: false,
             loading: false,
             error: false,

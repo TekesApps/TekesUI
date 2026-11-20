@@ -62,6 +62,7 @@ fn main() -> anyhow::Result<()> {
                     ),
                 ),
             )?
+            .content_padding(tekes_ui_tokens::Spacing::Loose.value())
             .into();
         }
         let entries = (0..3)

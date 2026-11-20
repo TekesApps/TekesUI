@@ -1,43 +1,12 @@
-//! Primitives 页：验证渲染层的基本图元和 token 的组合。
-//!
-//! 自上而下的节（每节顶上一个节标题槽）：
-//! 1. 直角矩形和各档 `CornerRadius` 的圆角矩形；
-//! 2. `Stroke` 三档描边；`Alpha` 三档半透明叠放；
-//! 3. 状态矩阵：一个“类按钮”的 quad 在 rest / hover / pressed / disabled / focus 下的样子；
-//! 4. 并排参照槽：同一个样本，左边是 TekesUI 实时渲染，右边是参照图的空占位。
-//!
-//! 类按钮样本采用提案的 ButtonHover / button-pressed 语义状态底；disabled 保留
-//! Alpha::Wash 的校准夹具；必要控件边界与中性焦点使用 Stroke::Rule，不用装饰 hairline。
-//! 样本仍是渲染验证 quad，不冒充已完成键盘/无障碍验收的真实按钮。
+//! Primitives 页：共享基础样本和校准夹具。
 
 use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, Theme, proposal};
 
 use crate::gallery::containers::ComponentState;
-#[cfg(test)]
-use crate::gallery::containers::{
-    PANE_TITLES, ReferenceSlot, SECTION_HEADER_H, StateMatrix, draw_section_header,
-};
-#[cfg(test)]
-use crate::gallery::pages::PageCtx;
-
-/// 圆角一排：直角加七档 token（badge、row、panel、floating、input、column、control）。
-#[cfg(test)]
-pub const RADII: [(&str, f32); 8] = [
-    ("square", 0.0),
-    ("badge", CornerRadius::Badge.value()),
-    ("row", CornerRadius::Row.value()),
-    ("panel", CornerRadius::Panel.value()),
-    ("floating", CornerRadius::Floating.value()),
-    ("input", CornerRadius::Input.value()),
-    ("column", CornerRadius::Column.value()),
-    ("control", CornerRadius::Control.value()),
-];
 
 const ITEM: Size = Size::new(96.0, 56.0);
 const GAP: f32 = Spacing::Relaxed.value();
-#[cfg(test)]
-const SECTION_GAP: f32 = Spacing::Section.value();
 
 /// 类按钮样本的尺寸（`PillHeight` 高）。
 pub const BUTTON: Size = Size::new(96.0, 28.0);
@@ -140,47 +109,6 @@ pub fn alpha_samples(scene: &mut Scene, theme: Theme, origin: Point) {
         );
     }
 }
-#[cfg(test)]
-pub fn state_samples(
-    scene: &mut Scene,
-    theme: Theme,
-    text: &mut crate::gallery::text::TextEngine,
-    origin: Point,
-) {
-    let matrix = StateMatrix::new(origin, 1);
-    matrix.draw(
-        scene,
-        theme,
-        text,
-        &["类按钮"],
-        |scene, _row, cell, state| {
-            button_sample(scene, cell, state, theme);
-        },
-    );
-}
-
-/// Live raster diagnostics only: no unavailable reference image or heatmap panes.
-#[cfg(test)]
-pub fn build_calibration(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
-    let theme = ctx.theme;
-    build_calibration_with_labels(
-        theme,
-        ctx.text.scale(),
-        content,
-        scene,
-        |scene, slot, value| {
-            ctx.text.proposal_label_in(
-                scene,
-                theme,
-                slot,
-                value,
-                proposal::TextRole::UiBody,
-                ColorRole::PrimaryText.resolve(theme),
-            );
-        },
-    );
-}
-
 pub(crate) fn build_calibration_with_labels(
     theme: Theme,
     backing_scale: f32,
@@ -208,97 +136,21 @@ pub(crate) fn build_calibration_with_labels(
 }
 
 #[cfg(test)]
-pub fn build(ctx: &mut PageCtx<'_>, content: Rect, scene: &mut Scene) {
-    let theme = ctx.theme;
-    let text = &mut *ctx.text;
-    let x = content.min_x();
-    let mut y = content.min_y();
-
-    // 1. 圆角。
-    draw_section_header(scene, theme, text, x, y, "圆角");
-    for (i, (_, radius)) in RADII.iter().enumerate() {
-        let r = Rect::new(
-            x + i as f32 * (ITEM.width + GAP),
-            y + SECTION_HEADER_H,
-            ITEM.width,
-            ITEM.height,
-        );
-        scene.push_quad(
-            Quad::new(r, ColorRole::RowSelection.resolve(theme))
-                .with_corner_radius(*radius)
-                .with_border(Stroke::Rule.value(), ColorRole::Border.resolve(theme)),
-        );
-    }
-    y += SECTION_HEADER_H + ITEM.height + SECTION_GAP;
-
-    // 2. 描边三档，然后是三档 alpha 叠放。
-    draw_section_header(scene, theme, text, x, y, "描边与 alpha 叠放");
-    let top = y + SECTION_HEADER_H;
-    stroke_samples(scene, theme, Point::new(x, top));
-    let overlap_x = x + 3.0 * (ITEM.width + GAP) + SECTION_GAP;
-    alpha_samples(scene, theme, Point::new(overlap_x, top));
-    y += SECTION_HEADER_H + ITEM.height + SECTION_GAP;
-
-    // 3. 状态矩阵，一行。
-    draw_section_header(scene, theme, text, x, y, "状态矩阵");
-    let matrix = StateMatrix::new(Point::new(x, y + SECTION_HEADER_H), 1);
-    state_samples(scene, theme, text, matrix.origin);
-    y += SECTION_HEADER_H + matrix.size().height + SECTION_GAP;
-
-    // 4. 并排参照槽：live 窗格里画同一个样本（rest）。
-    draw_section_header(
-        scene,
-        theme,
-        text,
-        x,
-        y,
-        "参照槽：TekesUI 实时 | 参照图 | 差异热图",
-    );
-    let slot = ReferenceSlot::new(Point::new(x, y + SECTION_HEADER_H), true);
-    slot.draw(scene, theme, text, &PANE_TITLES, |scene, _, pane| {
-        button_sample(scene, pane, ComponentState::Rest, theme);
-    });
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gallery::static_text::StaticText;
-    use crate::gallery::text::TextEngine;
-
-    fn build_page(theme: Theme, text: &mut TextEngine) -> Scene {
-        let mut st = StaticText::new(None);
-        let mut ctx = PageCtx {
-            theme,
-            text,
-            static_text: &mut st,
-        };
-        let mut s = Scene::new();
-        text_begin(&mut ctx);
-        build(&mut ctx, crate::gallery::layout::PAGE_CONTENT, &mut s);
-        s
-    }
-
-    fn text_begin(ctx: &mut PageCtx<'_>) {
-        ctx.text.begin_frame();
-    }
-
-    fn count_quads(theme: Theme) -> usize {
-        build_page(theme, &mut TextEngine::new()).len()
-    }
 
     #[test]
     fn lab_has_live_raster_checks_without_empty_reference_panes() {
         for theme in Theme::ALL {
-            let mut text = TextEngine::new();
-            let mut st = StaticText::new(None);
-            let mut ctx = PageCtx {
-                theme,
-                text: &mut text,
-                static_text: &mut st,
-            };
             let mut scene = Scene::new();
-            build_calibration(&mut ctx, Rect::new(0., 0., 1104., 700.), &mut scene);
+            let mut labels = Vec::new();
+            build_calibration_with_labels(
+                theme,
+                2.0,
+                Rect::new(0., 0., 1104., 700.),
+                &mut scene,
+                |_, slot, value| labels.push((slot, value.to_owned())),
+            );
             let quads: Vec<_> = scene
                 .primitives()
                 .iter()
@@ -310,30 +162,8 @@ mod tests {
             // Six alignment strokes and six intersecting color samples. No
             // reference/difference placeholder containers are constructed.
             assert_eq!(quads.len(), 12);
+            assert_eq!(labels.len(), 3);
             assert!(quads.iter().all(|q| q.rect.max_y() <= 440.));
-        }
-    }
-
-    #[test]
-    fn page_builds_and_fits_in_content() {
-        use crate::gallery::layout::PAGE_CONTENT;
-        let s = build_page(Theme::LIGHT, &mut TextEngine::new());
-        assert!(s.len() > 40);
-        for p in s.primitives() {
-            let tekes_ui_scene::Primitive::Quad(q) = p else {
-                continue;
-            };
-            assert!(q.rect.max_x() <= PAGE_CONTENT.max_x() + 0.01, "{q:?}");
-            assert!(q.rect.max_y() <= PAGE_CONTENT.max_y() + 0.01, "{q:?}");
-            assert!(q.rect.min_x() >= PAGE_CONTENT.min_x() - 0.01, "{q:?}");
-        }
-    }
-
-    #[test]
-    fn quad_count_does_not_depend_on_theme() {
-        let n = count_quads(Theme::LIGHT);
-        for t in Theme::ALL {
-            assert_eq!(count_quads(t), n);
         }
     }
 

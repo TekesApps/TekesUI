@@ -117,7 +117,7 @@ pub(super) fn matrix() -> Vec<Content> {
     CASES
         .into_iter()
         .enumerate()
-        .flat_map(|(i, (title, query, open, disabled))| {
+        .map(|(i, (title, query, open, disabled))| {
             let mut model = CommandPalette {
                 combo: ComboBox {
                     items: [
@@ -158,8 +158,10 @@ pub(super) fn matrix() -> Vec<Content> {
             if title == "Closed · keyboard focus" {
                 control.set_focus(true, true);
             }
-            [
-                Content::new(ComponentId(121102 + i as u64 * 10), TextContent::new(title)),
+            StackContent::labeled_specimen(
+                ComponentId(121104 + i as u64 * 10),
+                ComponentId(121102 + i as u64 * 10),
+                title,
                 Content::new(
                     ComponentId(121103 + i as u64 * 10),
                     Fixture {
@@ -168,7 +170,7 @@ pub(super) fn matrix() -> Vec<Content> {
                         open,
                     },
                 ),
-            ]
+            )
         })
         .collect()
 }

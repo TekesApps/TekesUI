@@ -3,17 +3,11 @@
 //! Every sample below gets a fresh production view and model. The Gallery's
 //! Playground state is therefore independent from these visual comparisons.
 
-#[cfg(test)]
-use super::{Entry, PageCtx, StoryState};
-#[cfg(test)]
-use tekes_ui_controls::extended::ControlFrame;
 use tekes_ui_controls::{
     ButtonTextRenderer, NumberField,
     feedback_view::{NumberFieldView, ToolbarView},
 };
 use tekes_ui_scene::{Point, Rect, Scene};
-#[cfg(test)]
-use tekes_ui_tokens::ColorRole;
 use tekes_ui_tokens::{Palette, proposal};
 
 #[derive(Clone, Copy)]
@@ -98,200 +92,6 @@ const NUMBER_FIXTURES: [Fixture<'static, NumberState>; 7] = [
 
 pub(super) fn supports(renderer: &str) -> bool {
     matches!(renderer, "toolbar" | "number-field")
-}
-
-#[cfg(test)]
-pub(super) fn matrix(
-    e: &Entry,
-    s: &mut StoryState,
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    c: Rect,
-) {
-    let gutter = -ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
-        .focus_bounds(ctx.text.backing_scale())
-        .min_x();
-    let bounds = c.inset(gutter);
-    let palette = crate::gallery::brands::brand_palette(ctx.theme, s.brand)
-        .expect("registered Gallery brand");
-    let mut y = bounds.min_y();
-
-    match e.renderer() {
-        "toolbar" => {
-            y = section_intro(
-                ctx,
-                scene,
-                bounds,
-                y,
-                "Toolbar",
-                "Grouped actions use the same production buttons. Focus and disabled state apply to the toolbar group; the toolbar has no selected, checked, or loading state.",
-            );
-            y = draw_toolbar_grid(ctx, scene, bounds, y, c, palette);
-        }
-        "number-field" => {
-            y = section_intro(
-                ctx,
-                scene,
-                bounds,
-                y,
-                "NumberField",
-                "A bounded numeric stepper, not a text editor. Minimum and maximum values disable only the stepper that cannot change the value; the whole control can also be disabled.",
-            );
-            y = draw_number_grid(ctx, scene, bounds, y, c, palette);
-        }
-        _ => return,
-    }
-
-    s.document_bottom = (y + gutter + 8.).max(c.min_y());
-}
-
-#[cfg(test)]
-fn section_intro(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    y: f32,
-    title: &str,
-    description: &str,
-) -> f32 {
-    let title_height = measure_text(ctx, title, proposal::TextRole::UiHeading, bounds.size.width);
-    draw_text(
-        ctx,
-        scene,
-        Rect::new(bounds.min_x(), y, bounds.size.width, title_height),
-        title,
-        proposal::TextRole::UiHeading,
-        ColorRole::PrimaryText.resolve(ctx.theme),
-    );
-    let copy_y = y + title_height + 8.;
-    let copy_height = measure_text(
-        ctx,
-        description,
-        proposal::TextRole::UiBody,
-        bounds.size.width,
-    );
-    draw_text(
-        ctx,
-        scene,
-        Rect::new(bounds.min_x(), copy_y, bounds.size.width, copy_height),
-        description,
-        proposal::TextRole::UiBody,
-        ColorRole::SecondaryText.resolve(ctx.theme),
-    );
-    copy_y + copy_height + 18.
-}
-
-#[cfg(test)]
-fn draw_toolbar_grid(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    top: f32,
-    clip: Rect,
-    palette: Palette,
-) -> f32 {
-    let fixtures = TOOLBAR_FIXTURES;
-    draw_grid(
-        ctx,
-        scene,
-        bounds,
-        top,
-        &fixtures,
-        48.,
-        |ctx, scene, frame, fixture| {
-            render_toolbar(ctx.text, scene, frame, clip, palette, fixture.state);
-        },
-    )
-}
-
-#[cfg(test)]
-fn draw_number_grid(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    top: f32,
-    clip: Rect,
-    palette: Palette,
-) -> f32 {
-    let fixtures = NUMBER_FIXTURES;
-    draw_grid(
-        ctx,
-        scene,
-        bounds,
-        top,
-        &fixtures,
-        52.,
-        |ctx, scene, frame, fixture| {
-            render_number_field(ctx.text, scene, frame, clip, palette, fixture.state);
-        },
-    )
-}
-
-#[cfg(test)]
-fn draw_grid<S: Copy>(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    bounds: Rect,
-    top: f32,
-    fixtures: &[Fixture<'_, S>],
-    control_height: f32,
-    mut render: impl FnMut(&mut PageCtx<'_>, &mut Scene, Rect, Fixture<'_, S>),
-) -> f32 {
-    let columns = grid_columns(bounds.size.width);
-    let column_gap = 20.;
-    let row_gap = 20.;
-    let cell_width =
-        ((bounds.size.width - column_gap * (columns - 1) as f32) / columns as f32).max(0.);
-    let title_heights = fixtures
-        .iter()
-        .map(|fixture| {
-            measure_text(
-                ctx,
-                fixture.title,
-                proposal::TextRole::UiCaption,
-                cell_width,
-            )
-        })
-        .collect::<Vec<_>>();
-    let mut row_tops = Vec::with_capacity(fixtures.len().div_ceil(columns));
-    let mut row_heights = Vec::with_capacity(fixtures.len().div_ceil(columns));
-    let mut row_y = top;
-    for row in 0..fixtures.len().div_ceil(columns) {
-        let first = row * columns;
-        let last = (first + columns).min(fixtures.len());
-        let label_height = title_heights[first..last]
-            .iter()
-            .copied()
-            .fold(0., f32::max);
-        let height = label_height + 8. + control_height;
-        row_tops.push(row_y);
-        row_heights.push(height);
-        row_y += height + row_gap;
-    }
-
-    for (index, fixture) in fixtures.iter().copied().enumerate() {
-        let row = index / columns;
-        let column = index % columns;
-        let x = bounds.min_x() + column as f32 * (cell_width + column_gap);
-        let y = row_tops[row];
-        let title_rect = Rect::new(x, y, cell_width, title_heights[index]);
-        draw_text(
-            ctx,
-            scene,
-            title_rect,
-            fixture.title,
-            proposal::TextRole::UiCaption,
-            ColorRole::SecondaryText.resolve(ctx.theme),
-        );
-        let control = Rect::new(
-            x,
-            y + row_heights[row] - control_height,
-            cell_width,
-            control_height,
-        );
-        render(ctx, scene, control, fixture);
-    }
-    row_y - row_gap
 }
 
 fn render_toolbar(
@@ -407,32 +207,6 @@ fn center(rect: Rect) -> Point {
     )
 }
 
-#[cfg(test)]
-fn measure_text(ctx: &mut PageCtx<'_>, text: &str, role: proposal::TextRole, width: f32) -> f32 {
-    ctx.text
-        .proposal_label(text, role, Some(width.max(0.)))
-        .height as f32
-}
-
-#[cfg(test)]
-fn draw_text(
-    ctx: &mut PageCtx<'_>,
-    scene: &mut Scene,
-    frame: Rect,
-    text: &str,
-    role: proposal::TextRole,
-    color: tekes_ui_tokens::Rgba,
-) {
-    ctx.text
-        .proposal_wrapped_in(scene, ctx.theme, frame, text, role, color);
-}
-
-#[cfg(test)]
-fn grid_columns(width: f32) -> usize {
-    if width >= 660. { 2 } else { 1 }
-}
-
-/// The same original passive fixtures, measured and painted in the receiving Host.
 pub(super) fn apphost_matrix(renderer: &str) -> Vec<tekes_ui_controls::composition::Content> {
     use tekes_ui_controls::composition::*;
     let fixtures: Vec<_> = if renderer == "toolbar" {
@@ -449,11 +223,13 @@ pub(super) fn apphost_matrix(renderer: &str) -> Vec<tekes_ui_controls::compositi
     fixtures
         .into_iter()
         .enumerate()
-        .flat_map(|(i, (title, fixture))| {
-            [
-                Content::new(ComponentId(91600 + i as u64 * 2), TextContent::new(title)),
+        .map(|(i, (title, fixture))| {
+            StackContent::labeled_specimen(
+                ComponentId(91650 + i as u64),
+                ComponentId(91600 + i as u64 * 2),
+                title,
                 Content::new(ComponentId(91601 + i as u64 * 2), fixture),
-            ]
+            )
         })
         .collect()
 }
@@ -517,86 +293,80 @@ impl tekes_ui_controls::composition::Component for MatrixCase {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::{apphost_basic::BasicStory, entries};
+    use crate::gallery::text::TextEngine;
+    use tekes_ui_controls::composition::{
+        AccessibilityAction, ComponentId, StackContent, TextContent,
+    };
+    use tekes_ui_scene::{Rect, Scene};
+    use tekes_ui_tokens::{Theme, proposal::TextRole};
 
     #[test]
-    fn states_use_one_column_at_narrow_viewport_and_two_when_labels_fit() {
-        assert_eq!(grid_columns(360.), 1);
-        assert_eq!(grid_columns(659.9), 1);
-        assert_eq!(grid_columns(660.), 2);
-    }
-
-    #[test]
-    fn toolbar_and_number_field_states_render_production_views_without_mutating_playground() {
-        use super::super::entries;
-        use crate::gallery::{static_text::StaticText, text::TextEngine};
-
+    fn apphost_toolbar_and_number_field_state_matrices_render_on_gpu() {
         let mut renderer = tekes_ui_render::Renderer::new_headless()
             .expect("headless GPU is required for real state-matrix rendering");
-        let output = std::env::var_os("TEKESUI_GOLD7_PAGE_OUT").map(std::path::PathBuf::from);
-        if let Some(output) = &output {
-            std::fs::create_dir_all(output).unwrap();
-        }
-
         for renderer_name in ["toolbar", "number-field"] {
             let entry = entries()
                 .iter()
                 .find(|entry| entry.renderer() == renderer_name)
                 .expect("registered component");
+            let mut story = BasicStory::new(entry);
             let mut text = TextEngine::new();
             text.set_scale(1.);
             text.set_type_scale(1.5);
-            let mut static_text = StaticText::new(None);
-            let mut ctx = PageCtx {
-                theme: tekes_ui_tokens::Theme::LIGHT,
-                text: &mut text,
-                static_text: &mut static_text,
-            };
-            let mut state = StoryState::default();
-            let original_value = state.number.value();
-            let mut scene = Scene::new();
-            let viewport = Rect::new(0., 0., 360., 1800.);
-            matrix(entry, &mut state, &mut ctx, &mut scene, viewport);
-
+            let frame = Rect::new(0., 0., 360., 1200.);
+            story
+                .host
+                .render(
+                    &mut Scene::new(),
+                    &mut text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
             assert!(
-                !scene.is_empty(),
-                "{renderer_name} has a real rendered matrix"
+                story
+                    .host
+                    .accessibility_action(ComponentId(92103), None, AccessibilityAction::Press)
+                    .consumed
             );
-            assert!(state.document_bottom.is_finite());
-            assert!(state.document_bottom > 0. && state.document_bottom < viewport.max_y());
-            assert_eq!(state.number.value(), original_value);
-            assert!(state.toolbar_view.layouts().is_empty());
-            assert_eq!(state.number_view.layout().frame, Rect::default());
-            let image_height = state.document_bottom.ceil().max(1.) as u32;
+            story.after_host_visit();
+            let mut scene = Scene::new();
+            story
+                .host
+                .render(&mut scene, &mut text, frame, frame, Theme::LIGHT.into())
+                .unwrap();
+            assert!(!scene.is_empty());
+
+            let specimen_count = if renderer_name == "toolbar" { 5 } else { 7 };
+            for i in 0..specimen_count {
+                let group = story.host.get(ComponentId(91650 + i as u64)).unwrap();
+                let stack = group.component::<StackContent>().unwrap();
+                assert_eq!(stack.model.gap, StackContent::SPECIMEN_LABEL_GAP);
+                let label = story.host.get(ComponentId(91600 + i as u64 * 2)).unwrap();
+                assert_eq!(
+                    label.component::<TextContent>().unwrap().role,
+                    TextRole::UiCaption
+                );
+                let control = story.host.get(ComponentId(91601 + i as u64 * 2)).unwrap();
+                assert!(control.frame().size.height > 0.);
+            }
 
             let rgba = renderer
                 .render_to_rgba8(
                     &scene,
-                    ctx.text.atlas_mut(),
-                    (360, image_height),
+                    text.atlas_mut(),
+                    (360, 1200),
                     1.,
-                    crate::gallery::Gallery::background(ctx.theme),
+                    crate::gallery::Gallery::background(Theme::LIGHT),
                 )
-                .expect("production state fixtures render on the headless GPU");
+                .expect("production state matrix renders on the headless GPU");
             let background = &rgba[0..4];
             assert!(
                 rgba.chunks_exact(4).any(|pixel| pixel != background),
-                "{renderer_name} GPU frame contains rendered control pixels"
+                "{renderer_name} GPU frame contains rendered matrix pixels"
             );
-            if let Some(output) = &output {
-                let path = output.join(format!(
-                    "{renderer_name}-states-360x{image_height}-type-1_5.png"
-                ));
-                let file = std::fs::File::create(path).unwrap();
-                let mut encoder = png::Encoder::new(file, 360, image_height);
-                encoder.set_color(png::ColorType::Rgba);
-                encoder.set_depth(png::BitDepth::Eight);
-                encoder
-                    .write_header()
-                    .unwrap()
-                    .write_image_data(&rgba)
-                    .unwrap();
-            }
         }
     }
 }

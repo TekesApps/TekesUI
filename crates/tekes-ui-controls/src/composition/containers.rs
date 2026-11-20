@@ -17,6 +17,88 @@ pub struct StackContent {
     pub flexible_child: Option<ComponentId>,
 }
 impl StackContent {
+    /// Canonical inter-section gap in scrolled document pages (`Spacing::Section` = 24 pt).
+    pub const DOCUMENT_SECTION_GAP: f32 = tekes_ui_tokens::Spacing::Section.value();
+    /// Canonical inter-group gap in side panels and Inspector (`Spacing::Loose` = 16 pt).
+    pub const PANEL_SECTION_GAP: f32 = tekes_ui_tokens::Spacing::Loose.value();
+    /// Canonical gap between a section heading and its section body (`Spacing::Regular` = 8 pt).
+    pub const SECTION_HEADER_GAP: f32 = tekes_ui_tokens::Spacing::Regular.value();
+    /// Canonical gap between a specimen caption label and its control (`Spacing::Tight` = 4 pt).
+    pub const SPECIMEN_LABEL_GAP: f32 = tekes_ui_tokens::Spacing::Tight.value();
+
+    /// Compose document sections separated by `DOCUMENT_SECTION_GAP` (24 pt).
+    pub fn document_sections(id: ComponentId, sections: Vec<Content>) -> Content {
+        Content::new(
+            id,
+            Self {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Self::DOCUMENT_SECTION_GAP,
+                },
+                children: sections,
+                flexible_child: None,
+            },
+        )
+    }
+
+    /// Compose panel/Inspector sections separated by `PANEL_SECTION_GAP` (16 pt).
+    pub fn panel_sections(id: ComponentId, sections: Vec<Content>) -> Content {
+        Content::new(
+            id,
+            Self {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Self::PANEL_SECTION_GAP,
+                },
+                children: sections,
+                flexible_child: None,
+            },
+        )
+    }
+
+    /// Group a `UiHeading` title with its section body using `SECTION_HEADER_GAP` (8 pt).
+    pub fn titled_section(
+        group_id: ComponentId,
+        heading_id: ComponentId,
+        title: impl Into<String>,
+        body: Content,
+    ) -> Content {
+        Content::new(
+            group_id,
+            Self {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Self::SECTION_HEADER_GAP,
+                },
+                children: vec![Content::new(heading_id, TextContent::heading(title)), body],
+                flexible_child: None,
+            },
+        )
+    }
+
+    /// Group a `UiCaption` label with its specimen control using `SPECIMEN_LABEL_GAP` (4 pt).
+    pub fn labeled_specimen(
+        group_id: ComponentId,
+        label_id: ComponentId,
+        label: impl Into<String>,
+        specimen: Content,
+    ) -> Content {
+        Content::new(
+            group_id,
+            Self {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Self::SPECIMEN_LABEL_GAP,
+                },
+                children: vec![
+                    Content::new(label_id, TextContent::caption(label)),
+                    specimen,
+                ],
+                flexible_child: None,
+            },
+        )
+    }
+
     /// Inset this Stack's original children without introducing a viewport or
     /// changing their mount identities. Bare StackContent literals keep zero padding.
     pub fn into_content_with_padding(
@@ -291,7 +373,7 @@ pub struct ScrollContent {
     pub(super) clip: Rect,
     pub(super) scrollbar_pointer: Option<bool>,
     pub(super) pointer_hovered: bool,
-    pub(super) content_padding: f32,
+    pub(super) content_insets: crate::layout::Insets,
     pub(super) last_frame: Option<std::time::Duration>,
     pub(super) reading: Option<content_reading::ContentReadingState>,
     pub(super) reading_mounted: bool,
@@ -348,11 +430,18 @@ impl ScrollContent {
             clip: Rect::default(),
             scrollbar_pointer: None,
             pointer_hovered: false,
-            content_padding: 0.,
+            content_insets: crate::layout::Insets::ZERO,
             last_frame: None,
             reading: None,
             reading_mounted: false,
         }
+    }
+    /// Standard vertically scrolled document owning a single `Spacing::Loose` (16 pt)
+    /// padding contract and a flush edge scrollbar.
+    pub fn document(child: Content) -> Self {
+        Self::new(ScrollArea::default(), child)
+            .scrollbar(true)
+            .content_padding(tekes_ui_tokens::Spacing::Loose.value())
     }
     /// Use natural document width and disable the vertical scrolling axis.
     /// The default remains the existing vertically flowing viewport.
@@ -383,30 +472,47 @@ impl ScrollContent {
     }
     /// Symmetric document padding; the original focus bleed remains a minimum.
     pub fn content_padding(mut self, padding: f32) -> Self {
-        self.content_padding = finite(padding);
+        let padding = finite(padding);
+        self.content_insets = crate::layout::Insets::new(padding, padding, padding, padding);
         self
     }
-    fn document_gutter(&self, text: &mut dyn ButtonTextRenderer) -> (f32, f32) {
+    /// Asymmetric four-edge document insets; the original focus bleed remains a minimum.
+    pub fn content_insets(mut self, insets: crate::layout::Insets) -> Self {
+        self.content_insets = crate::layout::Insets::new(
+            finite(insets.top),
+            finite(insets.right),
+            finite(insets.bottom),
+            finite(insets.left),
+        );
+        self
+    }
+    fn document_gutter(&self, text: &mut dyn ButtonTextRenderer) -> (f32, crate::layout::Insets) {
         let focus = crate::extended::ControlFrame::new(Rect::default(), None)
             .focus_bounds(text.backing_scale());
         let bleed = (-focus.min_x()).max(0.);
-        let padding = if self.toolbar_tabs {
-            crate::toolbar::tab_geometry(text)
-                .0
-                .max(self.content_padding)
+        let floor = if self.toolbar_tabs {
+            bleed.max(crate::toolbar::tab_geometry(text).0)
         } else {
-            self.content_padding
+            bleed
         };
-        (bleed, bleed.max(padding))
+        (
+            bleed,
+            crate::layout::Insets::new(
+                floor.max(self.content_insets.top),
+                floor.max(self.content_insets.right),
+                floor.max(self.content_insets.bottom),
+                floor.max(self.content_insets.left),
+            ),
+        )
     }
-    fn overflow_gutter(&self, bleed: f32, gutter: f32) -> f32 {
+    fn overflow_gutter(&self, bleed: f32, right_gutter: f32) -> f32 {
         if self.scroll.scrollbar_requested(true)
             && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
         {
             let band = proposal::SCROLLBAR_WIDTH
                 + proposal::SCROLLBAR_INSET
                 + tekes_ui_tokens::Spacing::Micro.value();
-            (band + bleed - gutter).max(0.)
+            (band + bleed - right_gutter).max(0.)
         } else {
             0.
         }
@@ -420,11 +526,12 @@ impl ScrollContent {
         width: f32,
         vertical_overflow: bool,
     ) -> f32 {
-        let (bleed, gutter) = self.document_gutter(text);
+        let (bleed, insets) = self.document_gutter(text);
         finite(width)
-            + 2. * gutter
+            + insets.left
+            + insets.right
             + if vertical_overflow {
-                self.overflow_gutter(bleed, gutter)
+                self.overflow_gutter(bleed, insets.right)
             } else {
                 0.
             }
@@ -541,15 +648,19 @@ impl ScrollContent {
         text: &mut dyn ButtonTextRenderer,
         frame: Rect,
         clip: Rect,
-        gutter: f32,
+        insets: crate::layout::Insets,
         width: f32,
         heights: &[f32],
     ) -> Rect {
         let origin = self.scroll.geometry(frame, Some(clip)).content_origin();
         let child_clip = self.content_clip(frame, clip);
-        let mut y = origin.y + gutter;
+        let mut y = origin.y + insets.top;
         for (c, &h) in self.children.iter_mut().zip(heights) {
-            c.arrange(text, Rect::new(origin.x + gutter, y, width, h), child_clip);
+            c.arrange(
+                text,
+                Rect::new(origin.x + insets.left, y, width, h),
+                child_clip,
+            );
             y += h;
         }
         child_clip
@@ -611,7 +722,7 @@ impl Component for ScrollContent {
         // This lets a fixed sibling follow short tabs while a flexible viewport
         // consumes only the space remaining beside that sibling on narrow rows.
         let width = if self.horizontal {
-            let (_, gutter) = self.document_gutter(text);
+            let (_, insets) = self.document_gutter(text);
             let document = self
                 .children
                 .iter_mut()
@@ -622,7 +733,7 @@ impl Component for ScrollContent {
                         .width
                 })
                 .fold(0., f32::max);
-            available.width.min(document + 2. * gutter)
+            available.width.min(document + insets.left + insets.right)
         } else {
             available.width
         };
@@ -655,8 +766,8 @@ impl Component for ScrollContent {
         self.clip = frame.intersection(&clip).unwrap_or_default();
         // Scroll is a viewport: reserve the existing ControlFrame focus bleed
         // in document geometry, rather than relaxing the ancestor clip.
-        let (bleed, gutter) = self.document_gutter(text);
-        let mut width = (frame.size.width - 2.0 * gutter).max(0.0);
+        let (bleed, insets) = self.document_gutter(text);
+        let mut width = (frame.size.width - insets.left - insets.right).max(0.0);
         if self.horizontal {
             width = self
                 .children
@@ -675,12 +786,12 @@ impl Component for ScrollContent {
             .iter_mut()
             .map(|c| c.measure(text, available).size.height)
             .collect();
-        let mut height = 2.0 * gutter + child_heights.iter().sum::<f32>();
+        let mut height = insets.top + insets.bottom + child_heights.iter().sum::<f32>();
         if self.scroll.scrollbar_requested(true)
             && self.scroll.scroll_policy().1 != crate::ScrollPolicy::Disabled
             && height > frame.size.height
         {
-            let extra = self.overflow_gutter(bleed, gutter);
+            let extra = self.overflow_gutter(bleed, insets.right);
             width = (width - extra).max(0.);
             let available = Size::new(width, 1e8);
             child_heights = self
@@ -688,11 +799,11 @@ impl Component for ScrollContent {
                 .iter_mut()
                 .map(|child| child.measure(text, available).size.height)
                 .collect();
-            height = 2. * gutter + child_heights.iter().sum::<f32>();
+            height = insets.top + insets.bottom + child_heights.iter().sum::<f32>();
         }
         let document = Size::new(
             if self.horizontal {
-                width + 2. * gutter
+                width + insets.left + insets.right
             } else {
                 frame.size.width
             },
@@ -703,12 +814,12 @@ impl Component for ScrollContent {
         }
         self.scroll.layout(frame.size, document);
         if let Some(rect) = self.reveal_horizontal.take() {
-            let left = rect.min_x() + if self.toolbar_tabs { 0. } else { gutter };
+            let left = rect.min_x() + if self.toolbar_tabs { 0. } else { insets.left };
             let right = rect.max_x()
                 + if self.toolbar_tabs {
-                    2. * gutter
+                    insets.left + insets.right
                 } else {
-                    gutter
+                    insets.right
                 };
             let target = if left < self.scroll.offset.x {
                 left
@@ -729,12 +840,12 @@ impl Component for ScrollContent {
         if let Some(reading) = &mut self.reading {
             reading.prepare(&mut self.scroll);
         }
-        let visible = self.arrange_content(text, frame, clip, gutter, width, &child_heights);
+        let visible = self.arrange_content(text, frame, clip, insets, width, &child_heights);
         let restored = self.reading.as_mut().is_some_and(|reading| {
             reading.restore(&mut self.scroll, &self.children, visible, reading_anchor)
         });
         if restored {
-            self.arrange_content(text, frame, clip, gutter, width, &child_heights);
+            self.arrange_content(text, frame, clip, insets, width, &child_heights);
         }
         if let Some(reading) = &mut self.reading {
             reading.record(&self.scroll, &self.children, visible);
@@ -1046,5 +1157,119 @@ impl Component for TextContent {
     }
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(ContentRole::Text, &self.text)
+    }
+}
+
+#[cfg(test)]
+mod section_and_insets_tests {
+    use super::*;
+
+    struct Text;
+    impl ButtonTextRenderer for Text {
+        fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+            Size::new(
+                (value.chars().count() as f32 * 7.).min(width),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn scroll_content_insets_and_flush_scrollbar_preserve_four_edge_geometry() {
+        let mut scroll = ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(ComponentId(2), TextContent::new("Line\n\n\n\n\n\nBottom")),
+        )
+        .scrollbar(true)
+        .content_insets(crate::layout::Insets::new(8., 16., 16., 16.));
+        let viewport = Rect::new(10., 20., 300., 80.);
+        scroll.arrange(&mut Text, viewport, viewport);
+        let child = scroll.children()[0].frame();
+        assert_eq!(child.min_x() - viewport.min_x(), 16.);
+        assert_eq!(viewport.max_x() - child.max_x(), 16.);
+        assert_eq!(child.min_y() - viewport.min_y(), 8.);
+        let track = scroll.scrollbar_track(true);
+        assert_eq!(track.max_x(), viewport.max_x() - proposal::SCROLLBAR_INSET);
+        assert_eq!(track.min_y(), viewport.min_y());
+    }
+
+    #[test]
+    fn stack_gestalt_sections_and_labeled_specimens_preserve_hierarchy() {
+        const {
+            assert!(StackContent::DOCUMENT_SECTION_GAP > StackContent::PANEL_SECTION_GAP);
+            assert!(StackContent::PANEL_SECTION_GAP > StackContent::SECTION_HEADER_GAP);
+            assert!(StackContent::SECTION_HEADER_GAP > StackContent::SPECIMEN_LABEL_GAP);
+        }
+        let mut host = ContentHost::new(StackContent::document_sections(
+            ComponentId(1),
+            vec![
+                StackContent::titled_section(
+                    ComponentId(2),
+                    ComponentId(3),
+                    "First",
+                    StackContent::labeled_specimen(
+                        ComponentId(4),
+                        ComponentId(5),
+                        "rest",
+                        Content::new(ComponentId(6), TextContent::new("Sample 1")),
+                    ),
+                ),
+                StackContent::titled_section(
+                    ComponentId(7),
+                    ComponentId(8),
+                    "Second",
+                    Content::new(ComponentId(9), TextContent::new("Sample 2")),
+                ),
+            ],
+        ))
+        .unwrap();
+        let frame = Rect::new(0., 0., 400., 300.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let h1 = host.get(ComponentId(3)).unwrap().frame();
+        let label = host.get(ComponentId(5)).unwrap().frame();
+        let sample1 = host.get(ComponentId(6)).unwrap().frame();
+        let h2 = host.get(ComponentId(8)).unwrap().frame();
+        assert_eq!(label.min_y() - h1.max_y(), StackContent::SECTION_HEADER_GAP);
+        assert_eq!(
+            sample1.min_y() - label.max_y(),
+            StackContent::SPECIMEN_LABEL_GAP
+        );
+        assert_eq!(
+            h2.min_y() - sample1.max_y(),
+            StackContent::DOCUMENT_SECTION_GAP
+        );
+        assert_eq!(
+            host.get(ComponentId(3))
+                .unwrap()
+                .component::<TextContent>()
+                .unwrap()
+                .role,
+            proposal::TextRole::UiHeading
+        );
+        assert_eq!(
+            host.get(ComponentId(5))
+                .unwrap()
+                .component::<TextContent>()
+                .unwrap()
+                .role,
+            proposal::TextRole::UiCaption
+        );
     }
 }

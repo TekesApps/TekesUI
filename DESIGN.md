@@ -14,7 +14,12 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.2` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.3` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 组合容器单一留白与格式塔层级（`v0.4.3` / #376, #377, #375）
+
+- **`tekes-ui-controls` 容器与分节 API**：`ScrollContent::content_insets(Insets)` 支持四边独立留白与外贴右缘滚动条，`ScrollContent::document(child)` 提供标准 `16pt`（`Spacing::Loose`）文档留白与滚动条；`ListContent::scrollable_with_header(...)` 统一固定头部与滚动体的 `16pt` 对齐基准及头部下方 `8pt`（`Spacing::Regular`）裁剪安全距；`StackContent::{DOCUMENT_SECTION_GAP (24pt), PANEL_SECTION_GAP (16pt), SECTION_HEADER_GAP (8pt), SPECIMEN_LABEL_GAP (4pt), document_sections, panel_sections, titled_section, labeled_specimen}` 与 `KeyValueTableContent::section(...)` 强制保证外层组间距严格大于组内标题/标签与内容间距。
+- **单一 Inset 所有权与消费端收敛**：`tekes-ui-app-host` 容器默认零内边距（仅对无内层滚动/边距包装的容器显式指定 `.content_padding(...)`）；`tekes-ui-settings` 固定头部侧栏、AppHost 示例及 `tekes-ui-gallery` 全量页面（Documents / Inspector / Foundations / Stories / Navigation 与 12 处状态矩阵标注展品）已移除双/三重留白与历史手算坐标夹具，直接消费 `ContentHost` 实际布局几何。
 
 Theme/Palette/Surface 基础 API 已交付；controls 中仍有直接 proposal/Palette 消费，完整组件迁移在 Gallery Root 与私有候选中有另外的源码身份。声明 Surface 解剖/语义用途的绘制必须消费共享完整结果，不能另配状态色表；metric/layout/motion 的 typed API 可以保留，文本颜色须核对实际用途，不能自动豁免 Surface 契约。Root 的 #62/#104/#92 等原接收不自动成为上述 main 的通过证据。
 

@@ -283,39 +283,6 @@ impl TextEngine {
             .push_visible(scene, paragraph, origin, color, clip);
     }
 
-    /// 在 `slot` 里画一行标签：水平 `align`，垂直居中，原点取整到整数 pt。
-    /// 返回标签的宽度（pt），测试用来核对没有超出槽。
-    #[cfg(test)]
-    pub fn label_in(
-        &mut self,
-        scene: &mut Scene,
-        theme: Theme,
-        slot: Rect,
-        text: &str,
-        style: LabelStyle,
-    ) -> f32 {
-        let p = self.label(text, style.role, None);
-        let origin = label_origin(slot, &p, style.align);
-        self.push(scene, &p, origin, style.color.resolve(theme));
-        p.width as f32
-    }
-
-    /// 多行标签（按 `slot` 宽度换行），顶对齐，原点取整。返回行数。
-    #[cfg(test)]
-    pub fn wrapped_label_in(
-        &mut self,
-        scene: &mut Scene,
-        theme: Theme,
-        slot: Rect,
-        text: &str,
-        style: LabelStyle,
-    ) -> usize {
-        let p = self.label(text, style.role, Some(slot.size.width));
-        let origin = Point::new(slot.min_x().round(), slot.min_y().round());
-        self.push(scene, &p, origin, style.color.resolve(theme));
-        p.lines.len()
-    }
-
     /// A JSON-defined profile, cached separately from the legacy calibration roles.
     pub fn proposal_label(
         &mut self,

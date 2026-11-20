@@ -74,11 +74,6 @@ impl IconText for crate::gallery::text::TextEngine {
     }
 }
 
-#[cfg(test)]
-pub fn search_rect(content: Rect) -> Rect {
-    Rect::new(content.min_x(), content.min_y(), content.size.width, 40.0)
-}
-
 fn matches(name: &str, query: &str) -> bool {
     // The common scrolling path has no query. Avoid allocating lowercase
     // strings for every catalogue entry on every frame in that case.
@@ -215,7 +210,7 @@ fn filtered<'a>(catalog: &'a IconCatalog, query: &str) -> Vec<(CatalogIcon, &'a 
     });
     found
 }
-const GRID_TOP: f32 = 112.0;
+const GRID_TOP: f32 = 64.0;
 const ROW_STEP: f32 = 164.0;
 const TILE_HEIGHT: f32 = 148.0;
 fn normalized_type_scale(type_scale: f32) -> f32 {
@@ -365,12 +360,7 @@ pub(crate) fn build_catalog_with_text(
     text.proposal_label_in(
         scene,
         theme,
-        Rect::new(
-            content.min_x(),
-            content.min_y() + 48.0,
-            content.size.width,
-            24.0,
-        ),
+        Rect::new(content.min_x(), content.min_y(), content.size.width, 24.0),
         &label,
         proposal::TextRole::UiCaption,
         muted,
@@ -408,7 +398,7 @@ pub(crate) fn build_catalog_with_text(
         theme,
         Rect::new(
             content.min_x(),
-            content.min_y() + 76.0,
+            content.min_y() + 28.0,
             content.size.width,
             24.0,
         ),
@@ -1113,14 +1103,6 @@ mod catalogue_review {
                     };
                     let mut scene = Scene::new();
                     scene.push_clip(bounds);
-                    // Reuse the actual search surface; only its input state is scripted.
-                    let mut search = crate::gallery::text_demo::TextDemo::search_fixture();
-                    if !query.is_empty() {
-                        search.command(tekes_ui_controls::TextEditCommand::InsertTab);
-                        search.paste(query);
-                        search.blur();
-                    }
-                    search.build_search(&mut ctx, search_rect(content), &mut scene);
                     build_catalog(&mut ctx, content, &mut scene, query, &catalog, bounds);
                     scene.pop_clip();
                     let width = (layout::FRAME_W * scale) as u32;

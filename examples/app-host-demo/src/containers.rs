@@ -87,25 +87,26 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         }));
         Content::new(
             ComponentId(27100),
-            ScrollContent::new(
-                tekes_ui_controls::ScrollArea::default(),
-                Content::new(
-                    ComponentId(27101),
-                    StackContent {
-                        model: tekes_ui_controls::extended::Stack {
-                            axis: tekes_ui_controls::extended::Axis::Vertical,
-                            gap: 8.,
-                        },
-                        children,
-                        flexible_child: None,
+            ScrollContent::document(Content::new(
+                ComponentId(27101),
+                StackContent {
+                    model: tekes_ui_controls::extended::Stack {
+                        axis: tekes_ui_controls::extended::Axis::Vertical,
+                        gap: 8.,
                     },
-                ),
-            ),
+                    children,
+                    flexible_child: None,
+                },
+            )),
         )
     } else {
         editor
     };
-    let mut container = LocalContainer::new(id, body)?
+    let mut container = LocalContainer::new(id, body)?;
+    if !architecture_fixture {
+        container = container.content_padding(tekes_ui_tokens::Spacing::Loose.value());
+    }
+    let mut container = container
     .toolbar_host(tekes_ui_app_host::ContainerToolbarHost::Container { position: tekes_ui_app_host::ContainerToolbarPosition::Top })
     .on_command(move |host, command| {
         command_count.set(command_count.get() + 1);

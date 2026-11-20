@@ -896,15 +896,28 @@ pub(crate) struct FeedbackStory {
 impl FeedbackStory {
     pub(crate) fn new(entry: &'static Entry) -> Self {
         let state = StoryState::for_entry(entry);
+        let intro = Content::new(
+            ComponentId(103010),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
+                    super::story_heading(103004, entry.title()),
+                    text(103005, super::story_docs(entry)),
+                ],
+                flexible_child: None,
+            },
+        );
         let children = vec![
-            super::story_heading(103004, entry.title()),
-            text(103005, super::story_docs(entry)),
+            intro,
             super::apphost_basic::section_bar(entry, COMMAND),
             Self::body(entry, &state),
         ];
         let document = Content::new(
             ROOT,
-            ListContent::scrollable(entry.title(), ROWS, children).content_padding(16.),
+            ScrollContent::document(StackContent::document_sections(ROWS, children)),
         );
         let root = if entry.renderer() == "dialog" {
             super::apphost_layout::dialog_viewport(DIALOG_VIEWPORT, vec![document, Self::dialog()])
@@ -941,16 +954,18 @@ impl FeedbackStory {
         )
     }
     fn body(entry: &'static Entry, state: &StoryState) -> Content {
-        let mut children = vec![text(
-            103006,
-            [
-                "Docs",
-                "Playground",
-                "State matrix",
-                "Behaviors",
-                "Edge cases",
-                "Variants / sizes",
-            ][state.section],
+        let mut children = vec![Content::new(
+            ComponentId(103006),
+            TextContent::heading(
+                [
+                    "Docs",
+                    "Playground",
+                    "State matrix",
+                    "Behaviors",
+                    "Edge cases",
+                    "Variants / sizes",
+                ][state.section],
+            ),
         )];
         if state.section == 0 {
             children.push(text(

@@ -37,8 +37,10 @@ fn button(command: u64, label: &str) -> Content {
 fn root(input: Content) -> Content {
     Content::new(
         ROOT,
-        ListContent::scrollable("Pattern", ROWS, vec![stack(BODY, vec![input])])
-            .content_padding(16.),
+        ScrollContent::document(StackContent::document_sections(
+            ROWS,
+            vec![stack(BODY, vec![input])],
+        )),
     )
 }
 pub(crate) struct AppHostPatterns {
@@ -146,7 +148,14 @@ impl AppHostPatterns {
                 // Reuse the exact keyed fixture; discard its old transport after moving it.
                 let list = Content::new(
                     ComponentId(110020),
-                    ListContent::scrollable("Documents", ComponentId(110021), vec![list]),
+                    ScrollContent::new(
+                        tekes_ui_controls::ScrollArea::default(),
+                        Content::new(
+                            ComponentId(110021),
+                            ListContent::new("Documents", vec![list]),
+                        ),
+                    )
+                    .scrollbar(true),
                 );
                 let detail = self.take_detail();
                 children.push(Content::new(

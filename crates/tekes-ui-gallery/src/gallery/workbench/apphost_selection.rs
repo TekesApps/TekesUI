@@ -86,14 +86,16 @@ pub(super) fn matrix(renderer: &'static str) -> Vec<Content> {
         return extended::matrix_states(renderer)
             .into_iter()
             .enumerate()
-            .flat_map(|(i, (name, state))| {
-                [
-                    Content::new(ComponentId(122100 + i as u64 * 2), TextContent::new(name)),
+            .map(|(i, (name, state))| {
+                StackContent::labeled_specimen(
+                    ComponentId(122150 + i as u64),
+                    ComponentId(122100 + i as u64 * 2),
+                    name,
                     Content::new(
                         ComponentId(122101 + i as u64 * 2),
                         super::apphost_actions::IconFixture::new(state),
                     ),
-                ]
+                )
             })
             .collect();
     }
@@ -113,9 +115,11 @@ pub(super) fn matrix(renderer: &'static str) -> Vec<Content> {
     extended::matrix_states(renderer)
         .into_iter()
         .enumerate()
-        .flat_map(|(i, (name, state))| {
-            [
-                Content::new(ComponentId(92800 + i as u64 * 2), TextContent::new(name)),
+        .map(|(i, (name, state))| {
+            StackContent::labeled_specimen(
+                ComponentId(92850 + i as u64),
+                ComponentId(92800 + i as u64 * 2),
+                name,
                 Content::new(
                     ComponentId(92801 + i as u64 * 2),
                     SelectionFixture {
@@ -124,7 +128,7 @@ pub(super) fn matrix(renderer: &'static str) -> Vec<Content> {
                         state,
                     },
                 ),
-            ]
+            )
         })
         .collect()
 }

@@ -254,8 +254,7 @@ fn apphost_quality_navigation_retains_state_and_consistency_directory() {
             .find(|section| {
                 section
                     .items
-                    .iter()
-                    .any(|(page, _)| *page == super::super::Page::Workbench(index))
+                    .contains(&super::super::Page::Workbench(index))
             })
             .unwrap();
         let list = host
@@ -318,13 +317,8 @@ fn apphost_workbench_filter_retains_registry_identity() {
             super::super::navigation::Navigation::list_id(&section),
             super::super::navigation::Navigation::list_id(original)
         );
-        for (page, _) in section.items {
-            assert!(
-                original
-                    .items
-                    .iter()
-                    .any(|(candidate, _)| *candidate == page)
-            );
+        for page in section.items {
+            assert!(original.items.contains(&page));
         }
     }
     assert!(navigation_sections("no-such-gallery-component-291").is_empty());
@@ -350,10 +344,14 @@ fn apphost_workbench_navigation_reuses_group_headers_and_keeps_search_mount() {
         assert_eq!(search.min_x() - frame.min_x(), Spacing::Loose.value());
         assert_eq!(frame.max_x() - search.max_x(), Spacing::Loose.value());
         assert_eq!(search.min_y() - frame.min_y(), Spacing::Loose.value());
+        let scroll = host.get(super::super::navigation::SCROLL).unwrap().frame();
+        assert_eq!(scroll.min_y() - search.max_y(), Spacing::Regular.value());
+        assert_eq!(scroll.min_x(), frame.min_x());
+        assert_eq!(scroll.max_x(), frame.max_x());
         let rows = host.get(LIST).unwrap().frame();
         assert_eq!(rows.min_x(), search.min_x());
         assert_eq!(rows.max_x(), search.max_x());
-        assert!(rows.min_y() > search.max_y());
+        assert_eq!(rows.min_y() - search.max_y(), Spacing::Loose.value());
         for section in super::super::navigation::sections() {
             let list = host
                 .get(Navigation::list_id(section))
@@ -361,7 +359,7 @@ fn apphost_workbench_navigation_reuses_group_headers_and_keeps_search_mount() {
                 .component::<KeyedSelectableListContent>()
                 .unwrap();
             assert_eq!(list.model().snapshot().items.len(), section.items.len());
-            for (item, (page, _)) in list.model().snapshot().items.iter().zip(&section.items) {
+            for (item, page) in list.model().snapshot().items.iter().zip(&section.items) {
                 assert_eq!(item.name, page.name());
             }
         }
@@ -468,7 +466,9 @@ fn apphost_workbench_inspector_replaces_retired_rows_and_keeps_unchanged_mount()
             .unwrap()
             .children
             .iter()
-            .filter_map(|section| section.component::<KeyValueTableContent>())
+            .filter_map(|section| section.component::<StackContent>())
+            .flat_map(|stack| stack.children.iter())
+            .filter_map(|node| node.component::<KeyValueTableContent>())
             .flat_map(|table| {
                 table.cells().chunks_exact(2).map(|pair| {
                     (
@@ -652,7 +652,9 @@ fn inspector_value_id(host: &ContentHost, label: &str) -> ComponentId {
         .unwrap()
         .children
         .iter()
-        .filter_map(|section| section.component::<KeyValueTableContent>())
+        .filter_map(|section| section.component::<StackContent>())
+        .flat_map(|stack| stack.children.iter())
+        .filter_map(|node| node.component::<KeyValueTableContent>())
         .flat_map(|table| table.cells().chunks_exact(2))
         .find(|pair| pair[0].component::<TextContent>().unwrap().text == label)
         .unwrap()[1]
@@ -2286,4 +2288,215 @@ fn apphost_focus_restore_inside_borrowed_host_handles_initial_and_same_page_sect
     focus.with_host(&mut |_| state.borrow_mut().restore(COMMAND).unwrap());
     focus.with_host(&mut |h| assert!(h.get(workbench::apphost_basic::SPECIMEN).is_some()));
     let _ = std::fs::remove_dir_all(&session_dir);
+}
+
+#[test]
+fn apphost_foundations_atlas_maintains_gestalt_hierarchy() {
+    use tekes_ui_controls::composition::AccessibilityAction;
+    let entry = workbench::entries()
+        .iter()
+        .find(|e| e.renderer() == "tokens")
+        .unwrap();
+    let mut page = workbench::apphost_foundations::AppHostFoundations::new(entry).unwrap();
+    let mut text = super::super::text::TextEngine::new();
+    let frame = tekes_ui_scene::Rect::new(0., 0., 740., 900.);
+    page.host
+        .render(
+            &mut tekes_ui_scene::Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+    assert!(
+        page.host
+            .accessibility_action(ComponentId(97811), None, AccessibilityAction::Press)
+            .consumed
+    );
+    page.after_host_visit();
+    page.host
+        .render(
+            &mut tekes_ui_scene::Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+    let host = &page.host;
+    let scroll = host.get(ComponentId(97800)).unwrap().frame();
+    let rows = host.get(ComponentId(97801)).unwrap();
+    assert_eq!(scroll.max_x(), frame.max_x());
+    assert_eq!(rows.frame().min_x() - frame.min_x(), Spacing::Loose.value());
+    let intro = host.get(ComponentId(97806)).unwrap().frame();
+    let choice = host.get(ComponentId(97805)).unwrap().frame();
+    let body = host.get(ComponentId(97804)).unwrap().frame();
+    assert_eq!(
+        choice.min_y() - intro.max_y(),
+        StackContent::DOCUMENT_SECTION_GAP
+    );
+    assert_eq!(
+        body.min_y() - choice.max_y(),
+        StackContent::DOCUMENT_SECTION_GAP
+    );
+
+    let sec0 = host.get(ComponentId(97910)).unwrap().frame();
+    let sec1 = host.get(ComponentId(97911)).unwrap().frame();
+    let section_gap = sec1.min_y() - sec0.max_y();
+    let h0 = host.get(ComponentId(97900)).unwrap().frame();
+    let g0 = host.get(ComponentId(98000)).unwrap().frame();
+    let heading_to_grid = g0.min_y() - h0.max_y();
+    let row0 = host.get(ComponentId(98001)).unwrap().frame();
+    let row1 = host.get(ComponentId(98005)).unwrap().frame();
+    let grid_row_gap = row1.min_y() - row0.max_y();
+    assert_eq!(section_gap, StackContent::DOCUMENT_SECTION_GAP);
+    assert_eq!(grid_row_gap, Spacing::Loose.value());
+    assert_eq!(heading_to_grid, StackContent::SECTION_HEADER_GAP);
+    assert!(section_gap > grid_row_gap && grid_row_gap > heading_to_grid);
+}
+
+#[test]
+fn apphost_story_matrix_uses_single_inset_flush_scrollbar_and_gestalt_hierarchy() {
+    let palette = Rc::new(Cell::new(Palette::from(tekes_ui_tokens::Theme::LIGHT)));
+    let mut text = super::super::text::TextEngine::new();
+    let frame = tekes_ui_scene::Rect::new(0., 0., 740., 900.);
+    for slug in ["component-button/states", "component-checkbox/states"] {
+        let (_, mut host) = open_route_host(slug, &palette).unwrap();
+        host.render(
+            &mut tekes_ui_scene::Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let scroll = host.get(ComponentId(92000)).unwrap().frame();
+        let rows = host.get(ComponentId(92001)).unwrap().frame();
+        assert_eq!(scroll.max_x(), frame.max_x());
+        assert_eq!(rows.min_x() - frame.min_x(), Spacing::Loose.value());
+        assert_eq!(rows.min_y() - frame.min_y(), Spacing::Loose.value());
+
+        let intro = host.get(ComponentId(92014)).unwrap().frame();
+        let bar = host.get(ComponentId(92006)).unwrap().frame();
+        let body_node = host.get(ComponentId(92002)).unwrap();
+        assert_eq!(
+            bar.min_y() - intro.max_y(),
+            StackContent::DOCUMENT_SECTION_GAP
+        );
+        assert_eq!(
+            body_node.frame().min_y() - bar.max_y(),
+            StackContent::DOCUMENT_SECTION_GAP
+        );
+        let body_gap = body_node.component::<StackContent>().unwrap().model.gap;
+        assert!(body_gap < StackContent::DOCUMENT_SECTION_GAP);
+
+        let heading = host.get(ComponentId(92007)).unwrap();
+        assert_eq!(
+            heading.component::<TextContent>().unwrap().role,
+            TextRole::UiHeading
+        );
+
+        let g0 = host.get(ComponentId(92350)).unwrap().frame();
+        let g1 = host.get(ComponentId(92351)).unwrap().frame();
+        assert_eq!(g1.min_y() - g0.max_y(), body_gap);
+
+        let label0 = host.get(ComponentId(92300)).unwrap();
+        let spec0 = host.get(ComponentId(92301)).unwrap();
+        assert_eq!(
+            label0.component::<TextContent>().unwrap().role,
+            TextRole::UiCaption
+        );
+        assert_eq!(
+            spec0.frame().min_y() - label0.frame().max_y(),
+            StackContent::SPECIMEN_LABEL_GAP
+        );
+        assert!(g1.min_y() - g0.max_y() > spec0.frame().min_y() - label0.frame().max_y());
+    }
+}
+
+#[test]
+fn apphost_inspector_maintains_gestalt_hierarchy_and_clip_clearance() {
+    let state = state(FORM_ROUTE);
+    state.borrow_mut().select(Some("name"));
+    let mut focus = focus_container(state.clone());
+    let mut text = super::super::text::TextEngine::new();
+    focus.with_host(&mut |host| render_text_host(host, &mut text));
+    let mut inspector = panel_source(state, true).unwrap();
+    render_panel(&mut inspector, &mut text);
+    inspector.with_host(&mut |host| {
+        let header = host.get(ComponentId(25)).unwrap().frame();
+        let scroll = host.get(DOCUMENT_SCROLL).unwrap().frame();
+        let chooser = host.get(CHOOSER).unwrap().frame();
+        assert_eq!(chooser.min_x(), Spacing::Loose.value());
+        assert_eq!(header.size.width - chooser.max_x(), Spacing::Loose.value());
+        assert_eq!(scroll.min_y() - chooser.max_y(), Spacing::Regular.value());
+        assert_eq!(scroll.max_x(), header.max_x());
+
+        let reader = host.get(DOCUMENT_READER).unwrap().frame();
+        assert_eq!(reader.min_x(), chooser.min_x());
+        assert_eq!(reader.min_y() - scroll.min_y(), Spacing::Regular.value());
+
+        let sec0 = host.get(ComponentId(10_000)).unwrap().frame();
+        let sec1 = host.get(ComponentId(10_003)).unwrap().frame();
+        let section_gap = sec1.min_y() - sec0.max_y();
+        let h0 = host.get(ComponentId(10_001)).unwrap().frame();
+        let t0 = host.get(ComponentId(10_002)).unwrap().frame();
+        let intra_gap = t0.min_y() - h0.max_y();
+        assert_eq!(section_gap, StackContent::PANEL_SECTION_GAP);
+        assert_eq!(intra_gap, StackContent::SECTION_HEADER_GAP);
+        assert!(section_gap > intra_gap);
+    });
+}
+
+#[test]
+fn apphost_documents_switching_between_playground_and_docs_has_zero_origin_jump() {
+    let palette = Rc::new(Cell::new(Palette::from(tekes_ui_tokens::Theme::LIGHT)));
+    let mut text = super::super::text::TextEngine::new();
+    let frame = tekes_ui_scene::Rect::new(0., 0., 740., 900.);
+    for (slug, live_scroll_or_wrap, live_inner) in [
+        (
+            "component-text",
+            ComponentId(99107),
+            workbench::apphost_text_pages::SPECIMEN,
+        ),
+        (
+            "lab-calibration",
+            ComponentId(99105),
+            workbench::apphost_text_pages::CALIBRATION,
+        ),
+    ] {
+        let mut page = page_host(slug, &palette).unwrap();
+        page.render(
+            &mut tekes_ui_scene::Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let chooser = page.get(ComponentId(99106)).unwrap().frame();
+        let live = page.get(live_inner).unwrap().frame();
+        let live_min_x = live.min_x();
+        let live_min_y = live.min_y();
+        let live_max_x = page.get(live_scroll_or_wrap).unwrap().frame().max_x();
+        assert_eq!(live_min_x - frame.min_x(), Spacing::Loose.value());
+        assert_eq!(live_min_y - chooser.max_y(), Spacing::Regular.value());
+
+        page.select_section(0);
+        page.render(
+            &mut tekes_ui_scene::Scene::new(),
+            &mut text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let copy_scroll = page.get(ComponentId(99103)).unwrap().frame();
+        let copy_list = page.get(ComponentId(99104)).unwrap().frame();
+        assert_eq!(copy_scroll.max_x(), frame.max_x());
+        assert_eq!(copy_list.min_x(), live_min_x);
+        assert_eq!(copy_list.min_y(), live_min_y);
+        assert!(live_max_x <= frame.max_x());
+    }
 }

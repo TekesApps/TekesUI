@@ -117,7 +117,7 @@
         {
           "api": "tekes_ui_controls::composition::GridContent",
           "path": "crates/tekes-ui-controls/src/composition/containers.rs",
-          "line": 183,
+          "line": 265,
           "anchor": "pub struct GridContent {"
         }
       ]
@@ -245,7 +245,7 @@
         {
           "api": "tekes_ui_controls::composition::ScrollContent",
           "path": "crates/tekes-ui-controls/src/composition/containers.rs",
-          "line": 282,
+          "line": 364,
           "anchor": "pub struct ScrollContent {"
         }
       ]
@@ -438,7 +438,7 @@
         {
           "api": "tekes_ui_controls::composition::TextContent",
           "path": "crates/tekes-ui-controls/src/composition/containers.rs",
-          "line": 958,
+          "line": 1069,
           "anchor": "pub struct TextContent {"
         }
       ]
@@ -2060,16 +2060,16 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "b8cd0773b108d2d35154c1c748033970a455bc726e8f4aae25562886a8bee7b2",
+    "DESIGN.md": "46c76fb5a3da05f435f58958743c48ecc9809ff9611a35cb2aeab5ab73b72064",
     "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
-    "crates/tekes-ui-app-host/src/window.rs": "a0a2399642f73356605ae503293270c58de19b45f7ee16423f4ff1b716abe6c8",
+    "crates/tekes-ui-app-host/src/window.rs": "dacedaa2402a2cc7601171257275482e8e656c58a31df8c897d7636da0fc13f4",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "13d93803505b5fd2e1ad48749ec8a5c545a1664989254f4e2701f201743c4fd2",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e8050200118efefecf897425fbc4c203c35e5e5021c37e898128fee9f31a3fc1",
     "crates/tekes-ui-controls/src/composite.rs": "bb5acca080ae3de83a5f2659c342929cb89df2217fca636a83885a08913c95bf",
     "crates/tekes-ui-controls/src/composition.rs": "9b8f37b9ec0559b99727beb3dbb187eded72f5ce4118ddf74b3c268b822e787a",
     "crates/tekes-ui-controls/src/composition/actions.rs": "8a2b48240dcc17f99f2b26922a7178d29ff3e3474c3885af491ba5eca7c52651",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "67d418dfe914479a25f20f9015d8ec10f308f1bbebd41995928a1fe366a865ac",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "52e5baa236be87005a70187179ed4809268a7f065c6ced8baa7dfce4f2b95e01",
     "crates/tekes-ui-controls/src/composition/button.rs": "cf6206784a26472f955ef95fee4259fab6e0e6b3054307e632b4e96e8871a254",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "4992049a606475fa91cff7105b71901034b9dd713a1a62426d88b2bd4b5e58c1",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "a5b04fce72d4bf54062f652f0a7ca3cd08ac1110c8ab943b04a64c20b939151c",
@@ -2141,14 +2141,14 @@
     "crates/tekes-ui-gallery/Cargo.toml": "d1af8bd0748a86f1049f4263f4906bb80f90024e4712a4f23ce817103ddd1477",
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "eb0c324ed8604cae733bcfd450792872d124ef6535a699f6e614f550604ed6fc",
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "53bf12ad64ebacd58ef20958042798462bdc7dc85c3ddc126c2e6abc8e75619b",
-    "crates/tekes-ui-gallery/src/gallery/text.rs": "f628665eb32b4469def3390e466571d025b6c31417347c0289b3d90bb023c4b5",
-    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "becf03da00cb88fc3b13a58b5c3dd6ae55e9d676484a5ddec189f9c9422314bf",
-    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "3565484f114c157a623b4f473d3f7f3874e532e3fc6587586a2f6af03181fc27",
+    "crates/tekes-ui-gallery/src/gallery/text.rs": "36cba8d390f78af2f4f649fb9000c0794fbe0b21ad4b8dcd7e54dbfac71e843b",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "100097c394e6f53d7f966d32e6c628ab46b1a1b16b07e7fd307f6b1bca56a646",
+    "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5d73d9363b7fe037f8fce8352050384e76eeaae436450702659c020255c15ac6",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "e25771a4d5cd00d080f7748e57f7cf9390a09bd4ac16836827d6c1dd0b747c29",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "c880e97353eade9ca4a8ede8548d48145caaa7e01c22f1191b2e301cedf2c381",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/collections_adapter.rs": "913a43bc3268a90adc80f7cba9d24aa6218482a8c8a83007c20b46800aa576b8",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended/feedback_adapter.rs": "180597ad28728eec447cf378cae308c5e1dcbcd418cb3b861a0ec8abc99d517a",
-    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "3ba6506e9c6a013485bf0c9e5778ca42f71d02b1dbeaba0064a9f0b52ecd25aa",
+    "crates/tekes-ui-gallery/src/gallery/workbench/extended/navigation_states.rs": "cd965e88a5b610f8a6e40650b8f02a4c5b0647d49a02224bddd5dbafe262fa4a",
     "crates/tekes-ui-platform-macos/src/accessibility.rs": "1007c7d8939e60a5473073477616efc340a521457d9fbe7f436e5b885bf208ae",
     "crates/tekes-ui-platform-macos/src/app.rs": "0e59ef9c020e0a25145611b43d420c0547acd665291a670ce9e0b990c76cd95c",
     "crates/tekes-ui-platform-macos/src/event.rs": "85973349ba515158c92459c8f5c714d0a27f58e5ca33e6cea77c5cca80508374",
@@ -2243,18 +2243,18 @@
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
     "crates/tekes-ui-controls/src/composition/tab_strip.rs": "723d10887bf219561580d8bdd4a1c96c4cafef401c4429bd2c8b6b333cb7df76",
     "crates/tekes-ui-controls/src/composition/inspection.rs": "3617aee5acba9f29bdc36714d453c01de44a058823e7bd9f102a8919c6e0e8bf",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "523028a45dfe5cee7ad06c6b9aa61a5d2b098026e62d20be2e2f485f55afd7d2",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs": "7f6bc73f52f53b55f7b087f022222389594f54de2a5badd978ae8226b2f91c2c",
     "crates/tekes-ui-gallery/build.rs": "be3ecbfcf4af2343812ff13a784655ee5fc51746ac372a56a90211f5ce38f643",
     "design/gallery/component-documents.json": "abf58d08377606c799bae8d40acf37bacf91950af0074f9b6fa66a95475b93c7",
-    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "ddc193dd66161074087f4ee7349e7d29d33845b146315bd09db3ccd813c9f20e",
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "dd23f2c67283d8a2447cb6371a8785db4c847065e6834e2b0dfe457d281da524",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "7e5ff7d8e874b267b22c81974c12e17a28d6dfe79702227186242252e40d44d4",
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "bfbe571c2a41f0f292f87bc007d98e998e51c1014ad16521cfb32baa9921dcb6",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "e47e3e260ebd3049c13e50c35e64242938296895d4f97710ec0ede76e40e2e3a",
     "crates/tekes-ui-app-host/src/window_columns.rs": "f7836ab42863f01bc6f3c21bd5d6a73908923dde7b560d831ff7427acb1c492b",
     "examples/composition-consumer/tests/rich_content.rs": "310e19734aa7bba669ceb5e11093b1cafc4f5379e5bcb9d398f3a1569d915849",
-    "crates/tekes-ui-controls/src/composition/key_value_table.rs": "66d2ba0a6e22eac40290c61634fdee2f584044e06ea5597d0043ca52dee2995e",
-    "crates/tekes-ui-app-host/src/window_panels.rs": "dc62a7d6a86576b80939836aee5c640e49dfa04f30d248a8a7c1b8043ec1afeb",
-    "crates/tekes-ui-controls/src/composition/containers.rs": "3d06e5f96c042e77c890fecb41b5ad9492a966c6e98baf3b38f2a68e4ce95908",
+    "crates/tekes-ui-controls/src/composition/key_value_table.rs": "39fc5175401d568515a7d12baaa7d8cc32bdc669b8dd9e54274994b79b3a5bae",
+    "crates/tekes-ui-app-host/src/window_panels.rs": "cfb3a37913a88ca3f840ac931f994887dc2b543c56daab0b517125b0dcf08bbf",
+    "crates/tekes-ui-controls/src/composition/containers.rs": "e67b2e71765db66311387fc34d563fe03f74b883cba2545b27ea3f5101a5b92a",
     "crates/tekes-ui-controls/src/layout_view/disclosure_link.rs": "1e6ba1a3e0844c01307bfc88d3fe3856fd3308181b38418fc13cb332d86bb126",
     "crates/tekes-ui-controls/src/widgets/models.rs": "1050ee2140cb6aeee2430b9918aec3c7da61c486a6c2c799585fc566e20e2d04",
     "crates/tekes-ui-controls/src/composition/text_field.rs": "1624ae83c51cb20231e930e0dc653439afb9b06f82baa81d73fa3dfe7bdc2477",
@@ -2288,9 +2288,12 @@
     "crates/tekes-ui-controls/src/composition/markdown_projection.rs": "5f0080352e36c01dcb84b75bcfbd64f2e99a8ade2b941aab38e0704aa9f555c8",
     "crates/tekes-ui-controls/src/composition/rich_content/syntax.rs": "9a68d16346a5233148d339d0912ce281253d3f8ee0ad7fe9c9def9841cf5cfd6",
     "crates/tekes-ui-controls/tests/markdown_projected_editing.rs": "269d780e6426591d5e4f46e210b697c6e4188f64bada9222b0f4209b29be3e8c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "aed945a377b7f9a77f264f81b23282c38d9e5b9ca4f15ae97d8af37e76770fa2",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "350480d1d4627628ab91caf68d3aa6309610abad07e151b9b8980ddeb6e96c51",
-    "docs/design/markdown-projected-editing.md": "8e375ca74864c2c7d26dc4919b490327747e005c12f2499ed3a2c7a7d02ec254"
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "0ce6e26d004edeff9318846e058186338e5418a853edea45d4abf634e9eb91fe",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "9af8750532d3ed719c3376358ccadbf02d906360847bc04f6996ded66fefa65d",
+    "docs/design/markdown-projected-editing.md": "8e375ca74864c2c7d26dc4919b490327747e005c12f2499ed3a2c7a7d02ec254",
+    "crates/tekes-ui-app-host/src/window_settings.rs": "d86af20c057c6a02b4babf154f0aaacc0d7903730a42b261c9f00a36297d5651",
+    "crates/tekes-ui-settings/src/sidebar.rs": "d20c4b6a28630e91a4c38e6a426e7992077bc5a624fd0043501bf0a1c0041713",
+    "crates/tekes-ui-settings/tests/form_sidebar.rs": "ee6cd3d69ba0ad795eade1956e52d4a01046afc1679d7bffe9bd9c1aca9d0c37"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -5084,6 +5087,59 @@
         "crates/tekes-ui-controls/src/composition/adapters.rs"
       ],
       "validation": "tekes-ui-controls (525 unit + integration) + module-runtime + gallery + targeted composition-consumer suites passed; native visual/AX/IME/VoiceOver/120Hz separate"
+    },
+    {
+      "issue": 376,
+      "scope": "v0.4.3 Batch 2: ScrollContent::content_insets(Insets) & ScrollContent::document, ListContent::scrollable_with_header, zero-default LocalContainer padding in window_panels.rs (explicit Loose preserved for settings-center & single-field demo containers), SettingsSidebar headered scroll, and single-inset convergence across Gallery nav/panels/documents/stories",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/containers.rs",
+        "crates/tekes-ui-controls/src/composition/adapters.rs",
+        "crates/tekes-ui-app-host/src/window_panels.rs",
+        "crates/tekes-ui-app-host/src/window_settings.rs",
+        "crates/tekes-ui-settings/src/sidebar.rs",
+        "crates/tekes-ui-settings/tests/form_sidebar.rs",
+        "examples/app-host-demo/src/containers.rs",
+        "examples/app-host-demo/src/main.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost_panels.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_documents.rs"
+      ],
+      "validation": "tekes-ui-controls + tekes-ui-app-host + tekes-ui-settings + tekes-ui-gallery (zero-origin jump, 8pt header clip clearance, flush scrollbars, single 16pt insets) + examples/app-host-demo passed; native window pixels remain unverified"
+    },
+    {
+      "issue": 377,
+      "scope": "v0.4.3 Batch 2: StackContent::{DOCUMENT_SECTION_GAP, PANEL_SECTION_GAP, SECTION_HEADER_GAP, SPECIMEN_LABEL_GAP, document_sections, panel_sections, titled_section, labeled_specimen} and KeyValueTableContent::section; Gestalt section hierarchy (group_gap > intra_group_gap) and UiHeading promotion across Foundations, Inspector panels, Story pages, and all 12 labeled-specimen matrix sites",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/containers.rs",
+        "crates/tekes-ui-controls/src/composition/key_value_table.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost_panels.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost_workbench.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_foundations.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_basic.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_feedback.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_patterns.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_field_meta.rs",
+        "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs"
+      ],
+      "validation": "tekes-ui-controls (529 unit + integration) + tekes-ui-gallery (Foundations 24>16>8, Story 24>12/16>4, Inspector 16>8) + headless GPU basic_states matrix test passed; native visual/AX/IME/VoiceOver/120Hz separate"
+    },
+    {
+      "issue": 375,
+      "scope": "v0.4.3 Batch 2: Deleted Gallery legacy hand-computed navigation Rect/y+= coordinate model and duplicate #[cfg(test)] Navigation, deleted layout catalog_* helpers, removed +48pt phantom inline-search offset in pages/icons.rs (GRID_TOP 112->64), and pruned dead #[cfg(test)] direct-scene renderers in containers.rs, pages/primitives.rs, pages/tokens.rs, and basic_states.rs in favor of ContentHost tests",
+      "source_paths": [
+        "crates/tekes-ui-gallery/src/gallery/navigation.rs",
+        "crates/tekes-ui-gallery/src/gallery/layout.rs",
+        "crates/tekes-ui-gallery/src/gallery/containers.rs",
+        "crates/tekes-ui-gallery/src/gallery/pages/icons.rs",
+        "crates/tekes-ui-gallery/src/gallery/pages/primitives.rs",
+        "crates/tekes-ui-gallery/src/gallery/pages/tokens.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_icons.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs"
+      ],
+      "validation": "tekes-ui-gallery (navigation type_scale 1.0 vs 1.5 & PR #367 8pt/8pt+2pt, 27-role ContentHost swatches, icons zero ghost-gap, GPU toolbar/number-field state matrix) passed"
     }
   ]
 }

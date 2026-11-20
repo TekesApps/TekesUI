@@ -34,6 +34,22 @@ impl KeyValueTableContent {
     pub fn cells(&self) -> &[Content] {
         &self.cells
     }
+    /// Group a `UiHeading` title and `KeyValueTableContent` under canonical panel
+    /// header spacing (`StackContent::SECTION_HEADER_GAP` = 8 pt).
+    pub fn section(
+        group_id: ComponentId,
+        heading_id: ComponentId,
+        title: impl Into<String>,
+        table_id: ComponentId,
+        rows: impl IntoIterator<Item = (Content, Content)>,
+    ) -> Content {
+        StackContent::titled_section(
+            group_id,
+            heading_id,
+            title,
+            Content::new(table_id, Self::new(rows)),
+        )
+    }
     fn columns(width: f32) -> (f32, f32, f32) {
         let padding = Spacing::Micro.value().min(width / 4.);
         let usable = (width - 4. * padding).max(0.);
@@ -293,5 +309,56 @@ mod tests {
             },
         );
         assert!(!table.host_reveal_passthrough());
+    }
+
+    #[test]
+    fn key_value_table_section_groups_heading_and_table_below_panel_gap() {
+        let mut host = ContentHost::new(StackContent::panel_sections(
+            ComponentId(1),
+            vec![
+                KeyValueTableContent::section(
+                    ComponentId(10),
+                    ComponentId(11),
+                    "Group A",
+                    ComponentId(12),
+                    [(
+                        Content::new(ComponentId(13), TextContent::new("Key")),
+                        Content::new(ComponentId(14), TextContent::new("Val")),
+                    )],
+                ),
+                KeyValueTableContent::section(
+                    ComponentId(20),
+                    ComponentId(21),
+                    "Group B",
+                    ComponentId(22),
+                    [(
+                        Content::new(ComponentId(23), TextContent::new("Other")),
+                        Content::new(ComponentId(24), TextContent::new("Data")),
+                    )],
+                ),
+            ],
+        ))
+        .unwrap();
+        let frame = Rect::new(0., 0., 320., 240.);
+        host.render(
+            &mut Scene::new(),
+            &mut DummyText,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let heading_a = host.get(ComponentId(11)).unwrap().frame();
+        let table_a = host.get(ComponentId(12)).unwrap().frame();
+        let heading_b = host.get(ComponentId(21)).unwrap().frame();
+        assert_eq!(
+            table_a.min_y() - heading_a.max_y(),
+            StackContent::SECTION_HEADER_GAP
+        );
+        assert_eq!(
+            heading_b.min_y() - table_a.max_y(),
+            StackContent::PANEL_SECTION_GAP
+        );
+        assert!(heading_b.min_y() - table_a.max_y() > table_a.min_y() - heading_a.max_y());
     }
 }

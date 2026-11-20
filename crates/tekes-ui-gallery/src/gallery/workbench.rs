@@ -164,8 +164,6 @@ pub fn route(route: &str) -> Option<Page> {
         .or_else(|| Page::ALL.into_iter().find(|p| p.slug() == route))
 }
 
-#[cfg(test)]
-pub(super) use super::PageCtx;
 use search_input::StoryInput;
 pub(crate) use story_copy::{
     api_reference, behavior_copy, contract_summary, overview_copy, story_docs, story_heading,

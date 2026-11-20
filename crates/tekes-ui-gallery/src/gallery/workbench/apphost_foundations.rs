@@ -252,7 +252,7 @@ fn grid(id: u64, samples: impl IntoIterator<Item = Sample>) -> Content {
             model: Grid {
                 columns: 4,
                 gap_x: Spacing::Relaxed.value(),
-                gap_y: Spacing::Section.value(),
+                gap_y: Spacing::Loose.value(),
             },
             children: samples
                 .into_iter()
@@ -262,8 +262,13 @@ fn grid(id: u64, samples: impl IntoIterator<Item = Sample>) -> Content {
         }),
     )
 }
-fn section(id: u64, heading: &str, content: Content) -> Vec<Content> {
-    vec![super::story_heading(id, heading), content]
+fn section(group_id: u64, heading_id: u64, heading: &str, content: Content) -> Content {
+    StackContent::titled_section(
+        ComponentId(group_id),
+        ComponentId(heading_id),
+        heading,
+        content,
+    )
 }
 fn spacing(atlas: bool) -> Content {
     grid(
@@ -296,10 +301,21 @@ pub(crate) struct AppHostFoundations {
 impl AppHostFoundations {
     pub(crate) fn new(entry: &'static Entry) -> anyhow::Result<Self> {
         let state = StoryState::for_entry(entry);
-        let mut children = vec![
-            super::story_heading(97802, entry.title()),
-            text(97803, super::story_docs(entry)),
-        ];
+        let intro = Content::new(
+            ComponentId(97806),
+            StackContent {
+                model: tekes_ui_controls::extended::Stack {
+                    axis: tekes_ui_controls::extended::Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                flexible_child: None,
+                children: vec![
+                    super::story_heading(97802, entry.title()),
+                    text(97803, super::story_docs(entry)),
+                ],
+            },
+        );
+        let mut children = vec![intro];
         if entry.renderer() == "tokens" {
             children.push(Content::new(
                 ComponentId(97805),
@@ -324,7 +340,7 @@ impl AppHostFoundations {
         children.push(Self::body(entry, state.selected));
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            ListContent::scrollable("Foundation references", ROWS, children),
+            ScrollContent::document(StackContent::document_sections(ROWS, children)),
         ))
         .map_err(|e| anyhow::anyhow!("foundation host: {e:?}"))?;
         host.set_action_events(true);
@@ -334,25 +350,28 @@ impl AppHostFoundations {
         let mut children = vec![];
         match entry.renderer() {
             "tokens" if selected == 1 => {
-                children.extend(section(
+                children.push(section(
+                    97910,
                     97900,
                     "颜色角色（ColorRole::ALL 顺序）",
                     grid(SPECIMEN, ColorRole::ALL.into_iter().map(Sample::Color)),
                 ));
-                children.extend(section(
+                children.push(section(
+                    97911,
                     97901,
                     "间距 Spacing（条长 = 值 x 8）",
                     spacing(true),
                 ));
-                children.extend(section(97902, "圆角 CornerRadius", radii()));
-                children.extend(section(97903, "描边 Stroke", strokes()));
+                children.push(section(97912, 97902, "圆角 CornerRadius", radii()));
+                children.push(section(97913, 97903, "描边 Stroke", strokes()));
             }
             "tokens" => {
                 children.push(grid(
                     SPECIMEN,
                     SEMANTIC_COLORS.into_iter().map(Sample::Semantic),
                 ));
-                children.extend(section(
+                children.push(section(
+                    97910,
                     97900,
                     "Opacity & compositing",
                     grid(
@@ -380,7 +399,7 @@ impl AppHostFoundations {
             "spacing" => children.push(spacing(false)),
             "shape" => {
                 children.push(radii());
-                children.extend(section(97900, "Stroke widths & boundary roles", strokes()));
+                children.push(section(97910, 97900, "Stroke widths & boundary roles", strokes()));
                 children.push(text(97901, "Required control boundary: border / stroke-rule (at least 3:1). Decorative frame: separator / 1 physical pixel. Focus: border-focused. Hairline 0.5 pt is the 2x specimen; Increase Contrast uses stroke-rule for decorative frames."));
                 children.push(text(97902, "Elevation uses semantic surfaces and layer order. Shadows are not implemented in the current scene primitive; no shadow acceptance is claimed."));
             }
@@ -395,7 +414,7 @@ impl AppHostFoundations {
             "stress" => children.push(text(97900, "Use TEKES_PERF=scroll:60 and the existing measurement scripts. Actual presentation receipts determine 120 Hz acceptance. Build/test success does not prove 8.33 ms. Long-run isolated drops remain unresolved.\n\nText and ScrollArea pages provide real large-document scrolling and resize fixtures.")),
             _ => unreachable!("foundation reference route"),
         }
-        Content::new(BODY, ListContent::new("Foundation specimens", children))
+        StackContent::document_sections(BODY, children)
     }
     pub(crate) fn after_host_visit(&mut self) {
         for record in self.host.drain_action_records() {

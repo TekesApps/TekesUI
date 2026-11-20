@@ -260,13 +260,15 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
         ]
         .into_iter()
         .enumerate()
-        .flat_map(|(i, (label, value))| {
+        .map(|(i, (label, value))| {
             let mut progress = ProgressContent::new("Progress", value).with_max_width(500.);
             progress.model.indeterminate = i == 3;
-            [
-                text(96030 + i as u64, label),
+            StackContent::labeled_specimen(
+                ComponentId(96050 + i as u64),
+                ComponentId(96030 + i as u64),
+                label,
                 Content::new(ComponentId(96040 + i as u64), progress),
-            ]
+            )
         })
         .collect(),
         "progress" => {

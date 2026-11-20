@@ -452,12 +452,17 @@ fn inspector_content(document: &Document) -> Content {
                 CheckboxContent::new("Published", CheckState::Unchecked),
             ),
             Content::new(STATUS, status),
-            text(106, "Priority", TextRole::UiBody),
-            Content::new(
-                PRIORITY,
-                SliderContent::new(
-                    "Priority",
-                    Slider::new(document.priority, 0., 100., 1.).expect("finite fixture priority"),
+            StackContent::labeled_specimen(
+                ComponentId(107),
+                ComponentId(106),
+                "Priority",
+                Content::new(
+                    PRIORITY,
+                    SliderContent::new(
+                        "Priority",
+                        Slider::new(document.priority, 0., 100., 1.)
+                            .expect("finite fixture priority"),
+                    ),
                 ),
             ),
         ],
@@ -485,8 +490,7 @@ fn inspector_content(document: &Document) -> Content {
                 ),
                 disclosure,
             ],
-        )
-        .content_padding(Spacing::Loose.value()),
+        ),
     )
 }
 fn update_inspector(host: &mut ContentHost, document: &Document) {
@@ -605,8 +609,7 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                     },
                 ),
             ],
-        )
-        .content_padding(Spacing::Loose.value()),
+        ),
     );
     let navigation = Rc::new(RefCell::new(
         ContentHost::new(navigation).map_err(|error| anyhow::anyhow!("navigation: {error:?}"))?,
@@ -623,7 +626,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
             pending,
         },
     )
-    .content_padding(0.)
     .on_action(move |host, records| {
         request_navigation(
             host,
@@ -645,7 +647,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
             position: ContainerToolbarPosition::Top,
         })
         .switcher_icon("tekes-side-panel")
-        .content_padding(0.)
         .presentation(ContainerPresentation::Tab)
         .on_action(move |host, records| {
             if !confirm_inspector_disclosures(host, &records) {
@@ -715,7 +716,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
     let focus = LocalContainer::from_source("gallery-focus", SharedContent(document))
         .title("Document")
         .switcher_icon("tekes-file-text")
-        .content_padding(0.)
         .presentation(ContainerPresentation::Tab)
         .on_command(move |host, command| {
             let index = command
@@ -742,17 +742,16 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
             Ok(())
         });
     let reading = LocalContainer::new("gallery-list", scroll(6000, stack(6001, vec![text(6002, "Reading notes", TextRole::UiHeading), field(ComponentId(6003), "Notes", "Keep a short note beside the current document."), text(6004, "Capture a question, an idea or a useful reference before the next meeting.", TextRole::UiBody)])))?.title("Notes").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Leading }).switcher_icon("tekes-note")
-    .content_padding(0.).presentation(ContainerPresentation::List { height: 320. });
+    .presentation(ContainerPresentation::List { height: 320. });
     let reference = LocalContainer::new("gallery-reference", scroll(6100, stack(6101, vec![
         text(6102, "Reference", TextRole::UiHeading),
         text(6103, "Use List for Notes and Documents for Reference or Summary; each keeps its original content.", TextRole::UiBody),
-    ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text").content_padding(0.);
+    ])))?.title("Reference").toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Trailing }).switcher_icon("tekes-file-text");
     let summary = LocalContainer::new("gallery-summary", scroll(6200, stack(6201, vec![
         text(6202, "Summary", TextRole::UiHeading),
         text(6203, "This document keeps its toolbar at the bottom. Use Documents to switch instances; use the swap action to exchange it with Focus.", TextRole::UiBody),
     ])))?.title("Summary").switcher_icon("tekes-file-text")
-        .toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Bottom })
-        .content_padding(0.);
+        .toolbar_host(ContainerToolbarHost::Container { position: ContainerToolbarPosition::Bottom });
     let mut presentation = PresentationOptions::new("gallery-focus")
         .workspace_switch(true)
         .nav_bar("gallery-nav")

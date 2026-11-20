@@ -14,7 +14,7 @@ use std::{
 };
 use tekes_ui_app_host::ContainerRenderContext;
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlMotionContext, ScrollArea, composition::*, layout::MeasuredChild,
+    ButtonTextRenderer, ControlMotionContext, composition::*, layout::MeasuredChild,
 };
 use tekes_ui_platform_macos as native;
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -754,11 +754,7 @@ impl AppHostMotion {
         let state = Rc::new(RefCell::new(State::default()));
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            ScrollContent::new(
-                ScrollArea::default(),
-                Content::new(SPECIMEN, MotionContent(state.clone())),
-            )
-            .scrollbar(true),
+            ScrollContent::document(Content::new(SPECIMEN, MotionContent(state.clone()))),
         ))
         .map_err(|e| anyhow::anyhow!("Motion host: {e:?}"))?;
         host.set_focus_wrap(false);
