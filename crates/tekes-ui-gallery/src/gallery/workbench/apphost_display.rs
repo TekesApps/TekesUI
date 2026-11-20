@@ -4,7 +4,7 @@ use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer,
     collections_view::{CodeBlockView, DiffViewRuntime, DocumentLayout, MarkdownView},
     composition::*,
-    extended::{Axis, CodeBlock, DiffView, Markdown, Progress, Stack, StatusBadge},
+    extended::{Axis, CodeBlock, DiffView, Markdown, Stack, StatusBadge},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -132,70 +132,6 @@ impl Component for ReadingSpecimen {
         )])
     }
 }
-#[derive(Debug)]
-pub(super) struct ProgressSpecimen {
-    content: ProgressContent,
-}
-impl ProgressSpecimen {
-    fn new(model: Progress) -> Self {
-        let mut content = ProgressContent::new("Progress", model.value());
-        content.model = model;
-        Self { content }
-    }
-}
-impl Component for ProgressSpecimen {
-    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(Size::new(available.width.min(500.), 12.))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.content.paint(scene, text, frame, clip, theme);
-    }
-    fn semantics(&self) -> ContentSemantics {
-        self.content.semantics()
-    }
-    fn value_range(&self) -> Option<std::ops::RangeInclusive<f64>> {
-        self.content.value_range()
-    }
-    fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
-        Some(vec![
-            InspectionProperty::new("value", self.content.model.value().to_string()),
-            InspectionProperty::new(
-                "indeterminate",
-                self.content.model.indeterminate.to_string(),
-            ),
-        ])
-    }
-}
-#[derive(Debug)]
-struct SkeletonSpecimen {
-    content: SkeletonContent,
-    width: f32,
-}
-impl Component for SkeletonSpecimen {
-    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(Size::new(available.width.min(self.width), 18.))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        self.content.paint(scene, text, frame, clip, theme);
-    }
-    fn semantic_hidden(&self) -> bool {
-        true
-    }
-}
 fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
@@ -295,10 +231,7 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
             .map(|i| {
                 Content::new(
                     ComponentId(96020 + i),
-                    SkeletonSpecimen {
-                        content: SkeletonContent::default(),
-                        width: 500. - (i % 2) as f32 * 80.,
-                    },
+                    SkeletonContent::default().with_max_width(500. - (i % 2) as f32 * 80.),
                 )
             })
             .chain([log(state)])
@@ -328,22 +261,22 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
         .into_iter()
         .enumerate()
         .flat_map(|(i, (label, value))| {
-            let mut model = Progress::new(value);
-            model.indeterminate = i == 3;
+            let mut progress = ProgressContent::new("Progress", value).with_max_width(500.);
+            progress.model.indeterminate = i == 3;
             [
                 text(96030 + i as u64, label),
-                Content::new(ComponentId(96040 + i as u64), ProgressSpecimen::new(model)),
+                Content::new(ComponentId(96040 + i as u64), progress),
             ]
         })
         .collect(),
         "progress" => {
             let mut advance = Button::new("Advance 10%");
             advance.button.state.disabled = state.extended.progress.value() >= 1.;
+            let mut progress = ProgressContent::new("Progress", state.extended.progress.value())
+                .with_max_width(500.);
+            progress.model = state.extended.progress;
             vec![
-                Content::new(
-                    ComponentId(96020),
-                    ProgressSpecimen::new(state.extended.progress),
-                ),
+                Content::new(ComponentId(96020), progress),
                 Content::new(ComponentId(92120), advance),
                 text(
                     96021,
@@ -359,9 +292,8 @@ pub(super) fn after_action(renderer: &str, state: &StoryState, host: &mut Conten
     if renderer == "progress" {
         host.get_mut(ComponentId(96020))
             .unwrap()
-            .component_mut::<ProgressSpecimen>()
+            .component_mut::<ProgressContent>()
             .unwrap()
-            .content
             .model = state.extended.progress;
         host.get_mut(ComponentId(96021))
             .unwrap()

@@ -1486,7 +1486,7 @@ mod tests {
             assert_eq!(part.semantics.name, "Transfer progress");
             assert_eq!(
                 part.semantics.value.as_deref(),
-                Some(if unknown { "进度未知" } else { "45%" })
+                Some(if unknown { "Indeterminate" } else { "45%" })
             );
             assert_eq!(
                 remote.value_range(part.index),

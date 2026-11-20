@@ -288,8 +288,11 @@ impl OriginalDivider {
     }
 }
 impl Component for OriginalDivider {
-    // The original view owns the clipped rectangular divider hit region. This
-    // permits its pointer reducer beneath a Scroll without granting curve support.
+    // The original view owns the clipped rectangular divider hit region. It can
+    // sit next to curved PanelContent panes beneath a Scroll host cleanly.
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
     fn rectangular_input_geometry(&self) -> bool {
         true
     }
@@ -1640,5 +1643,87 @@ impl ContentHost {
             }
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod scroll_panel_divider_tests {
+    use super::*;
+
+    #[test]
+    fn split_view_with_panel_panes_under_scroll_admits_divider_drag() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let divider = ComponentId(903);
+        let split_id = ComponentId(900);
+        let split = SplitViewContent::try_new(SplitViewConstruction {
+            config: SplitViewConfig::default(),
+            slots: SplitViewSlotIds {
+                leading: ComponentId(901),
+                trailing: ComponentId(902),
+                divider,
+            },
+            leading: Content::new(
+                ComponentId(911),
+                PanelContent::new(Content::new(ComponentId(912), TextContent::new("Lead")))
+                    .unwrap(),
+            ),
+            trailing: Content::new(
+                ComponentId(921),
+                PanelContent::new(Content::new(ComponentId(922), TextContent::new("Trail")))
+                    .unwrap(),
+            ),
+            budget: 64 * 1024,
+        })
+        .unwrap();
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(999),
+            ScrollContent::new(crate::ScrollArea::default(), Content::new(split_id, split)),
+        ))
+        .unwrap();
+        host.set_window_active(true);
+        let frame = Rect::new(0., 0., 600., 300.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let start = host.get(divider).unwrap().visible().unwrap().center();
+        assert!(host.event(&ContentEvent::PointerDown(start)).consumed);
+        assert!(host.pointer_capture().is_some());
+        let drag = Point::new(start.x + 80., start.y);
+        assert!(host.event(&ContentEvent::PointerMove(drag)).consumed);
+        assert!(
+            host.get(split_id)
+                .unwrap()
+                .component::<SplitViewContent>()
+                .unwrap()
+                .config()
+                .unwrap()
+                .ratio
+                > 0.5
+        );
+        assert!(host.event(&ContentEvent::PointerUp(drag)).consumed);
+        assert!(host.pointer_capture().is_none());
     }
 }

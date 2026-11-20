@@ -78,11 +78,19 @@ fn banner_real_coretext_narrow_large_label_stays_whole_and_dismisses_once() {
         assert!(action.frame.size.height >= standard.height);
         assert!(action.frame.min_x() >= frame.min_x() && action.frame.max_x() <= frame.max_x());
         assert!(action.frame.min_y() >= frame.min_y() && action.frame.max_y() <= frame.max_y());
+        let quiet_fill = tekes_ui_tokens::surface_palette::resolve_surface(
+            Theme::LIGHT_INCREASED.into(),
+            "panel",
+            "action-quiet",
+            "rest",
+        )
+        .expect("panel action-quiet packet")
+        .background;
         let action_index = scene
             .primitives()
             .iter()
-            .position(|p| matches!(p,Primitive::Quad(q) if q.rect==action.frame))
-            .expect("original Primary action background");
+            .position(|p| matches!(p, Primitive::Quad(q) if q.rect == action.frame && q.fill == quiet_fill))
+            .expect("Banner Quiet action background");
         let label = scene.primitives()[action_index + 1..]
             .iter()
             .find_map(|p| match p {

@@ -402,6 +402,7 @@ impl Component for TabsContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         self.measure_labels(text, available);
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
         let panel = self
             .children
             .get_mut(self.view.selected() * 2 + 1)
@@ -417,25 +418,26 @@ impl Component for TabsContent {
                         text,
                         Size::new(
                             available.width,
-                            (available.height - self.header_height).max(0.),
+                            (available.height - self.header_height - gap).max(0.),
                         ),
                     )
                     .size
+                    .height
+                    + gap
             })
-            .unwrap_or_default();
-        MeasuredChild::new(Size::new(
-            available.width,
-            self.header_height + panel.height,
-        ))
+            .unwrap_or(0.);
+        MeasuredChild::new(Size::new(available.width, self.header_height + panel))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.measure_labels(text, frame.size);
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
         let height = self.header_height.min(frame.size.height);
+        let panel_y = (frame.min_y() + height + gap).min(frame.max_y());
         let panel_frame = Rect::new(
             frame.min_x(),
-            frame.min_y() + height,
+            panel_y,
             frame.size.width,
-            (frame.size.height - height).max(0.),
+            (frame.max_y() - panel_y).max(0.),
         );
         for pair in self.children.chunks_exact_mut(2) {
             pair[1].arrange(text, panel_frame, clip);
@@ -777,5 +779,64 @@ impl Component for TabsContent {
             }
             _ => ContentResponse::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tab_layout_tests {
+    use super::*;
+
+    #[test]
+    fn tabs_separates_header_strip_and_panel_with_regular_gap() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut tabs = TabsContent::new(
+            vec![
+                TabItem::new(
+                    Content::new(ComponentId(101), TextContent::new("One")),
+                    Content::new(ComponentId(102), TextContent::new("Panel one")),
+                ),
+                TabItem::new(
+                    Content::new(ComponentId(103), TextContent::new("Two")),
+                    Content::new(ComponentId(104), TextContent::new("Panel two")),
+                ),
+            ],
+            0,
+        );
+        let mut text = Text;
+        let measured = tabs.measure(&mut text, Size::new(320., 400.)).size;
+        let header_h = tabs.header_height;
+        assert!(
+            measured.height >= header_h + tekes_ui_tokens::Spacing::Regular.value(),
+            "measured={measured:?}, header_h={header_h}"
+        );
+        tabs.arrange(
+            &mut text,
+            Rect::new(0., 0., 320., measured.height),
+            Rect::new(0., 0., 320., measured.height),
+        );
+        let panel_frame = tabs.children[1].frame();
+        assert!(
+            ((panel_frame.min_y() - header_h) - tekes_ui_tokens::Spacing::Regular.value()).abs()
+                <= 0.01,
+            "panel_frame={panel_frame:?}, header_h={header_h}"
+        );
     }
 }

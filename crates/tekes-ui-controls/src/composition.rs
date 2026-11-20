@@ -107,7 +107,7 @@ use button::{action_child_theme, measure_action_slot, resolve_action_slot};
 mod content_reading;
 mod content_reveal;
 mod status_badge;
-pub use status_badge::StatusBadgeContent;
+pub use status_badge::{BadgeContent, StatusBadgeContent};
 mod separator;
 pub use separator::SeparatorContent;
 mod skeleton;

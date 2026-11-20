@@ -36,6 +36,40 @@ impl StatusBadgeView {
             size.height.min(available.height).max(0.),
         ))
     }
+    /// Measure the capsule bounds for a labelled status badge using shared spacing tokens.
+    pub fn measure_capsule(
+        text: &mut dyn ButtonTextRenderer,
+        label: &str,
+        available: Size,
+    ) -> Result<Size, tekes_ui_tokens::surface_palette::SurfaceError> {
+        if !finite_rect(Rect::new(0., 0., available.width, available.height)) {
+            return Err(tekes_ui_tokens::surface_palette::SurfaceError::UnknownCombination);
+        }
+        let pad_x = tekes_ui_tokens::Spacing::Regular.value();
+        let pad_y = tekes_ui_tokens::Spacing::Tight.value();
+        let max_text_w = (available.width - pad_x * 2.).max(0.);
+        let measured = text.measure(label, proposal::TextRole::UiCaption, max_text_w);
+        let min_text_h = proposal::TextRole::UiCaption.style().line_height;
+        Ok(Size::new(
+            (measured.width + pad_x * 2.).min(available.width).max(0.),
+            (measured.height.max(min_text_h) + pad_y * 2.)
+                .min(available.height)
+                .max(0.),
+        ))
+    }
+    /// Compute the symmetric interior label rectangle inside a status badge capsule.
+    pub fn capsule_label_frame(frame: Rect) -> Rect {
+        let pad_x = tekes_ui_tokens::Spacing::Regular.value();
+        let pad_y = tekes_ui_tokens::Spacing::Tight.value();
+        let ix = pad_x.min(frame.size.width.max(0.) * 0.5);
+        let iy = pad_y.min(frame.size.height.max(0.) * 0.5);
+        Rect::new(
+            frame.min_x() + ix,
+            frame.min_y() + iy,
+            (frame.size.width - ix * 2.).max(0.),
+            (frame.size.height - iy * 2.).max(0.),
+        )
+    }
     /// Both original View and Content delegate text geometry to this entry.
     /// label_frame is an explicit host allocation (Gallery retains its inset).
     #[allow(clippy::too_many_arguments)]
@@ -268,14 +302,13 @@ impl EmptyStateView {
         role: proposal::TextRole,
         max_detail_width: Option<f32>,
     ) -> Size {
+        let pad = tekes_ui_tokens::Spacing::Regular.value();
         let (title, detail, action) =
             Self::measured_content_with_limit(text, model, width, role, max_detail_width);
-        Size::new(
-            width.max(0.),
-            action
-                .map_or(detail.max_y(), |r| r.max_y())
-                .max(title.max_y()),
-        )
+        let content_bottom = action
+            .map_or(detail.max_y(), |r| r.max_y())
+            .max(title.max_y());
+        Size::new(width.max(0.), content_bottom + pad)
     }
 
     fn measured_content_with_limit(
@@ -285,28 +318,39 @@ impl EmptyStateView {
         role: proposal::TextRole,
         max_detail_width: Option<f32>,
     ) -> (Rect, Rect, Option<Rect>) {
-        let content_width = (width - 8.).max(0.);
+        let pad = tekes_ui_tokens::Spacing::Regular.value();
+        let title_detail_gap = tekes_ui_tokens::Spacing::Regular.value();
+        let detail_action_gap = tekes_ui_tokens::Spacing::Relaxed.value();
+        let content_width = (width - pad * 2.).max(0.);
         let title_width = content_width.min(420.);
         let title_h = text
             .measure(&model.title, proposal::TextRole::UiHeading, title_width)
-            .height
-            .max(34.);
-        let title = Rect::new(4., 6., title_width, title_h);
-        let detail_y = 44f32.max(title.max_y() + 4.);
+            .height;
+        let title = Rect::new(pad, pad, title_width, title_h);
+        let detail_y = if title_h > 0. {
+            title.max_y() + title_detail_gap
+        } else {
+            pad
+        };
         let detail_width = max_detail_width
             .filter(|w| w.is_finite())
             .map_or(content_width, |w| content_width.min(w.max(0.)));
-        let detail_h = text
-            .measure(&model.detail, role, detail_width)
-            .height
-            .max(54.);
-        let detail = Rect::new(4., detail_y, detail_width, detail_h);
+        let detail_h = text.measure(&model.detail, role, detail_width).height;
+        let detail = Rect::new(pad, detail_y, detail_width, detail_h);
         let action = model.action.as_ref().map(|label| {
-            let width = content_width.min(150.);
+            let measured = ButtonModel::measure(text, label, content_width, ButtonSize::Body, role);
+            let width = measured.width.min(content_width);
             let height = ButtonModel::measure(text, label, width, ButtonSize::Body, role)
                 .height
                 .max(34.);
-            Rect::new(4., detail.max_y().max(100.), width, height)
+            let after_detail = if detail_h > 0. {
+                detail.max_y() + detail_action_gap
+            } else if title_h > 0. {
+                title.max_y() + detail_action_gap
+            } else {
+                pad
+            };
+            Rect::new(pad, after_detail, width, height)
         });
         (title, detail, action)
     }
@@ -343,11 +387,10 @@ impl EmptyStateView {
         role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
-        // Keep the Gallery's established left-aligned empty-state composition.
-        // `frame` is the padded content slot inside its parent surface.
-        let x = frame.min_x() + 4.;
-        let title_y = frame.min_y() + 6.;
-        let content_width = (frame.size.width - 8.).max(0.);
+        let pad = tekes_ui_tokens::Spacing::Regular.value();
+        let x = frame.min_x() + pad;
+        let title_y = frame.min_y() + pad;
+        let content_width = (frame.size.width - pad * 2.).max(0.);
         let (title, detail, action) = Self::measured_content_with_limit(
             text,
             model,
@@ -362,14 +405,7 @@ impl EmptyStateView {
         let action_w = action.map_or(0., |r| r.size.width);
         let action_h = action.map_or(0., |r| r.size.height);
         let action_y = if let Some(action) = action {
-            let desired_y = frame.min_y() + action.min_y();
-            let last_fitting_y = frame.max_y() - action_h;
-            if last_fitting_y >= detail_y + detail_h {
-                desired_y.min(last_fitting_y)
-            } else {
-                // Explicitly constrained hosts may clip, without overlapping text.
-                desired_y
-            }
+            frame.min_y() + action.min_y()
         } else {
             detail_y + detail_h
         };
@@ -438,7 +474,14 @@ impl EmptyStateView {
         let body =
             tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
                 .expect("generated EmptyState content packet");
-        // Resolve both complete packets before adding any ink or clip.
+        let detail_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            surface,
+            "data-category-label",
+            "rest",
+        )
+        .expect("generated EmptyState secondary label packet");
+        // Resolve complete packets before adding any ink or clip.
         self.action.set_surface(surface);
         let _action_packet =
             self.action
@@ -461,7 +504,7 @@ impl EmptyStateView {
                 prepared.role,
                 prepared.detail_draw,
                 ButtonTextAlign::Leading,
-                body.text,
+                detail_colors.text,
             );
         }
         if let (Some(label), Some(layout)) = (&model.action, self.action_layout) {

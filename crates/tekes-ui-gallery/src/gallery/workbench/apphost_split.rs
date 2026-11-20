@@ -8,47 +8,16 @@ use tekes_ui_controls::{
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::proposal::TextRole;
 pub(super) const DIVIDER: ComponentId = ComponentId(123003);
 pub(super) const VARIANTS: [f32; 3] = [0.3, 0.5, 0.7];
-#[derive(Debug)]
-struct PaneBody(&'static str);
-impl Component for PaneBody {
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        MeasuredChild::new(a)
-    }
-    fn paint(
-        &mut self,
-        s: &mut Scene,
-        t: &mut dyn ButtonTextRenderer,
-        f: Rect,
-        c: Rect,
-        theme: ContentTheme,
-    ) {
-        s.push_clip(c);
-        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
-            s,
-            f,
-            theme.palette,
-            true,
-            t.backing_scale(),
-        );
-        t.draw(
-            s,
-            self.0,
-            TextRole::UiBody,
-            f.inset(12.),
-            tekes_ui_controls::ButtonTextAlign::Leading,
-            theme.palette.color("primary-text").unwrap(),
-        );
-        s.pop_clip();
-    }
+fn pane_body(id: ComponentId, text_id: ComponentId, title: &'static str) -> Content {
+    let mut panel = PanelContent::new(Content::new(text_id, TextContent::new(title)))
+        .expect("finite split pane panel");
+    let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+    panel
+        .set_padding(Some(tekes_ui_controls::Insets::new(pad, pad, pad, pad)))
+        .expect("valid split pane inset");
+    Content::new(id, panel)
 }
 #[derive(Debug)]
 struct Choices {
@@ -180,11 +149,11 @@ pub(super) fn playground(state: &StoryState) -> Vec<Content> {
             trailing: ComponentId(123002),
             divider: DIVIDER,
         },
-        leading: Content::new(ComponentId(123011), PaneBody("Master pane")),
-        trailing: Content::new(ComponentId(123012), PaneBody("Detail pane")),
-        // Two immutable leaves plus the three owned slots. The public budget
-        // measures preparation work, not the number of nodes.
-        budget: 5 * 5 * 512 + 2 * (16 * 256 + 512),
+        leading: pane_body(ComponentId(123011), ComponentId(123013), "Master pane"),
+        trailing: pane_body(ComponentId(123012), ComponentId(123014), "Detail pane"),
+        // Two immutable text-in-panel panes (4 nodes) plus three owned slots:
+        // n=7 (7*7*512 = 25088) + data_work for 2 panels + 2 text nodes (18784).
+        budget: 64 * 1024,
     })
     .expect("original finite split panes");
     let constrained = Rc::new(Cell::new(false));

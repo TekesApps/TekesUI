@@ -97,7 +97,7 @@ fn four_tones_complete_packets_original_geometry_and_label_measurement() {
                                 tone,
                                 label,
                                 f,
-                                f,
+                                StatusBadgeView::capsule_label_frame(f),
                                 Some(clip),
                                 p,
                             )
@@ -141,6 +141,47 @@ fn four_tones_complete_packets_original_geometry_and_label_measurement() {
         assert_eq!(quads(&old), quads(&new));
     }
 }
+#[test]
+fn status_badge_content_has_intrinsic_capsule_bounds_inside_unbounded_scroll_content() {
+    let mut t = coretext::Text::new(1.);
+    let mut badge = StatusBadgeContent::new(StatusBadge::Info, "Info").unwrap();
+    let unbounded = badge.measure(&mut t, Size::new(360., 1e8)).size;
+    assert!(unbounded.width > 0. && unbounded.width < 360.);
+    assert!(
+        (unbounded.height - 24.).abs() <= 0.5,
+        "expected intrinsic 1x capsule height ~24pt, got {}",
+        unbounded.height
+    );
+
+    let mut scaled = coretext::Text::new(1.5);
+    let scaled_size = badge.measure(&mut scaled, Size::new(360., 1e8)).size;
+    assert!(scaled_size.height > unbounded.height);
+
+    let narrow = badge.measure(&mut scaled, Size::new(60., 1e8)).size;
+    assert!(narrow.width <= 60.);
+    assert!(narrow.height >= scaled_size.height);
+
+    let mut list_host = ContentHost::new(Content::new(
+        ComponentId(700),
+        ListContent::scrollable(
+            "Badges",
+            ComponentId(701),
+            vec![Content::new(
+                BAR,
+                StatusBadgeContent::new(StatusBadge::Running, "Running").unwrap(),
+            )],
+        ),
+    ))
+    .unwrap();
+    paint(&mut list_host, &mut t, Theme::LIGHT.into());
+    let badge_frame = list_host.get(BAR).unwrap().frame();
+    assert!(
+        badge_frame.size.height > 0. && badge_frame.size.height < 64.,
+        "StatusBadgeContent inside ListContent::scrollable must keep finite intrinsic height, got {:?}",
+        badge_frame
+    );
+}
+
 #[test]
 fn invalid_inputs_reject_before_retained_state_scene_mount_or_editor_changes() {
     let (mut s, _) = fixture::build().unwrap();

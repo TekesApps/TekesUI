@@ -330,7 +330,7 @@ fn public_breadcrumb_tabs_and_open_command_palette_use_generated_surfaces() {
         let ancestor_ink = resolve_surface(palette, "canvas", "action-quiet", "rest")
             .unwrap()
             .text;
-        let separator_ink = resolve_surface(palette, "canvas", "content", "rest")
+        let separator_ink = resolve_surface(palette, "canvas", "data-category-label", "rest")
             .unwrap()
             .text;
         for label in ["Home", "Library"] {
@@ -510,7 +510,7 @@ fn public_breadcrumb_tabs_and_open_command_palette_use_generated_surfaces() {
                 "selected_tab_background":rgba(selected_tab.background),"selected_tab_ink":rgba(selected_ink),
                 "unselected_tab_background":rgba(unselected_tab.background),"unselected_tab_ink":rgba(unselected_ink),
                 "input_background":rgba(field_colors.background),"input_foreground":rgba(field_colors.text)},
-            "natural_two_line_header_height_pt":tabs_frame.size.height-(panel_frame.size.height),
+            "natural_two_line_header_height_pt": (panel_frame.min_y() - tabs_frame.min_y() - tekes_ui_tokens::Spacing::Regular.value()).max(0.),
             "palette_source_identity":palette_source,"palette_source_hash":"46027fd69397bcc1c00406f33fe84f1091c0505353a0e8377205603eaea33f48",
             "scene_primitive_count":scene.primitives().len(),"actual_gpu":true
         }));

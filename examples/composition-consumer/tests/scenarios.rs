@@ -22,6 +22,7 @@ struct HostText {
     frames: usize,
     visible_surfaces: usize,
     label_draws: Vec<(String, Rect, ButtonTextAlign)>,
+    rich_draws: Vec<(String, Rect, ButtonTextAlign, proposal::TextRole, Rgba)>,
     type_scale: f32,
 }
 
@@ -262,6 +263,7 @@ impl Default for HostText {
             frames: 0,
             visible_surfaces: 0,
             label_draws: Vec::new(),
+            rich_draws: Vec::new(),
             type_scale: 1.,
         }
     }
@@ -306,12 +308,14 @@ impl ButtonTextRenderer for HostText {
         &mut self,
         _: &mut Scene,
         label: &str,
-        _: proposal::TextRole,
+        role: proposal::TextRole,
         frame: Rect,
         align: ButtonTextAlign,
-        _: Rgba,
+        ink: Rgba,
     ) {
         self.label_draws.push((label.into(), frame, align));
+        self.rich_draws
+            .push((label.into(), frame, align, role, ink));
     }
     fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
         Some(self)
@@ -3931,6 +3935,7 @@ fn feedback_outcome_consumer_keeps_measurement_independent_from_result_and_seman
                         for value in [None, Some(0.45), Some(1.)] {
                             scenario.set(outcome, value);
                             text.label_draws.clear();
+                            text.rich_draws.clear();
                             let mut scene = Scene::new();
                             let bounds = Rect::new(20., 20., width, 400.);
                             scenario
@@ -3950,12 +3955,29 @@ fn feedback_outcome_consumer_keeps_measurement_independent_from_result_and_seman
                             if value.is_none() {
                                 assert!(spoken.contains("进度未知"));
                             }
-                            let badge_role = match outcome {
-                                Outcome::Loading => "status-running",
-                                Outcome::Failed => "status-failed",
-                                Outcome::Succeeded => "status-succeeded",
-                                _ => "status-info",
+                            let (badge_role, badge_usage) = match outcome {
+                                Outcome::Loading => ("status-running", "status-badge-running"),
+                                Outcome::Failed => ("status-failed", "status-badge-failed"),
+                                Outcome::Succeeded => {
+                                    ("status-succeeded", "status-badge-succeeded")
+                                }
+                                _ => ("status-info", "status-badge-info"),
                             };
+                            let badge_packet = tekes_ui_tokens::surface_palette::resolve_surface(
+                                palette,
+                                "canvas",
+                                badge_usage,
+                                "rest",
+                            )
+                            .unwrap();
+                            let description_packet =
+                                tekes_ui_tokens::surface_palette::resolve_surface(
+                                    palette,
+                                    "canvas",
+                                    "data-category-label",
+                                    "rest",
+                                )
+                                .unwrap();
                             let quads = scene
                                 .primitives()
                                 .iter()
@@ -3973,8 +3995,14 @@ fn feedback_outcome_consumer_keeps_measurement_independent_from_result_and_seman
                                 (bar.rect.size.width - width * value.unwrap_or(0.3)).abs() < 0.001
                             );
                             assert_eq!(text.label_draws.len(), 2);
-                            assert_eq!(text.label_draws[0].0, outcome.label());
-                            assert_eq!(text.label_draws[0].2, ButtonTextAlign::Center);
+                            assert_eq!(text.rich_draws.len(), 2);
+                            assert_eq!(text.rich_draws[0].0, outcome.label());
+                            assert_eq!(text.rich_draws[0].2, ButtonTextAlign::Center);
+                            assert_eq!(text.rich_draws[0].3, proposal::TextRole::UiCaption);
+                            assert_eq!(text.rich_draws[0].4, badge_packet.text);
+                            assert_eq!(text.rich_draws[1].2, ButtonTextAlign::Leading);
+                            assert_eq!(text.rich_draws[1].3, proposal::TextRole::UiCaption);
+                            assert_eq!(text.rich_draws[1].4, description_packet.text);
                             let text_frame = text.label_draws[0].1;
                             assert!(
                                 (text_frame.center().x - quads[0].rect.center().x).abs() < 0.001

@@ -14,6 +14,7 @@ pub(crate) const SPECIMEN: ComponentId = ComponentId(99000);
 pub(crate) const STREAM: ComponentId = ComponentId(99020);
 pub(crate) const LATEST: ComponentId = ComponentId(99021);
 pub(crate) const FIRST_SURFACE: ComponentId = ComponentId(99001);
+const FIRST_HEADING: ComponentId = ComponentId(99030);
 
 pub(crate) fn supports(renderer: &str) -> bool {
     matches!(renderer, "text" | "scroll" | "internal-text")
@@ -39,14 +40,21 @@ pub(crate) fn content(renderer: &str, locale: Locale) -> Option<Content> {
         children.push(Content::new(STREAM, Button::new("Stream 4 updates")));
         children.push(Content::new(LATEST, Button::new("Return to latest")));
     }
+    let heading_start = children.len();
+    for i in 0..count {
+        children.push(Content::new(
+            ComponentId(FIRST_HEADING.0 + i as u64),
+            TextContent::heading(""),
+        ));
+    }
     Some(Content::new(
         SPECIMEN,
         TextPage {
             children,
             count,
+            heading_start,
             reading,
             locale,
-            headings: Vec::new(),
             appended: 0,
             remaining: 0,
             elapsed: 0.,
@@ -208,9 +216,9 @@ pub(crate) fn scroll_reference_fixture(host: &ContentHost) -> Option<serde_json:
 struct TextPage {
     children: Vec<Content>,
     count: usize,
+    heading_start: usize,
     reading: bool,
     locale: Locale,
-    headings: Vec<(&'static str, Rect)>,
     appended: usize,
     remaining: u8,
     elapsed: f32,
@@ -292,7 +300,7 @@ impl Component for TextPage {
         let body = if self.reading {
             let width = (frame.size.width * 0.5 - gap * 0.5).max(0.);
             let size = Size::new(width, frame.size.height);
-            let height = self.children[self.count..]
+            let height = self.children[self.count..self.heading_start]
                 .iter_mut()
                 .map(|child| child.measure(text, size).size.height)
                 .fold(0.0_f32, f32::max);
@@ -347,35 +355,28 @@ impl Component for TextPage {
                 sections[0].2 = body;
             }
         }
-        self.headings.clear();
         for (index, (name, label, panel)) in sections.into_iter().enumerate() {
-            self.headings.push((name, label));
+            let heading = &mut self.children[self.heading_start + index];
+            heading
+                .component_mut::<TextContent>()
+                .expect("mounted heading TextContent")
+                .text = if label.is_empty() {
+                String::new()
+            } else {
+                self.locale.text(name).to_string()
+            };
+            heading.arrange(text, label, clip);
             self.children[index].arrange(text, panel, clip);
         }
     }
     fn paint(
         &mut self,
-        scene: &mut Scene,
+        _scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
         _: Rect,
-        clip: Rect,
-        theme: ContentTheme,
+        _clip: Rect,
+        _theme: ContentTheme,
     ) {
-        scene.push_clip(clip);
-        let ink = proposal::render_color("primary-text", theme.palette.theme).expect("text token");
-        for (label, rect) in &self.headings {
-            if !rect.is_empty() {
-                text.draw(
-                    scene,
-                    &self.locale.text(label),
-                    proposal::TextRole::UiHeading,
-                    *rect,
-                    ButtonTextAlign::Leading,
-                    ink,
-                );
-            }
-        }
-        scene.pop_clip();
         if self.active && self.runnable && self.remaining > 0 && text.animation_frames_allowed() {
             text.request_animation_frame();
         }

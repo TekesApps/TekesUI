@@ -219,7 +219,7 @@ impl Host {
                 }
                 Contents::Title(title) => Content::new(
                     ComponentId(1),
-                    tekes_ui_controls::composition::TextContent::new(title),
+                    tekes_ui_controls::composition::TextContent::label(title),
                 ),
             };
             // Use the original action geometry; constraints affect main-axis

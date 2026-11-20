@@ -127,6 +127,10 @@ impl DataTableView {
             self.focused_header = None;
         }
     }
+    pub(crate) fn cell_horizontal_inset(text: &mut (impl ButtonTextRenderer + ?Sized)) -> f32 {
+        ButtonSize::Body.scaled_horizontal_inset(text, proposal::TextRole::UiBody)
+    }
+
     pub fn layout(&self) -> &DataTableLayout {
         if self.keyed.is_some() {
             &self.unavailable_layout
@@ -193,13 +197,19 @@ impl DataTableView {
         {
             self.focused_header = None;
         }
+        let cell_inset = Self::cell_horizontal_inset(text);
+        let cell_chrome = cell_inset * 2.0;
         let header_labels = (0..model.columns)
             .map(|col| {
                 let title = headers.get(col).cloned().unwrap_or_default();
-                if model.sort.is_some_and(|(sorted, _)| sorted == col) {
-                    format!("{title}  ↕")
-                } else {
-                    title
+                match model.sort {
+                    Some((sorted, crate::extended::SortDirection::Ascending)) if sorted == col => {
+                        format!("{title} ↑")
+                    }
+                    Some((sorted, crate::extended::SortDirection::Descending)) if sorted == col => {
+                        format!("{title} ↓")
+                    }
+                    _ => title,
                 }
             })
             .collect::<Vec<_>>();
@@ -242,13 +252,13 @@ impl DataTableView {
                             .and_then(|r| r.get(col))
                             .copied()
                             .unwrap_or_default();
-                        let aw = accessory.map_or(0., |a| a.width.min((cw - 16.).max(0.)));
+                        let aw = accessory.map_or(0., |a| a.width.min((cw - cell_chrome).max(0.)));
                         custom
                             .unwrap_or_else(|| {
                                 text.measure(
                                     rows[*id].get(col).map(String::as_str).unwrap_or(""),
                                     proposal::TextRole::UiBody,
-                                    (cw - 16. - aw).max(0.),
+                                    (cw - cell_chrome - aw).max(0.),
                                 )
                             })
                             .height
@@ -396,11 +406,11 @@ impl DataTableView {
                 if custom.is_some() {
                     continue;
                 }
-                let aw = accessory.map_or(0., |a| a.width.min((cw - 16.).max(0.)));
+                let aw = accessory.map_or(0., |a| a.width.min((cw - cell_chrome).max(0.)));
                 let cell = Rect::new(
-                    frame.min_x() + col as f32 * cw + 8.,
+                    frame.min_x() + col as f32 * cw + cell_inset,
                     y,
-                    (cw - 16. - aw).max(0.),
+                    (cw - cell_chrome - aw).max(0.),
                     row_height,
                 );
                 if let Some(v) = visible(cell, row_layout.visible) {

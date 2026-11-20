@@ -208,7 +208,7 @@ impl MountedToolbar {
                         .collect(),
                 ),
                 Contents::Title(title) => (
-                    Content::new(target, TextContent::new(title.clone())),
+                    Content::new(target, TextContent::label(title.clone())),
                     vec![],
                 ),
             };
@@ -523,6 +523,15 @@ mod region_lifecycle_tests {
         toolbar
             .sync(viewport, vec![region], vec![d.clone()])
             .unwrap();
+        let title_node = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(d.id.0 + 1))
+            .unwrap();
+        assert_eq!(
+            title_node.component::<TextContent>().unwrap().role,
+            tekes_ui_tokens::proposal::TextRole::UiLabel
+        );
         toolbar.sync(viewport, vec![], vec![]).unwrap();
         assert!(toolbar.host.content_host().get(d.id).is_none());
     }

@@ -243,16 +243,13 @@ struct PopoverSpacing {
     action_width: f32,
 }
 fn popover_spacing() -> PopoverSpacing {
-    let snug = proposal::metric("spacing", "space-snug").unwrap_or(6.);
+    let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
     let regular = proposal::metric("spacing", "space-regular").unwrap_or(8.);
-    let tight = proposal::metric("spacing", "space-tight").unwrap_or(4.);
     PopoverSpacing {
-        // Keep the established 14 / 10 / 8 geometry while expressing every
-        // inset through the JSON-backed spacing scale.
-        content_inset_x: snug + regular,
-        content_inset_y: snug + tight,
+        content_inset_x: inset,
+        content_inset_y: inset,
         content_to_action_gap: regular,
-        action_inset_x: snug + tight,
+        action_inset_x: inset,
         action_width: 120.,
     }
 }

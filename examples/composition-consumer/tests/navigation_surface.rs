@@ -164,9 +164,11 @@ fn original_ancestors_current_page_and_passive_separators_use_the_declared_paren
                     )
                     .unwrap();
                     assert_eq!(t.0.iter().find(|x| x.0 == "Home").unwrap().1, expected.text);
-                    assert!(t.0.iter().filter(|x| x.0 == "/").all(
-                        |x| x.1 == resolve_surface(p, surface, "content", "rest").unwrap().text
-                    ));
+                    assert!(t.0.iter().filter(|x| x.0 == "/").all(|x| {
+                        x.1 == resolve_surface(p, surface, "data-category-label", "rest")
+                            .unwrap()
+                            .text
+                    }));
                     assert_eq!(
                         t.0.iter().find(|x| x.0 == "Current").unwrap().1,
                         resolve_surface(p, surface, "action-quiet", "selected-disabled")

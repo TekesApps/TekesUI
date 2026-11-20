@@ -343,14 +343,15 @@ impl NumberFieldView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> NumberFieldLayout {
-        // Preserve the established 48 / 12 / 80 / 10 / 48 stepper measure;
-        // compress the same slots proportionally only in a narrower host.
-        let nominal = 48. + 12. + 80. + 10. + 48.;
+        let nominal_gap = tekes_ui_tokens::Spacing::Relaxed.value();
+        let button_nominal = 48.;
+        let value_nominal = 198. - button_nominal * 2. - nominal_gap * 2.;
+        let nominal = button_nominal + nominal_gap + value_nominal + nominal_gap + button_nominal;
         let scale = (frame.size.width.max(0.) / nominal).min(1.);
-        let button_w = 48. * scale;
-        let first_gap = 12. * scale;
-        let value_w = 80. * scale;
-        let second_gap = 10. * scale;
+        let button_w = button_nominal * scale;
+        let first_gap = nominal_gap * scale;
+        let value_w = value_nominal * scale;
+        let second_gap = nominal_gap * scale;
         let minus = Rect::new(
             frame.min_x(),
             frame.min_y(),

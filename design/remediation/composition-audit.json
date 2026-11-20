@@ -185,7 +185,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Unchanged panes retain their original Content identities and state; checked replacement validates expected mount/revision before replacing one pane. Original Host owns event/focus/capture routing.",
-      "limits": "Finite two-pane owned Content over the original SplitView model/View. Checked construction and pane replacement enforce budget, owner/mount/revision, marked-state and supported-scope contracts; this is not an arbitrary pane-count or remote-window container. The original divider declares its clipped rectangular pointer geometry for ordinary Scroll-host routing; no Curve capability is added.",
+      "limits": "Finite two-pane owned Content over SplitView model/View. Checked construction and pane replacement enforce budget, owner/mount/revision, marked-state and supported-scope contracts. OriginalDivider declares CurveSubtreeCapability::Local alongside its rectangular input geometry so SplitViewContent can host PanelContent panes inside ScrollContent without promoting SplitViewContent/PaneSlot into curve containers.",
       "native_acceptance": "未验证",
       "accessibility": "Existing Content semantic/focus routing applies within the supported local contract; native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; use the accepted checked Content adapter within its declared local and subtree limits",
@@ -206,7 +206,7 @@
         {
           "api": "tekes_ui_controls::composition::SplitViewContent",
           "path": "crates/tekes-ui-controls/src/composition/split_view.rs",
-          "line": 411,
+          "line": 414,
           "anchor": "pub struct SplitViewContent {"
         }
       ]
@@ -368,7 +368,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Original Component owner retains stable command IDs; registration refresh preserves matching focus, clears replaced/empty hit geometry, cancels old pointer/keyboard arms and skips disabled actions. Runtime action queue has one group owner.",
-      "limits": "Each Container owns a MountedToolbar with an original ToolbarHost. Window-hosted declarations may be assigned to the selected container host; explicitly Container-hosted declarations retain their local host and chosen position. Supported command overflow uses the original MenuView. General multi-window lifecycle, arbitrary custom-content overflow and complete native/VoiceOver coverage are not established by this matrix.",
+      "limits": "Each Container owns a MountedToolbar with an original ToolbarHost. Both horizontal and vertical ToolbarContent axes apply symmetric Spacing::Regular (8pt) end padding when no custom inset is set. General multi-window lifecycle and complete native/VoiceOver coverage are not established by this matrix.",
       "native_acceptance": "未验证",
       "accessibility": "Original descendant semantic owners persist. ToolbarControl exposes original action parts and help; valid AX Focus transfers ownership after original part validation. Hidden native object tests and WIP physical receipts do not prove complete VoiceOver coverage of this published source.",
       "requires_internal_source_edit": "No for declared command groups and Window/Container toolbar placement; arbitrary custom-content overflow and broader native semantics remain outside the verified scope.",
@@ -423,7 +423,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "TextContent remains static string/TextRole. Existing TextFieldContent::read_only_content supplies selectable unadorned multiline TextSurface content using the same controlled values, selection and native services; ordinary Field remains default. This is an additive mode, not a replacement TextContent editor or rich-document protocol.",
+      "limits": "TextContent supports heading/label/secondary/caption constructors and role-aware Surface ink (data-category-label/rest for UiSecondary|UiCaption, content/rest otherwise when foreground is unset), plus public Content::with_secondary_foreground(). TextFieldContent::read_only_content remains for selectable multiline TextSurface.",
       "native_acceptance": "未验证",
       "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
@@ -784,7 +784,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 414,
+          "line": 416,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -843,7 +843,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original RadioGroup/RadioGroupView owns selection and roving focus; fixed labels/indices; no caller RadioButton Content slot.",
-      "limits": "Original fixed-label RadioGroup/View with indexed controlled selection and roving focus; no caller-owned interactive radio or arbitrary label slots. Native/VoiceOver/performance remain unverified.",
+      "limits": "Original fixed-label RadioGroup/View with symmetric Spacing::Regular (8pt) left/indicator-gap/right horizontal insets, indexed controlled selection, and roving focus. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -895,7 +895,7 @@
         {
           "api": "tekes_ui_controls::layout_view::SwitchView",
           "path": "crates/tekes-ui-controls/src/selection.rs",
-          "line": 887,
+          "line": 892,
           "anchor": "pub struct SwitchView {"
         },
         {
@@ -1058,7 +1058,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "One original Content owner retains its text editor, selection, undo history and numeric model. Draft validation is separate from committed value changes; blur/submit/step publish only valid changed values. IME barriers retain the original text ownership.",
-      "limits": "Numeric leaf without arbitrary content slots. Default auto width follows content; optional digit capacity fixes the input width using current typography. Larger drafts retain text and scroll. Persistence and configuration Undo/Redo belong to consumers. Its internal editor explicitly disables generic Clear to retain the component-specific action routing.",
+      "limits": "Numeric leaf without arbitrary content slots, using symmetric Spacing::Relaxed (12pt) stepper gaps (48 + 12 + 78 + 12 + 48). Internal editor retains component-specific action routing.",
       "native_acceptance": "未验证",
       "accessibility": "Original editable text semantics, current draft, range description and named increment/decrement semantic parts; public actions and native AX example verified separately from full-family VoiceOver acceptance.",
       "requires_internal_source_edit": "No: the exported NumberFieldContent, NumberFormat and normal host text/clipboard interfaces are sufficient.",
@@ -1111,7 +1111,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "TabsView owns selection/focus. Caller label is passive, semantics suppressed; caller panel keeps its original Content identity. No independent tab action owner.",
-      "limits": "Retained caller TabItem panel Content with passive custom labels; only selected panel active. No interactive custom tab labels or automatic reconstruction. Disclosure-under-Tabs executable conditions are provided, but the additional regression has not been executed. Native/VoiceOver/performance remain unverified. Header-only TabStripContent reuses TabsView selection/focus and close behavior, sends stable keyed intents, and does not own destination panels. Original TabsContent panel layout remains unchanged.",
+      "limits": "Retained caller TabItem panel Content with passive custom labels and Spacing::Regular (8pt) strip-to-panel gap; only selected panel active. Header-only TabStripContent reuses TabsView selection/focus and close behavior. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -1160,7 +1160,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original Breadcrumb/View owns path strings, layout and actions; ancestor Link/current Text projections; separators are internal, no caller Content slot.",
-      "limits": "Original hierarchy/current location and string labels; separators are internal passive Content rather than a caller separator slot. No arbitrary label Content. Native/VoiceOver/performance remain unverified.",
+      "limits": "Original hierarchy/current location and string labels with passive '/' separators resolved via data-category-label/rest; separators remain internal passive paint rather than caller slots. Native/VoiceOver/performance remain unverified.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -1364,7 +1364,7 @@
       "heterogeneous_consumer_content": "部分实现",
       "runtime_profile": "owned-content",
       "state_identity": "KeyedDataTable dataset/row/column keys and caller row IDs retain original DataTable/View selection/sort ownership, passive header/cell/accessory objects, exposure/activity tokens and original reading/action transactions.",
-      "limits": "Finite passive header/cell/accessory Content via Keep/DefaultText/Replace and stable-hook compliant wrappers. Original keyed model/View owns selection/sort and shared arranged geometry. Interactive/reader owners in passive slots are rejected; no arbitrary embedded editors, virtualization or new native acceptance.",
+      "limits": "Finite passive header/cell/accessory Content sharing DataTableView::cell_horizontal_inset (ButtonSize::Body) for zero-delta header/cell alignment and directional ↑/↓ sort indicators. Original keyed model/View owns selection/sort. No new native acceptance.",
       "native_acceptance": "未验证",
       "accessibility": "Default Gallery actual Tree/Table role hierarchy, source-stable row IDs and explicit disclosure/sort; native U2790B bounded evidence in tree-table-accessibility-20261019; complete VoiceOver/physical IME unverified",
       "requires_internal_source_edit": "no; additive public DataTableContent and original public ContentHost update/transaction APIs",
@@ -1544,7 +1544,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Original retained Content subtree; mount-bound anchor/opening session authenticates close/focus restore. Hidden/retired owners have no hit/focus/AX; one host-owned opening-order overlay pass. Passive preview uses original owner/preview mounts and data version; scoped controls/consumer tests and 26 software-native checkpoints verify its bounded lifecycle.",
-      "limits": "Bounded public PopoverContent with retained TextField/Switch/Cancel/Save and real lower action. Main component/public behavior and synthetic AppKit focus/IME receipts are separate; physical IME and VoiceOver remain unverified; no broad migration or virtualization. HoverPreviewContent passed scoped controls/consumer checks and 26 software-native checkpoints. Right-preferred alignment/flip/clamp have controls coverage; the narrow native fixture verifies bounds but does not activate flip/clamp. Physical IME, VoiceOver and GPU pixels remain unverified; existing interactive Popover acceptance is not expanded.",
+      "limits": "Bounded public PopoverContent over PopoverView with unified space-relaxed (12pt) insets aligning body content and Dismiss; physical IME, VoiceOver and GPU pixels remain unverified.",
       "native_acceptance": "未验证",
       "accessibility": "Same host exports mounted body/control semantics, text queries and view-owned Dismiss geometry. Tool-native key/AX/minimize/restore evidence is separate; VoiceOver hearing remains deferred. Matrix native maturity stays unverified.",
       "requires_internal_source_edit": "Public PopoverContent and ContentHost show/close operations; no consumer coordinate event forwarding or second host.",
@@ -1564,7 +1564,7 @@
         },
         {
           "path": "examples/composition-consumer/src/popover_content.rs",
-          "line": 77,
+          "line": 45,
           "anchor": "pub struct Scenario {",
           "api": "tekes_ui_composition_consumer::popover_content::Scenario"
         },
@@ -1603,7 +1603,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "Three fixed Content slots, dynamic body subtree; modal scope and exit paint separate; nested modal rejected, no arbitrary slot reorder",
+      "limits": "Three fixed Content slots with symmetric Spacing::Regular (8pt) X/Y viewport margins, Spacing::Loose (16pt) inner pad exceeding Spacing::Relaxed (12pt) slot gap, and dynamic body subtree; nested modal rejected.",
       "native_acceptance": "未验证",
       "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
@@ -1648,7 +1648,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View owner retained by Content adapter; its fixed action proxy retains the declared ComponentId; no arbitrary child replacement contract.",
-      "limits": "Adapts original ToastView into Content with one fixed dismiss-action proxy. Text remains model-owned; arbitrary Content slots and live-region announcements are not provided.",
+      "limits": "Adapts ToastView into Content with symmetric Spacing::Relaxed (12pt) outer padding, Spacing::Regular (8pt) gaps, vertically centered inline Dismiss, and one fixed dismiss-action proxy. Live-region announcements remain absent.",
       "native_acceptance": "未验证",
       "accessibility": "Content exposes accepted owner semantics and fixed action proxy through existing Content tree. No arbitrary Content body slot or live-region announcement contract; native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1699,7 +1699,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View owner retained by Content adapter; its fixed action proxy retains the declared ComponentId; no arbitrary child replacement contract.",
-      "limits": "Adapts original BannerView into Content with one fixed dismiss-action proxy. Text remains model-owned; arbitrary Content slots and live-region announcements are not provided.",
+      "limits": "Adapts BannerView into Content with symmetric Spacing::Relaxed (12pt) outer padding, Spacing::Regular (8pt) gaps, and quiet secondary Dismiss (ButtonVariant::Quiet) matching notice hierarchy. Arbitrary slots and live-region announcements absent.",
       "native_acceptance": "未验证",
       "accessibility": "Content exposes accepted owner semantics and fixed action proxy through existing Content tree. No arbitrary Content body slot or live-region announcement contract; native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1714,7 +1714,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::BannerView",
           "path": "crates/tekes-ui-controls/src/feedback_view/notices.rs",
-          "line": 381,
+          "line": 377,
           "anchor": "pub struct BannerView {"
         },
         {
@@ -1748,7 +1748,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View state retained by one mounted Content component; no child-key or virtualization contract applies.",
-      "limits": "Reuses original StatusBadgeView painter; supports labelled Text semantics or explicit decorative mode. Interaction and value-range semantics remain passive/absent.",
+      "limits": "StatusBadgeContent measures and insets capsule labels using shared Spacing::Regular/Tight tokens over StatusBadgeView; passive neutral BadgeContent shares UiCaption metrics and inherited Surface frame tokens without promoting tone colors. Native visual and VoiceOver acceptance remain unverified.",
       "native_acceptance": "未验证",
       "accessibility": "Adapter supplies only its declared passive/owner semantics through Content. Native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1771,6 +1771,12 @@
           "path": "crates/tekes-ui-controls/src/composition/status_badge.rs",
           "line": 8,
           "anchor": "pub struct StatusBadgeContent {"
+        },
+        {
+          "api": "tekes_ui_controls::composition::BadgeContent",
+          "path": "crates/tekes-ui-controls/src/composition/status_badge.rs",
+          "line": 135,
+          "anchor": "pub struct BadgeContent {"
         }
       ]
     },
@@ -1791,7 +1797,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View state retained by one mounted Content component; no child-key or virtualization contract applies.",
-      "limits": "Reuses original ProgressView as a read-only ProgressIndicator with determinate percentage and optional 0–100 domain, or explicit unknown without numeric value/domain; adjustment actions and animation ownership remain absent.",
+      "limits": "ProgressContent defines token-based intrinsic height (DEFAULT_HEIGHT = Spacing::Relaxed = 12pt) with with_height/with_max_width/with_indeterminate_label builders and English 'Indeterminate' default accessibility value; read-only ProgressIndicator without adjustment actions or animation ownership.",
       "native_acceptance": "未验证",
       "accessibility": "Passive dedicated Content/wire/macOS ProgressIndicator role: known numeric value/domain or indeterminate nil value/domain. Native-window selectors and VoiceOver acceptance remain unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1806,7 +1812,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::ProgressView",
           "path": "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs",
-          "line": 152,
+          "line": 186,
           "anchor": "pub struct ProgressView {"
         },
         {
@@ -1836,7 +1842,7 @@
       "heterogeneous_consumer_content": "已实现",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View owner retained by Content adapter; its fixed action proxy retains the declared ComponentId; no arbitrary child replacement contract.",
-      "limits": "Adapts original EmptyStateView into Content with one fixed action proxy. Title/detail remain model-owned; arbitrary caller Content body slots are not provided.",
+      "limits": "Adapts EmptyStateView into Content with symmetric Spacing::Regular (8pt) padding, natural measured copy spacing (no fixed detail floor void), and muted detail foreground (data-category-label/rest).",
       "native_acceptance": "未验证",
       "accessibility": "Content exposes accepted owner semantics and fixed action proxy through existing Content tree. No arbitrary Content body slot or live-region announcement contract; native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1851,7 +1857,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::EmptyStateView",
           "path": "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs",
-          "line": 195,
+          "line": 229,
           "anchor": "pub struct EmptyStateView {"
         },
         {
@@ -1885,7 +1891,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Original model/View state retained by one mounted Content component; no child-key or virtualization contract applies.",
-      "limits": "Reuses original SkeletonView in parent allocation; decorative by default and Group semantics only when named. No children or animation clock.",
+      "limits": "SkeletonContent defines token-based intrinsic height (DEFAULT_HEIGHT = Spacing::Loose = 16pt) with with_height/with_max_width builders over SkeletonView using the radius-badge corner token; decorative by default and Group semantics only when named. No children or animation clock.",
       "native_acceptance": "未验证",
       "accessibility": "Adapter supplies only its declared passive/owner semantics through Content. Native/VoiceOver acceptance remains unverified.",
       "requires_internal_source_edit": "no; accepted public Content adapter is available; arbitrary slots or broader semantics remain outside its contract",
@@ -1894,7 +1900,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::SkeletonView",
           "path": "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs",
-          "line": 541,
+          "line": 584,
           "anchor": "pub struct SkeletonView {"
         },
         {
@@ -2054,16 +2060,16 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "1964a7d5ec53350a0047c5b0d2a8d114486e4301e423d73d32b851b923777834",
+    "DESIGN.md": "b8cd0773b108d2d35154c1c748033970a455bc726e8f4aae25562886a8bee7b2",
     "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
     "crates/tekes-ui-app-host/src/window.rs": "a0a2399642f73356605ae503293270c58de19b45f7ee16423f4ff1b716abe6c8",
-    "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",
+    "crates/tekes-ui-app-host/src/window_toolbar.rs": "13d93803505b5fd2e1ad48749ec8a5c545a1664989254f4e2701f201743c4fd2",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e8050200118efefecf897425fbc4c203c35e5e5021c37e898128fee9f31a3fc1",
     "crates/tekes-ui-controls/src/composite.rs": "bb5acca080ae3de83a5f2659c342929cb89df2217fca636a83885a08913c95bf",
-    "crates/tekes-ui-controls/src/composition.rs": "2b81be790ad5ddc0627e42db0d9659d069785c5ef58f601606d96093aefa8e58",
+    "crates/tekes-ui-controls/src/composition.rs": "9b8f37b9ec0559b99727beb3dbb187eded72f5ce4118ddf74b3c268b822e787a",
     "crates/tekes-ui-controls/src/composition/actions.rs": "8a2b48240dcc17f99f2b26922a7178d29ff3e3474c3885af491ba5eca7c52651",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "f029d7121269c65a59dfe5a1ef1c21b069fe88be2bfd5a188d37dc9a31d4faaa",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "67d418dfe914479a25f20f9015d8ec10f308f1bbebd41995928a1fe366a865ac",
     "crates/tekes-ui-controls/src/composition/button.rs": "cf6206784a26472f955ef95fee4259fab6e0e6b3054307e632b4e96e8871a254",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "4992049a606475fa91cff7105b71901034b9dd713a1a62426d88b2bd4b5e58c1",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "a5b04fce72d4bf54062f652f0a7ca3cd08ac1110c8ab943b04a64c20b939151c",
@@ -2078,7 +2084,7 @@
     "crates/tekes-ui-controls/src/composition/label.rs": "b661efd05a04f092c95b1d87f1474416081738f9f296f5d59a55da6926eed0ab",
     "crates/tekes-ui-controls/src/composition/link.rs": "17a6b5a9d7efc52cde5f0d7c7c0f6ebd735640fb0ae6dd5c8e9aac08a80276ad",
     "crates/tekes-ui-controls/src/composition/menu.rs": "1a29c049686d3acc47b8ef666475040fdb799faefdb7931079ffa4418d1cebb9",
-    "crates/tekes-ui-controls/src/composition/navigation.rs": "b2d87c79799ff57725ed7e9a8ce86e6d0b051a93751764fdc323eff960df0a3e",
+    "crates/tekes-ui-controls/src/composition/navigation.rs": "ecdfa36830e1155ca6d9bc92c5c2008a698c9ac5353f04440d92049bb4835793",
     "crates/tekes-ui-controls/src/composition/navigation/breadcrumb.rs": "690f515e0ecb90a90ecc18b6b5d24c90b178cb7e3e212028211354714403e173",
     "crates/tekes-ui-controls/src/composition/navigation/command.rs": "f6fa6abd236b485e869ad4e0834b3692381a739e7985dada1d5d376bafa10a7a",
     "crates/tekes-ui-controls/src/composition/notice.rs": "99c4877563b1924a10828df3858bfbbfa260b669e893f38a8f88ed534d00cc7f",
@@ -2086,16 +2092,16 @@
     "crates/tekes-ui-controls/src/composition/panel.rs": "f073b17ee1e8a8bb7911a32cece90b6b07c56df8529c68918c725b52fbd99982",
     "crates/tekes-ui-controls/src/composition/pointer.rs": "676cc6ce4020a56894b7654756d2c74873e9cc788bdc0ce652f753526ea8fb06",
     "crates/tekes-ui-controls/src/composition/popover.rs": "75aac294720911ec9aeb52f68c6df7711d80ad497d7e76fb44f074cfe0d5460e",
-    "crates/tekes-ui-controls/src/composition/progress.rs": "12cd00f2a0910d5888323aa64cb07ff6aae309147ce513614574c222f3f587cc",
+    "crates/tekes-ui-controls/src/composition/progress.rs": "d389ea0f01c4b9864f0c127d95c08d8560be38d4262974e500fc92ad756c4f30",
     "crates/tekes-ui-controls/src/composition/radio.rs": "909379d98f21b9516a1669416eedd266a3369f952b080c64d86ec1373a1dcda6",
     "crates/tekes-ui-controls/src/composition/rich_content.rs": "592702730dede0c5ade3b766d3726092638cc6ee35d7e08216bd83f974a5ec15",
     "crates/tekes-ui-controls/src/composition/rich_document.rs": "62dce8c4d2ea9110608b3a9ac5c8162aea124be63cfff923960f6a12d25dde91",
     "crates/tekes-ui-controls/src/composition/segmented.rs": "dd2396a7272ed772fb27f1c2072dad4162d11a95ef28d9aa14f5eca9c18cd6d7",
     "crates/tekes-ui-controls/src/composition/separator.rs": "ee15265a2e2eb1592f5e1585999e0ad70e98cefec6024529be17cb3ee2cb6a30",
-    "crates/tekes-ui-controls/src/composition/skeleton.rs": "8f95c18a7aae090ca14ee2c70e539a1ed5123940ac4e98020bec9f57a043d959",
-    "crates/tekes-ui-controls/src/composition/split_view.rs": "153dce50a99247d33324485c1f6ffb46fe0bf89b86346b46490a904ffbcf115e",
-    "crates/tekes-ui-controls/src/composition/status_badge.rs": "55160ac8e5f901e644b09dcedb11f5b227e36a6aec7ff91706e6d3b422007f41",
-    "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "9cf3579d5b7dc2f45f2f4939ed2c58b35b8ad797ee386ba2567d7f87c3e735af",
+    "crates/tekes-ui-controls/src/composition/skeleton.rs": "78e8ec4213a3f8167657e808c48a75d741bd789763907a9911a71a7e5a604bd6",
+    "crates/tekes-ui-controls/src/composition/split_view.rs": "8e81de00fb930e37a0c2fda231a6905f22d94bf2bbf3d9c2d062d5520cdc1c94",
+    "crates/tekes-ui-controls/src/composition/status_badge.rs": "6d899276435dc019250a0dbb677248a4479ff05b4b7fcb275fe5ed8340a02a8b",
+    "crates/tekes-ui-controls/src/composition/toolbar_content.rs": "55723786f31acced0461a31380669c2a3278e13427f45765a523978a63901a94",
     "crates/tekes-ui-controls/src/control_motion.rs": "0301717c307ba6bdc2b91085c9e1995e6ca74391c7bbda9168af2c042a52a788",
     "crates/tekes-ui-controls/src/extended.rs": "538049d4eff63a33aa24e5d0260572897e6bcce6fe12e2d2d565cc35fa1eee1f",
     "crates/tekes-ui-controls/src/feedback_view.rs": "15cb09858afb47babf960f1639b1e948384faa00adbbaa2643dee8855ac2546b",
@@ -2104,12 +2110,12 @@
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
     "crates/tekes-ui-controls/src/scroll_view.rs": "18eb948347178bfcfe5780399103c3194d80584db632822943816b72d8e0d5b0",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
-    "crates/tekes-ui-controls/src/selection.rs": "a766cef56acf3e37ff1590e20c2a0af7597cec297d620036d1a81bcaa96930d9",
+    "crates/tekes-ui-controls/src/selection.rs": "e55305fbd210a8b6b72283c0b582230e4db3e677eaf00363f3511d2e0099f9e9",
     "crates/tekes-ui-controls/src/text_input.rs": "5394dee44e0ac623a5c1e52b3df0551d48e514f0925e52975db144c6b031c247",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "1bef0ea893a3d1d35a1a67bfa5d8d17f560fe7d823a6af4729a6f6166220779c",
     "crates/tekes-ui-controls/src/toolbar.rs": "356ffcffaab30b134638bbf73848cbf7be75e269e6d9d6a251c4c8b59e9694ed",
-    "crates/tekes-ui-controls/src/widgets.rs": "af02ace482dd5f08b06b84fdcd74d8ab9b5f6405964949cc65c2a7b7944049c7",
+    "crates/tekes-ui-controls/src/widgets.rs": "fc46db58e042ea804073adf493ab3b1ed22a720be08db4b8947978cb8b1f7895",
     "crates/tekes-ui-controls/tests/choice_contract.rs": "3e8046fab2df4354fdf9508f72733ba516c9c20552d3836611d169fa34de431e",
     "crates/tekes-ui-controls/tests/choice_selection_states.rs": "632bf1464108b4cd97c03f4dd068f14ec5e0edf638192f030c9f8e5461661607",
     "crates/tekes-ui-controls/tests/choice_trigger_states.rs": "a65f2720e7e37af052f8a136bbfab06d07575cf7ddb33dab3f7dbae78172df0d",
@@ -2118,7 +2124,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "4a009719c900e57b68d50b5113c398ad5ac501738477abf0e8e893552e3aa7de",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "18c9e46992879abd9c014242b78deca061ff1c65f7ff0871465e15c025f39e0b",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "121a92aa64a07277bb32a84056354c75bbeebd527c489324069228af98af4971",
     "crates/tekes-ui-controls/tests/composition.rs": "24f225a13028162f44275a6387fd840359ebf7419239b4a3cc525f5dc24e8269",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "d7d24015e597b89178fc9332d32f2ada9e1d16e425d5ca89fb295b5ee3d86ec0",
@@ -2156,7 +2162,7 @@
     "crates/tekes-ui-text/src/label.rs": "9bd7489ea5fb5929f165c6041617ebb317c41fe0d654b491a55e9fdb05c35155",
     "crates/tekes-ui-text/src/lib.rs": "9363c8874af1f9601d4c449d5794d73684d700b369ed0ce54a05f6b0b52c60d8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "727547dafc8d202c68431c214c019a07280706ac5e11baac9410ceed6a72451b",
+    "design/gallery/public-api-surface.json": "22cf97ec7b5305f244f19bb89d44bd1c9a9fbd3669a90de4544a9e114dbe67cf",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/archive/design-logs/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/archive/design-logs/menu-declarations-20261021.md": "5abc201ec9ed24dab456f1eaf0092f8357da52e11dcd59a43f374f18b70996dd",
@@ -2169,23 +2175,23 @@
     "examples/composition-consumer/src/command_status.rs": "d12e8c2610957faa7f7248d5ad1cf54436276459466925870d069a307257029e",
     "examples/composition-consumer/src/compact_actions.rs": "b7392254145b93c42dd18c366e092eba17cb4d865aa946835ca0d1bca20c92bb",
     "examples/composition-consumer/src/content_actions.rs": "477e920971fdaf908fde05f4428c5f9da909495cbe5408c2a77471f8e0f21591",
-    "examples/composition-consumer/src/content_status.rs": "868c873c4c6fdccaf6842b3602e3437ede3abbd1c637ab8010a64b33fa2e7ba5",
+    "examples/composition-consumer/src/content_status.rs": "537aedc3e6a5c5feddc1fae5f18061b47821e41698bade0a34537886bd8763f7",
     "examples/composition-consumer/src/controlled_editor.rs": "cbda227bfd0ec7d8252e6a98f8a1a9e59d416db2ce21880d426c5ae5fb686e25",
     "examples/composition-consumer/src/controlled_reading.rs": "a354d0641d8338a69c837ae3002c0ef4faf985e72d2dba67b58ff0f9e8e414aa",
     "examples/composition-consumer/src/declared_menu.rs": "469c7e569d02693052d6f087daa308506a1f5de111b487df6ad68ee65cff3cba",
-    "examples/composition-consumer/src/feedback_status.rs": "46d31930e7eeba24a09d10b380cef9eb2776486af6d1804da0ea80ad443a1305",
+    "examples/composition-consumer/src/feedback_status.rs": "71d4a2fbe372a0c7ac153c31e7e2c76caadf1c75262bcee47c352b6eb47b947b",
     "examples/composition-consumer/src/forwarded_actions.rs": "083ea912c3272cc180c173bbc50e74bafe0b5af7218f508176284e0094abf643",
     "examples/composition-consumer/src/help_list.rs": "d3cbdef0786344782113d45e4b178e53086f56ca61c2fc666fe506588d320257",
     "examples/composition-consumer/src/item_navigation.rs": "edaad52f6860c0f3df73f728835e0c45dcf955c6ff570165c4f9a4df7753dcbc",
     "examples/composition-consumer/src/label_content.rs": "e4af58c5f18bbebb1991aa0fc795e52f50d129277ecede82dd5a420a42d9b80a",
     "examples/composition-consumer/src/layout_activation.rs": "339b963c56189addd3f47f1280b0f5247464aca034cdff4b5d16526fa6f80f7d",
-    "examples/composition-consumer/src/lib.rs": "574ca0bbfeeba7dd7650ab7af0b8a3b4289eade8fbe18718036f6a8edcf6ce15",
+    "examples/composition-consumer/src/lib.rs": "1569deee38fc9dcdbb91b6bcf2be079f93bea4496861c820b42bf65bd2b018d4",
     "examples/composition-consumer/src/padding_focus.rs": "89c1c09d1fc7adedaac16f90ad8bd85e2109b55e60b4b1b901b7a00e7ef0eaf3",
     "examples/composition-consumer/src/plain_text.rs": "e815fc635c6603a3d229412502dc045cb6e7a6ce7342dc83ed1dae76622331df",
-    "examples/composition-consumer/src/popover_content.rs": "fe991ba61cda61e502dabcc8e7c0ee854899d925a26c8b7056622181903a6dd5",
+    "examples/composition-consumer/src/popover_content.rs": "1ff867060fb34bb1bbdb2d97dde6ef69871cdf4ef5f666e80cb120fdb7243dae",
     "examples/composition-consumer/src/reading_prepend.rs": "9b24cde4d4dcb3a2f2157b2a2885a66a0ba91c9d7c4620161163f698f3dc1d66",
     "examples/composition-consumer/src/reading_stream.rs": "1514b6a5d8f746e305ddf3e8a29ea8d195191e7baebfcbbd3196e0c60acc53c3",
-    "examples/composition-consumer/src/scenarios.rs": "db8adb79ca8417251eb44853ee63796afe75c2f3c25a3f44886732cfa044f29b",
+    "examples/composition-consumer/src/scenarios.rs": "953170d826372414e78e5e8a4a09676cdab5c108fbcbc9bedee30b9ebfd5b168",
     "examples/composition-consumer/src/scroll_updates.rs": "209b8cb5c680308ef2e935e7b9577789176217a6331db9f65b32d88723e9294b",
     "examples/composition-consumer/src/semantic_label.rs": "a4ebb9a95ae05e2465ac7c430e99733c765b0e93c4284201a6c3dfc2e513c212",
     "examples/composition-consumer/src/slider_content.rs": "97f48e9453bca4e0f23774e0dad9fc6331e9526dfc3963f56a886909033fb2f7",
@@ -2212,12 +2218,12 @@
     "examples/composition-consumer/tests/native_pointer_translation.rs": "88fa225a66a118a88831bd69cb51e26a10edd8fcd2dd7ac66aefc0d110f6a65f",
     "examples/composition-consumer/tests/padding_focus.rs": "927420d8ae2672b1f831a9a25c173ebccdfc08178bc16ea6ee0cccbc54a834aa",
     "examples/composition-consumer/tests/pointer_metadata.rs": "6560be4127c3bbc4f71896b2b1c1fb5fc2497b98f3d1cd500b5bf51cda692791",
-    "examples/composition-consumer/tests/scenarios.rs": "bebfa5189b09fa6ae50f591735cb20db17af188ace986a03dead20ffa803d837",
+    "examples/composition-consumer/tests/scenarios.rs": "69f21bf0fb27a4a5975a3c767306171f165c3e4564b908ca53f9516bf427fbec",
     "examples/composition-consumer/tests/scroll_reveal.rs": "3fb0700db0e5d3f969b11062aa6b2b686cf442e7ff3410ec03f0706422901a2c",
     "examples/composition-consumer/tests/semantic_label.rs": "1d28b6c1343f110460bc04c04b941a01068715fb3c39325f98930cd28627a1f0",
     "examples/composition-consumer/tests/slider_content.rs": "6b5bb596050ba55a1ea17b07680c1dadfd4e1fa83703a7e026355afd75c43e75",
     "examples/composition-consumer/tests/slider_states.rs": "41298e5700f72059ddb669dec5f3da3c84d771295e3587d3935f0b34243bfe1e",
-    "examples/composition-consumer/tests/surface_host_scale.rs": "152941bff9d9baa1e402f3d1c52d051a4aacc0e5702de774780aa951178419c7",
+    "examples/composition-consumer/tests/surface_host_scale.rs": "5acdb60052a9ba69617358d96918867de26f1ef4f212af2850012ac65fa21257",
     "scripts/audit-component-tokens.py": "ca6231136c73c4fd8b2307f826724fa711e45b0c7b27961cd831585aa12bf312",
     "crates/tekes-ui-controls/src/composition/select.rs": "1dc7448ed10db1ae563fb740fa8d44b69e2d69e8a440ce399f67a3e11b503845",
     "crates/tekes-ui-controls/src/composition/search.rs": "36ec97a846ff8e85420ae089861863ae1c77dac41afccaea20583637c2e7c6fc",
@@ -2225,7 +2231,7 @@
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "1b9970e990e968d8953350292b830be11d24a4bc492116eb8884450b70c317a1",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "e2c0b7fc7e00cbf7025304f0b218217a1060ad3ca07dc90b6ab9287e1d487455",
     "crates/tekes-ui-controls/src/composition/tree.rs": "3ee15d0f004cdd58b5c992756f8c18d23be802be116a44b5097a3612cdcfeb46",
-    "crates/tekes-ui-controls/src/composition/datatable.rs": "09db9c5f42da52d389933eb45ce76f6c6c394ee06d9e21494e5927d5fa11482f",
+    "crates/tekes-ui-controls/src/composition/datatable.rs": "fa232dcce88447b5c0b0abef61e310a8fac2ace2b167dde7bac5781afcffd368",
     "docs/archive/design-logs/selectable-list-public-content-20261024.md": "caa3246925653bd620cc586b5ddfc4b8061538d50d39b5b4dd55229827327cfe",
     "docs/archive/design-logs/tree-public-content-20261024.md": "a01a90370da0b5ad9e9bc589c9601fa61279b49fd2f5aa3c68910e90d58aa2bc",
     "docs/archive/design-logs/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
@@ -2248,41 +2254,41 @@
     "examples/composition-consumer/tests/rich_content.rs": "310e19734aa7bba669ceb5e11093b1cafc4f5379e5bcb9d398f3a1569d915849",
     "crates/tekes-ui-controls/src/composition/key_value_table.rs": "66d2ba0a6e22eac40290c61634fdee2f584044e06ea5597d0043ca52dee2995e",
     "crates/tekes-ui-app-host/src/window_panels.rs": "dc62a7d6a86576b80939836aee5c640e49dfa04f30d248a8a7c1b8043ec1afeb",
-    "crates/tekes-ui-controls/src/composition/containers.rs": "7d66ba2a7ab6bb1eb112e641bd3faf3087d26467b58f0475f4c430a3e8b18116",
+    "crates/tekes-ui-controls/src/composition/containers.rs": "3d06e5f96c042e77c890fecb41b5ad9492a966c6e98baf3b38f2a68e4ce95908",
     "crates/tekes-ui-controls/src/layout_view/disclosure_link.rs": "1e6ba1a3e0844c01307bfc88d3fe3856fd3308181b38418fc13cb332d86bb126",
     "crates/tekes-ui-controls/src/widgets/models.rs": "1050ee2140cb6aeee2430b9918aec3c7da61c486a6c2c799585fc566e20e2d04",
     "crates/tekes-ui-controls/src/composition/text_field.rs": "1624ae83c51cb20231e930e0dc653439afb9b06f82baa81d73fa3dfe7bdc2477",
     "crates/tekes-ui-controls/src/extended/feedback_and_paint.rs": "6aed1ae6d7a5998be362d4e04c2fb1c9c2c3ba2ff517b67c13a4e450f2473e04",
     "crates/tekes-ui-controls/src/layout_view/combo_command.rs": "a7245827c41f2a0e634f89f41afaa175f35daa9ef14a3b34ac33258dbdc48317",
     "crates/tekes-ui-controls/src/extended/selection_models.rs": "f9eda4dcf09dba7a0740d1e13762c8e276e2e6e8220f978ff5372b2f9979235d",
-    "crates/tekes-ui-controls/src/layout_view/segmented_breadcrumb.rs": "2d65edfafa8ca65a22d525fba6fb8ad2bdcee23a3d2ac8b426addc26522f928d",
-    "crates/tekes-ui-controls/src/feedback_view/fields.rs": "503f9d0fab543bc2b594ed9957eb9fbba771dd2168604c5160545548ae3f40c8",
+    "crates/tekes-ui-controls/src/layout_view/segmented_breadcrumb.rs": "7c3107e60e3573bf72403e1aac46a37bab0f10780a4e69bd8916c70eb68dd089",
+    "crates/tekes-ui-controls/src/feedback_view/fields.rs": "a7f0b989a5e0ebfd54d196bf33eb9ebaaaa9a64dcb46f5acb4ed418f619455c1",
     "crates/tekes-ui-controls/src/layout_view/menus_and_pickers.rs": "b321373830b3276f6feea66de87a87403f218b91dcfa11692db59578711916e2",
     "crates/tekes-ui-controls/src/composite/tabs.rs": "0922dc4ee3a223f7c42226c060abb05a319829291f18237ab0d6dce4e343fafc",
     "crates/tekes-ui-controls/src/collections_view/list.rs": "0f5c96db6adc66737548d055b6a8085113292dc5c6e43d5b34e01f761e00ef72",
     "crates/tekes-ui-controls/src/extended/list_tree.rs": "3f2cb83b0d465c4539fdae27f591cb0ce102a7b85e4da7bb27c578192c437f0c",
     "crates/tekes-ui-controls/src/collections_view/tree.rs": "dab08504893a1a58937a129809464276d69877e8ec7bf12c6aa1fbda106f4fee",
-    "crates/tekes-ui-controls/src/collections_view/table.rs": "d311fcda2b864a2e0ff7894c2495ae9fba401bb19d898b1c77c13ce04a82f397",
+    "crates/tekes-ui-controls/src/collections_view/table.rs": "9d123808f44c0ec137fb57925a40bc362359398eb23ad22441c26d430d684a06",
     "crates/tekes-ui-controls/src/extended/datatable.rs": "114dcc9c0e98bca1af84894ec40a8c096320c4e82eafb7d110761f88ebffb646",
     "crates/tekes-ui-controls/src/collections_view/chart_and_docs.rs": "d392251066e8ba4077ea1ee4bb470c059617b7441c7bcff630cf3dea5f0db45a",
     "crates/tekes-ui-controls/src/composite/menu.rs": "7dcdd6541bd65b6a0902a1c814255a0827ab973c91ec2d1464451ed9eced301c",
-    "crates/tekes-ui-controls/src/feedback_view/overlays.rs": "28e92c81d9f80eb6dadba7d182da4c0d548a6b2e12947e348fa011f173c66ddf",
+    "crates/tekes-ui-controls/src/feedback_view/overlays.rs": "4106b70ee0285908c34f329a1c3bc7919ea99de32ef1b0b4bb4938078713cd78",
     "crates/tekes-ui-controls/src/composite/dialog.rs": "80875c2fe74f46e00e0f0b75c401e84198e8614a11b5c6faf1003ac0ba8fa3f6",
-    "crates/tekes-ui-controls/src/feedback_view/notices.rs": "2a515dc0b9ffa02ab099a8a520cda404915f18e0145d1157a9d472ad70df1d71",
-    "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs": "a75d067ee7c5aeffa77a571b73f82b8954a423729f8633db31700b4ab19daa26",
+    "crates/tekes-ui-controls/src/feedback_view/notices.rs": "e18e9b9d41b3eee45808dd573f9f1a5ee3a1013ddc2762ccb0d91f7620df5d1b",
+    "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs": "7c409ff1c187d8f75c57e0c081725d8bed60114b63b8192570a4ced8bb2e4e36",
     "crates/tekes-ui-controls/src/composition/host.rs": "0877f8941242b108f4c52ff588bb6678b2faeaf91d31e99c5f6d36aeda0e452f",
     "crates/tekes-ui-controls/src/composition/host_ops.rs": "46bfc0fd6372693d2c551dcd0ecea9172eba81571e8ddde15ba320fa75dee604",
-    "crates/tekes-ui-controls/src/composition/content_node.rs": "926bff3914fb9a78c6b61efabce7eaf4b4b850afab17c37b46f7cba2f05e7251",
+    "crates/tekes-ui-controls/src/composition/content_node.rs": "2d802cb2a4ffe4eac3b2e70850c0aab682defb44cb7ba5076a9705bfa618b0fb",
     "examples/composition-consumer/examples/actions_acceptance.rs": "9b5d64ff6ad4d561f49d4fda130993c36478426f70c7943bf9d3c8f3b951a40c",
     "examples/composition-consumer/examples/controlled_acceptance.rs": "4ef6141384b92c895f480951bc145fddbac1d1818ebcb76db438004a79bdd380",
     "examples/composition-consumer/examples/viewport_acceptance.rs": "0315e0621530283d7844c9853835f7088b18e545ada97945e4a5bdc006d6e21e",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "3fa922a78b41958306c66adee77179d4102667c1a1bcd64447152b2108dc622c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs": "f90c8cfed48fe719187dd966e46b1ba2010c6fd86301d35f587be99b7e13594f",
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs": "b2289a8506432826f03b8fe3af8cdf29b913b355b75ee1302f331c18ad6587fb",
     "crates/tekes-ui-controls/src/composition/markdown_editor.rs": "4120a7c9c385b395c9d3209e2b717263c96147e2f7a4db185b77e3421be78839",
     "crates/tekes-ui-controls/src/composition/markdown_projection.rs": "5f0080352e36c01dcb84b75bcfbd64f2e99a8ade2b941aab38e0704aa9f555c8",
     "crates/tekes-ui-controls/src/composition/rich_content/syntax.rs": "9a68d16346a5233148d339d0912ce281253d3f8ee0ad7fe9c9def9841cf5cfd6",
     "crates/tekes-ui-controls/tests/markdown_projected_editing.rs": "269d780e6426591d5e4f46e210b697c6e4188f64bada9222b0f4209b29be3e8c",
-    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "ea12353ec4d9a8082a3c1a0060c45f4d28b5dd73349f4511a9e5238f1e702eea",
+    "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "aed945a377b7f9a77f264f81b23282c38d9e5b9ca4f15ae97d8af37e76770fa2",
     "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "350480d1d4627628ab91caf68d3aa6309610abad07e151b9b8980ddeb6e96c51",
     "docs/design/markdown-projected-editing.md": "8e375ca74864c2c7d26dc4919b490327747e005c12f2499ed3a2c7a7d02ec254"
   },
@@ -2346,7 +2352,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 731,
+      "line": 732,
       "anchor": "pub(super) fn lifecycle(&mut self, event: Lifecycle) {"
     },
     {
@@ -2366,7 +2372,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/widgets.rs",
-      "line": 136,
+      "line": 144,
       "anchor": "impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {"
     },
     {
@@ -2421,7 +2427,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 428,
+      "line": 430,
       "anchor": "impl Component for SliderContent {"
     },
     {
@@ -2572,13 +2578,13 @@
     },
     {
       "path": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs",
-      "line": 723,
+      "line": 725,
       "anchor": "pub(super) fn sync_model(renderer: &str, state: &mut StoryState, host: &mut ContentHost) {",
       "purpose": "AppHost Gallery collection model sync on ContentHost; legacy collections_adapter key forwarding retired"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 185,
+      "line": 186,
       "anchor": "pub fn with_label_layout(",
       "purpose": "Explicit readonly Content label opt-in on original components"
     },
@@ -5029,6 +5035,55 @@
         "docs/design/app-host-architecture.md"
       ],
       "validation": "Check396: 2 canonical SVG tests and 4 pinned-header tests passed; native ink comparison pending; no capability promotion"
+    },
+    {
+      "issue": 368,
+      "scope": "StatusBadgeContent intrinsic capsule sizing over StatusBadgeView::measure_capsule/capsule_label_frame; feedback_status migrated to 11pt UiCaption + StatusBadgeContent",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs",
+        "crates/tekes-ui-controls/src/composition/status_badge.rs",
+        "examples/composition-consumer/src/feedback_status.rs",
+        "examples/composition-consumer/src/status_badge_content.rs",
+        "examples/composition-consumer/tests/status_badge_content.rs"
+      ],
+      "validation": "tekes-ui-controls + composition-consumer status_badge_content/theme/scenarios passed; native window pixels remain unverified"
+    },
+    {
+      "issue": 371,
+      "scope": "Partial v0.4.2 delivery: public Content::with_secondary_foreground, TextContent role constructors & role-aware ink, BadgeContent, consumer/AppHost/Gallery migrations (apphost_brand Card & apphost_feedback EmptyStateSurface deferred to Batch 4 #379); OriginalDivider CurveSubtreeCapability::Local for PanelContent panes inside SplitViewContent",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/content_node.rs",
+        "crates/tekes-ui-controls/src/composition/containers.rs",
+        "crates/tekes-ui-controls/src/composition/status_badge.rs",
+        "crates/tekes-ui-controls/src/composition/split_view.rs",
+        "crates/tekes-ui-app-host/src/window_toolbar.rs",
+        "crates/tekes-ui-app-host/src/window_container_geometry.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_split.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_text_pages.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs"
+      ],
+      "validation": "tekes-ui-controls + app-host + gallery + composition-consumer passed; #371 remains open until Batch 4 (#379)"
+    },
+    {
+      "issue": 378,
+      "scope": "Calibrated controls intrinsic heights (ProgressContent 12pt, SkeletonContent 16pt, radius-badge token), symmetric insets & hierarchy (Toast/Banner + Quiet Dismiss, DataTable header/cell alignment + ↑/↓, EmptyState symmetric + muted detail, Popover, TabsContent 8pt gap, Breadcrumb muted '/', NumberField, RadioGroup, ToolbarContent vertical padding, DialogContent margins), retired Gallery/consumer wrappers",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/progress.rs",
+        "crates/tekes-ui-controls/src/composition/skeleton.rs",
+        "crates/tekes-ui-controls/src/paint.rs",
+        "crates/tekes-ui-controls/src/feedback_view/notices.rs",
+        "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs",
+        "crates/tekes-ui-controls/src/feedback_view/overlays.rs",
+        "crates/tekes-ui-controls/src/feedback_view/fields.rs",
+        "crates/tekes-ui-controls/src/collections_view/table.rs",
+        "crates/tekes-ui-controls/src/composition/datatable.rs",
+        "crates/tekes-ui-controls/src/selection.rs",
+        "crates/tekes-ui-controls/src/layout_view/segmented_breadcrumb.rs",
+        "crates/tekes-ui-controls/src/composition/navigation.rs",
+        "crates/tekes-ui-controls/src/composition/toolbar_content.rs",
+        "crates/tekes-ui-controls/src/composition/adapters.rs"
+      ],
+      "validation": "tekes-ui-controls (525 unit + integration) + module-runtime + gallery + targeted composition-consumer suites passed; native visual/AX/IME/VoiceOver/120Hz separate"
     }
   ]
 }

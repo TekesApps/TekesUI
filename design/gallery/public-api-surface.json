@@ -660,6 +660,14 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::BadgeContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.status-badge"
+      ],
+      "reason": "Shared neutral badge Content adapter using UiCaption metrics and inherited Surface frame tokens; avoids duplicate consumer Badge components without adding a separate Gallery route."
+    },
+    {
       "api": "tekes_ui_controls::composition::BannerContent",
       "category": "component",
       "components": [

@@ -296,6 +296,9 @@ impl Component for ToolbarContent {
             }
             let gaps = [spacing(text, "space-tight"), gap, gap];
             let sections = counts.iter().filter(|&&count| count > 0).count();
+            if sections > 0 {
+                heights += self.horizontal_inset.unwrap_or(gap) * 2.;
+            }
             heights += counts
                 .iter()
                 .enumerate()
@@ -505,6 +508,16 @@ impl Component for ToolbarContent {
 impl ToolbarContent {
     fn arrange_vertical(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let gap = spacing(text, "space-regular");
+        let pad = self
+            .horizontal_inset
+            .unwrap_or(gap)
+            .min(frame.size.height * 0.5);
+        let inner = Rect::new(
+            frame.min_x(),
+            frame.min_y() + pad,
+            frame.size.width,
+            (frame.size.height - pad * 2.).max(0.),
+        );
         let section_gaps = [spacing(text, "space-tight"), gap, gap];
         fn minimum(node: &Content, text: &mut dyn ButtonTextRenderer) -> f32 {
             if !node.active() {
@@ -528,7 +541,7 @@ impl ToolbarContent {
             .enumerate()
             .filter(|(_, c)| c.active())
         {
-            let natural = child.measure(text, frame.size).size.height;
+            let natural = child.measure(text, inner.size).size.height;
             entries.push((index, natural, minimum(child, text).min(natural)));
         }
         let mut counts = [0usize; 3];
@@ -546,7 +559,7 @@ impl ToolbarContent {
                     .filter(|&&count| count > 0)
                     .count()
                     .saturating_sub(1) as f32;
-        let budget = (frame.size.height - reserved).max(0.);
+        let budget = (inner.size.height - reserved).max(0.);
         let floors = entries.iter().map(|(_, _, floor)| floor).sum::<f32>();
         let extra = entries
             .iter()
@@ -580,7 +593,7 @@ impl ToolbarContent {
         } else {
             usize::from(heights[0] > 0.) + usize::from(heights[2] > 0.)
         };
-        let side_budget = (frame.size.height - gap * side_gaps as f32).max(0.);
+        let side_budget = (inner.size.height - gap * side_gaps as f32).max(0.);
         let side_total = heights[0] + heights[2];
         let factor = if side_total > side_budget && side_total > 0. {
             side_budget / side_total
@@ -589,19 +602,19 @@ impl ToolbarContent {
         };
         let top = heights[0] * factor;
         let bottom = heights[2] * factor;
-        let center_start = frame.min_y() + top + if top > 0. { gap } else { 0. };
+        let center_start = inner.min_y() + top + if top > 0. { gap } else { 0. };
         let center_end =
-            (frame.max_y() - bottom - if bottom > 0. { gap } else { 0. }).max(center_start);
+            (inner.max_y() - bottom - if bottom > 0. { gap } else { 0. }).max(center_start);
         let center_height = heights[1].min((center_end - center_start).max(0.));
-        let center_y = (frame.center().y - center_height * 0.5)
+        let center_y = (inner.center().y - center_height * 0.5)
             .clamp(center_start, (center_end - center_height).max(center_start));
         let regions = [
-            Rect::new(frame.min_x(), frame.min_y(), frame.size.width, top),
-            Rect::new(frame.min_x(), center_y, frame.size.width, center_height),
+            Rect::new(inner.min_x(), inner.min_y(), inner.size.width, top),
+            Rect::new(inner.min_x(), center_y, inner.size.width, center_height),
             Rect::new(
-                frame.min_x(),
-                frame.max_y() - bottom,
-                frame.size.width,
+                inner.min_x(),
+                inner.max_y() - bottom,
+                inner.size.width,
                 bottom,
             ),
         ];
@@ -908,5 +921,45 @@ mod radio_projection_tests {
         assert_eq!(row.children[0].frame().center().y, frame.center().y);
         assert_eq!(row.children[1].frame().center().y, frame.center().y);
         assert_eq!(row.children[0].frame().size, row.children[1].frame().size);
+    }
+
+    #[test]
+    fn vertical_toolbar_uses_symmetric_end_padding() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut text = Text;
+        let mut toolbar = ToolbarContent::new(vec![
+            Content::new(ComponentId(31), Button::new("First")),
+            Content::new(ComponentId(32), Button::new("Second")),
+        ]);
+        toolbar.set_axis(Axis::Vertical);
+        let measured = toolbar.measure(&mut text, Size::new(200., 400.)).size;
+        let frame = Rect::new(0., 0., 200., measured.height);
+        toolbar.arrange(&mut text, frame, frame);
+        let top_pad = toolbar.children[0].frame().min_y() - frame.min_y();
+        let bottom_pad = frame.max_y() - toolbar.children[1].frame().max_y();
+        let expected_pad = tekes_ui_tokens::Spacing::Regular.value();
+        assert!((top_pad - expected_pad).abs() <= 0.01, "top_pad={top_pad}");
+        assert!(
+            (bottom_pad - expected_pad).abs() <= 0.01,
+            "bottom_pad={bottom_pad}"
+        );
     }
 }

@@ -2,7 +2,7 @@
 //! These are application fixtures, not new built-in controls or status protocols.
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
+    ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey,
     composition::*,
     extended::{Axis, Banner, Disclosure, EmptyState, NoticeTone, Progress, Stack},
     feedback_view::{BannerView, EmptyStateView, ProgressView},
@@ -342,6 +342,7 @@ impl Component for EditorGate {
 #[derive(Debug)]
 pub(crate) struct Feedback {
     status: Rc<Cell<Status>>,
+    loading_label: TextContent,
     progress: ProgressView,
     banner: BannerView,
     empty: EmptyStateView,
@@ -350,6 +351,7 @@ impl Feedback {
     pub(crate) fn new(status: Rc<Cell<Status>>) -> Self {
         Self {
             status,
+            loading_label: TextContent::new(Status::Loading.label()),
             progress: Default::default(),
             banner: Default::default(),
             empty: Default::default(),
@@ -392,14 +394,12 @@ impl Component for Feedback {
         let status = self.status.get();
         match status {
             Status::Loading => {
-                t.draw(
-                    s,
-                    status.label(),
-                    proposal::TextRole::UiBody,
-                    Rect::new(f.min_x(), f.min_y(), f.size.width, 40.),
-                    ButtonTextAlign::Leading,
-                    theme.palette.color("primary-text").unwrap(),
-                );
+                let label_frame = Rect::new(f.min_x(), f.min_y(), f.size.width, 40.);
+                if let Some(visible) = label_frame.intersection(&c).filter(|r| !r.is_empty()) {
+                    s.push_clip(visible);
+                    self.loading_label.paint(s, t, label_frame, c, theme);
+                    s.pop_clip();
+                }
                 let mut progress = Progress::new(0.);
                 progress.indeterminate = true;
                 self.progress.render(

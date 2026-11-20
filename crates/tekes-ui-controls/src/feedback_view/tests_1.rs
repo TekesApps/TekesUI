@@ -1056,7 +1056,7 @@ fn notices_align_status_marker_to_actual_first_line_at_each_text_scale() {
 }
 
 #[test]
-fn banner_retains_message_slot_and_primary_dismiss_with_first_line_marker() {
+fn banner_uses_symmetric_padding_and_quiet_dismiss_with_first_line_marker() {
     let mut view = BannerView::default();
     let model = Banner {
         message: "Your workspace has unsaved changes.".into(),
@@ -1066,6 +1066,8 @@ fn banner_retains_message_slot_and_primary_dismiss_with_first_line_marker() {
     };
     let mut scene = Scene::new();
     let mut text = RecordingText::default();
+    let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+    let gap = tekes_ui_tokens::Spacing::Regular.value();
     let frame = Rect::new(10., 12., 640., 74.);
     view.render(
         &mut scene,
@@ -1077,19 +1079,62 @@ fn banner_retains_message_slot_and_primary_dismiss_with_first_line_marker() {
         role(),
     );
     let dismiss = view.dismiss_layout.unwrap();
-    assert_eq!(dismiss.frame, Rect::new(480., 28., 92., 34.));
+    assert_eq!(
+        dismiss.frame,
+        Rect::new(frame.max_x() - pad - 92., 32., 92., 34.)
+    );
+    assert!(
+        ((dismiss.frame.min_y() - frame.min_y()) - (frame.max_y() - dismiss.frame.max_y())).abs()
+            <= 0.01
+    );
     let message = text
         .0
         .iter()
         .find(|(drawn, _, _, _)| drawn == &model.message)
         .unwrap();
-    assert_eq!(message.2.min_y(), frame.min_y() + 6.);
+    assert_eq!(message.2.min_x(), frame.min_x() + pad + 12. + gap);
+    assert_eq!(message.2.min_y(), frame.min_y() + pad);
     assert_eq!(message.2.size.height, role().style().line_height);
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 12., frame.min_y() + 6. + (role().style().line_height - 12.) * 0.5, 12., 12.))
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - 12.) * 0.5, 12., 12.))
     }));
-    let primary_fill = palette().color("action-primary-ground").unwrap();
+    let quiet_fill = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette(),
+        "panel",
+        "action-quiet",
+        "rest",
+    )
+    .unwrap()
+    .background;
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == dismiss.frame && q.fill == primary_fill)
+        matches!(primitive, Primitive::Quad(q) if q.rect == dismiss.frame && q.fill == quiet_fill)
     }));
+}
+
+#[test]
+fn number_field_has_symmetric_stepper_gaps() {
+    let mut view = NumberFieldView::default();
+    let model = NumberField::new(10., 0., 100., 1.).unwrap();
+    let mut scene = Scene::new();
+    let mut text = RecordingText::default();
+    let frame = Rect::new(12., 16., 198., 36.);
+    let layout = view.render(
+        &mut scene,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    let left_gap = layout.value.min_x() - layout.decrement.frame.max_x();
+    let right_gap = layout.increment.frame.min_x() - layout.value.max_x();
+    assert!(
+        (left_gap - right_gap).abs() <= 0.01,
+        "left_gap={left_gap} vs right_gap={right_gap}"
+    );
+    assert!(
+        (left_gap - tekes_ui_tokens::Spacing::Relaxed.value()).abs() <= 0.01,
+        "left_gap={left_gap}"
+    );
 }

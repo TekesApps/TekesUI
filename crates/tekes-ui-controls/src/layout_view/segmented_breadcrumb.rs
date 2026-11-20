@@ -826,10 +826,10 @@ impl BreadcrumbView {
                         tekes_ui_tokens::surface_palette::resolve_surface(
                             palette,
                             self.surface,
-                            "content",
+                            "data-category-label",
                             "rest",
                         )
-                        .expect("validated Breadcrumb parent content")
+                        .expect("validated Breadcrumb parent secondary label")
                         .text,
                     );
                 }
@@ -1003,5 +1003,61 @@ impl Default for BreadcrumbView {
             surface: "canvas",
             rendered_path: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod breadcrumb_separator_tests {
+    use super::*;
+
+    #[test]
+    fn breadcrumb_uses_muted_ink_for_separators() {
+        struct Text(Vec<(String, tekes_ui_tokens::Rgba)>);
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                value: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                ink: tekes_ui_tokens::Rgba,
+            ) {
+                self.0.push((value.to_owned(), ink));
+            }
+        }
+        let palette = Palette::new(tekes_ui_tokens::Theme::LIGHT, 0).expect("valid palette");
+        let model = crate::extended::Breadcrumb {
+            items: vec!["Home".into(), "Library".into(), "Current".into()],
+        };
+        let mut view = BreadcrumbView::default();
+        let mut text = Text(Vec::new());
+        view.render(
+            &mut Scene::new(),
+            &mut text,
+            &model,
+            &["Home", "Library", "Current"],
+            Rect::new(0., 0., 400., 40.),
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+        );
+        let expected_muted = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "canvas",
+            "data-category-label",
+            "rest",
+        )
+        .unwrap()
+        .text;
+        let slashes: Vec<_> = text.0.iter().filter(|(s, _)| s == "/").collect();
+        assert!(!slashes.is_empty());
+        assert!(slashes.iter().all(|(_, ink)| *ink == expected_muted));
     }
 }
