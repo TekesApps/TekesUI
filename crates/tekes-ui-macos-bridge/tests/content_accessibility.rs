@@ -148,10 +148,11 @@ fn stale_unshaped_text_is_not_published_as_old_native_lines() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    original
-        .surface
-        .input_mut()
-        .set_text("same length different shape");
+    original.replace_value(
+        "same length different shape",
+        tekes_ui_controls::ExternalSelection::Reset,
+        tekes_ui_controls::ExternalUndo::Reset,
+    );
     assert!(
         h.semantic_text_layout_snapshot(ComponentId(2), None)
             .is_none()
@@ -166,8 +167,6 @@ fn disabled_original_text_keeps_its_native_role_but_rejects_action() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_disabled(true);
     let key = content_key(&h, ComponentId(2), None).unwrap();
     let node = content_nodes(&h)

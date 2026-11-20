@@ -118,21 +118,14 @@ fn original_button_activation_drives_public_prepend_once() {
 #[test]
 fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_focus() {
     use tekes_ui_controls::{
-        ReadingController, TextRangeMapping, TextSurface,
+        TextRangeMapping, TextSurface,
         extended::{Axis, Stack},
     };
     let old: String = (0..100)
         .map(|i| format!("Row {i}: 中文 e\u{301} 😀 retained content\n"))
         .collect();
-    let mut field = TextFieldContent::new("History", "");
-    field.surface = TextSurface::new("", true, true);
-    field.reading = Some(ReadingController::default());
-    let v = field
-        .reading
-        .as_mut()
-        .unwrap()
-        .set_document(&mut field.surface, "history", 1, &old)
-        .unwrap();
+    let mut field = TextFieldContent::from_surface("History", TextSurface::new("", true, true));
+    let v = field.set_reading_document("history", 1, &old).unwrap();
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
         StackContent {
@@ -163,8 +156,6 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .scroll_mut()
         .scroll_by(0., 713.25);
     render(&mut host);
     host.focus(Some(ComponentId(3)), true);
@@ -173,17 +164,13 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    let a = field.surface.reflow_anchor().unwrap();
-    let before = field.surface.caret_doc(a.utf16).min_y() - field.surface.scroll().offset.y;
+    let a = field.surface().reflow_anchor().unwrap();
+    let before = field.surface().caret_doc(a.utf16).min_y() - field.surface().scroll().offset.y;
     let prefix = "Earlier 中文😀\n".repeat(12);
     let delta = prefix.encode_utf16().count();
     let len = old.encode_utf16().count();
     field
-        .reading
-        .as_mut()
-        .unwrap()
-        .update_document(
-            &mut field.surface,
+        .update_reading_document(
             &v,
             2,
             &format!("{prefix}{old}"),

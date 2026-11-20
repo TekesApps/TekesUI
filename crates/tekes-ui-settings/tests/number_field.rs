@@ -91,9 +91,96 @@ fn only_committed_numbers_reach_save_and_cancel_keeps_saved_value() {
     std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
 }
 struct Metrics;
+impl Metrics {
+    fn shape_paragraph(
+        text: &str,
+        role: proposal::TextRole,
+        width: f32,
+    ) -> tekes_ui_text::Paragraph {
+        let char_w = 8.;
+        let line_h = f64::from(role.style().line_height);
+        let natural = text.chars().count() as f32 * char_w;
+        let line_count = if width <= 0. || natural <= width {
+            1
+        } else {
+            (natural / width.max(char_w)).ceil().max(1.) as usize
+        };
+        let para_w = f64::from(natural.min(width));
+        let u16_len = text.encode_utf16().count();
+        let lines = (0..line_count)
+            .map(|idx| tekes_ui_text::Line {
+                index: idx,
+                utf16: 0..u16_len,
+                bytes: 0..text.len(),
+                ascent: line_h * 0.8,
+                descent: line_h * 0.2,
+                leading: 0.,
+                height: line_h,
+                top: idx as f64 * line_h,
+                baseline_y: idx as f64 * line_h + line_h * 0.8,
+                width: para_w,
+                width_trimmed: para_w,
+                runs: vec![],
+                carets: (0..=u16_len)
+                    .map(|i| (i, i as f64 * f64::from(char_w)))
+                    .collect(),
+                graphemes: vec![],
+                has_newline: false,
+            })
+            .collect();
+        tekes_ui_text::Paragraph {
+            lines,
+            height: line_count as f64 * line_h,
+            width: para_w,
+            default_line_height: line_h,
+            fonts: vec![],
+            utf16_len: u16_len,
+        }
+    }
+}
+impl tekes_ui_controls::TextSurfaceTextRenderer for Metrics {
+    fn push_visible(
+        &mut self,
+        _: &mut Scene,
+        _: &tekes_ui_text::Paragraph,
+        _: tekes_ui_scene::Point,
+        _: Rgba,
+        _: Rect,
+    ) {
+    }
+}
+impl tekes_ui_controls::TextSurfaceHost for Metrics {
+    fn shape_surface(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        std::rc::Rc::new(Self::shape_paragraph(text, role, width.unwrap_or(f32::MAX)))
+    }
+    fn shape_label(
+        &mut self,
+        text: &str,
+        role: proposal::TextRole,
+        width: f32,
+        _: tekes_ui_text::LabelOptions,
+    ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
+        Some(std::rc::Rc::new(tekes_ui_text::LabelLayout::new(
+            text,
+            Self::shape_paragraph(text, role, width),
+            f64::from(width),
+            0.,
+            vec![],
+        )))
+    }
+}
 impl ButtonTextRenderer for Metrics {
-    fn measure(&mut self, s: &str, role: proposal::TextRole, _: f32) -> Size {
-        Size::new(s.chars().count() as f32 * 8., role.style().line_height)
+    fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
+        Some(self)
+    }
+    fn measure(&mut self, s: &str, role: proposal::TextRole, width: f32) -> Size {
+        let p = Self::shape_paragraph(s, role, width);
+        Size::new(p.width as f32, p.height as f32)
     }
     fn draw(
         &mut self,
@@ -262,13 +349,6 @@ default = false
     .unwrap();
     let mut toggle_form =
         SettingsForm::new_autosave(&toggle_schema, &Draft::new(Snapshot::default())).unwrap();
-    let label_id = ComponentId((1_u64 << 32) + 1);
-    toggle_form.with_host_mut(|host| {
-        *host.get_mut(label_id).unwrap() = tekes_ui_controls::composition::Content::new(
-            label_id,
-            tekes_ui_controls::composition::TextContent::new("Enabled"),
-        );
-    });
     toggle_form.save_error(Some("Readonly"), false);
     toggle_form
         .render(
@@ -278,6 +358,10 @@ default = false
             tekes_ui_tokens::Theme::LIGHT.into(),
         )
         .unwrap();
+    let retry = toggle_form.host().get(ComponentId(5)).unwrap().frame();
+    let discard = toggle_form.host().get(ComponentId(6)).unwrap().frame();
+    assert_eq!(retry.min_y(), discard.min_y());
+    assert!(retry.max_x() < discard.min_x());
     assert!(toggle_form.focus(Some(ComponentId(5)), true));
     assert_eq!(toggle_form.host().focused(), Some(ComponentId(5)));
     toggle_form.save_error(None, false);

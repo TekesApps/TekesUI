@@ -505,7 +505,7 @@ fn main() {
                     let composer = &composer_content
                         .component::<TextFieldContent>()
                         .unwrap()
-                        .surface;
+                        .surface();
                     let rect = |r: Rect| {
                         serde_json::json!({
                             "x": r.min_x(), "y": r.min_y(),
@@ -519,7 +519,7 @@ fn main() {
                         "scroll_events": self.nested_scroll_events,
                         "following": parent_content.is_following_latest(),
                         "parent_offset": parent_content.scroll.offset.y,
-                        "inner_offset": inner_content.surface.scroll().offset.y,
+                        "inner_offset": inner_content.surface().scroll().offset.y,
                         "inner_following": inner_content.reading.as_ref().map(|r| r.is_following_latest()),
                         "inner_visible": detail.visible().is_some(),
                         "inner_frame": rect(detail.frame()),
@@ -574,7 +574,7 @@ fn main() {
                             .unwrap()
                             .component::<tekes_ui_controls::composition::TextFieldContent>()
                             .unwrap()
-                            .surface
+                            .surface()
                             .input()
                             .text()
                     );
@@ -708,7 +708,7 @@ fn main() {
                         "error": self.item_error,
                         "result": self.tree.scroll_reading_reveal_result().map(|r| serde_json::json!({"owner":r.owner.0,"item":r.item.0,"version":format!("{:?}",r.version),"status":format!("{:?}",r.status),"changed":r.changed,"clamped":r.clamped})),
                         "focus":self.tree.focused().map(|id|id.0),"reduced_motion":self.text.reduced_motion,"type_scale":self.text.type_scale,
-                        "composer_baseline":format!("{:?}",self.tree.get(COMPOSER).unwrap().component::<tekes_ui_controls::composition::TextFieldContent>().unwrap().surface.input().external_baseline()),
+                        "composer_baseline":format!("{:?}",self.tree.get(COMPOSER).unwrap().component::<tekes_ui_controls::composition::TextFieldContent>().unwrap().surface().input().external_baseline()),
                         "scrolls":([OWNER,INNER,OTHER].into_iter().map(|id| {let scroll=&self.tree.get(id).unwrap().component::<tekes_ui_controls::composition::ScrollContent>().unwrap().scroll;serde_json::json!({"id":id.0,"x":scroll.offset.x,"y":scroll.offset.y,"limit_y":scroll.limit().y})}).collect::<Vec<_>>())
                     });
                 }
@@ -725,9 +725,9 @@ fn main() {
                         "collapsed": self.layout_collapsed, "services_enabled": self.text.services_enabled,
                         "error": self.layout_error, "focus": self.tree.focused().map(|id| id.0),
                         "pane_active": self.tree.get(PANE).unwrap().component::<Pane>().unwrap().layout_active(),
-                        "original_baseline_retained": self.layout_baseline.as_ref() == Some(&field.surface.input().external_baseline()),
-                        "original_value": field.surface.text(),
-                        "paragraph_present": field.surface.paragraph().is_some(),
+                        "original_baseline_retained": self.layout_baseline.as_ref() == Some(&field.surface().input().external_baseline()),
+                        "original_value": field.surface().text(),
+                        "paragraph_present": field.surface().paragraph().is_some(),
                         "type_scale": self.text.type_scale,
                     });
                 }
@@ -1326,7 +1326,7 @@ fn main() {
                         .unwrap();
                     (
                         parent.scroll.offset.y,
-                        inner.surface.scroll().offset.y,
+                        inner.surface().scroll().offset.y,
                         parent.is_following_latest(),
                         inner
                             .reading
@@ -1370,7 +1370,7 @@ fn main() {
                     parent_before,
                     parent.scroll.offset.y,
                     inner_before,
-                    inner.surface.scroll().offset.y,
+                    inner.surface().scroll().offset.y,
                     following_before,
                     parent.is_following_latest(),
                     inner_following_before,
@@ -2578,7 +2578,7 @@ fn main() {
             .unwrap()
             .component::<tekes_ui_controls::composition::TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .external_baseline()
     });

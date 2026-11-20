@@ -43,6 +43,8 @@ pub use tree::{
 };
 mod key_value_table;
 pub use key_value_table::KeyValueTableContent;
+mod grouped_form_row;
+pub use grouped_form_row::GroupedFormRowContent;
 mod datatable;
 pub use datatable::{
     DataTableContent, TableCellDisplay, TableContentError, TableDisplayUpdate, TableDisplays,

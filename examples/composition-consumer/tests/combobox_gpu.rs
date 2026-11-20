@@ -130,18 +130,15 @@ fn original_view_and_public_combobox_pixels() {
                     let mut reference = TextFieldContent::new("Layout", original.text());
                     if let Some(mark) = &original.marked() {
                         let utf16 = original.text().encode_utf16().collect::<Vec<_>>();
-                        reference.surface.input_mut().preedit(
+                        reference.set_composition_preview(
                             &String::from_utf16(&utf16[mark.clone()]).unwrap(),
                             original.input().selection().start - mark.start
                                 ..original.input().selection().end - mark.start,
                             Some(mark.clone()),
+                            original.clauses().to_vec(),
                         );
-                        reference.surface.set_clauses(original.clauses().to_vec());
                     } else {
-                        reference
-                            .surface
-                            .input_mut()
-                            .select_range(original.input().selection());
+                        reference.select_range(original.input().selection());
                     }
                     reference.set_focus(true, true);
                     let mut ref_text = coretext::Text::new(1.);
@@ -150,7 +147,7 @@ fn original_view_and_public_combobox_pixels() {
                     ref_text.reduced_motion = true;
                     let editor_frame = host.get(ComponentId(90)).unwrap().frame();
                     reference.arrange(&mut ref_text, editor_frame, clip);
-                    reference.surface.reveal();
+                    reference.reveal();
                     let mut ref_scene = Scene::new();
                     let ct = ContentTheme::from(palette).with_surface("panel").unwrap();
                     reference.paint(&mut ref_scene, &mut ref_text, editor_frame, clip, ct);
@@ -174,7 +171,7 @@ fn original_view_and_public_combobox_pixels() {
                         &mut ref_scene,
                         &mut ref_text,
                         &mut model,
-                        reference.surface.outer(),
+                        reference.surface().outer(),
                         clip,
                         Some(clip),
                         palette,

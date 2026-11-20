@@ -344,13 +344,11 @@ fn unknown_child_refused_before_lifecycle_or_layout_and_insert_preserves_origina
 }
 #[test]
 fn real_original_editor_marked_selection_survives_full_clip() {
-    let mut composer = TextFieldContent::new("Composer", "kept 😀 draft");
-    composer.surface.set_multiline(true);
-    composer
-        .surface
-        .set_presentation(tekes_ui_controls::TextSurfacePresentation::Content);
-    composer.viewport = TextViewport::Fill;
-    composer.show_metadata = false;
+    let mut composer = TextFieldContent::new("Composer", "kept 😀 draft")
+        .with_multiline(true)
+        .with_viewport(TextViewport::Fill)
+        .with_show_metadata(false);
+    composer.set_surface_presentation(tekes_ui_controls::TextSurfacePresentation::Content);
 
     let mut h = ContentHost::new(Content::new(
         ROOT,
@@ -667,14 +665,12 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
     let text = ComponentId(8246);
     let last = ComponentId(8279);
     let incoming = ComponentId(8280);
-    let mut composer = TextFieldContent::new("Composer", "one retained 😀 draft");
-    composer.surface.set_multiline(true);
-    composer
-        .surface
-        .set_presentation(TextSurfacePresentation::Content);
-    composer.show_metadata = false;
-    // Synthetic consumer allocations, not product defaults or design token replacements.
-    composer.viewport = TextViewport::Fixed(40.);
+    let mut composer = TextFieldContent::new("Composer", "one retained 😀 draft")
+        .with_multiline(true)
+        .with_show_metadata(false)
+        // Synthetic consumer allocations, not product defaults or design token replacements.
+        .with_viewport(TextViewport::Fixed(40.));
+    composer.set_surface_presentation(TextSurfacePresentation::Content);
     let rows = Content::new(
         document,
         StackContent {
@@ -1452,7 +1448,7 @@ fn form_focus_complete_ring_uses_actual_scale_once_with_and_without_scroll() {
                 let outer = field
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
                     .outer();
                 let allocation = field.frame();
                 let bounds =
@@ -1508,8 +1504,8 @@ fn form_focus_complete_ring_uses_actual_scale_once_with_and_without_scroll() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap();
-                assert_eq!(field.surface.text(), "retained draft");
-                assert!(field.surface.marked().is_none());
+                assert_eq!(field.text(), "retained draft");
+                assert!(field.surface().marked().is_none());
             }
         }
     }
@@ -1527,7 +1523,7 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap()
-                        .surface
+                        .surface()
                         .outer();
                     let clip = if ring_only {
                         // The complete input viewport and painted ring fit,
@@ -1549,7 +1545,6 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap()
-                        .surface
                         .input()
                         .selection();
                     let offset = scrolling.then(|| {
@@ -1576,9 +1571,9 @@ fn form_focus_refuses_slot_clip_and_ring_only_clip_across_routes() {
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap();
-                    assert_eq!(field.surface.text(), "retained draft");
-                    assert_eq!(field.surface.input().selection(), before);
-                    assert!(field.surface.marked().is_none());
+                    assert_eq!(field.text(), "retained draft");
+                    assert_eq!(field.input().selection(), before);
+                    assert!(field.surface().marked().is_none());
                     if let Some(offset) = offset {
                         assert_eq!(
                             host.get(CHILD)
@@ -1605,7 +1600,7 @@ fn original_full_width_zero_padding_form_remains_infeasible_for_complete_ring() 
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .outer();
         let shape = host
             .get(ROOT)
@@ -1645,7 +1640,7 @@ fn empty_fill_field_does_not_gain_focus_space_from_ring_expansion() {
         let outer = field
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .outer();
         assert!(outer.is_empty());
         let response = request_form_focus(

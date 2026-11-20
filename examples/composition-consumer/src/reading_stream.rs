@@ -48,8 +48,8 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
             )
         })
         .collect();
-    let mut transcript = TextFieldContent::new("会话记录", "");
-    transcript.surface = TextSurface::new(&document, true, true);
+    let mut transcript =
+        TextFieldContent::from_surface("会话记录", TextSurface::new(&document, true, true));
     transcript.reading = Some(ReadingController::default());
     transcript.viewport = TextViewport::Fill;
     let mut composer = TextFieldContent::new("独立草稿", "Keep this draft 中文😀");
@@ -107,7 +107,7 @@ fn field(host: &mut ContentHost) -> &mut TextFieldContent {
 impl StreamState {
     fn append(&mut self, host: &mut ContentHost) {
         self.appended += 1;
-        field(host).surface.append_text(&format!(
+        field(host).append_text(&format!(
             "Arrival {:03}｜新内容，保持当前阅读意图与独立草稿。\n",
             self.appended
         ));
@@ -124,8 +124,7 @@ impl StreamState {
                     self.next = Some(now);
                 }
                 LATEST => {
-                    let f = field(host);
-                    f.reading.as_mut().unwrap().follow_latest(&mut f.surface);
+                    field(host).follow_latest();
                 }
                 ZOOM => self.large_text = !self.large_text,
                 WIDTH => self.narrow = !self.narrow,

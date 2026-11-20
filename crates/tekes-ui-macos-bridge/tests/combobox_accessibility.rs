@@ -134,8 +134,7 @@ mod combo_fixture;
 #[test]
 fn multiline_original_editor_is_rejected_without_relabeling_the_combo_role() {
     use tekes_ui_controls::composition::TextFieldContent;
-    let mut field = TextFieldContent::new("Combo", "A😀B");
-    field.surface.set_multiline(true);
+    let field = TextFieldContent::new("Combo", "A😀B").with_multiline(true);
     let host =
         ContentHost::new(Content::new(COMBO, combo_fixture::ComboOwner::new(field))).unwrap();
     assert!(content_nodes(&host).is_empty());

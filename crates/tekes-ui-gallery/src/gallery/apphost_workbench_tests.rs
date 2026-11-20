@@ -476,7 +476,6 @@ fn apphost_workbench_inspector_replaces_retired_rows_and_keeps_unchanged_mount()
                         pair[1]
                             .component::<TextFieldContent>()
                             .unwrap()
-                            .surface
                             .text()
                             .to_owned(),
                     )

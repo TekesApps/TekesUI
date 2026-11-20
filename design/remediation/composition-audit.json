@@ -602,9 +602,9 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "Original editor and FieldView retained. Ordinary single-line fields own a default internal Clear action, configurable by clear_button(bool); multiline/content presentation excludes it. Readonly/disabled/composing input cannot activate Clear. No arbitrary accessory Content slots or second editor state machine. Text input cursor regions belong to ContentHost.",
+      "limits": "Original editor and FieldView retained. Internal field/view/surface fields are encapsulated behind TextFieldContent constructors and facade methods (including with_presentation, with_help/required/error, set_scroll_policy, replace_value, field/view/surface/input getters); FieldView::set_surface resolves surface label ink. Ordinary single-line fields own a default internal Clear action, configurable by clear_button(bool); multiline/content presentation excludes it. Readonly/disabled/composing input cannot activate Clear. No arbitrary accessory Content slots or second editor state machine. Text input cursor regions belong to ContentHost.",
       "native_acceptance": "未验证",
-      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery exports workbench/default-page nodes through Host and configures FieldPresentation::emphasized_form directly on TextFieldContent without private metadata wrappers. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
       "compatibility": "additive experimental adapter; legacy entry remains",
       "evidence": [
@@ -639,9 +639,9 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "Same public TextFieldContent supports multiline and additive unadorned readonly content. Reading/plain/Field minimal consumers exist; whole TextArea-specific variant migration, physical IME and all-family native acceptance are not inferred.",
+      "limits": "Same public TextFieldContent facade (multiline, from_surface, with_presentation, set_scroll_policy, with_help/required/error) supports multiline and additive unadorned readonly content with encapsulated editor/surface internals. Reading/plain/Field minimal consumers exist; whole TextArea-specific variant migration, physical IME and all-family native acceptance are not inferred.",
       "native_acceptance": "未验证",
-      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery exports workbench/default-page nodes through Host and configures FieldPresentation directly on TextFieldContent. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
       "compatibility": "additive experimental adapter; legacy entry remains",
       "evidence": [
@@ -677,7 +677,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Internal original TextFieldContent/TextSurface and clear Button own editor/action state; fixed clear semantic part; caller handles query effects.",
-      "limits": "SearchFieldContent adds SearchInput semantics and captured SearchCommand/SearchAction delivery to the original TextFieldContent editor and internal Clear. Query effects belong to consumers. No arbitrary Content slots or result engine. Bounded CPU evidence and native acceptance are recorded separately in Issue 307; the source audit does not promote native acceptance.",
+      "limits": "SearchFieldContent adds SearchInput semantics and captured SearchCommand/SearchAction delivery to its encapsulated TextFieldContent editor and internal Clear without Deref passthrough, exposing explicit facade methods (query, input, surface, field, text, clear_button, scrollbar, set_submit_policy, set_availability, set_error, set_placeholder, set_clear_label, apply_query). Query effects belong to consumers. No arbitrary Content slots or result engine. Bounded CPU evidence and native acceptance are recorded separately in Issue 307; the source audit does not promote native acceptance.",
       "native_acceptance": "未验证",
       "accessibility": "Owned Content publishes actual mounted active semantics/parts and uses the existing checked Host/macOS bridge. Source and CPU/GPU evidence do not establish this family native window or VoiceOver acceptance.",
       "requires_internal_source_edit": "no; additive public owned Content adapter and existing host callbacks",
@@ -784,7 +784,7 @@
         {
           "api": "tekes_ui_controls::composition::SliderContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 416,
+          "line": 419,
           "anchor": "pub struct SliderContent {"
         }
       ]
@@ -886,7 +886,7 @@
       "heterogeneous_consumer_content": "不适用",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects; any observed disabled key boundary cancels old pointer/Space arms while parent-owned keys remain ignored",
-      "limits": "Real SwitchView behavior and checked value, no general child content; label/accessory freedom not required to preserve toggle semantics",
+      "limits": "Real SwitchView behavior and checked value, reporting unlabeled intrinsic width via SwitchView::TRACK_WIDTH (48.0), with no general child content; label/accessory freedom not required to preserve toggle semantics",
       "native_acceptance": "未验证",
       "accessibility": "Default Gallery publishes actual retained name/state/bounds and routes AX actions to original control; bounded Dark/U2790B evidence in selection-accessibility-20261019; VoiceOver and full matrix pending.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
@@ -972,9 +972,9 @@
       "heterogeneous_consumer_content": "缺失",
       "runtime_profile": "owned-content",
       "state_identity": "Content stable key + retained owned production objects",
-      "limits": "Input adapter reuses FieldView for real text editor; generic Field child/accessory Content slot is absent",
+      "limits": "TextFieldContent::with_presentation/set_field_presentation configures shared FieldPresentation (including emphasized_form) over FieldView with Surface-aware label ink (FieldView::set_surface), while GroupedFormRowContent owns paired settings group rows in controls; generic Field child/accessory Content slot remains absent",
       "native_acceptance": "未验证",
-      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery also exports workbench/default-page nodes through Host. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is now expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent/Gallery metadata. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
+      "accessibility": "Existing Component semantics and macOS bridge are used by independent consumers; Gallery exports workbench/default-page nodes through Host and configures FieldPresentation::emphasized_form directly on TextFieldContent. Source plumbing does not establish this component family native/VoiceOver acceptance. Existing Field.required is expressible in shared ContentSemantics/AccessibilityNode and projected by TextFieldContent. Bare TextSurface/View hosts still publish their own form metadata. Native-object getter checks are separate from active-window/VoiceOver acceptance.",
       "requires_internal_source_edit": "no; existing public composition adapters and caller Component implementations",
       "compatibility": "additive experimental adapter; legacy entry remains",
       "evidence": [
@@ -987,7 +987,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::FieldView",
           "path": "crates/tekes-ui-controls/src/feedback_view/fields.rs",
-          "line": 15,
+          "line": 14,
           "anchor": "pub struct FieldView {"
         },
         {
@@ -1073,7 +1073,7 @@
         {
           "api": "tekes_ui_controls::feedback_view::NumberFieldView",
           "path": "crates/tekes-ui-controls/src/feedback_view/fields.rs",
-          "line": 254,
+          "line": 290,
           "anchor": "pub struct NumberFieldView {"
         },
         {
@@ -1624,7 +1624,7 @@
         {
           "api": "tekes_ui_controls::composition::DialogContent",
           "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-          "line": 211,
+          "line": 214,
           "anchor": "pub struct DialogContent {"
         }
       ]
@@ -2060,16 +2060,16 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "46c76fb5a3da05f435f58958743c48ecc9809ff9611a35cb2aeab5ab73b72064",
+    "DESIGN.md": "6a68ae70e54d8bc9e94e832fd4439e3126ced99440c8904790019186766f4c7e",
     "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
     "crates/tekes-ui-app-host/src/window.rs": "dacedaa2402a2cc7601171257275482e8e656c58a31df8c897d7636da0fc13f4",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "13d93803505b5fd2e1ad48749ec8a5c545a1664989254f4e2701f201743c4fd2",
     "crates/tekes-ui-controls/src/chart.rs": "9e3e5dd1e9d62f358cb74201a254f4165b81e4b79c3a97f0a74bde6f591e983c",
     "crates/tekes-ui-controls/src/collections_view.rs": "e8050200118efefecf897425fbc4c203c35e5e5021c37e898128fee9f31a3fc1",
     "crates/tekes-ui-controls/src/composite.rs": "bb5acca080ae3de83a5f2659c342929cb89df2217fca636a83885a08913c95bf",
-    "crates/tekes-ui-controls/src/composition.rs": "9b8f37b9ec0559b99727beb3dbb187eded72f5ce4118ddf74b3c268b822e787a",
+    "crates/tekes-ui-controls/src/composition.rs": "a56b79d7008e02fb4da3853821fff7b787f1cda5590a32da5b489b6886b3ad9b",
     "crates/tekes-ui-controls/src/composition/actions.rs": "8a2b48240dcc17f99f2b26922a7178d29ff3e3474c3885af491ba5eca7c52651",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "52e5baa236be87005a70187179ed4809268a7f065c6ced8baa7dfce4f2b95e01",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "610376174bc65d229d1dae9300e8cc2787e3c1b4993b5f1366e970543272bd81",
     "crates/tekes-ui-controls/src/composition/button.rs": "cf6206784a26472f955ef95fee4259fab6e0e6b3054307e632b4e96e8871a254",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "4992049a606475fa91cff7105b71901034b9dd713a1a62426d88b2bd4b5e58c1",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "a5b04fce72d4bf54062f652f0a7ca3cd08ac1110c8ab943b04a64c20b939151c",
@@ -2110,7 +2110,7 @@
     "crates/tekes-ui-controls/src/reading.rs": "65fae5533cfe23601197b33fcf8521b5e68999138dad658d6de67c00bad14d82",
     "crates/tekes-ui-controls/src/scroll_view.rs": "18eb948347178bfcfe5780399103c3194d80584db632822943816b72d8e0d5b0",
     "crates/tekes-ui-controls/src/scroll_view/reveal.rs": "5882571d8dccd3cf0e4894292f473ac54023047f9025473f7fbae51c5de83e8e",
-    "crates/tekes-ui-controls/src/selection.rs": "e55305fbd210a8b6b72283c0b582230e4db3e677eaf00363f3511d2e0099f9e9",
+    "crates/tekes-ui-controls/src/selection.rs": "5b5d2a7b704d691affd576c1678662987f6275b6126a88b17d5f4a687ffc8971",
     "crates/tekes-ui-controls/src/text_input.rs": "5394dee44e0ac623a5c1e52b3df0551d48e514f0925e52975db144c6b031c247",
     "crates/tekes-ui-controls/src/text_input/external.rs": "872c6a58fc112c17f7711ce3fe88c868a6ecb0e2ee32fc394ed8877fa30626ca",
     "crates/tekes-ui-controls/src/text_surface.rs": "1bef0ea893a3d1d35a1a67bfa5d8d17f560fe7d823a6af4729a6f6166220779c",
@@ -2124,7 +2124,7 @@
     "crates/tekes-ui-controls/tests/collection_live_input.rs": "57f318912758da06f666641f865c63e95afeba24e7390105cc5e3c6b11325937",
     "crates/tekes-ui-controls/tests/collection_navigation_live.rs": "dd358b0475fe719e1e5cecd95b936c1df66930298fb33872f9ddd4562db83e43",
     "crates/tekes-ui-controls/tests/command_result_states.rs": "4a009719c900e57b68d50b5113c398ad5ac501738477abf0e8e893552e3aa7de",
-    "crates/tekes-ui-controls/tests/component_registry_api.rs": "121a92aa64a07277bb32a84056354c75bbeebd527c489324069228af98af4971",
+    "crates/tekes-ui-controls/tests/component_registry_api.rs": "2b60a00c89803ee4edc0a9b9a4cecba4fedb12b495e95cffdc856c6a326e72ff",
     "crates/tekes-ui-controls/tests/composition.rs": "24f225a13028162f44275a6387fd840359ebf7419239b4a3cc525f5dc24e8269",
     "crates/tekes-ui-controls/tests/content_reading.rs": "8180d37ad003cee54fb8a3ca5607e05180e18b623660eb20c08fcf829ac66220",
     "crates/tekes-ui-controls/tests/external_preflight.rs": "d7d24015e597b89178fc9332d32f2ada9e1d16e425d5ca89fb295b5ee3d86ec0",
@@ -2142,7 +2142,7 @@
     "crates/tekes-ui-gallery/src/gallery/mod.rs": "eb0c324ed8604cae733bcfd450792872d124ef6535a699f6e614f550604ed6fc",
     "crates/tekes-ui-gallery/src/gallery/quality_effects.rs": "53bf12ad64ebacd58ef20958042798462bdc7dc85c3ddc126c2e6abc8e75619b",
     "crates/tekes-ui-gallery/src/gallery/text.rs": "36cba8d390f78af2f4f649fb9000c0794fbe0b21ad4b8dcd7e54dbfac71e843b",
-    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "100097c394e6f53d7f966d32e6c628ab46b1a1b16b07e7fd307f6b1bca56a646",
+    "crates/tekes-ui-gallery/src/gallery/text_demo.rs": "25f1ce26e4776c15fb967253e99798eb33b9b9f00e9184017bd1226a652ccbbe",
     "crates/tekes-ui-gallery/src/gallery/workbench.rs": "5d73d9363b7fe037f8fce8352050384e76eeaae436450702659c020255c15ac6",
     "crates/tekes-ui-gallery/src/gallery/workbench/accessibility.rs": "e25771a4d5cd00d080f7748e57f7cf9390a09bd4ac16836827d6c1dd0b747c29",
     "crates/tekes-ui-gallery/src/gallery/workbench/extended.rs": "c880e97353eade9ca4a8ede8548d48145caaa7e01c22f1191b2e301cedf2c381",
@@ -2162,63 +2162,63 @@
     "crates/tekes-ui-text/src/label.rs": "9bd7489ea5fb5929f165c6041617ebb317c41fe0d654b491a55e9fdb05c35155",
     "crates/tekes-ui-text/src/lib.rs": "9363c8874af1f9601d4c449d5794d73684d700b369ed0ce54a05f6b0b52c60d8",
     "design/gallery/catalog.json": "4a9dde47550b1a7aa355c877649db73a8e9ec918e82bb823db19f8882a85433f",
-    "design/gallery/public-api-surface.json": "22cf97ec7b5305f244f19bb89d44bd1c9a9fbd3669a90de4544a9e114dbe67cf",
+    "design/gallery/public-api-surface.json": "3ae40a1a93d809f3c57dcdf9d887d950e99640283ee984f4aa29aff933d39e95",
     "docs/charter.md": "3d4f7d5cc0f25682b1595a900c5059c170b98661e4c33b4f978489c2002be12c",
     "docs/archive/design-logs/menu-action-records-20261021.md": "27b925716d27757e750c7be222ebfe0844bbd618a0e5b5373d35c5820164fa88",
     "docs/archive/design-logs/menu-declarations-20261021.md": "5abc201ec9ed24dab456f1eaf0092f8357da52e11dcd59a43f374f18b70996dd",
     "docs/roadmap.md": "1648c62ec9209c206b98c18da6a48cda8e9df306d635e294b5d0ad5dcf1bd331",
     "examples/composition-consumer/Cargo.toml": "0f3becd46122911e118c0012048ca607133e3a5992440bb0748db755827938f3",
-    "examples/composition-consumer/examples/native.rs": "7ae270e9fd5d7f96af201295b0100c2b2ad7c1beab45c3a6af0595ed1e61c4a9",
+    "examples/composition-consumer/examples/native.rs": "db4eb7c273190fd2548817039638161a5bf1791c1d5c6271b8761d7887db8025",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
     "examples/composition-consumer/src/choice_status.rs": "d8a62435b91f3199c77d5f4fb654fa6a27e504c5bcf32e90807e7a9fdf17ada7",
-    "examples/composition-consumer/src/combo_status.rs": "e371abe244baa8a4a45e0d8209e96ad941866ca748addaa6f5859b09fa9753fe",
-    "examples/composition-consumer/src/command_status.rs": "d12e8c2610957faa7f7248d5ad1cf54436276459466925870d069a307257029e",
+    "examples/composition-consumer/src/combo_status.rs": "f8f91d80eb16c0f88f0eae18527deb7f0e086614af253ad0f7a39f0a05b2daf1",
+    "examples/composition-consumer/src/command_status.rs": "9d14ae9c9a28fd842b28b19743495d0a7529c538ef868130e4e14e455731df16",
     "examples/composition-consumer/src/compact_actions.rs": "b7392254145b93c42dd18c366e092eba17cb4d865aa946835ca0d1bca20c92bb",
-    "examples/composition-consumer/src/content_actions.rs": "477e920971fdaf908fde05f4428c5f9da909495cbe5408c2a77471f8e0f21591",
+    "examples/composition-consumer/src/content_actions.rs": "0d3bf8a1734f14b746db7b63e9446a868c44a00a649f8c0d76f03371e82ea662",
     "examples/composition-consumer/src/content_status.rs": "537aedc3e6a5c5feddc1fae5f18061b47821e41698bade0a34537886bd8763f7",
-    "examples/composition-consumer/src/controlled_editor.rs": "cbda227bfd0ec7d8252e6a98f8a1a9e59d416db2ce21880d426c5ae5fb686e25",
-    "examples/composition-consumer/src/controlled_reading.rs": "a354d0641d8338a69c837ae3002c0ef4faf985e72d2dba67b58ff0f9e8e414aa",
+    "examples/composition-consumer/src/controlled_editor.rs": "1f17dd0857e732dd0a719c5e0d38aa5f2f80229b7277a5d9f9da7683460c5107",
+    "examples/composition-consumer/src/controlled_reading.rs": "6282d3fd99a6fbdb60519d426d56d5f022986984c961646976de2f29e16012e2",
     "examples/composition-consumer/src/declared_menu.rs": "469c7e569d02693052d6f087daa308506a1f5de111b487df6ad68ee65cff3cba",
     "examples/composition-consumer/src/feedback_status.rs": "71d4a2fbe372a0c7ac153c31e7e2c76caadf1c75262bcee47c352b6eb47b947b",
     "examples/composition-consumer/src/forwarded_actions.rs": "083ea912c3272cc180c173bbc50e74bafe0b5af7218f508176284e0094abf643",
     "examples/composition-consumer/src/help_list.rs": "d3cbdef0786344782113d45e4b178e53086f56ca61c2fc666fe506588d320257",
     "examples/composition-consumer/src/item_navigation.rs": "edaad52f6860c0f3df73f728835e0c45dcf955c6ff570165c4f9a4df7753dcbc",
     "examples/composition-consumer/src/label_content.rs": "e4af58c5f18bbebb1991aa0fc795e52f50d129277ecede82dd5a420a42d9b80a",
-    "examples/composition-consumer/src/layout_activation.rs": "339b963c56189addd3f47f1280b0f5247464aca034cdff4b5d16526fa6f80f7d",
+    "examples/composition-consumer/src/layout_activation.rs": "487823a46d4fad4dccd7131d9984aee5392c5423179dc6d30a800323b7d3e7e5",
     "examples/composition-consumer/src/lib.rs": "1569deee38fc9dcdbb91b6bcf2be079f93bea4496861c820b42bf65bd2b018d4",
-    "examples/composition-consumer/src/padding_focus.rs": "89c1c09d1fc7adedaac16f90ad8bd85e2109b55e60b4b1b901b7a00e7ef0eaf3",
-    "examples/composition-consumer/src/plain_text.rs": "e815fc635c6603a3d229412502dc045cb6e7a6ce7342dc83ed1dae76622331df",
+    "examples/composition-consumer/src/padding_focus.rs": "cfd8ad1a634aaa08deaa335dcac9deb516bc6df2986b727e164447e50ffc69ca",
+    "examples/composition-consumer/src/plain_text.rs": "5a5178b10e07c81b6b0b0a0d500ddb9d98cc842ea824538346bb3f0091afa83d",
     "examples/composition-consumer/src/popover_content.rs": "1ff867060fb34bb1bbdb2d97dde6ef69871cdf4ef5f666e80cb120fdb7243dae",
     "examples/composition-consumer/src/reading_prepend.rs": "9b24cde4d4dcb3a2f2157b2a2885a66a0ba91c9d7c4620161163f698f3dc1d66",
-    "examples/composition-consumer/src/reading_stream.rs": "1514b6a5d8f746e305ddf3e8a29ea8d195191e7baebfcbbd3196e0c60acc53c3",
-    "examples/composition-consumer/src/scenarios.rs": "953170d826372414e78e5e8a4a09676cdab5c108fbcbc9bedee30b9ebfd5b168",
+    "examples/composition-consumer/src/reading_stream.rs": "9085d16eff19c1236535f1ee63b06404de3d3658f580d80ef220a2fd9548976f",
+    "examples/composition-consumer/src/scenarios.rs": "52c8c0018a48908b5dd053852d9d9306c8ece5c4d32e332e9b27078a1cec683b",
     "examples/composition-consumer/src/scroll_updates.rs": "209b8cb5c680308ef2e935e7b9577789176217a6331db9f65b32d88723e9294b",
     "examples/composition-consumer/src/semantic_label.rs": "a4ebb9a95ae05e2465ac7c430e99733c765b0e93c4284201a6c3dfc2e513c212",
     "examples/composition-consumer/src/slider_content.rs": "97f48e9453bca4e0f23774e0dad9fc6331e9526dfc3963f56a886909033fb2f7",
-    "examples/composition-consumer/src/text_viewport.rs": "abd219243c296bd0ced6722147ef0e43e2e03723c85a0c212f5d0ed3b1a6a1cf",
+    "examples/composition-consumer/src/text_viewport.rs": "747df49898e410af99a22ec94fbc4aa40d1c00d1b8f3114723fe4d7fa94c54bf",
     "examples/composition-consumer/tests/choice_status.rs": "bbddb054aeccf9c46741c6760f67107f688e3b2be5a00f38d057850f27f12622",
     "examples/composition-consumer/tests/combo_status.rs": "ac715e53cca6aa861d02e80e9998cdac72e7fa660f273c8952f257c4c4ab777c",
     "examples/composition-consumer/tests/command_status.rs": "b27407917c56f41cc6bc7f8243a72df90082946e1295ce4c899c762fcb3f8038",
     "examples/composition-consumer/tests/compact_actions.rs": "28f3cfcdb202586cc95fb67c1dc1078e608c7319de14bf93d6cc9c70bb1bdfa5",
     "examples/composition-consumer/tests/content_help.rs": "f99e31ab869806da9fcf36c5e4cfa37f5879f56f564d03fe670fcfc93026d11e",
-    "examples/composition-consumer/tests/controlled_reading.rs": "cba16e62ee0c9a1d5d5fa0a4afcd6bc733fdfa19b0fab6c62c2f06c5333c2124",
+    "examples/composition-consumer/tests/controlled_reading.rs": "aa745a16f60255efd50f729a17b6e1643270460724339298839ebf85d2e26f52",
     "examples/composition-consumer/tests/dialog_accessibility.rs": "fba950f827f3679c31ae0cfc592b819e9ea65c88da6e54b0e4dbf9eab4607e09",
     "examples/composition-consumer/tests/editable_number.rs": "42e61f98ddee8c8b9b5436553dd2c64d18012b0a3ac22356b3dea447c0eeade4",
-    "examples/composition-consumer/tests/editor_keys.rs": "c63607734e396133c3b086e0d90e83436d4e37502351fe0e9159a7a1403d8bdf",
-    "examples/composition-consumer/tests/editor_navigation.rs": "0db298f7229420b64933932931619549d69676f994e684f32a2b93ce82ea75a1",
+    "examples/composition-consumer/tests/editor_keys.rs": "52cd03c2d61b3d288393b533555f8585891e06cf72b8cc2749ecf521b9aac33c",
+    "examples/composition-consumer/tests/editor_navigation.rs": "3dcb2c75ff5202168d0385987a67f7b756e77d0fa2cd58290b3787749dfd5076",
     "examples/composition-consumer/tests/forwarded_actions.rs": "e22bc1e3117dd7d52dce97827b6a8d76440c7fbad6dabcf88d6929129eecfa0b",
-    "examples/composition-consumer/tests/item_navigation.rs": "4fc9fbd7c8db2e33e81b47ecbedd447bcb209e132f2dee02a10152fd60d48ce7",
+    "examples/composition-consumer/tests/item_navigation.rs": "832a0e1ee0a687d0d48b8a13b90ccacc60b1dc8fda34b1d231881383714040a9",
     "examples/composition-consumer/tests/label_content.rs": "126add34ac838c007d727e9f65cbb90074267ec3f0525f7e03e116403c8eeb41",
-    "examples/composition-consumer/tests/layout_text_services.rs": "8e817b7c3dc630b1e711dd6d1dfb314ef03313e1694d5f5b167245d0d263991c",
+    "examples/composition-consumer/tests/layout_text_services.rs": "2fc28c047d943ff60602e65b5e5f03b1faf851d8da7c56d3cdc95b8ab066dca1",
     "examples/composition-consumer/tests/menu_action_records.rs": "3fcc1749ecde0536b77e60684c159fbf444ca50217badb9633bc2d6894d1ee20",
     "examples/composition-consumer/tests/menu_content_tokens.rs": "3a8ce36f8716c8966118b70633ba50bfbfd2bd94b01d07b937c6ff3813274d63",
     "examples/composition-consumer/tests/menu_declarations.rs": "6f0c5f9c097a42b9f1bfec738f2c2dade6eff1a398ae8aef905544d219f1f338",
     "examples/composition-consumer/tests/menu_item_states.rs": "828c2bb8be07bf7e16379f12d98f6e566ac91e66c4eb342f62efaba36c3cfa66",
     "examples/composition-consumer/tests/native_key_translation.rs": "bc3864dfe4927b4049862f2f2d18d69fb1c31ce918f5cc4d7edf8fd384ce60fe",
     "examples/composition-consumer/tests/native_pointer_translation.rs": "88fa225a66a118a88831bd69cb51e26a10edd8fcd2dd7ac66aefc0d110f6a65f",
-    "examples/composition-consumer/tests/padding_focus.rs": "927420d8ae2672b1f831a9a25c173ebccdfc08178bc16ea6ee0cccbc54a834aa",
-    "examples/composition-consumer/tests/pointer_metadata.rs": "6560be4127c3bbc4f71896b2b1c1fb5fc2497b98f3d1cd500b5bf51cda692791",
-    "examples/composition-consumer/tests/scenarios.rs": "69f21bf0fb27a4a5975a3c767306171f165c3e4564b908ca53f9516bf427fbec",
+    "examples/composition-consumer/tests/padding_focus.rs": "73628f74f3ea11f6d69a812b106c7166c946ce02e58c9fa12ef2ca825884b586",
+    "examples/composition-consumer/tests/pointer_metadata.rs": "80d4215f8fc58cb2b4012d477fe7a775e66d292e1c0e74a9e053e9bb6861d0c0",
+    "examples/composition-consumer/tests/scenarios.rs": "a1321928bdda217017fc7a71629a2cca066e2d974770ed60acad3254b8b3d930",
     "examples/composition-consumer/tests/scroll_reveal.rs": "3fb0700db0e5d3f969b11062aa6b2b686cf442e7ff3410ec03f0706422901a2c",
     "examples/composition-consumer/tests/semantic_label.rs": "1d28b6c1343f110460bc04c04b941a01068715fb3c39325f98930cd28627a1f0",
     "examples/composition-consumer/tests/slider_content.rs": "6b5bb596050ba55a1ea17b07680c1dadfd4e1fa83703a7e026355afd75c43e75",
@@ -2226,7 +2226,7 @@
     "examples/composition-consumer/tests/surface_host_scale.rs": "5acdb60052a9ba69617358d96918867de26f1ef4f212af2850012ac65fa21257",
     "scripts/audit-component-tokens.py": "ca6231136c73c4fd8b2307f826724fa711e45b0c7b27961cd831585aa12bf312",
     "crates/tekes-ui-controls/src/composition/select.rs": "1dc7448ed10db1ae563fb740fa8d44b69e2d69e8a440ce399f67a3e11b503845",
-    "crates/tekes-ui-controls/src/composition/search.rs": "36ec97a846ff8e85420ae089861863ae1c77dac41afccaea20583637c2e7c6fc",
+    "crates/tekes-ui-controls/src/composition/search.rs": "ba2b20da8666846c5b4d394996d831b4994faee6bfb4ad501ac952ce21c3971f",
     "docs/archive/design-logs/navigation-content-combo17-recovery-20261031.md": "cab75179ffc5ed7be2ab4de95d3d43ed430c5195a0f5b2b7bf56ca215f454090",
     "crates/tekes-ui-controls/src/composition/legacy_selectable_list.rs": "1b9970e990e968d8953350292b830be11d24a4bc492116eb8884450b70c317a1",
     "crates/tekes-ui-controls/src/composition/selectable_list.rs": "e2c0b7fc7e00cbf7025304f0b218217a1060ad3ca07dc90b6ab9287e1d487455",
@@ -2237,7 +2237,7 @@
     "docs/archive/design-logs/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/archive/design-logs/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/archive/design-logs/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "1d0e0f1c72cfe3a2d3709593a82efa39fd9113e58368256ec9d5be019048b6ae",
+    "crates/tekes-ui-app-host/src/columns.rs": "ff0429ac68cd311c9c650ab88f1e6358ff03155b67cd5b10e9849974590c7182",
     "crates/tekes-ui-app-host/src/presentation.rs": "18f2bf9bd591f971da1579eac4c5f4f57f8d844fa88312d6453e22599acfb9a9",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "5fcf6d88c23745893069b6da9fc4184490d42f2863a272735260f933c73ee0ba",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "00bae218b96330f113bf3f19d7f5642d99c2751bdda73fdb68c26cd9a1be0eb4",
@@ -2249,20 +2249,20 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/apphost_story.rs": "dd23f2c67283d8a2447cb6371a8785db4c847065e6834e2b0dfe457d281da524",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "7e5ff7d8e874b267b22c81974c12e17a28d6dfe79702227186242252e40d44d4",
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "bfbe571c2a41f0f292f87bc007d98e998e51c1014ad16521cfb32baa9921dcb6",
-    "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "e47e3e260ebd3049c13e50c35e64242938296895d4f97710ec0ede76e40e2e3a",
-    "crates/tekes-ui-app-host/src/window_columns.rs": "f7836ab42863f01bc6f3c21bd5d6a73908923dde7b560d831ff7427acb1c492b",
+    "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "33952996bc0fb6299b882b2ff5b7d9d3e9e699ee7ac38b1003973b82933e1869",
+    "crates/tekes-ui-app-host/src/window_columns.rs": "f2c2bad84ce4e03a138e1b37d9599395195178f029c0996b410c0cf89600bebe",
     "examples/composition-consumer/tests/rich_content.rs": "310e19734aa7bba669ceb5e11093b1cafc4f5379e5bcb9d398f3a1569d915849",
     "crates/tekes-ui-controls/src/composition/key_value_table.rs": "39fc5175401d568515a7d12baaa7d8cc32bdc669b8dd9e54274994b79b3a5bae",
     "crates/tekes-ui-app-host/src/window_panels.rs": "cfb3a37913a88ca3f840ac931f994887dc2b543c56daab0b517125b0dcf08bbf",
     "crates/tekes-ui-controls/src/composition/containers.rs": "e67b2e71765db66311387fc34d563fe03f74b883cba2545b27ea3f5101a5b92a",
     "crates/tekes-ui-controls/src/layout_view/disclosure_link.rs": "1e6ba1a3e0844c01307bfc88d3fe3856fd3308181b38418fc13cb332d86bb126",
     "crates/tekes-ui-controls/src/widgets/models.rs": "1050ee2140cb6aeee2430b9918aec3c7da61c486a6c2c799585fc566e20e2d04",
-    "crates/tekes-ui-controls/src/composition/text_field.rs": "1624ae83c51cb20231e930e0dc653439afb9b06f82baa81d73fa3dfe7bdc2477",
+    "crates/tekes-ui-controls/src/composition/text_field.rs": "98da102592512a72862c76dd0cecb5f4e074212b27ae5164ce7f22cd51d6a1b5",
     "crates/tekes-ui-controls/src/extended/feedback_and_paint.rs": "6aed1ae6d7a5998be362d4e04c2fb1c9c2c3ba2ff517b67c13a4e450f2473e04",
     "crates/tekes-ui-controls/src/layout_view/combo_command.rs": "a7245827c41f2a0e634f89f41afaa175f35daa9ef14a3b34ac33258dbdc48317",
     "crates/tekes-ui-controls/src/extended/selection_models.rs": "f9eda4dcf09dba7a0740d1e13762c8e276e2e6e8220f978ff5372b2f9979235d",
     "crates/tekes-ui-controls/src/layout_view/segmented_breadcrumb.rs": "7c3107e60e3573bf72403e1aac46a37bab0f10780a4e69bd8916c70eb68dd089",
-    "crates/tekes-ui-controls/src/feedback_view/fields.rs": "a7f0b989a5e0ebfd54d196bf33eb9ebaaaa9a64dcb46f5acb4ed418f619455c1",
+    "crates/tekes-ui-controls/src/feedback_view/fields.rs": "9227c9e5ba19a15c61a84f83059fc13c65cac98b8988dc669bba4b24d7bc9759",
     "crates/tekes-ui-controls/src/layout_view/menus_and_pickers.rs": "b321373830b3276f6feea66de87a87403f218b91dcfa11692db59578711916e2",
     "crates/tekes-ui-controls/src/composite/tabs.rs": "0922dc4ee3a223f7c42226c060abb05a319829291f18237ab0d6dce4e343fafc",
     "crates/tekes-ui-controls/src/collections_view/list.rs": "0f5c96db6adc66737548d055b6a8085113292dc5c6e43d5b34e01f761e00ef72",
@@ -2278,10 +2278,10 @@
     "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs": "7c409ff1c187d8f75c57e0c081725d8bed60114b63b8192570a4ced8bb2e4e36",
     "crates/tekes-ui-controls/src/composition/host.rs": "0877f8941242b108f4c52ff588bb6678b2faeaf91d31e99c5f6d36aeda0e452f",
     "crates/tekes-ui-controls/src/composition/host_ops.rs": "46bfc0fd6372693d2c551dcd0ecea9172eba81571e8ddde15ba320fa75dee604",
-    "crates/tekes-ui-controls/src/composition/content_node.rs": "2d802cb2a4ffe4eac3b2e70850c0aab682defb44cb7ba5076a9705bfa618b0fb",
+    "crates/tekes-ui-controls/src/composition/content_node.rs": "7e5e050ec28b7178a60f18231c86108e4af9fc0013a5a45fc1050963d5ca7509",
     "examples/composition-consumer/examples/actions_acceptance.rs": "9b5d64ff6ad4d561f49d4fda130993c36478426f70c7943bf9d3c8f3b951a40c",
     "examples/composition-consumer/examples/controlled_acceptance.rs": "4ef6141384b92c895f480951bc145fddbac1d1818ebcb76db438004a79bdd380",
-    "examples/composition-consumer/examples/viewport_acceptance.rs": "0315e0621530283d7844c9853835f7088b18e545ada97945e4a5bdc006d6e21e",
+    "examples/composition-consumer/examples/viewport_acceptance.rs": "4c364d45385bbd294129b7d8306babafd56d76781fe176d5908aec74dde516ee",
     "crates/tekes-ui-app-host/src/window_accessibility.rs": "3fa922a78b41958306c66adee77179d4102667c1a1bcd64447152b2108dc622c",
     "crates/tekes-ui-gallery/src/gallery/workbench/apphost_collections.rs": "b2289a8506432826f03b8fe3af8cdf29b913b355b75ee1302f331c18ad6587fb",
     "crates/tekes-ui-controls/src/composition/markdown_editor.rs": "4120a7c9c385b395c9d3209e2b717263c96147e2f7a4db185b77e3421be78839",
@@ -2289,11 +2289,12 @@
     "crates/tekes-ui-controls/src/composition/rich_content/syntax.rs": "9a68d16346a5233148d339d0912ce281253d3f8ee0ad7fe9c9def9841cf5cfd6",
     "crates/tekes-ui-controls/tests/markdown_projected_editing.rs": "269d780e6426591d5e4f46e210b697c6e4188f64bada9222b0f4209b29be3e8c",
     "crates/tekes-ui-gallery/src/gallery/workbench/apphost_display.rs": "0ce6e26d004edeff9318846e058186338e5418a853edea45d4abf634e9eb91fe",
-    "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "9af8750532d3ed719c3376358ccadbf02d906360847bc04f6996ded66fefa65d",
+    "crates/tekes-ui-gallery/src/gallery/apphost_workbench_tests.rs": "c0b82defeee0cf56e4e885c5a5abf57c72c617777c44fb03b3464820d6ede5da",
     "docs/design/markdown-projected-editing.md": "8e375ca74864c2c7d26dc4919b490327747e005c12f2499ed3a2c7a7d02ec254",
-    "crates/tekes-ui-app-host/src/window_settings.rs": "d86af20c057c6a02b4babf154f0aaacc0d7903730a42b261c9f00a36297d5651",
+    "crates/tekes-ui-app-host/src/window_settings.rs": "3dc1e2979ec78106112006771c76917d83dba060e0b57d9b55769fa3c92e5db8",
     "crates/tekes-ui-settings/src/sidebar.rs": "d20c4b6a28630e91a4c38e6a426e7992077bc5a624fd0043501bf0a1c0041713",
-    "crates/tekes-ui-settings/tests/form_sidebar.rs": "ee6cd3d69ba0ad795eade1956e52d4a01046afc1679d7bffe9bd9c1aca9d0c37"
+    "crates/tekes-ui-settings/tests/form_sidebar.rs": "1f9e68e39dcae69166753d4a434868b1216548514f5c692a07380bc7959387a4",
+    "crates/tekes-ui-controls/src/composition/grouped_form_row.rs": "fc20eaa1ddff4ef1df5796c6406d58ddabe02fcae717c1c1a51ff7bdff707774"
   },
   "remaining": [
     "Collections49 public adapter/support paths recovered in thisf4df candidate; actual compatible compilation/consumer/IPC acceptance and publication remain Main gates. Tree/Table and keyed List slots remain finite passive contracts, not arbitrary interactive content or virtualization.",
@@ -2305,7 +2306,7 @@
   "shared_evidence": [
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 493,
+      "line": 495,
       "anchor": "pub trait Component: Debug + Any {"
     },
     {
@@ -2355,7 +2356,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 732,
+      "line": 757,
       "anchor": "pub(super) fn lifecycle(&mut self, event: Lifecycle) {"
     },
     {
@@ -2415,12 +2416,12 @@
     },
     {
       "path": "examples/composition-consumer/src/combo_status.rs",
-      "line": 64,
+      "line": 63,
       "anchor": "impl Component for Query {"
     },
     {
       "path": "examples/composition-consumer/src/command_status.rs",
-      "line": 86,
+      "line": 78,
       "anchor": "impl Component for Commands {"
     },
     {
@@ -2430,7 +2431,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/adapters.rs",
-      "line": 430,
+      "line": 433,
       "anchor": "impl Component for SliderContent {"
     },
     {
@@ -2505,7 +2506,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/text_field.rs",
-      "line": 837,
+      "line": 1211,
       "anchor": "s.required = self.field.required;"
     },
     {
@@ -2521,7 +2522,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 684,
+      "line": 686,
       "anchor": "fn paints_children(&self) -> bool {",
       "purpose": "Optional child paint ownership; default preserves automatic traversal"
     },
@@ -2587,7 +2588,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 186,
+      "line": 211,
       "anchor": "pub fn with_label_layout(",
       "purpose": "Explicit readonly Content label opt-in on original components"
     },
@@ -2698,7 +2699,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition.rs",
-      "line": 887,
+      "line": 889,
       "anchor": "fn bubble_handled_event(&self, _event: &ContentEvent) -> bool {"
     },
     {
@@ -5140,6 +5141,50 @@
         "crates/tekes-ui-gallery/src/gallery/workbench/basic_states.rs"
       ],
       "validation": "tekes-ui-gallery (navigation type_scale 1.0 vs 1.5 & PR #367 8pt/8pt+2pt, 27-role ContentHost swatches, icons zero ghost-gap, GPU toolbar/number-field state matrix) passed"
+    },
+    {
+      "issue": 372,
+      "scope": "v0.4.4 Batch 3: TextFieldContent::with_presentation / set_field_presentation / field_presentation and Surface-aware FieldView::set_surface in controls; deleted Gallery private FormMetadata (apphost_patterns.rs) and Fixture (apphost_field_meta.rs) compensations in favor of direct FieldPresentation::emphasized_form",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/feedback_view/fields.rs",
+        "crates/tekes-ui-controls/src/composition/text_field.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_patterns.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_field_meta.rs",
+        "crates/tekes-ui-controls/src/feedback_view/tests_1.rs",
+        "crates/tekes-ui-controls/src/composition/text_field/tests.rs"
+      ],
+      "validation": "v0.4.4 workspace Clippy/tests (tekes-ui-controls 543 lib + integration + doc tests with 1 lib ignored, tekes-ui-gallery 284 passed with 4 ignored), packaging (15 crates), and design/audit checks passed; native visual/AX/IME/VoiceOver/120Hz separate"
+    },
+    {
+      "issue": 374,
+      "scope": "v0.4.4 Batch 3: Encapsulated TextFieldContent.{field, view, surface} as pub(crate), removed SearchFieldContent Deref<Target = TextFieldContent>, added complete TextFieldContent & SearchFieldContent facade constructors/getters/setters/editing/scroll/reading APIs, and migrated controls tests, app-host, settings, gallery, macos-bridge, module-runtime, and all examples/*",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/text_field.rs",
+        "crates/tekes-ui-controls/src/composition/search.rs",
+        "crates/tekes-ui-app-host/src/columns.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
+        "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs",
+        "crates/tekes-ui-macos-bridge/src/content_accessibility.rs",
+        "crates/tekes-ui-module-runtime/src/native_content.rs",
+        "examples/composition-consumer/src/scenarios.rs"
+      ],
+      "validation": "v0.4.4 workspace + x86_64-unknown-linux-gnu Clippy, tekes-ui-app-host, tekes-ui-macos-bridge selftest, tekes-ui-module-runtime, tekes-ui-gallery, and example consumers (composition-consumer default/svg-icons/bitmap-images, panel-content-consumer, process-content-consumer + 9 modes, media-viewer-content-consumer, app-host-demo, host-reveal-consumer, panel-module-demo) passed; native window/AX/IME/VoiceOver/120Hz separate"
+    },
+    {
+      "issue": 369,
+      "scope": "v0.4.4 Batch 3: Moved SettingsRow into controls as GroupedFormRowContent with unified intrinsic-width column negotiation via SwitchView::TRACK_WIDTH, TextContent::with_error_foreground, StackContent::titled_section group headers with hierarchy gaps, full-bleed ScrollContent::document without fixed 390pt viewport, horizontal save_error footer bar, and removal of form_row.rs and window_settings.rs external 16pt clip shrink",
+      "source_paths": [
+        "crates/tekes-ui-controls/src/composition/grouped_form_row.rs",
+        "crates/tekes-ui-controls/src/composition.rs",
+        "crates/tekes-ui-controls/src/selection.rs",
+        "crates/tekes-ui-controls/src/composition/adapters.rs",
+        "crates/tekes-ui-controls/src/composition/content_node.rs",
+        "crates/tekes-ui-settings/src/form.rs",
+        "crates/tekes-ui-settings/tests/form_sidebar.rs",
+        "crates/tekes-ui-settings/tests/number_field.rs",
+        "crates/tekes-ui-app-host/src/window_settings.rs"
+      ],
+      "validation": "v0.4.4 tekes-ui-controls, tekes-ui-settings (27 tests + no-default-features), tekes-ui-app-host (216 lib with 1 ignored + selection_text_capability), app-host-demo + settings_worker_entry, and packaging/composition-audit checks passed; native window/AX/IME/VoiceOver/120Hz separate"
     }
   ]
 }

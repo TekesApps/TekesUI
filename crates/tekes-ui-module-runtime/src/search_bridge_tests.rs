@@ -5,9 +5,8 @@ use tekes_ui_tokens::Theme;
 #[test]
 fn public_original_field_exports_search_role_and_unchanged_owner_text_binding() {
     let id = ComponentId(101);
-    let mut field = TextFieldContent::new("Query", "A😀B");
-    field.surface.input_mut().set_read_only(true);
-    field.surface.input_mut().select_range(1..3);
+    let mut field = TextFieldContent::new("Query", "A😀B").with_read_only(true);
+    field.select_range(1..3);
     let mut host =
         ContentHost::new(Content::new(id, super::search_fixture::SearchOwner(field))).unwrap();
     let mut text = super::combo_coretext::Text::new(1.);
@@ -44,7 +43,7 @@ fn public_original_field_exports_search_role_and_unchanged_owner_text_binding() 
 fn search_wire_uses_actual_marked_draft_and_original_action_binding() {
     let id = ComponentId(116);
     let mut field = TextFieldContent::new("Search", "A😀B");
-    field.surface.input_mut().select_range(1..3);
+    field.select_range(1..3);
     let mut host =
         ContentHost::new(Content::new(id, super::search_fixture::SearchOwner(field))).unwrap();
     let mut text = super::combo_coretext::Text::new(1.);

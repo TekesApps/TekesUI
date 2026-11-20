@@ -113,33 +113,23 @@ impl AppHostPatterns {
             let mut field = self.host_mut().remove(ComponentId(27501)).unwrap();
             let editor = field.component_mut::<TextFieldContent>().unwrap();
             editor.show_metadata = true;
-            editor.field.label = if renderer == "filter" {
-                "Filter files"
-            } else {
-                "Workspace name"
-            }
-            .into();
-            editor.field.help = if renderer == "filter" {
-                ""
-            } else {
-                "Use a clear name for your workspace."
-            }
-            .into();
             editor.viewport = TextViewport::Form;
             if renderer == "filter" {
-                children.push(field);
+                editor.set_label("Filter files");
+                editor.set_help("");
+                editor.set_field_presentation(
+                    tekes_ui_controls::feedback_view::FieldPresentation::default(),
+                );
+                editor.set_max_width(None);
             } else {
-                editor.show_metadata = false;
-                editor.viewport = TextViewport::Fill;
-                children.push(Content::new(
-                    ComponentId(110023),
-                    FormMetadata {
-                        children: vec![field],
-                        view: Default::default(),
-                        arranged: false,
-                    },
-                ));
+                editor.set_label("Workspace name");
+                editor.set_help("Use a clear name for your workspace.");
+                editor.set_field_presentation(
+                    tekes_ui_controls::feedback_view::FieldPresentation::emphasized_form(),
+                );
+                editor.set_max_width(Some(600.));
             }
+            children.push(field);
         }
         match renderer {
             "master" => {
@@ -271,7 +261,7 @@ impl AppHostPatterns {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap();
-            let disabled_changed = field.surface.input().is_disabled() != self.state.disabled;
+            let disabled_changed = field.is_disabled() != self.state.disabled;
             let error = self.state.error || self.state.phase == Phase::Invalid;
             let message = error.then(|| {
                 if renderer == "filter" {
@@ -280,7 +270,7 @@ impl AppHostPatterns {
                     "A name is required.".to_owned()
                 }
             });
-            let error_changed = field.field.error != message;
+            let error_changed = field.field().error != message;
             if disabled_changed {
                 self.state.input.set_disabled(self.state.disabled);
             }
@@ -291,8 +281,7 @@ impl AppHostPatterns {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap();
-                field.field.error = message;
-                field.surface.set_error(error);
+                field.set_error(message);
             }
         }
         let mut status = if renderer == "filter" {
@@ -491,114 +480,6 @@ impl AppHostPatterns {
 
 /// Preserve the original emphasized metadata while the same native editor owns
 /// the input slot. Metadata comes from that editor, not a second field model.
-#[derive(Debug)]
-struct FormMetadata {
-    children: Vec<Content>,
-    view: tekes_ui_controls::feedback_view::FieldView,
-    arranged: bool,
-}
-impl FormMetadata {
-    fn layout(
-        &mut self,
-        scene: &mut tekes_ui_scene::Scene,
-        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        frame: tekes_ui_scene::Rect,
-        clip: Option<tekes_ui_scene::Rect>,
-        palette: tekes_ui_tokens::Palette,
-    ) -> tekes_ui_controls::feedback_view::FieldLayout {
-        let field = &self.children[0]
-            .component::<TextFieldContent>()
-            .unwrap()
-            .field;
-        self.view.render_with_presentation(
-            scene,
-            &mut super::apphost_basic::FixtureText(text),
-            field,
-            frame,
-            clip,
-            palette,
-            tekes_ui_tokens::proposal::TextRole::UiBody,
-            tekes_ui_controls::feedback_view::FieldPresentation::emphasized_form(),
-        )
-    }
-}
-impl Component for FormMetadata {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.arranged
-    }
-    fn lifecycle(&mut self, _: Lifecycle) {
-        self.arranged = false;
-    }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
-        CurveSubtreeCapability::Recursive
-    }
-    fn rectangular_input_geometry(&self) -> bool {
-        true
-    }
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn measure(
-        &mut self,
-        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        available: tekes_ui_scene::Size,
-    ) -> tekes_ui_controls::layout::MeasuredChild {
-        self.arranged = false;
-        let width = available.width.min(600.);
-        let layout = self.layout(
-            &mut tekes_ui_scene::Scene::new(),
-            text,
-            tekes_ui_scene::Rect::new(0., 0., width, 118.),
-            None,
-            tekes_ui_tokens::Theme::LIGHT.into(),
-        );
-        tekes_ui_controls::layout::MeasuredChild::new(tekes_ui_scene::Size::new(
-            width,
-            layout.message.max_y().max(layout.slot.max_y()),
-        ))
-    }
-    fn arrange(
-        &mut self,
-        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        mut frame: tekes_ui_scene::Rect,
-        clip: tekes_ui_scene::Rect,
-    ) {
-        frame.size.width = frame.size.width.min(600.);
-        let layout = self.layout(
-            &mut tekes_ui_scene::Scene::new(),
-            text,
-            frame,
-            Some(clip),
-            tekes_ui_tokens::Theme::LIGHT.into(),
-        );
-        self.children[0].arrange(text, layout.slot, clip);
-        self.arranged = true;
-    }
-    fn paint(
-        &mut self,
-        scene: &mut tekes_ui_scene::Scene,
-        text: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        mut frame: tekes_ui_scene::Rect,
-        clip: tekes_ui_scene::Rect,
-        theme: ContentTheme,
-    ) {
-        frame.size.width = frame.size.width.min(600.);
-        self.layout(scene, text, frame, Some(clip), theme.palette);
-    }
-    fn semantics(&self) -> ContentSemantics {
-        ContentSemantics::new(ContentRole::Group, "Workspace name field")
-    }
-}
-
 /// The original master list and reader share one bounded receiving allocation.
 #[derive(Debug)]
 struct MasterPane {
@@ -945,5 +826,34 @@ mod tests {
         press(&mut page, &mut text, 71);
         press(&mut page, &mut text, 21);
         assert_eq!(page.state.phase, Phase::Saved);
+    }
+    #[test]
+    fn apphost_patterns_form_uses_shared_emphasized_field_without_wrapper() {
+        let mut page = page("form");
+        let mut text = TextEngine::new();
+        render(&mut page, &mut text);
+        assert!(page.host().get(ComponentId(110023)).is_none());
+        let ptr_before = page.host().get(ComponentId(27501)).unwrap() as *const Content;
+        let node = page.host().get(ComponentId(27501)).unwrap();
+        let editor = node.component::<TextFieldContent>().unwrap();
+        assert_eq!(
+            editor.field_presentation(),
+            tekes_ui_controls::feedback_view::FieldPresentation::emphasized_form()
+        );
+        assert_eq!(editor.max_width(), Some(600.));
+        assert_eq!(editor.field().label, "Workspace name");
+        assert_eq!(editor.field().help, "Use a clear name for your workspace.");
+        assert!(node.frame().size.width <= 600.);
+
+        press(&mut page, &mut text, 12);
+        let ptr_after = page.host().get(ComponentId(27501)).unwrap() as *const Content;
+        assert_eq!(ptr_before, ptr_after);
+        let editor = page
+            .host()
+            .get(ComponentId(27501))
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap();
+        assert_eq!(editor.field().error.as_deref(), Some("A name is required."));
     }
 }

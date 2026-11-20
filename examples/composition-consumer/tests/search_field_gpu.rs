@@ -107,22 +107,20 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                     }
                     let original = host.text_surface(ComponentId(1)).unwrap();
                     let editor = original.outer();
-                    let mut reference = TextFieldContent::new("Search", original.text());
-                    reference.show_metadata = false;
+                    let mut reference = TextFieldContent::from_surface(
+                        "Search",
+                        TextSurface::new(original.text(), false, original.input().is_read_only()),
+                    )
+                    .with_show_metadata(false)
+                    .with_disabled(original.input().is_disabled());
                     if original.error() {
-                        reference.field.error = Some("Invalid query".into());
+                        reference.set_error(Some("Invalid query".into()));
                     }
-                    reference.surface =
-                        TextSurface::new(original.text(), false, original.input().is_read_only());
-                    reference
-                        .surface
-                        .input_mut()
-                        .set_disabled(original.input().is_disabled());
                     // Original transactions retain the exact direction/marked ranges.
                     if let Some(mark) = &original.marked() {
                         let units: Vec<_> = original.text().encode_utf16().collect();
                         let preedit = String::from_utf16(&units[mark.clone()]).unwrap();
-                        reference.surface.input_mut().preedit(
+                        reference.set_composition_preview(
                             &preedit,
                             original
                                 .input()
@@ -131,16 +129,13 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                                 .saturating_sub(mark.start)
                                 ..original.input().selection().end.saturating_sub(mark.start),
                             Some(mark.clone()),
+                            original.clauses().to_vec(),
                         );
-                        reference.surface.set_clauses(original.clauses().to_vec());
                     } else {
-                        reference
-                            .surface
-                            .input_mut()
-                            .select_range(original.input().selection());
+                        reference.select_range(original.input().selection());
                     }
                     if matches!(state, "selection" | "marked") {
-                        reference.surface.reveal();
+                        reference.reveal();
                     }
                     let mut ref_host = ContentHost::new(
                         Content::new(ComponentId(1), reference)

@@ -41,7 +41,7 @@ fn hover_preview_independent_consumer_two_layers_stream_and_original_marked_comp
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         (input.text().to_owned(), input.marked(), input.selection())
     };
@@ -84,7 +84,7 @@ fn hover_preview_independent_consumer_two_layers_stream_and_original_marked_comp
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert_eq!(
         (input.text().to_owned(), input.marked(), input.selection()),

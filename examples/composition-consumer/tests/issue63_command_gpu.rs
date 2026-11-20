@@ -365,18 +365,18 @@ fn public_open_command_palette_generated_surfaces_after_layout_repair() {
             palette,
             "popover",
             "input",
-            if query.surface.input().is_disabled() {
+            if query.surface().input().is_disabled() {
                 "disabled"
             } else {
                 "rest"
             },
             tekes_ui_tokens::surface_palette::SurfaceOptions {
-                error: query.surface.error(),
-                read_only: query.surface.input().is_read_only(),
+                error: query.surface().error(),
+                read_only: query.surface().input().is_read_only(),
             },
         )
         .expect("query independent popover input roles");
-        assert!(scene.primitives().iter().any(|primitive|matches!(primitive,Primitive::Quad(q) if q.rect==query.surface.outer() && q.fill==query_colors.background)),
+        assert!(scene.primitives().iter().any(|primitive|matches!(primitive,Primitive::Quad(q) if q.rect==query.surface().outer() && q.fill==query_colors.background)),
             "original query must paint with its default popover Surface");
         let popup_colors = resolve_surface(palette, "popover", "surface-frame", "rest").unwrap();
         assert!(scene.primitives().iter().any(|primitive|matches!(primitive,Primitive::Quad(q) if q.rect==popup.popup && q.fill==popup_colors.background)),

@@ -1218,7 +1218,7 @@
           "experience": "unverified",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
-            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
+            "anchor": ".with_error(state.error.then(|| \"A name is required.\".into()));",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1371,7 +1371,7 @@
           "experience": "unverified",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
-            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
+            "anchor": ".with_error(state.error.then(|| \"A name is required.\".into()));",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -1526,7 +1526,7 @@
           "experience": "unverified",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_input_sections.rs",
-            "anchor": "field.field.error = state.error.then(|| \"A name is required.\".into());",
+            "anchor": ".with_error(state.error.then(|| \"A name is required.\".into()));",
             "story": "states",
             "note": "Reviewed the production-view state fixture branch for this renderer; simulated comparison is not native focus/input or complete state-combination acceptance."
           }
@@ -2449,7 +2449,7 @@
           "experience": "unverified",
           "evidence": {
             "source": "crates/tekes-ui-gallery/src/gallery/workbench/apphost_field_meta.rs",
-            "anchor": "field.error = control.error.then(|| \"A name is required.\".into());",
+            "anchor": ".with_error(control.error.then(|| \"A name is required.\".into()))",
             "story": "states",
             "note": "Field metadata public API probe asserts actual label/required/message ink, error-over-help precedence and wrapping geometry across four themes, three brands and two label roles. Exact rest/error states only; disabled interaction is delegated to the input child; native experience remains separate."
           }

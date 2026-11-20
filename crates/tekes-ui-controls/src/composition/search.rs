@@ -115,12 +115,25 @@ impl SearchFieldContent {
         self.editor
             .apply_external_and_sync(expected, value, selection, undo)
     }
-}
 
-impl std::ops::Deref for SearchFieldContent {
-    type Target = TextFieldContent;
-    fn deref(&self) -> &Self::Target {
-        &self.editor
+    pub fn text(&self) -> &str {
+        self.editor.text()
+    }
+
+    pub fn view(&self) -> &crate::feedback_view::FieldView {
+        self.editor.view()
+    }
+
+    pub fn is_disabled(&self) -> bool {
+        self.editor.is_disabled()
+    }
+
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.editor.set_disabled(disabled);
+    }
+
+    pub fn select_range(&mut self, range: Range<usize>) -> bool {
+        self.editor.select_range(range)
     }
 }
 

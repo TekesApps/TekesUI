@@ -191,7 +191,7 @@ fn marked_composer_rejects_scroll_strict_ax_tab_but_original_pointer_commits() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .text()
         .to_owned();
     let point = owner(&h).semantic_parts()[1].frame.center();
@@ -203,7 +203,7 @@ fn marked_composer_rejects_scroll_strict_ax_tab_but_original_pointer_commits() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert!(final_input.marked().is_none());
     assert_eq!(final_input.text(), input);

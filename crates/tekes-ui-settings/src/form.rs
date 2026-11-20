@@ -1,14 +1,11 @@
 use crate::{Draft, FieldPresentation, FieldType, Result, Schema, SettingsError};
-#[path = "form_row.rs"]
-mod form_row;
 use tekes_ui_controls::{
-    Button, ButtonTextRenderer, ScrollArea, TextSurface, TextSurfaceAlignment,
-    TextSurfacePresentation,
+    ButtonTextRenderer, Insets, TextSurfaceAlignment, TextSurfacePresentation,
     composition::{
         Component, ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost,
-        DecimalNumberFormat, MenuContent, MenuEntry, NumberCommitReason, NumberFieldContent,
-        NumberFormat, NumberParseError, NumberValidation, RadioGroupContent, ScrollContent,
-        StackContent, SwitchContent, TextContent, TextFieldContent,
+        DecimalNumberFormat, GroupedFormRowContent, MenuContent, MenuEntry, NumberCommitReason,
+        NumberFieldContent, NumberFormat, NumberParseError, NumberValidation, RadioGroupContent,
+        ScrollContent, StackContent, SwitchContent, TextContent, TextFieldContent,
     },
     extended::{Axis, Stack},
 };
@@ -20,6 +17,8 @@ const RESET: ComponentId = ComponentId(3);
 const CANCEL: ComponentId = ComponentId(4);
 const APPLY: ComponentId = ComponentId(5);
 const DISCARD: ComponentId = ComponentId(6);
+const ACTIONS: ComponentId = ComponentId(12);
+const FOOTER: ComponentId = ComponentId(13);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FormIntent {
     Apply,
@@ -149,18 +148,37 @@ pub struct SettingsForm {
     autosave: bool,
     save_error: Option<(String, bool)>,
 }
-fn stack(id: u64, axis: Axis, children: Vec<Content>) -> Content {
+fn stack(id: u64, axis: Axis, gap: f32, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
         StackContent {
-            model: Stack {
-                axis,
-                gap: Spacing::Relaxed.value(),
-            },
+            model: Stack { axis, gap },
             children,
             flexible_child: None,
         },
     )
+}
+
+fn footer_actions(children: Vec<Content>) -> Content {
+    stack(
+        ACTIONS.0,
+        Axis::Horizontal,
+        Spacing::Regular.value(),
+        children,
+    )
+}
+
+fn footer_container(children: Vec<Content>) -> Content {
+    let pad = Spacing::Loose.value();
+    StackContent {
+        model: Stack {
+            axis: Axis::Vertical,
+            gap: Spacing::Regular.value(),
+        },
+        children,
+        flexible_child: None,
+    }
+    .into_content_with_padding(FOOTER, Insets::new(Spacing::Regular.value(), pad, pad, pad))
 }
 impl SettingsForm {
     pub fn new(schema: &Schema, draft: &Draft) -> Result<Self> {
@@ -272,36 +290,31 @@ impl SettingsForm {
                             Content::new(ids[index], number)
                         }
                         _ => {
-                            let mut field = TextFieldContent::new("", &raw);
-                            field
-                                .surface
-                                .set_presentation(TextSurfacePresentation::Content);
-                            field.surface.set_alignment(TextSurfaceAlignment::Trailing);
+                            let field = TextFieldContent::new("", &raw)
+                                .with_surface_presentation(TextSurfacePresentation::Content)
+                                .with_alignment(TextSurfaceAlignment::Trailing);
                             Content::new(ids[index], field)
                         }
                     };
                     let base = (1_u64 << 32) + index as u64 * 4;
                     // Shared help owns hover timing and accessibility descriptions;
                     // descriptions never create permanent form rows.
-                    let labels = vec![
-                        Content::new(ComponentId(base + 1), TextContent::new(&f.label))
-                            .with_help(&f.description)
-                            .with_label_layout(Default::default())
-                            .map_err(|e| SettingsError::Ui(format!("Text label layout: {e:?}")))?,
-                    ];
+                    let label = Content::new(ComponentId(base + 1), TextContent::new(&f.label))
+                        .with_help(&f.description)
+                        .with_label_layout(Default::default())
+                        .map_err(|e| SettingsError::Ui(format!("Text label layout: {e:?}")))?;
                     rows.push(Content::new(
                         ComponentId(base),
-                        form_row::SettingsRow::new(
+                        GroupedFormRowContent::new(
                             &f.label,
-                            stack(base + 3, Axis::Vertical, labels),
+                            label,
                             control.with_help(&f.description),
-                            f.kind == FieldType::Boolean,
                         )
                         .in_group(position == 0, position + 1 == fields.len()),
                     ));
                 }
                 if !rows.is_empty() {
-                    children.push(Content::new(
+                    let card = Content::new(
                         ComponentId((1_u64 << 48) + group_index as u64),
                         StackContent {
                             model: Stack {
@@ -311,32 +324,37 @@ impl SettingsForm {
                             children: rows,
                             flexible_child: None,
                         },
-                    ));
+                    );
+                    if group.label.trim().is_empty() {
+                        children.push(card);
+                    } else {
+                        children.push(StackContent::titled_section(
+                            ComponentId((1_u64 << 49) + group_index as u64),
+                            ComponentId((1_u64 << 50) + group_index as u64),
+                            &group.label,
+                            card,
+                        ));
+                    }
                 }
                 children.extend(groups(schema, draft, ids, Some(&group.id))?);
             }
             Ok(children)
         }
         let children = groups(schema, draft, &ids, None)?;
-        let mut scroll =
-            ScrollContent::new(ScrollArea::default(), stack(20, Axis::Vertical, children));
-        scroll.viewport_height = Some(390.);
+        let scroll =
+            ScrollContent::document(StackContent::panel_sections(ComponentId(20), children));
         let mut root_children = vec![Content::new(ComponentId(11), scroll)];
         if !autosave {
-            root_children.extend([
-                Content::new(STATUS, TextContent::new("No changes")),
-                stack(
-                    12,
-                    Axis::Horizontal,
-                    vec![
-                        Content::new(RESET, Button::new("Reset")),
-                        Content::new(CANCEL, Button::new("Cancel")),
-                        Content::new(APPLY, Button::new("Apply")),
-                    ],
-                ),
-            ]);
+            root_children.push(footer_container(vec![
+                Content::new(STATUS, TextContent::secondary("No changes")),
+                footer_actions(vec![
+                    Content::new(RESET, tekes_ui_controls::Button::new("Reset")),
+                    Content::new(CANCEL, tekes_ui_controls::Button::new("Cancel")),
+                    Content::new(APPLY, tekes_ui_controls::Button::new("Apply")),
+                ]),
+            ]));
         }
-        let mut root = stack(ROOT.0, Axis::Vertical, root_children);
+        let mut root = stack(ROOT.0, Axis::Vertical, 0., root_children);
         // The body alone shrinks on small windows; footer remains reachable.
         root.component_mut::<StackContent>().unwrap().flexible_child = Some(ComponentId(11));
         let mut host = ContentHost::new(root)
@@ -431,7 +449,7 @@ impl SettingsForm {
         for (index, f) in schema.settings.iter().enumerate() {
             let node = self.host.get(self.field_ids[index]).unwrap();
             let raw = if let Some(field) = node.component::<TextFieldContent>() {
-                Some(field.surface.text().to_owned())
+                Some(field.text().to_owned())
             } else {
                 node.component::<SwitchContent>()
                     .map(|v| v.model.checked.to_string())
@@ -554,11 +572,11 @@ impl SettingsForm {
             let raw = draft.display(f);
             let node = self.host.get_mut(self.field_ids[index]).unwrap();
             if let Some(field) = node.component_mut::<TextFieldContent>() {
-                field.surface = TextSurface::new(&raw, false, false);
-                field
-                    .surface
-                    .set_presentation(TextSurfacePresentation::Content);
-                field.surface.set_alignment(TextSurfaceAlignment::Trailing);
+                let _ = field.replace_value(
+                    &raw,
+                    tekes_ui_controls::ExternalSelection::Reset,
+                    tekes_ui_controls::ExternalUndo::Reset,
+                );
             } else if let Some(number) = node.component_mut::<NumberFieldContent>() {
                 // Drain any commit generated by the blur above before syncing the target value.
                 let _ = number.drain_value_changes();
@@ -599,23 +617,24 @@ impl SettingsForm {
             return;
         }
         self.save_error = state;
-        let _ = self.host.remove(STATUS);
-        let _ = self.host.remove(APPLY);
-        let _ = self.host.remove(DISCARD);
+        let _ = self.host.remove(FOOTER);
         if let Some(message) = message {
-            self.host
-                .insert(ROOT, Content::new(STATUS, TextContent::new(message)))
-                .expect("Settings root accepts error status");
-            let mut retry = Button::new("Retry");
+            let mut retry = tekes_ui_controls::Button::new("Retry");
             retry.button.state.disabled = busy;
-            self.host
-                .insert(ROOT, Content::new(APPLY, retry))
-                .expect("Settings root accepts retry button");
-            let mut discard = Button::new("Discard");
+            let mut discard = tekes_ui_controls::Button::new("Discard");
             discard.button.state.disabled = busy;
             self.host
-                .insert(ROOT, Content::new(DISCARD, discard))
-                .expect("Settings root accepts discard button");
+                .insert(
+                    ROOT,
+                    footer_container(vec![
+                        Content::new(STATUS, TextContent::caption(message)).with_error_foreground(),
+                        footer_actions(vec![
+                            Content::new(APPLY, retry),
+                            Content::new(DISCARD, discard),
+                        ]),
+                    ]),
+                )
+                .expect("Settings root accepts error footer");
         }
     }
     pub fn status(&mut self, message: &str, dirty: bool, busy: bool) {
@@ -632,7 +651,7 @@ impl SettingsForm {
             self.host
                 .get_mut(id)
                 .unwrap()
-                .component_mut::<Button>()
+                .component_mut::<tekes_ui_controls::Button>()
                 .unwrap()
                 .button
                 .state

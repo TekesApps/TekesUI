@@ -1,6 +1,5 @@
 use super::{
     button_text_align, clipped, draw_centered_text_with_ink, draw_centered_text_with_rgba,
-    draw_text,
 };
 use crate::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, Field, NumberField,
@@ -14,6 +13,7 @@ use tekes_ui_tokens::{Palette, proposal};
 #[derive(Clone, Debug, Default)]
 pub struct FieldView {
     layout: FieldLayout,
+    surface: Option<&'static str>,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct FieldLayout {
@@ -69,6 +69,20 @@ impl Default for FieldPresentation {
     }
 }
 impl FieldView {
+    pub fn surface(&self) -> &'static str {
+        self.surface.unwrap_or("canvas")
+    }
+
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(
+            surface,
+        )?);
+        Ok(())
+    }
+
     pub fn measure_layout(
         &mut self,
         text: &mut impl ButtonTextRenderer,
@@ -196,31 +210,53 @@ impl FieldView {
         let message = model.message();
         let message_role = presentation.message_role.unwrap_or(role);
         if let Some(v) = layout.visible {
+            let surface = self.surface();
+            let label_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette, surface, "content", "rest",
+            )
+            .expect("Field label Surface packet")
+            .text;
+            let draw_top_aligned = |scene: &mut Scene,
+                                    text: &mut dyn ButtonTextRenderer,
+                                    value: &str,
+                                    role: proposal::TextRole,
+                                    rect: Rect| {
+                if value.is_empty() || rect.is_empty() {
+                    return;
+                }
+                let measured = text.measure(value, role, rect.size.width.max(0.));
+                let draw_rect = Rect::new(
+                    rect.min_x(),
+                    rect.min_y(),
+                    rect.size.width,
+                    rect.size.height.min(measured.height.max(0.)),
+                );
+                if !draw_rect.is_empty() {
+                    text.draw(
+                        scene,
+                        value,
+                        role,
+                        draw_rect,
+                        ButtonTextAlign::Leading,
+                        label_ink,
+                    );
+                }
+            };
             scene.push_clip(v);
-            draw_text(
+            draw_top_aligned(
                 scene,
                 text,
                 &model.label,
                 presentation.label_role,
                 layout.label,
-                palette,
-                ButtonTextAlign::Leading,
             );
             if let Some(r) = layout.required_mark {
-                draw_text(
-                    scene,
-                    text,
-                    "*",
-                    presentation.label_role,
-                    r,
-                    palette,
-                    ButtonTextAlign::Leading,
-                );
+                draw_top_aligned(scene, text, "*", presentation.label_role, r);
             }
             if !message.is_empty() {
                 let packet = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
                     palette,
-                    "canvas",
+                    surface,
                     "input",
                     "rest",
                     tekes_ui_tokens::surface_palette::SurfaceOptions {

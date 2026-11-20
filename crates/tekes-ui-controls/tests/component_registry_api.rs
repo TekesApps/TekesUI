@@ -1077,6 +1077,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::GridContent",
     );
+    public_type::<tekes_ui_controls::composition::GroupedFormRowContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::GroupedFormRowContent",
+    );
     public_type::<tekes_ui_controls::composition::HostRevealBudget>(
         &mut actual,
         "tekes_ui_controls::composition::HostRevealBudget",
@@ -1365,7 +1369,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_201<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_202<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -2238,7 +2242,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_418<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_419<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

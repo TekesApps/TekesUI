@@ -554,18 +554,18 @@ fn render_case(
                 palette,
                 case.surface,
                 "input",
-                if field.surface.input().is_disabled() {
+                if field.surface().input().is_disabled() {
                     "disabled"
                 } else {
                     "rest"
                 },
                 tekes_ui_tokens::surface_palette::SurfaceOptions {
-                    error: field.surface.error(),
-                    read_only: field.surface.input().is_read_only(),
+                    error: field.surface().error(),
+                    read_only: field.surface().input().is_read_only(),
                 },
             )
             .expect("original TextField surface colors");
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==field.surface.outer()&&q.fill==colors.background)),"TextField panel missing generated input background");
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==field.surface().outer()&&q.fill==colors.background)),"TextField panel missing generated input background");
             assert!(
                 text.surface_draws
                     .iter()
@@ -639,18 +639,18 @@ fn render_case(
                 palette,
                 "popover",
                 "input",
-                if query.surface.input().is_disabled() {
+                if query.surface().input().is_disabled() {
                     "disabled"
                 } else {
                     "rest"
                 },
                 tekes_ui_tokens::surface_palette::SurfaceOptions {
-                    error: query.surface.error(),
-                    read_only: query.surface.input().is_read_only(),
+                    error: query.surface().error(),
+                    read_only: query.surface().input().is_read_only(),
                 },
             )
             .expect("default query popover input roles");
-            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==query.surface.outer()&&q.fill==qcolors.background)),"query input background must be generated popover role");
+            assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==query.surface().outer()&&q.fill==qcolors.background)),"query input background must be generated popover role");
             let popup_colors =
                 resolve_surface(palette, "popover", "surface-frame", "rest").unwrap();
             assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q) if q.rect==popup.popup&&q.fill==popup_colors.background)),"popup frame must use generated popover role");
@@ -713,7 +713,7 @@ fn render_case(
                 "query":"e",
                 "three_original_candidates_visible":true,
                 "actual_query_label_inside_query_content":true,
-                "query_surface_overlaps_background_action":intersects(query.surface.outer(),background),
+                "query_surface_overlaps_background_action":intersects(query.surface().outer(),background),
                 "actual_query_label_overlaps_background_action":intersects(query_label.frame,background),
                 "real_query_textsurface_ink":true
             });

@@ -73,12 +73,15 @@ fn build() -> ContentHost {
                 .into_iter()
                 .enumerate()
                 .map(|(i, id)| {
-                    let mut field =
-                        TextFieldContent::new(["TextField", "TextArea", "SearchField"][i], "A😀B");
-                    if i == 1 {
-                        field.surface = TextSurface::new("A😀B\nTail", true, false);
-                        field.viewport = TextViewport::Fixed(96.);
-                    }
+                    let field = if i == 1 {
+                        TextFieldContent::from_surface(
+                            ["TextField", "TextArea", "SearchField"][i],
+                            TextSurface::new("A😀B\nTail", true, false),
+                        )
+                        .with_viewport(TextViewport::Fixed(96.))
+                    } else {
+                        TextFieldContent::new(["TextField", "TextArea", "SearchField"][i], "A😀B")
+                    };
                     Content::new(id, field)
                 })
                 .collect(),
@@ -173,9 +176,9 @@ fn unmounted_composing_editor_finalizes_visible_draft_and_retains_undo_on_owned_
         assert_eq!(host.focused(), None);
         let field = detached.component::<TextFieldContent>().unwrap();
         assert_eq!(field as *const TextFieldContent, identity);
-        assert_eq!(field.surface.text(), visible);
-        assert!(field.surface.marked().is_none());
-        assert!(field.surface.clauses().is_empty());
+        assert_eq!(field.surface().text(), visible);
+        assert!(field.surface().marked().is_none());
+        assert!(field.surface().clauses().is_empty());
         assert!(
             !host
                 .accessibility_action(id, None, AccessibilityAction::SetValue("late".into()))
@@ -217,8 +220,6 @@ fn removing_captured_editable_or_readonly_real_editor_cancels_gesture_without_lo
                 .unwrap()
                 .component_mut::<TextFieldContent>()
                 .unwrap()
-                .surface
-                .input_mut()
                 .set_read_only(readonly);
             render(&mut host, Theme::LIGHT);
             let s = host.text_surface(id).unwrap();
@@ -229,9 +230,9 @@ fn removing_captured_editable_or_readonly_real_editor_cancels_gesture_without_lo
             let selection = host.text_surface(id).unwrap().input().selection();
             let detached = host.remove(id).unwrap();
             let field = detached.component::<TextFieldContent>().unwrap();
-            assert!(!field.surface.pointer_state(None).pressed);
-            assert_eq!(field.surface.text(), value);
-            assert_eq!(field.surface.input().selection(), selection);
+            assert!(!field.surface().pointer_state(None).pressed);
+            assert_eq!(field.surface().text(), value);
+            assert_eq!(field.surface().input().selection(), selection);
             assert_eq!(host.focused(), None);
             assert!(!host.event(&ContentEvent::PointerUp(p)).activated);
             host.insert(ROOT, detached).unwrap();

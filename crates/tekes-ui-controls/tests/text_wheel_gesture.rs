@@ -85,11 +85,10 @@ fn stack(children: Vec<Content>) -> StackContent {
 }
 fn field() -> TextFieldContent {
     let value = "A line of editable text.\n".repeat(80);
-    let mut field = TextFieldContent::new("Area", &value);
-    field.show_metadata = false;
-    field.viewport = TextViewport::Fixed(90.);
-    field.surface = TextSurface::new(&value, true, false);
-    field.surface.scroll_mut().set_reduced_motion(true);
+    let mut field = TextFieldContent::from_surface("Area", TextSurface::new(&value, true, false))
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fixed(90.));
+    field.set_reduced_motion(true);
     field
 }
 fn fixture(bubble: bool) -> ContentHost {
@@ -223,7 +222,7 @@ fn text_wheel_nonprecise_edge_disabled_axes_and_button_keep_parent_bubbling() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.scroll_mut().scroll_by(0., f32::MAX);
+    field.scroll_by(0., f32::MAX);
     let inside = position(&host);
     send(&mut host, inside, 1., Phase::None, Phase::None, false);
     assert!(
@@ -236,8 +235,6 @@ fn text_wheel_nonprecise_edge_disabled_axes_and_button_keep_parent_bubbling() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .scroll_mut()
         .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Disabled);
     let inside = position(&host);
     send(&mut host, inside, 20., Phase::Began, Phase::None, true);
@@ -295,8 +292,6 @@ fn text_wheel_mount_blur_disabled_inactive_cancel_and_reparent_revoke_tail() {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .surface
-                    .input_mut()
                     .set_disabled(true);
             }
             "inactive" => {

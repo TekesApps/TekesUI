@@ -194,7 +194,7 @@ fn editor_baseline(r: &mut Reader) -> tekes_ui_controls::TextEditBaseline {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .external_baseline()
 }
@@ -233,7 +233,7 @@ fn persisted_mixed_history_survives_destruction_new_ids_and_coretext_reflow() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .external_baseline(),
         baseline
@@ -258,7 +258,7 @@ fn persisted_mixed_history_survives_destruction_new_ids_and_coretext_reflow() {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .input()
                 .external_baseline(),
             baseline
@@ -402,7 +402,7 @@ fn stale_attachment_revision_and_new_user_intent_reject_without_partial_install(
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .external_baseline(),
         baseline

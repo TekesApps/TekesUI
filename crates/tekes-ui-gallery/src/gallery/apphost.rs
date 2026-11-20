@@ -395,18 +395,18 @@ fn update_document(host: &mut ContentHost, document: &Document) {
         .component_mut::<TextFieldContent>()
         .unwrap();
     // Inspector updates that leave the body unchanged must retain selection.
-    if field.surface.text() != value {
-        let baseline = field.surface.input().external_baseline();
+    if field.text() != value {
+        let baseline = field.surface().input().external_baseline();
         let revision = tekes_ui_controls::DraftRevision {
             identity: "gallery-apphost-document-body".into(),
             version: field
-                .surface
+                .surface()
                 .input()
                 .external_value()
                 .map_or(1, |current| current.version + 1),
             payload: value,
         };
-        let result = field.surface.apply_external_value(
+        let result = field.apply_external_value(
             &baseline,
             &revision,
             tekes_ui_controls::ExternalSelection::Set(0..0),
@@ -502,8 +502,11 @@ fn update_inspector(host: &mut ContentHost, document: &Document) {
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        field.surface.input_mut().set_text(value);
-        field.surface.invalidate_text_layout();
+        field.replace_value(
+            value,
+            tekes_ui_controls::ExternalSelection::Reset,
+            tekes_ui_controls::ExternalUndo::Reset,
+        );
     }
     host.get_mut(REVISION)
         .unwrap()
@@ -660,7 +663,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
                 .text()
                 .to_owned();
             item.author = host
@@ -668,7 +670,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
                 .text()
                 .to_owned();
             item.revision = host
@@ -976,7 +977,6 @@ mod tests {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .text(),
                 state.items[0].title
             );
@@ -1040,10 +1040,10 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        let origin = field.surface.origin();
+        let origin = field.surface().origin();
         let end = field
-            .surface
-            .caret_doc(field.surface.input().len())
+            .surface()
+            .caret_doc(field.surface().input().len())
             .offset(origin.x, origin.y);
         assert!(
             end.min_y() >= narrow.min_y() && end.max_y() <= narrow.max_y(),
@@ -1075,15 +1075,15 @@ mod tests {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap();
-            let origin = field.surface.origin();
+            let origin = field.surface().origin();
             let point = |index| {
                 field
-                    .surface
+                    .surface()
                     .caret_doc(index)
                     .offset(origin.x, origin.y)
                     .center()
             };
-            (point(0), point(end), field.surface.text().to_owned())
+            (point(0), point(end), field.text().to_owned())
         };
         for (phase, position) in [
             (PointerPhase::Down, start_point),
@@ -1111,11 +1111,11 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert!(field.surface.input().is_read_only());
-        let selection = field.surface.input().selection();
+        assert!(field.is_read_only());
+        let selection = field.surface().input().selection();
         assert_eq!(selection, 0..end);
         assert_eq!(
-            field.surface.input().selected_text(),
+            field.surface().input().selected_text(),
             String::from_utf16(&original.encode_utf16().take(end).collect::<Vec<_>>()).unwrap()
         );
         host.event(&ContentEvent::Commit {
@@ -1128,9 +1128,9 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(field.surface.text(), original);
+        assert_eq!(field.text(), original);
         assert_eq!(
-            field.surface.input().selection(),
+            field.surface().input().selection(),
             selection,
             "unrelated Inspector updates retain the original selection"
         );
@@ -1140,7 +1140,7 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(field.surface.text(), state.items[1].paragraphs.join("\n\n"));
+        assert_eq!(field.text(), state.items[1].paragraphs.join("\n\n"));
     }
 
     #[test]
@@ -1242,7 +1242,6 @@ mod tests {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .text(),
                 DOCUMENT_TITLES[index]
             );
@@ -1390,7 +1389,6 @@ mod tests {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
                 .text(),
             state.items[2].title
         );

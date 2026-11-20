@@ -89,7 +89,7 @@ fn nested_toolbar_measures_available_width_and_preserves_original_editor() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .text()
             .to_owned();
         if width < 1000. {
@@ -138,7 +138,7 @@ fn nested_toolbar_measures_available_width_and_preserves_original_editor() {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .input()
                 .text(),
             before

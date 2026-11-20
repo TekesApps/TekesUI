@@ -300,16 +300,16 @@ impl Review {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(outside.surface.text(), "Keep A😀B");
-        assert_eq!(outside.surface.input().selection(), 0..0);
-        assert!(outside.surface.marked().is_none());
+        assert_eq!(outside.surface().text(), "Keep A😀B");
+        assert_eq!(outside.surface().input().selection(), 0..0);
+        assert!(outside.surface().marked().is_none());
         self.verified.push(phase);
         let editor = tree
             .get(f::EDITOR)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         if phase >= 38_011 {
             assert_eq!(editor.text(), "中文 body draft");
@@ -321,7 +321,7 @@ impl Review {
             "expanded":f::disclosure(tree).expanded(),"disabled":f::disclosure(tree).disabled(),
             "focus":tree.focused().map(|id|id.0),"trigger_mount":self.trigger_mount,"editor_mount":self.editor_mount,"outside_mount":self.outside_mount,
             "editor":{"text":editor.text(),"selection":editor.selection(),"marked":editor.marked()},
-            "outside":{"text":outside.surface.text(),"selection":outside.surface.input().selection(),"marked":outside.surface.marked()},
+            "outside":{"text":outside.surface().text(),"selection":outside.surface().input().selection(),"marked":outside.surface().marked()},
             "marked_baseline":self.marked.as_ref().map(|_| "中文 body draft|1..1|0..2"),
             "public_sdk_marked_ax_refused":self.marked_ax_refused,
             "records":records.iter().map(|r|serde_json::json!({"source":format!("{:?}",r.action.source),"target":r.action.target.0,"mount":r.mount,

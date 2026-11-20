@@ -30,7 +30,7 @@ pub fn snapshot(f: &Transcript, active: bool) -> serde_json::Value {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     let preview = f
         .host

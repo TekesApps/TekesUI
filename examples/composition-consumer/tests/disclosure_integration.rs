@@ -253,7 +253,7 @@ fn compound_title_has_one_owner_and_external_fold_preserves_sibling_preedit_and_
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         assert_eq!(input.text(), body_before.text);
         assert_eq!(input.selection(), body_before.selection);

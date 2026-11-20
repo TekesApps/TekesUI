@@ -1138,3 +1138,167 @@ fn number_field_has_symmetric_stepper_gaps() {
         "left_gap={left_gap}"
     );
 }
+
+#[test]
+fn field_view_resolves_label_and_helper_inks_from_configured_surface() {
+    #[derive(Default)]
+    struct InkText(Vec<(String, tekes_ui_tokens::Rgba)>);
+    impl ButtonTextRenderer for InkText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(
+                (text.chars().count() as f32 * 8.).min(max_width.max(0.)),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            text: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: tekes_ui_tokens::Rgba,
+        ) {
+            self.0.push((text.to_owned(), ink));
+        }
+    }
+
+    let mut view = FieldView::default();
+    assert_eq!(view.surface(), "canvas");
+    assert!(view.set_surface("not-a-surface").is_err());
+
+    for surface in ["canvas", "panel", "sidebar"] {
+        view.set_surface(surface).unwrap();
+        assert_eq!(view.surface(), surface);
+        for error in [None, Some("Required field".to_owned())] {
+            let model = Field {
+                label: "Name".into(),
+                help: "Helper text".into(),
+                error: error.clone(),
+                required: true,
+            };
+            let mut text = InkText::default();
+            for theme in tekes_ui_tokens::Theme::ALL {
+                let palette = tekes_ui_tokens::Palette::from(theme);
+                text.0.clear();
+                view.render_with_presentation(
+                    &mut Scene::new(),
+                    &mut text,
+                    &model,
+                    Rect::new(0., 0., 280., 140.),
+                    None,
+                    palette,
+                    role(),
+                    FieldPresentation::emphasized_form(),
+                );
+                let label_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette, surface, "content", "rest",
+                )
+                .unwrap()
+                .text;
+                let helper_ink = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                    palette,
+                    surface,
+                    "input",
+                    "rest",
+                    tekes_ui_tokens::surface_palette::SurfaceOptions {
+                        error: error.is_some(),
+                        read_only: false,
+                    },
+                )
+                .unwrap()
+                .helper
+                .unwrap();
+                assert_eq!(
+                    text.0,
+                    vec![
+                        ("Name".to_owned(), label_ink),
+                        ("*".to_owned(), label_ink),
+                        (model.message().to_owned(), helper_ink),
+                    ]
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn field_emphasized_form_wraps_long_metadata_under_narrow_widths_and_text_scale() {
+    struct WrappingText {
+        scale: f32,
+    }
+    impl ButtonTextRenderer for WrappingText {
+        fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+            role.style().size * self.scale
+        }
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            let char_w = 8. * self.scale;
+            let natural = text.chars().count() as f32 * char_w;
+            let width = max_width.max(char_w);
+            let lines = (natural / width).ceil().max(1.);
+            Size::new(
+                natural.min(max_width.max(0.)),
+                lines * role.style().line_height * self.scale,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let model = Field {
+        label: "A long wrapping workspace field title for narrow form rows".into(),
+        help: "Use a clear workspace identifier that still reads cleanly at larger text scales."
+            .into(),
+        error: Some(
+            "Validation error: workspace identifier cannot exceed 64 visible characters.".into(),
+        ),
+        required: true,
+    };
+    let mut view = FieldView::default();
+    let narrow_1x = view.measure_with_presentation(
+        &mut WrappingText { scale: 1.0 },
+        &model,
+        Rect::new(0., 0., 180., 600.),
+        None,
+        role(),
+        FieldPresentation::emphasized_form(),
+    );
+    let narrow_scaled = view.measure_with_presentation(
+        &mut WrappingText { scale: 1.5 },
+        &model,
+        Rect::new(0., 0., 180., 600.),
+        None,
+        role(),
+        FieldPresentation::emphasized_form(),
+    );
+    let wide_1x = view.measure_with_presentation(
+        &mut WrappingText { scale: 1.0 },
+        &model,
+        Rect::new(0., 0., 600., 600.),
+        None,
+        role(),
+        FieldPresentation::emphasized_form(),
+    );
+    assert!(narrow_1x.label.size.height > wide_1x.label.size.height);
+    assert!(narrow_1x.message.size.height > wide_1x.message.size.height);
+    assert!(narrow_scaled.label.size.height > narrow_1x.label.size.height);
+    assert!(narrow_scaled.message.size.height > narrow_1x.message.size.height);
+    assert_eq!(narrow_scaled.slot.min_y(), narrow_scaled.label.max_y() + 4.);
+    assert_eq!(
+        narrow_scaled.message.min_y(),
+        narrow_scaled.slot.max_y() + 6.
+    );
+    assert!(narrow_scaled.slot.size.height >= 36.);
+    assert_eq!(
+        narrow_scaled.required_mark.unwrap().size.height,
+        narrow_scaled.label.size.height
+    );
+}

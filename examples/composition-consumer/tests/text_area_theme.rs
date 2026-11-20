@@ -249,9 +249,9 @@ fn render_host(host: &mut ContentHost, text: &mut coretext::Text, theme: Theme) 
 #[test]
 fn text_area_original_content_configuration_retains_multiline_input_and_theme_scroll() {
     let source = source();
-    let mut field = TextFieldContent::new("Project notes", &source);
-    field.surface = TextSurface::new(&source, true, false);
-    field.viewport = TextViewport::Fixed(160.);
+    let field =
+        TextFieldContent::from_surface("Project notes", TextSurface::new(&source, true, false))
+            .with_viewport(TextViewport::Fixed(160.));
     let mut host = ContentHost::new(Content::new(ComponentId(1), field)).unwrap();
     let mut text = coretext::Text::new(1.);
     text.services = true;
@@ -262,10 +262,10 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.input_mut().select_range(0..4));
-    assert!(field.surface.scroll_mut().scroll_by(0., 80.));
-    let offset = field.surface.scroll().offset;
-    let frame = field.surface.outer();
+    assert!(field.select_range(0..4));
+    assert!(field.scroll_by(0., 80.));
+    let offset = field.surface().scroll().offset;
+    let frame = field.surface().outer();
     for theme in Theme::ALL {
         let scene = render_host(&mut host, &mut text, theme);
         let field = host
@@ -273,12 +273,12 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert!(field.surface.input().is_multiline());
-        assert_eq!(field.surface.role(), proposal::TextRole::ComposerBody);
-        assert_eq!(field.surface.outer(), frame);
-        assert_eq!(field.surface.scroll().offset, offset);
-        assert_eq!(field.surface.input().selection(), 0..4);
-        assert_eq!(field.surface.text(), source);
+        assert!(field.surface().input().is_multiline());
+        assert_eq!(field.surface().role(), proposal::TextRole::ComposerBody);
+        assert_eq!(field.surface().outer(), frame);
+        assert_eq!(field.surface().scroll().offset, offset);
+        assert_eq!(field.surface().input().selection(), 0..4);
+        assert_eq!(field.surface().text(), source);
         assert_input(&scene, frame, theme.into(), text.backing);
         assert!(has_attached_focus(&scene, frame, theme.into()));
         assert_eq!(

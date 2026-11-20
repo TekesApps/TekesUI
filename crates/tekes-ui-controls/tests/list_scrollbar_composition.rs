@@ -781,8 +781,8 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
             .unwrap();
         let clear = field.semantic_parts()[0].frame;
         assert_eq!(field.semantics().role, ContentRole::TextInput);
-        assert_eq!(field.surface.outer().intersection(&clear), Some(clear));
-        assert!(field.surface.inner().max_x() <= clear.min_x());
+        assert_eq!(field.surface().outer().intersection(&clear), Some(clear));
+        assert!(field.surface().inner().max_x() <= clear.min_x());
         assert!(
             host.text_cursor_regions()
                 .iter()
@@ -798,13 +798,13 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
                 .unwrap();
             // The public original editor may receive an external publication
             // between down and up; the pending Clear must not erase that value.
-            let baseline = field.surface.input().external_baseline();
+            let baseline = field.surface().input().external_baseline();
             let value = tekes_ui_controls::DraftRevision {
                 identity: "replacement".into(),
                 version: 1,
                 payload: "new value".into(),
             };
-            let result = field.surface.apply_external_value(
+            let result = field.apply_external_value(
                 &baseline,
                 &value,
                 tekes_ui_controls::ExternalSelection::Reset,
@@ -829,14 +829,11 @@ fn ordinary_text_field_clear_uses_original_editor_and_rejects_replaced_draft() {
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        assert_eq!(
-            field.surface.text(),
-            if replacement { "new value" } else { "" }
-        );
+        assert_eq!(field.text(), if replacement { "new value" } else { "" });
         if !replacement {
-            assert!(field.surface.input_mut().undo());
-            assert_eq!(field.surface.text(), "original");
-            assert!(!field.surface.input_mut().undo());
+            assert!(field.undo());
+            assert_eq!(field.text(), "original");
+            assert!(!field.undo());
         }
     }
 }
@@ -854,17 +851,17 @@ fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() 
     ] {
         let mut field = TextFieldContent::new("Draft", if mode == "empty" { "" } else { "draft" });
         match mode {
-            "multiline" => field.surface.set_multiline(true),
-            "document" => field
-                .surface
-                .set_presentation(tekes_ui_controls::TextSurfacePresentation::Content),
+            "multiline" => field.set_multiline(true),
+            "document" => {
+                field.set_surface_presentation(tekes_ui_controls::TextSurfacePresentation::Content)
+            }
             "opt_out" => field = field.clear_button(false),
-            "readonly" => field.surface.input_mut().set_read_only(true),
-            "disabled" => field.surface.input_mut().set_disabled(true),
-            "marked" => assert!(field.surface.input_mut().set_marked_range(Some(0..5))),
+            "readonly" => field.set_read_only(true),
+            "disabled" => field.set_disabled(true),
+            "marked" => assert!(field.set_marked_range(Some(0..5))),
             _ => {}
         }
-        let original = field.surface.text().to_owned();
+        let original = field.text().to_owned();
         let frame = Rect::new(0., 0., 300., 80.);
         field.arrange(&mut Text, frame, frame);
         let parts = field.semantic_parts();
@@ -879,7 +876,7 @@ fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() 
                 assert!(!field.event(&event).activated, "{mode}");
             }
         }
-        assert_eq!(field.surface.text(), original, "{mode}");
+        assert_eq!(field.text(), original, "{mode}");
     }
 }
 

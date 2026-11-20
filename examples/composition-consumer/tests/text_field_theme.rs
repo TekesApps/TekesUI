@@ -227,9 +227,9 @@ fn render_host(host: &mut ContentHost, text: &mut coretext::Text, theme: Theme) 
 }
 #[test]
 fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_semantics() {
-    let mut field = TextFieldContent::new("Project name", "draft");
-    field.field.help = "Choose a name".into();
-    field.field.required = true;
+    let field = TextFieldContent::new("Project name", "draft")
+        .with_help("Choose a name")
+        .with_required(true);
     let mut host = ContentHost::new(Content::new(ComponentId(1), field)).unwrap();
     let mut text = coretext::Text::new(1.);
     text.services = true; // Existing required TextSurfaceHost opt-in; actual CoreText, not a no-op renderer.
@@ -241,13 +241,13 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        let frame = field.surface.outer();
+        let frame = field.surface().outer();
         if let Some(before) = initial {
             assert_eq!(frame, before);
         } else {
             initial = Some(frame);
         }
-        assert_eq!(field.surface.role(), proposal::TextRole::UiBody);
+        assert_eq!(field.surface().role(), proposal::TextRole::UiBody);
         assert_input(
             &scene,
             frame,
@@ -285,8 +285,6 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_read_only(true);
     let scene = render_host(&mut host, &mut text, theme);
     assert_input(
@@ -320,8 +318,8 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input_mut().set_read_only(false);
-    field.field.error = Some("Name requires review".into());
+    field.set_read_only(false);
+    field.set_error(Some("Name requires review".into()));
     let scene = render_host(&mut host, &mut text, theme);
     let field = host
         .get(ComponentId(1))
@@ -330,15 +328,15 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap();
     assert_input(
         &scene,
-        field.surface.outer(),
-        field.surface.inner(),
+        field.surface().outer(),
+        field.surface().inner(),
         palette,
         (false, false, true, true),
         "primary-text",
         text.backing,
     );
     assert!(host.semantics()[0].semantics.invalid);
-    let message = field.view.layout().message;
+    let message = field.view().layout().message;
     let errors: Vec<_> = scene
         .primitives()
         .iter()
@@ -362,8 +360,8 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.field.error = None;
-    field.surface.input_mut().set_disabled(true);
+    field.set_error(None);
+    field.set_disabled(true);
     let scene = render_host(&mut host, &mut text, theme);
     let frame = host.semantics()[0].frame;
     assert_input(
@@ -393,8 +391,6 @@ fn text_field_content_retained_themes_use_real_opted_in_host_and_original_input_
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_disabled(false);
     host.focus(Some(ComponentId(1)), true);
     assert!(

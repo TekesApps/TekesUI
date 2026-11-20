@@ -86,7 +86,7 @@ fn main() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
                     .input()
                     .text()
                     .encode_utf16()
@@ -209,9 +209,9 @@ fn main() {
                     "popover_presented": self.scenario.is_presented(),
                     "focused": self.scenario.host.focused().map(|id| id.0),
                     "editor_mount": self.scenario.host.semantic_mount(tekes_ui_composition_consumer::popover_content::EDITOR),
-                    "text": editor.map(|field| field.surface.text()),
-                    "selection": editor.map(|field| field.surface.input().selection()),
-                    "marked": editor.and_then(|field| field.surface.marked()),
+                    "text": editor.map(|field| field.surface().text()),
+                    "selection": editor.map(|field| field.surface().input().selection()),
+                    "marked": editor.and_then(|field| field.surface().marked()),
                     "semantic_nodes": ax::content_nodes(&self.scenario.host).len(),
                 });
                 std::fs::write(

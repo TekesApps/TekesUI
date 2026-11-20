@@ -23,10 +23,13 @@ impl StoryTextHost {
     }
     pub(super) fn text_field(value: &str, multiline: bool, root: fn(Content) -> Content) -> Self {
         let id = ComponentId(if multiline { 27502 } else { 27501 });
-        let mut field = TextFieldContent::new("Project name", value);
-        field.show_metadata = false;
-        field.viewport = TextViewport::Fill;
-        field.surface = tekes_ui_controls::TextSurface::new(value, multiline, false);
+        let field = if multiline {
+            TextFieldContent::multiline("Project name", value)
+        } else {
+            TextFieldContent::new("Project name", value)
+        }
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fill);
         let host = ContentHost::new(root(Content::new(id, field)))
             .expect("fixed Field/Area story structure");
         Self::from_host(host, id)
@@ -133,10 +136,7 @@ impl StoryTextHost {
                 self.field_mut().set_availability(false, disabled);
             }
         } else {
-            self.text_field_mut()
-                .surface
-                .input_mut()
-                .set_disabled(disabled);
+            self.text_field_mut().set_disabled(disabled);
             if disabled {
                 self.blur();
             }
@@ -149,9 +149,7 @@ impl StoryTextHost {
         } else if self.is_search() {
             self.field_mut().set_error(message);
         } else {
-            let field = self.text_field_mut();
-            field.field.error = message;
-            field.surface.set_error(error);
+            self.text_field_mut().set_error(message);
         }
     }
     pub(super) fn set_value(&mut self, value: &str) {
@@ -187,7 +185,7 @@ impl StoryTextHost {
                 ExternalUndo::Reset,
             )
         } else {
-            self.text_field_mut().surface.apply_external_value(
+            self.text_field_mut().apply_external_value(
                 &baseline,
                 &revision,
                 ExternalSelection::Reset,

@@ -203,16 +203,13 @@ fn settings_columns(
                 sidebar: true,
             },
         )),
-        crate::Column::from(
-            crate::LocalContainer::from_source(
-                "settings-center",
-                SettingsColumn {
-                    state: surface.clone(),
-                    sidebar: false,
-                },
-            )
-            .content_padding(tekes_ui_tokens::Spacing::Loose.value()),
-        ),
+        crate::Column::from(crate::LocalContainer::from_source(
+            "settings-center",
+            SettingsColumn {
+                state: surface.clone(),
+                sidebar: false,
+            },
+        )),
     ]
 }
 impl Host {
@@ -1324,7 +1321,6 @@ impl Host {
         let breadcrumb = settings.breadcrumb();
         let _ = navigation;
         let _ = renderer;
-        let pad = tekes_ui_tokens::Spacing::Loose.value();
         let form_content = content_geometry(
             frames[1],
             settings_content_inset(
@@ -1336,12 +1332,6 @@ impl Host {
                 controls_floor,
                 leading as f32,
             ),
-        );
-        let form_content = Rect::new(
-            form_content.min_x() + pad,
-            form_content.min_y() + pad,
-            (form_content.size.width - 2. * pad).max(1.),
-            (form_content.size.height - 2. * pad).max(1.),
         );
         let _ = settings;
         drop(state);

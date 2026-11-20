@@ -28,10 +28,7 @@ pub fn publish(
         .get(COMPOSER)
         .and_then(|n| n.component::<TextFieldContent>())
         .ok_or(PublicationError::Structure)?;
-    let predicted =
-        field
-            .surface
-            .check_external_value(baseline, draft, S::Preserve, U::Transaction);
+    let predicted = field.check_external_value(baseline, draft, S::Preserve, U::Transaction);
     if let ExternalValueResult::Conflict(conflict) = predicted {
         return Err(PublicationError::Editor(conflict));
     }
@@ -65,9 +62,7 @@ pub fn publish(
                 .component_mut::<TextFieldContent>()
                 .unwrap();
             assert_eq!(
-                field
-                    .surface
-                    .apply_external_value(baseline, draft, S::Preserve, U::Transaction),
+                field.apply_external_value(baseline, draft, S::Preserve, U::Transaction),
                 predicted,
                 "same-turn preflight must not be separated by mutations/events"
             );

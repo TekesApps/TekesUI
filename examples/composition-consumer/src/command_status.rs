@@ -31,32 +31,24 @@ impl Commands {
         self.model.combo.open
     }
     fn sync_query(&mut self) {
-        if self.model.combo.query != self.editor.surface.text() {
-            self.model
-                .combo
-                .set_query(self.editor.surface.text().to_owned());
+        if self.model.combo.query != self.editor.text() {
+            self.model.combo.set_query(self.editor.text().to_owned());
         }
     }
     fn opened(&mut self) {
         if !self.view.open_from(&mut self.model, self.owner.0 as usize) {
             return;
         }
-        let n = self.editor.surface.input().len();
-        self.editor
-            .surface
-            .input_mut()
-            .insert(&self.model.combo.query, Some(0..n));
+        let n = self.editor.input().len();
+        self.editor.insert_text(&self.model.combo.query, Some(0..n));
         self.view.blur_trigger();
         self.editor.set_focus(self.focused, self.keyboard);
     }
     fn closed(&mut self, selected: Option<usize>) {
         if let Some(i) = selected {
             self.last_executed = self.model.combo.items.get(i).cloned();
-            let n = self.editor.surface.input().len();
-            self.editor
-                .surface
-                .input_mut()
-                .insert(&self.model.combo.query, Some(0..n));
+            let n = self.editor.input().len();
+            self.editor.insert_text(&self.model.combo.query, Some(0..n));
         }
         self.editor.set_focus(false, false);
         let caller = self.view.take_restore_focus(&self.model);
@@ -131,7 +123,7 @@ impl Component for Commands {
         self.open()
     }
     fn text_surface(&self) -> Option<&TextSurface> {
-        self.open().then_some(&self.editor.surface)
+        self.open().then_some(self.editor.surface())
     }
     fn composing(&self) -> bool {
         self.open() && self.editor.composing()
@@ -242,7 +234,7 @@ impl Component for Commands {
             s,
             &mut t,
             &mut self.model,
-            self.editor.surface.outer(),
+            self.editor.surface().outer(),
             c,
             Some(c),
             theme.palette,
@@ -300,7 +292,7 @@ impl Component for Commands {
                 }
             }
             ContentEvent::PointerDown(p)
-                if !self.editor.surface.contains_visible(*p)
+                if !self.editor.surface().contains_visible(*p)
                     && !self
                         .view
                         .trigger_layout()
@@ -515,11 +507,7 @@ pub fn fixture_content(
     };
     if let Some(query) = initial_query {
         commands.opened();
-        commands
-            .editor
-            .surface
-            .input_mut()
-            .insert(query, Some(0..0));
+        commands.editor.insert_text(query, Some(0..0));
         commands.sync_query();
     }
     Content::new(
@@ -579,7 +567,7 @@ impl Scenario {
         self.commands().open()
     }
     pub fn query(&self) -> &str {
-        self.commands().editor.surface.text()
+        self.commands().editor.text()
     }
     pub fn last_executed(&self) -> Option<&str> {
         self.commands().last_executed.as_deref()
@@ -592,7 +580,7 @@ impl Scenario {
     }
     pub fn query_frame(&self) -> Option<Rect> {
         self.open()
-            .then_some(self.commands().editor.surface.outer())
+            .then_some(self.commands().editor.surface().outer())
     }
     pub fn set_items(&mut self, items: Vec<String>) -> bool {
         let c = self.commands_mut();

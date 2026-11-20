@@ -1,7 +1,7 @@
 //! Original nested readers in three real processes. SDK owns all input routing.
 use super::*;
 use tekes_ui_controls::{
-    ReadingController, ReadingDocumentVersion, ScrollArea, ScrollPolicy,
+    ReadingDocumentVersion, ScrollArea, ScrollPolicy,
     extended::{Axis, Stack},
 };
 use tekes_ui_module_runtime::ProcessContainer;
@@ -99,16 +99,11 @@ fn create_with_accessibility(native_accessibility: bool) -> Box<dyn ProcessModul
         min: 120.,
         max: 120.,
     };
+    inner.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
     inner
-        .surface
-        .scroll_mut()
-        .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
-    let mut reading = ReadingController::default();
-    reading
-        .set_document(&mut inner.surface, "remote-inner", 1, &value)
+        .set_reading_document("remote-inner", 1, &value)
         .unwrap();
-    reading.follow_latest(&mut inner.surface);
-    inner.reading = Some(reading);
+    inner.follow_latest();
     let mut editor = TextFieldContent::new("Message", "draft");
     editor.submit_policy = TextSubmitPolicy::Enter;
     module.host = ContentHost::new(Content::new(
@@ -217,14 +212,14 @@ impl ProcessModule for Reader {
                     .unwrap()
                     .component::<ScrollContent>()
                     .unwrap();
-                let frame = history.surface.inner();
+                let frame = history.surface().inner();
                 let edit = self.module.host.get(EDIT).unwrap().frame();
                 let items: Vec<_> = self.items.iter().map(|id| {
                     let frame = self.module.host.get(*id).unwrap().frame();
                     serde_json::json!({"id":id.0,"frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height]})
                 }).collect();
                 Ok(
-                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"history_mount":self.module.host.semantic_mount(INNER),"history_family":proposal::text_family(history.surface.role().id()),"items":items,"parent_limit":parent.scroll.limit().y,"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface.scroll().offset.y,"parent_offset":parent.scroll.offset.y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.text(),"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.marked()}),
+                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"history_mount":self.module.host.semantic_mount(INNER),"history_family":proposal::text_family(history.role().id()),"items":items,"parent_limit":parent.scroll.limit().y,"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface().scroll().offset.y,"parent_offset":parent.scroll.offset.y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().text(),"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface().marked()}),
                 )
             }
             RequestBody::Message { topic, .. } if topic == "reading-monospace" => {
@@ -234,7 +229,6 @@ impl ProcessModule for Reader {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .set_role(proposal::TextRole::Code);
                 self.module.revision += 1;
                 e.invalidate_view(self.module.revision)?;
@@ -1791,7 +1785,7 @@ mod native_fixture_tests {
             .component::<TextFieldContent>()
             .unwrap();
         assert!(history.reading.is_some());
-        assert!(history.surface.text().contains("History line 59 中文"));
+        assert!(history.text().contains("History line 59 中文"));
         for id in [EDIT, OTHER] {
             assert!(
                 host.get(id)
@@ -1811,7 +1805,7 @@ mod native_fixture_tests {
             !targets.is_empty(),
             "mixed Reader has no eligible focus owner"
         );
-        let reading_offset = history.surface.scroll().offset;
+        let reading_offset = history.surface().scroll().offset;
         assert!(
             host.enter_focus(false),
             "mixed Reader refused original traversal entry: {targets:?}"
@@ -1822,7 +1816,7 @@ mod native_fixture_tests {
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .scroll()
                 .offset,
             reading_offset,

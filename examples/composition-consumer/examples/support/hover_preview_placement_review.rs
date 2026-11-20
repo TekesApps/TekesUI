@@ -163,7 +163,7 @@ impl Review {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         if f.host.focused() != Some(COMPOSER)
             || input.text() != "Original composer draft"

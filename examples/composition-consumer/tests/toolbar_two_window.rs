@@ -294,7 +294,7 @@ fn focus_text_capture_and_drop_stay_in_originating_host() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .text(),
         "A中文"
     );
@@ -304,7 +304,7 @@ fn focus_text_capture_and_drop_stay_in_originating_host() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .text(),
         "B中文"
     );

@@ -1634,11 +1634,12 @@ mod wheel_dispatch_tests {
         // Both public dispatch adapters converge on this reducer; the text variant
         // owns exactly one surrounding text-service operation.
         for with_text in [false, true] {
-            let mut field = TextFieldContent::new("Area", "");
-            field.show_metadata = false;
-            field.viewport = TextViewport::Fill;
-            field.surface =
-                tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false);
+            let field = TextFieldContent::from_surface(
+                "Area",
+                tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false),
+            )
+            .with_show_metadata(false)
+            .with_viewport(TextViewport::Fill);
             let mut host = ContentHost::new(Content::new(ComponentId(275), field)).unwrap();
             let frame = Rect::new(0., 0., 240., 100.);
             host.render(

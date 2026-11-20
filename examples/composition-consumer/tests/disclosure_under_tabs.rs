@@ -125,7 +125,7 @@ fn draft(h: &ContentHost) -> (String, Range<usize>, Option<Range<usize>>) {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     (input.text().to_owned(), input.selection(), input.marked())
 }

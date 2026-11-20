@@ -132,7 +132,7 @@ fn layout_diagnostic(host: &ContentHost, ids: &[ComponentId]) -> String {
 fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_intent() {
     let composer = panel_fixture::composer();
     assert_eq!(
-        composer.surface.presentation(),
+        composer.surface_presentation(),
         TextSurfacePresentation::Field
     );
 
@@ -469,11 +469,11 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
 
 #[test]
 fn zero_inset_field_keeps_geometry_but_rejects_clipped_focus_without_side_effects() {
-    let mut field = TextFieldContent::new("Inline", "focus witness at curved edge");
-    field.surface.set_multiline(true);
-    field.show_metadata = false;
-    field.viewport = TextViewport::Fill;
-    assert_eq!(field.surface.presentation(), TextSurfacePresentation::Field);
+    let field = TextFieldContent::new("Inline", "focus witness at curved edge")
+        .with_multiline(true)
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fill);
+    assert_eq!(field.surface_presentation(), TextSurfacePresentation::Field);
     let root = Content::new(
         ComponentId(8260),
         panel(Content::new(ComponentId(8261), field), true),
@@ -541,12 +541,12 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
     use tekes_ui_controls::composition::{
         SplitViewConfig, SplitViewConstruction, SplitViewContent, SplitViewSlotIds,
     };
-    let mut editor = TextFieldContent::new("Inline", "self-framed 😀 value");
-    editor.surface.set_multiline(true);
-    editor.show_metadata = false;
-    editor.viewport = TextViewport::Fill;
+    let editor = TextFieldContent::new("Inline", "self-framed 😀 value")
+        .with_multiline(true)
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fill);
     assert_eq!(
-        editor.surface.presentation(),
+        editor.surface_presentation(),
         TextSurfacePresentation::Field
     );
     let leading = Content::new(

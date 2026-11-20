@@ -533,9 +533,11 @@ mod tests {
 
     #[test]
     fn text_field_projection_uses_original_value_selection_and_read_only_state() {
-        let mut field = TextFieldContent::new("Notes", "alpha beta");
-        field.surface = tekes_ui_controls::TextSurface::new("alpha beta", true, true);
-        assert!(field.surface.input_mut().select_range(6..10));
+        let mut field = TextFieldContent::from_surface(
+            "Notes",
+            tekes_ui_controls::TextSurface::new("alpha beta", true, true),
+        );
+        assert!(field.select_range(6..10));
         let host = ContentHost::new(Content::new(ComponentId(3), field)).unwrap();
         let projected = content_nodes(&host).into_iter().next().unwrap();
         assert_eq!(projected.role, AccessibilityRole::TextArea);

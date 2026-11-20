@@ -15,17 +15,17 @@ pub const SCROLL: ComponentId = ComponentId(8205);
 pub const ROWS: ComponentId = ComponentId(8206);
 
 pub fn composer() -> TextFieldContent {
-    let mut composer = TextFieldContent::new("Composer", "draft 0123456789");
-    composer.surface.set_multiline(true);
+    let mut composer = TextFieldContent::new("Composer", "draft 0123456789")
+        .with_multiline(true)
+        .with_viewport(TextViewport::Fill)
+        .with_show_metadata(false);
     // Changing input.multiline does not change the independently configured
     // ScrollArea axes. Retain horizontal Auto and enable the real vertical
     // viewport used by this Fill editor; never write an offset in the consumer.
-    composer.surface.scroll_mut().set_scroll_policy(
+    composer.set_scroll_policy(
         tekes_ui_controls::ScrollPolicy::Auto,
         tekes_ui_controls::ScrollPolicy::Auto,
     );
-    composer.viewport = TextViewport::Fill;
-    composer.show_metadata = false;
     composer.submit_policy = TextSubmitPolicy::None;
     composer
 }

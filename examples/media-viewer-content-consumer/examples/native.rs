@@ -1242,12 +1242,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     node.visible().is_some_and(|rect| rect.contains(point)),
                     geometry.as_ref().map(|g| g.bounds(id, None, node.frame()))).unwrap();
             }
-            let surface = &tree
+            let surface = tree
                 .get(IME_EDITOR)
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface;
+                .surface();
             let metrics = tekes_ui_controls::extended::FocusRingMetrics::new(window.scale() as f32);
             let full_ring = metrics.bounds(surface.outer());
             let dialog = tree.get(fixture::DIALOG).unwrap();

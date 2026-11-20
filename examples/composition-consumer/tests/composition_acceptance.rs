@@ -68,9 +68,9 @@ fn required_field_metadata_and_real_consumer_keep_markers_at_narrow_widths() {
                                     .unwrap()
                                     .component::<TextFieldContent>()
                                     .unwrap();
-                                let layout = field.view.layout();
+                                let layout = field.view().layout();
                                 markers.push(layout.required_mark.unwrap());
-                                assert_eq!(layout.slot, field.surface.outer());
+                                assert_eq!(layout.slot, field.surface().outer());
                                 assert!(layout.message.min_y() >= layout.slot.max_y());
                             }
                         } else {
@@ -641,9 +641,11 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                         .unwrap()
                                         .component_mut::<TextFieldContent>()
                                         .unwrap()
-                                        .surface
-                                        .input_mut()
-                                        .set_text("");
+                                        .replace_value(
+                                            "",
+                                            tekes_ui_controls::ExternalSelection::Reset,
+                                            tekes_ui_controls::ExternalUndo::Reset,
+                                        );
                                     assert!(!scenarios::validate_dialog(&mut host));
                                 }
                             }
@@ -658,8 +660,8 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                     .unwrap()
                                     .component::<TextFieldContent>()
                                     .unwrap();
-                                assert!(field.surface.paragraph().is_some());
-                                assert_eq!(field.surface.shaped(), "Tekes");
+                                assert!(field.surface().paragraph().is_some());
+                                assert_eq!(field.surface().shaped(), "Tekes");
                                 let field_height =
                                     host.get(ids::LIST_FIELD).unwrap().frame().size.height;
                                 assert!(
@@ -688,8 +690,8 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                     .unwrap()
                                     .component::<TextFieldContent>()
                                     .unwrap();
-                                assert!(surface.surface.paragraph().is_some());
-                                assert_eq!(surface.field.error.is_some(), state == "active");
+                                assert!(surface.surface().paragraph().is_some());
+                                assert_eq!(surface.field().error.is_some(), state == "active");
                                 assert!(
                                     !host
                                         .focus_targets()

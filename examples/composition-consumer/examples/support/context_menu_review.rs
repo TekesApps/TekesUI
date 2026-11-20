@@ -321,7 +321,7 @@ impl Review {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         if draft.text() != "Draft belongs to A"
             || draft.selection() != (0..8)

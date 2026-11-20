@@ -1,6 +1,6 @@
 //! Independent public-API caller: original fields and Stack, no custom arrange.
 use tekes_ui_controls::{
-    ReadingController, TextSurface,
+    TextSurface,
     composition::*,
     extended::{Axis, Stack},
 };
@@ -20,23 +20,21 @@ impl Default for ViewportFixture {
 }
 impl ViewportFixture {
     pub fn new() -> Self {
-        let mut transcript = TextFieldContent::new("会话记录", "");
-        transcript.surface = TextSurface::new("", true, true);
-        transcript.viewport = TextViewport::Fill;
-        let mut reading = ReadingController::default();
+        let mut transcript =
+            TextFieldContent::from_surface("会话记录", TextSurface::new("", true, true))
+                .with_viewport(TextViewport::Fill);
         let text = (0..80)
             .map(|n| format!("消息 {n}：中文与 English 😀 e\u{301}\n"))
             .collect::<String>();
-        reading
-            .set_document(&mut transcript.surface, "reading", 1, &text)
+        transcript
+            .set_reading_document("reading", 1, &text)
             .unwrap();
-        transcript.reading = Some(reading);
-        let mut composer = TextFieldContent::new("消息", "");
-        composer.surface = TextSurface::new("", true, false);
-        composer.viewport = TextViewport::Grow {
-            min: 56.,
-            max: 160.,
-        };
+        let mut composer =
+            TextFieldContent::from_surface("消息", TextSurface::new("", true, false))
+                .with_viewport(TextViewport::Grow {
+                    min: 56.,
+                    max: 160.,
+                });
         composer.tab_policy = TextTabPolicy::Insert;
         // A fixture reports the existing activated intent, not business delivery.
         composer.submit_policy = TextSubmitPolicy::CommandEnter;

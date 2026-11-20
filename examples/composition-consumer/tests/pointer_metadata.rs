@@ -285,8 +285,10 @@ fn double_click_targets_the_visual_grapheme_on_both_sides_of_caret_boundary() {
 #[test]
 fn triple_click_selects_the_logical_paragraph_including_its_line_break() {
     let body = "First para 中文😀\r\nSecond e\u{301} paragraph\nTail";
-    let mut field = TextFieldContent::new("History", "");
-    field.surface = tekes_ui_controls::TextSurface::new(body, true, true);
+    let field = TextFieldContent::from_surface(
+        "History",
+        tekes_ui_controls::TextSurface::new(body, true, true),
+    );
     let mut h = ContentHost::new(Content::new(ID, field)).unwrap();
     let frame = Rect::new(0., 0., 500., 100.);
     h.render(

@@ -87,7 +87,7 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        let surface = &field.surface;
+        let surface = &field.surface();
         assert!(!field.show_metadata);
         assert!(!surface.input().is_multiline() && !surface.input().is_read_only());
         assert_eq!(surface.role(), proposal::TextRole::UiBody);
@@ -144,10 +144,10 @@ fn search_retained_public_inline_content_keeps_query_theme_geometry_and_edit_cle
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.text(), "notes 文档");
+    assert_eq!(field.surface().text(), "notes 文档");
     assert_query_ink(
         &scene,
-        field.surface.outer(),
+        field.surface().outer(),
         Theme::DARK_INCREASED,
         text.backing,
     );
