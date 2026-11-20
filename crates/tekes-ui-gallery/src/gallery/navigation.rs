@@ -1,17 +1,8 @@
 //! JSON-owned sections and items. Page IDs stay stable; visual order is independent.
 use super::{Page, layout};
 use std::sync::OnceLock;
-use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
-    composition::{
-        Component, ComponentId, Content, ContentSemantics, ContentTheme,
-        KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListRowDisplay, StackContent,
-    },
-    extended::{
-        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
-    },
-    layout::MeasuredChild,
-};
+#[cfg(test)]
+use tekes_ui_controls::ButtonTextRenderer;
 #[cfg(test)]
 use tekes_ui_controls::{
     ScrollArea,
@@ -20,9 +11,16 @@ use tekes_ui_controls::{
         ListIntentKind, ScrollContent,
     },
 };
+use tekes_ui_controls::{
+    composition::{
+        ComponentId, Content, KeyedSelectableListContent, ListContent, ListDisplayUpdate,
+        ListRowDisplay,
+    },
+    extended::{KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey},
+};
+use tekes_ui_scene::Rect;
 #[cfg(test)]
-use tekes_ui_scene::Point;
-use tekes_ui_scene::{Rect, Scene, Size};
+use tekes_ui_scene::{Point, Scene, Size};
 use tekes_ui_tokens::{Spacing, proposal};
 
 pub(super) const SCROLL: ComponentId = ComponentId(0x0047_414c_0010);
@@ -31,39 +29,6 @@ const GROUP_BASE: u64 = 0x0047_414c_0100;
 const HEADER_BASE: u64 = 0x0047_414c_0200;
 const ITEMS_BASE: u64 = 0x0047_414c_0300;
 
-#[derive(Debug)]
-struct SectionLabel(String);
-impl Component for SectionLabel {
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        MeasuredChild::new(text.measure(&self.0, proposal::TextRole::UiCaption, available.width))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        _: Rect,
-        theme: ContentTheme,
-    ) {
-        text.draw(
-            scene,
-            &self.0,
-            proposal::TextRole::UiCaption,
-            frame,
-            ButtonTextAlign::Leading,
-            theme
-                .palette
-                .color("secondary-text")
-                .expect("Gallery section label token"),
-        );
-    }
-    fn semantics(&self) -> ContentSemantics {
-        ContentSemantics::new(
-            tekes_ui_controls::composition::ContentRole::Text,
-            self.0.clone(),
-        )
-    }
-}
 #[derive(Debug, Clone)]
 pub struct Section {
     pub title: String,
@@ -78,8 +43,11 @@ pub fn sections() -> &'static [Section] {
         for (i, entry) in super::workbench::entries().iter().enumerate() {
             let title = entry.section();
             if all.last().is_none_or(|s: &Section| s.title != title) {
+                if !all.is_empty() {
+                    y += ListContent::SECTION_GAP - layout::ROW_GAP;
+                }
                 let h =
-                    proposal::TextRole::UiCaption.style().line_height + Spacing::Regular.value();
+                    proposal::TextRole::UiCaption.style().line_height + ListContent::SECTION_GAP;
                 all.push(Section {
                     title: title.into(),
                     rect: Rect::new(
@@ -163,6 +131,9 @@ impl Navigation {
                 .collect();
             if matched.is_empty() {
                 continue;
+            }
+            if !result.is_empty() {
+                y += ListContent::SECTION_GAP - layout::ROW_GAP;
             }
             let mut r = Section {
                 title: section.title.clone(),
@@ -504,6 +475,9 @@ impl Navigation {
             if matched.is_empty() {
                 continue;
             }
+            if !result.is_empty() {
+                y += ListContent::SECTION_GAP - layout::ROW_GAP;
+            }
             let mut r = Section {
                 title: section.title.clone(),
                 rect: section.rect,
@@ -679,41 +653,25 @@ pub(super) fn section_content(section: &Section, selected: Page) -> Content {
     list.set_navigation_selection_fill_only(true);
     list.set_navigation_layout(true);
     list.select_key(page_key(selected)).unwrap();
-    Content::new(
+    ListContent::section(
         ComponentId(GROUP_BASE + slot),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
-                Content::new(
-                    ComponentId(HEADER_BASE + slot),
-                    SectionLabel(section.title.clone()),
-                ),
-                Content::new(ComponentId(ITEMS_BASE + slot), list),
-            ],
-        },
+        ComponentId(HEADER_BASE + slot),
+        section.title.clone(),
+        Content::new(ComponentId(ITEMS_BASE + slot), list),
     )
 }
 pub(super) fn directory_content(sections: &[Section], selected: Page) -> Content {
-    let mut scroll = ListContent::scrollable(
-        "Components",
-        LIST,
-        sections
-            .iter()
-            .map(|section| section_content(section, selected))
-            .collect(),
-    );
-    if let Some(list) = scroll
-        .children_mut()
-        .and_then(|children| children.first_mut())
-        .and_then(|content| content.component_mut::<ListContent>())
-    {
-        list.rows.model.gap = Spacing::Micro.value();
-    }
-    Content::new(SCROLL, scroll)
+    Content::new(
+        SCROLL,
+        ListContent::scrollable(
+            "Components",
+            LIST,
+            sections
+                .iter()
+                .map(|section| section_content(section, selected))
+                .collect(),
+        ),
+    )
 }
 #[cfg(test)]
 fn content_host(sections: &[Section], selected: Page) -> ContentHost {
@@ -737,6 +695,7 @@ pub fn search_rect() -> Rect {
 mod tests {
     use super::*;
     use crate::gallery::text::TextEngine;
+    use tekes_ui_controls::composition::Component;
     use tekes_ui_tokens::Theme;
 
     fn render(n: &mut Navigation) -> Scene {
@@ -1067,5 +1026,58 @@ mod tests {
         let response = n.accessibility_action(page, AccessibilityAction::Press);
         assert!(response.consumed && response.activated);
         assert_eq!(n.selected_page(), Some(page));
+    }
+
+    #[test]
+    fn section_headers_keep_equal_top_and_bottom_spacing_across_directory_and_filter() {
+        let mut n = Navigation::default();
+        let full_height = (document_height() + 256.0).max(2400.0);
+        n.resize(full_height);
+        for query in ["", "component"] {
+            n.set_query(query);
+            n.resize(full_height);
+            let _ = render(&mut n);
+            let pairs = n.sections();
+            assert!(pairs.len() >= 2, "query={query:?}");
+            for window in pairs.windows(2) {
+                let prev_list_node = n.host.get(Navigation::list_id(&window[0])).unwrap();
+                let prev_list = prev_list_node
+                    .component::<KeyedSelectableListContent>()
+                    .unwrap();
+                let next_header = n
+                    .host
+                    .get(ComponentId(
+                        HEADER_BASE + section_slot(&window[1].title) as u64,
+                    ))
+                    .unwrap();
+                let next_list_node = n.host.get(Navigation::list_id(&window[1])).unwrap();
+                let next_list = next_list_node
+                    .component::<KeyedSelectableListContent>()
+                    .unwrap();
+                assert_eq!(
+                    next_header
+                        .component::<tekes_ui_controls::composition::TextContent>()
+                        .unwrap()
+                        .role,
+                    proposal::TextRole::UiCaption
+                );
+                let prev_last = prev_list.semantic_parts().last().unwrap().frame;
+                let next_first = next_list.semantic_parts().first().unwrap().frame;
+                assert_eq!(prev_last.max_y(), prev_list_node.frame().max_y());
+                assert_eq!(next_first.min_y(), next_list_node.frame().min_y());
+                assert_eq!(
+                    next_header.frame().min_y() - prev_last.max_y(),
+                    ListContent::SECTION_GAP,
+                    "above {} for query={query:?}",
+                    window[1].title
+                );
+                assert_eq!(
+                    next_first.min_y() - next_header.frame().max_y(),
+                    ListContent::SECTION_GAP,
+                    "below {} for query={query:?}",
+                    window[1].title
+                );
+            }
+        }
     }
 }

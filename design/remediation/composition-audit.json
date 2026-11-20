@@ -2054,7 +2054,7 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "631d1739d6c2c0bde811b6d83500e0b07df2d439350f207450d115fa5617dc21",
+    "DESIGN.md": "1964a7d5ec53350a0047c5b0d2a8d114486e4301e423d73d32b851b923777834",
     "crates/tekes-ui-app-host/src/lib.rs": "590ce31a3d04b744b7bd2ca7744fa452c83bc60e83d4ad6961d74fe74bf0a1b1",
     "crates/tekes-ui-app-host/src/window.rs": "a0a2399642f73356605ae503293270c58de19b45f7ee16423f4ff1b716abe6c8",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "cce68a2c70994a98b941c7614f830f5222e4f0c1b68820eef09d20c22c8360ff",
@@ -2063,7 +2063,7 @@
     "crates/tekes-ui-controls/src/composite.rs": "bb5acca080ae3de83a5f2659c342929cb89df2217fca636a83885a08913c95bf",
     "crates/tekes-ui-controls/src/composition.rs": "2b81be790ad5ddc0627e42db0d9659d069785c5ef58f601606d96093aefa8e58",
     "crates/tekes-ui-controls/src/composition/actions.rs": "8a2b48240dcc17f99f2b26922a7178d29ff3e3474c3885af491ba5eca7c52651",
-    "crates/tekes-ui-controls/src/composition/adapters.rs": "2bd14fc84d4ba906a1b39c36105805de57e38ca8c7caf132857ff7d97bd29f31",
+    "crates/tekes-ui-controls/src/composition/adapters.rs": "f029d7121269c65a59dfe5a1ef1c21b069fe88be2bfd5a188d37dc9a31d4faaa",
     "crates/tekes-ui-controls/src/composition/button.rs": "cf6206784a26472f955ef95fee4259fab6e0e6b3054307e632b4e96e8871a254",
     "crates/tekes-ui-controls/src/composition/chart_content.rs": "4992049a606475fa91cff7105b71901034b9dd713a1a62426d88b2bd4b5e58c1",
     "crates/tekes-ui-controls/src/composition/checkbox.rs": "a5b04fce72d4bf54062f652f0a7ca3cd08ac1110c8ab943b04a64c20b939151c",
@@ -2272,7 +2272,7 @@
     "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs": "a75d067ee7c5aeffa77a571b73f82b8954a423729f8633db31700b4ab19daa26",
     "crates/tekes-ui-controls/src/composition/host.rs": "0877f8941242b108f4c52ff588bb6678b2faeaf91d31e99c5f6d36aeda0e452f",
     "crates/tekes-ui-controls/src/composition/host_ops.rs": "46bfc0fd6372693d2c551dcd0ecea9172eba81571e8ddde15ba320fa75dee604",
-    "crates/tekes-ui-controls/src/composition/content_node.rs": "f12149597fa0c86c68ead4103a68fe9f9550f6c4754b64aadaff7945ab77355d",
+    "crates/tekes-ui-controls/src/composition/content_node.rs": "926bff3914fb9a78c6b61efabce7eaf4b4b850afab17c37b46f7cba2f05e7251",
     "examples/composition-consumer/examples/actions_acceptance.rs": "9b5d64ff6ad4d561f49d4fda130993c36478426f70c7943bf9d3c8f3b951a40c",
     "examples/composition-consumer/examples/controlled_acceptance.rs": "4ef6141384b92c895f480951bc145fddbac1d1818ebcb76db438004a79bdd380",
     "examples/composition-consumer/examples/viewport_acceptance.rs": "0315e0621530283d7844c9853835f7088b18e545ada97945e4a5bdc006d6e21e",
@@ -2346,7 +2346,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 712,
+      "line": 731,
       "anchor": "pub(super) fn lifecycle(&mut self, event: Lifecycle) {"
     },
     {
@@ -2578,7 +2578,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/content_node.rs",
-      "line": 166,
+      "line": 185,
       "anchor": "pub fn with_label_layout(",
       "purpose": "Explicit readonly Content label opt-in on original components"
     },

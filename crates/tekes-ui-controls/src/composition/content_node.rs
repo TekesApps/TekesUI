@@ -20,6 +20,7 @@ pub struct Content {
     pub(super) help: Option<String>,
     pub(super) help_revision: u64,
     pub(super) surface: Option<&'static str>,
+    pub(super) secondary_foreground: bool,
     // Cached value last notified to this owner; notice and ordinary owner
     // notification semantics differ. This is not a generic activity fact.
     pub(super) activity_effective: bool,
@@ -59,6 +60,7 @@ impl Content {
             help: None,
             help_revision: 0,
             surface: None,
+            secondary_foreground: false,
             activity_effective: true,
             activity_parent: true,
             composition_active: true,
@@ -124,6 +126,10 @@ impl Content {
     pub fn surface(&self) -> Option<&'static str> {
         self.surface
     }
+    pub(crate) fn with_secondary_foreground(mut self) -> Self {
+        self.secondary_foreground = true;
+        self
+    }
     pub(super) fn resolved_theme(&self, theme: ContentTheme) -> ContentTheme {
         let surface = self
             .surface
@@ -132,13 +138,26 @@ impl Content {
                 tekes_ui_tokens::surface_palette::canonical_surface(name)
                     .expect("component Surface validated before host paint")
             });
-        surface.map_or(theme, |surface| ContentTheme {
+        let mut resolved = surface.map_or(theme, |surface| ContentTheme {
             surface,
             surface_declared: true,
             foreground: None,
             icon_foreground: None,
             ..theme
-        })
+        });
+        if self.secondary_foreground {
+            resolved.foreground = Some(
+                tekes_ui_tokens::surface_palette::resolve_surface(
+                    resolved.palette,
+                    resolved.surface(),
+                    "data-category-label",
+                    "rest",
+                )
+                .expect("secondary label Surface packet")
+                .text,
+            );
+        }
+        resolved
     }
     pub(super) fn child_theme(&self, theme: ContentTheme) -> ContentTheme {
         let mut child = self.component.child_theme(theme);

@@ -882,3 +882,109 @@ fn text_field_clear_policy_preserves_multiline_document_and_unavailable_input() 
         assert_eq!(field.surface.text(), original, "{mode}");
     }
 }
+
+#[test]
+fn grouped_list_sections_keep_equal_top_and_bottom_header_spacing_and_secondary_caption_ink() {
+    struct RecordingText {
+        drawn: Vec<(String, proposal::TextRole, Rgba)>,
+    }
+    impl ButtonTextRenderer for RecordingText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
+            Size::new(
+                (text.len() as f32 * 7.).min(width),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            text: &str,
+            role: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            color: Rgba,
+        ) {
+            self.drawn.push((text.to_owned(), role, color));
+        }
+    }
+
+    let mut first = SelectableListContent::new("Overview", vec!["Alpha".into(), "Beta".into()]);
+    first.view.set_navigation_layout(true);
+    let mut second =
+        SelectableListContent::new("Foundations", vec!["Gamma".into(), "Delta".into()]);
+    second.view.set_navigation_layout(true);
+    let sections = vec![
+        ListContent::section(
+            ComponentId(10),
+            ComponentId(20),
+            "Overview",
+            Content::new(ComponentId(30), first),
+        ),
+        ListContent::section(
+            ComponentId(11),
+            ComponentId(21),
+            "Foundations",
+            Content::new(ComponentId(31), second),
+        ),
+    ];
+    let mut host = ContentHost::new(Content::new(
+        SCROLL,
+        ListContent::scrollable("Sidebar", ITEMS, sections),
+    ))
+    .unwrap();
+    let frame = Rect::new(0., 0., 280., 360.);
+    for theme in Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut text = RecordingText { drawn: Vec::new() };
+        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .unwrap();
+        let header_1 = host.get(ComponentId(20)).unwrap();
+        let list_1 = host
+            .get(ComponentId(30))
+            .unwrap()
+            .component::<SelectableListContent>()
+            .unwrap();
+        let header_2 = host.get(ComponentId(21)).unwrap();
+        let list_2 = host
+            .get(ComponentId(31))
+            .unwrap()
+            .component::<SelectableListContent>()
+            .unwrap();
+        assert_eq!(
+            header_1.component::<TextContent>().unwrap().role,
+            proposal::TextRole::UiCaption
+        );
+        assert_eq!(
+            header_2.component::<TextContent>().unwrap().role,
+            proposal::TextRole::UiCaption
+        );
+        let items_1 = list_1.semantic_parts();
+        let items_2 = list_2.semantic_parts();
+        assert_eq!(
+            items_1[1].frame.min_y() - items_1[0].frame.max_y(),
+            tekes_ui_tokens::Spacing::Micro.value()
+        );
+        let above = header_2.frame().min_y() - items_1.last().unwrap().frame.max_y();
+        let below = items_2[0].frame.min_y() - header_2.frame().max_y();
+        assert_eq!(above, ListContent::SECTION_GAP);
+        assert_eq!(below, ListContent::SECTION_GAP);
+        assert_eq!(above, below);
+        let expected_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "canvas",
+            "data-category-label",
+            "rest",
+        )
+        .unwrap()
+        .text;
+        for title in ["Overview", "Foundations"] {
+            let drawn = text
+                .drawn
+                .iter()
+                .find(|(label, _, _)| label == title)
+                .unwrap();
+            assert_eq!(drawn.1, proposal::TextRole::UiCaption);
+            assert_eq!(drawn.2, expected_ink);
+        }
+    }
+}
