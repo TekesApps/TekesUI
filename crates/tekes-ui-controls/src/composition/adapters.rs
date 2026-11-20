@@ -38,7 +38,7 @@ impl ListContent {
                 flexible_child: None,
                 model: Stack {
                     axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
+                    gap: Self::SECTION_GAP,
                 },
                 children,
             },
@@ -545,5 +545,37 @@ impl Component for SliderContent {
             _ => return ContentResponse::default(),
         };
         changed.map_or_else(ContentResponse::default, ContentResponse::consumed)
+    }
+}
+
+impl ListContent {
+    /// Canonical vertical gap above and below every list section header.
+    pub const SECTION_GAP: f32 = Spacing::Regular.value();
+
+    /// Build a titled list section (`[UiCaption header, items]`) whose header-to-items gap
+    /// equals `ListContent`'s inter-section gap (`SECTION_GAP`), ensuring equal vertical
+    /// spacing above and below section headers while preserving caller-owned IDs.
+    pub fn section(
+        group_id: ComponentId,
+        header_id: ComponentId,
+        title: impl Into<String>,
+        items: Content,
+    ) -> Content {
+        let mut heading = TextContent::new(title);
+        heading.role = proposal::TextRole::UiCaption;
+        Content::new(
+            group_id,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Self::SECTION_GAP,
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(header_id, heading).with_secondary_foreground(),
+                    items,
+                ],
+            },
+        )
     }
 }

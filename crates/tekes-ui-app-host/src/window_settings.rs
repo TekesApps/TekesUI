@@ -2879,10 +2879,17 @@ mod pinned_header_tests {
             first_list.frame().min_y() - first_heading.frame().max_y(),
             tekes_ui_tokens::Spacing::Regular.value()
         );
+        let above_second = second_heading.frame().min_y() - first_list.frame().max_y();
+        let below_second = second_list.frame().min_y() - second_heading.frame().max_y();
         assert_eq!(
-            second_heading.frame().min_y() - first_list.frame().max_y(),
-            tekes_ui_tokens::Spacing::Micro.value()
+            above_second,
+            tekes_ui_controls::composition::ListContent::SECTION_GAP
         );
+        assert_eq!(
+            below_second,
+            tekes_ui_controls::composition::ListContent::SECTION_GAP
+        );
+        assert_eq!(above_second, below_second);
         assert!(
             second_list
                 .component::<tekes_ui_controls::composition::KeyedSelectableListContent>()

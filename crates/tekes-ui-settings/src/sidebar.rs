@@ -97,8 +97,6 @@ impl SettingsSidebar {
         }
         let mut groups = Vec::new();
         for (heading_id, id, dataset, group) in declarations {
-            let mut heading = TextContent::new(&group.label);
-            heading.role = tekes_ui_tokens::proposal::TextRole::UiCaption;
             let mut entries = Vec::new();
             for item in &group.items {
                 let mut terms = format!("{} {}", group.label, item.label);
@@ -137,33 +135,17 @@ impl SettingsSidebar {
             list.set_navigation_selection_fill_only(true);
             list.set_navigation_layout(true);
             items.insert(id, group_model);
-            groups.push(Content::new(
+            groups.push(ListContent::section(
                 ComponentId(next),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: tekes_ui_tokens::Spacing::Regular.value(),
-                    },
-                    children: vec![Content::new(heading_id, heading), Content::new(id, list)],
-                    flexible_child: None,
-                },
+                heading_id,
+                &group.label,
+                Content::new(id, list),
             ));
             next += 1;
         }
-        let groups = Content::new(
-            ComponentId(next),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: tekes_ui_tokens::Spacing::Micro.value(),
-                },
-                children: groups,
-                flexible_child: None,
-            },
-        );
         let scroll = Content::new(
             ComponentId(1),
-            ListContent::scrollable("Settings", ComponentId(2), vec![groups]),
+            ListContent::scrollable("Settings", ComponentId(2), groups),
         );
         let root = if back {
             let mut back_button = Button::new("〈 返回")
