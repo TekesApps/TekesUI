@@ -109,8 +109,9 @@ fn vertical_region_stacks_original_commands_and_opens_side_menu_with_one_action(
             .unwrap();
         let natural_height = control.measure(&mut text).height;
         let (_, measured_action, _) = part(&host, "Alpha");
-        let allocation_height = natural_height - measured_action.size.height;
-        assert!(allocation_height < natural_height);
+        let pad_total = tekes_ui_tokens::Spacing::Regular.value() * 2.;
+        let allocation_height = natural_height + pad_total - measured_action.size.height;
+        assert!(allocation_height < natural_height + pad_total);
         let region = Rect::new(x, 20., 60., allocation_height);
         let mut allocation = ToolbarRegion::new(REGION, region);
         allocation.axis = tekes_ui_controls::extended::Axis::Vertical;
@@ -331,11 +332,7 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
         .unwrap();
         let mut text = text();
         draw(&mut host, &mut text);
-        let toolbar_height = if axis == tekes_ui_controls::extended::Axis::Horizontal {
-            host.content_host().get(REGION).unwrap().frame().size.height
-        } else {
-            host.content_host().get(MENU).unwrap().frame().size.height
-        };
+        let toolbar_height = host.content_host().get(REGION).unwrap().frame().size.height;
         let region = Rect::new(x, y, width, toolbar_height);
         let mut allocation = ToolbarRegion::new(REGION, region);
         allocation.axis = axis;
@@ -374,7 +371,10 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
             "host viewport must expose the full row outside the toolbar clip in {axis:?}: {second_visible:?}"
         );
         assert!(
-            second.max_y() > region.max_y() || second.min_y() < region.min_y(),
+            second.max_y() > region.max_y()
+                || second.min_y() < region.min_y()
+                || second.max_x() > region.max_x()
+                || second.min_x() < region.min_x(),
             "the popup extends past the toolbar allocation"
         );
         host.event(&ContentEvent::PointerDown(second.center()));

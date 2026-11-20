@@ -46,6 +46,18 @@ fn finite_parent_input_is_rejected_atomically_without_default_extent() {
     let mut c = SkeletonContent::default();
     let mut t = coretext::Text::new(1.);
     assert_eq!(c.measure(&mut t, accepted).size, accepted);
+    assert_eq!(
+        c.measure(&mut t, Size::new(240., 1e8)).size,
+        Size::new(240., SkeletonContent::DEFAULT_HEIGHT)
+    );
+    assert_eq!(
+        SkeletonContent::default()
+            .with_max_width(120.)
+            .with_height(20.)
+            .measure(&mut t, Size::new(240., 1e8))
+            .size,
+        Size::new(120., 20.)
+    );
     assert!(fixture::set_allocation(&mut accepted, Size::default()));
     assert_eq!(c.measure(&mut t, accepted).size, Size::default());
 }
@@ -76,7 +88,13 @@ fn surfaces_modes_brands_frames_and_parent_clip_match_original_view() {
                         let packet = resolve_surface(p, surface, "skeleton", "rest").unwrap();
                         let q = quads(&actual);
                         assert_eq!(q[0].rect, f);
-                        assert_eq!(q[0].corner_radii, tekes_ui_scene::CornerRadii::uniform(4.));
+                        assert_eq!(
+                            q[0].corner_radii,
+                            tekes_ui_scene::CornerRadii::uniform(
+                                tekes_ui_tokens::proposal::metric("radius", "radius-badge")
+                                    .expect("radius-badge token")
+                            )
+                        );
                         assert_eq!(q[0].fill, packet.background);
                         assert_eq!(q[1].rect, f);
                         assert_eq!(q[1].border_color, packet.boundary.unwrap());

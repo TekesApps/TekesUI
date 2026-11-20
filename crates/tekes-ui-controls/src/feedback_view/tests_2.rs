@@ -8,10 +8,14 @@ use tekes_ui_scene::Primitive;
 use tekes_ui_scene::{Quad, Size};
 
 #[test]
-fn toast_uses_legacy_top_aligned_message_slot() {
+fn toast_uses_symmetric_padding_and_centered_dismiss() {
     let mut view = ToastView::default();
     let model = Toast::new("Changes saved", NoticeTone::Success, 5000);
-    let frame = Rect::new(40., 30., 520., 62.);
+    let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+    let gap = tekes_ui_tokens::Spacing::Regular.value();
+    let measured = ToastView::measure(&mut RecordingText::default(), &model.message, 520., role());
+    assert_eq!(measured, Size::new(520., 58.));
+    let frame = Rect::new(40., 30., measured.width, measured.height);
     let mut scene = Scene::new();
     let mut text = RecordingText::default();
     let layout = view.render(
@@ -23,7 +27,7 @@ fn toast_uses_legacy_top_aligned_message_slot() {
         palette(),
         role(),
     );
-    assert_eq!(layout.content, Rect::new(76., 42., 340., 34.));
+    assert_eq!(layout.content, Rect::new(40. + 30., 30. + pad, 380., 34.));
     let message = text
         .0
         .iter()
@@ -31,17 +35,20 @@ fn toast_uses_legacy_top_aligned_message_slot() {
         .unwrap();
     assert_eq!(
         message.2,
-        Rect::new(76., 42., 340., role().style().line_height)
+        Rect::new(40. + 30., 30. + pad, 380., role().style().line_height)
     );
+    let dismiss = view.dismiss_layout.unwrap().frame;
     assert_eq!(
-        view.dismiss_layout.unwrap().frame,
-        Rect::new(frame.min_x() + 380., frame.min_y() + 10., 90., 34.)
+        dismiss,
+        Rect::new(frame.max_x() - pad - 90., 30. + pad, 90., 34.)
     );
+    assert!((dismiss.min_x() - layout.content.max_x() - gap).abs() <= 0.01);
+    assert!(((frame.max_x() - dismiss.max_x()) - pad).abs() <= 0.01);
     assert!(text.0.iter().any(|(drawn, _, _, align)| {
         drawn == "Dismiss" && *align == ButtonTextAlign::default()
     }));
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + 14., frame.min_y() + 12. + (role().style().line_height - 10.) * 0.5, 10., 10.))
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - 10.) * 0.5, 10., 10.))
     }));
 }
 
@@ -111,13 +118,15 @@ fn narrow_toast_places_dismiss_after_wrapped_message() {
 }
 
 #[test]
-fn empty_state_text_uses_top_aligned_legacy_slots() {
+fn empty_state_text_uses_symmetric_token_spacing_without_dead_void() {
     let mut view = EmptyStateView::default();
     let model = EmptyState {
         title: "No documents yet".into(),
         detail: "Create a document to begin your workspace.".into(),
         action: Some("Create document".into()),
     };
+    let pad = tekes_ui_tokens::Spacing::Regular.value();
+    let gap = tekes_ui_tokens::Spacing::Regular.value();
     let frame = Rect::new(36., 28., 488., 164.);
     let mut scene = Scene::new();
     let mut text = RecordingText::default();
@@ -140,13 +149,17 @@ fn empty_state_text_uses_top_aligned_legacy_slots() {
         .iter()
         .find(|(drawn, _, _, _)| drawn == &model.detail)
         .unwrap();
-    assert_eq!(title.2.min_y(), frame.min_y() + 6.);
+    assert_eq!(title.2.min_x(), frame.min_x() + pad);
+    assert_eq!(title.2.min_y(), frame.min_y() + pad);
     assert_eq!(
         title.2.size.height,
         proposal::TextRole::UiHeading.style().line_height
     );
-    assert_eq!(detail.2.min_y(), frame.min_y() + 44.);
+    assert_eq!(detail.2.min_x(), frame.min_x() + pad);
+    assert_eq!(detail.2.min_y(), title.2.max_y() + gap);
     assert_eq!(detail.2.size.height, role().style().line_height);
+    let measured = EmptyStateView::measure(&mut RecordingText::default(), &model, 488., role());
+    assert!(measured.height < 130., "no 54pt detail void: {measured:?}");
 }
 
 #[test]
@@ -157,7 +170,8 @@ fn empty_state_action_stays_inside_tight_frame() {
         detail: "Create a document to begin your workspace.".into(),
         action: Some("Create document".into()),
     };
-    let frame = Rect::new(36., 28., 488., 132.);
+    let pad = tekes_ui_tokens::Spacing::Regular.value();
+    let frame = Rect::new(36., 28., 488., 116.);
     let mut scene = Scene::new();
     let mut text = FixedText;
     view.render(
@@ -170,8 +184,8 @@ fn empty_state_action_stays_inside_tight_frame() {
         role(),
     );
     let action = view.action_layout.unwrap();
-    assert_eq!(action.frame.max_y(), frame.max_y());
-    assert_eq!(action.visible.unwrap().max_y(), frame.max_y());
+    assert!(action.frame.max_y() <= frame.max_y() - pad + 0.01);
+    assert!(action.visible.is_some());
 }
 
 #[test]
@@ -182,8 +196,9 @@ fn empty_state_wrap_measure_matches_draw_and_action_stays_after_text() {
         detail: "Details".into(),
         action: Some("Create document".into()),
     };
-    let frame = Rect::new(20., 16., 500., 132.);
-    let title_width = (frame.size.width - 8.).min(420.);
+    let pad = tekes_ui_tokens::Spacing::Regular.value();
+    let frame = Rect::new(20., 16., 500., 148.);
+    let title_width = (frame.size.width - pad * 2.).min(420.);
     let mut scene = Scene::new();
     let mut text = WrappingText::default();
     view.render(
@@ -224,12 +239,15 @@ fn empty_state_wrap_measure_matches_draw_and_action_stays_after_text() {
         .find(|(drawn, _, _, _)| drawn == &model.detail)
         .unwrap();
     let action = view.action_layout.unwrap();
-    assert!(action.frame.min_y() >= detail_draw.2.min_y() + 54.);
+    assert!(
+        action.frame.min_y()
+            >= detail_draw.2.max_y() + tekes_ui_tokens::Spacing::Relaxed.value() - 0.01
+    );
     let detail_slot = Rect::new(
         detail_draw.2.min_x(),
         detail_draw.2.min_y(),
-        frame.size.width - 8.,
-        54.,
+        frame.size.width - pad * 2.,
+        detail_draw.2.size.height,
     );
     assert!(intersect(action.frame, detail_slot).is_none());
 }
@@ -261,7 +279,7 @@ fn empty_state_follows_parent_detail_width_unless_max_detail_width_configured() 
         .rfind(|(drawn, _, _, _)| drawn == &model.detail)
         .unwrap()
         .2;
-    assert_eq!(wide_draw.size.width, 792.);
+    assert_eq!(wide_draw.size.width, 784.);
 
     text.draws.clear();
     let mut capped = EmptyStateView::default().with_max_detail_width(Some(460.));
@@ -1015,16 +1033,16 @@ fn empty_state_action_requires_a_real_visible_pointer_press() {
         role(),
     );
     let title = view.layout.content;
-    assert_eq!(title.min_x(), outer.min_x() + 20.);
-    assert_eq!(title.min_y(), outer.min_y() + 22.);
+    assert_eq!(title.min_x(), outer.min_x() + 24.);
+    assert_eq!(title.min_y(), outer.min_y() + 24.);
     let point = view.action_layout.unwrap().frame.center();
     assert_eq!(
         view.action_layout.unwrap().frame.min_x(),
-        outer.min_x() + 20.
+        outer.min_x() + 24.
     );
     assert_eq!(
         view.action_layout.unwrap().frame.min_y(),
-        outer.min_y() + 114.
+        outer.min_y() + 82.
     );
     let primary_fill = palette().color("action-primary-ground").unwrap();
     assert!(scene.primitives().iter().any(|primitive| {
@@ -1076,4 +1094,83 @@ fn empty_state_action_requires_a_real_visible_pointer_press() {
     assert!(!view.action.state.hovered);
     assert!(!view.pointer_down(point));
     assert!(!view.pointer_up(point));
+}
+
+#[test]
+fn popover_uses_symmetric_token_insets_and_empty_state_detail_uses_muted_ink() {
+    let mut popover = PopoverView::default();
+    let mut pmodel = Popover::default();
+    popover.show(&mut pmodel, 1);
+    let p_layout = popover.render(
+        &mut Scene::new(),
+        &mut FixedText,
+        &pmodel,
+        Rect::new(10., 10., 20., 20.),
+        Size::new(260., 180.),
+        Rect::new(0., 0., 800., 600.),
+        None,
+        palette(),
+        role(),
+    );
+    let left_margin = p_layout.content.min_x() - p_layout.frame.min_x();
+    let right_margin = p_layout.frame.max_x() - p_layout.content.max_x();
+    let top_margin = p_layout.content.min_y() - p_layout.frame.min_y();
+    let dismiss = popover.dismiss_layout.unwrap().frame;
+    let action_left = dismiss.min_x() - p_layout.frame.min_x();
+    let action_bottom = p_layout.frame.max_y() - dismiss.max_y();
+    assert!((left_margin - right_margin).abs() <= 0.01);
+    assert!((left_margin - top_margin).abs() <= 0.01);
+    assert!((left_margin - action_left).abs() <= 0.01);
+    assert!((top_margin - action_bottom).abs() <= 0.01);
+    assert!(dismiss.max_x() <= p_layout.frame.max_x() - left_margin + 0.01);
+
+    let mut empty = EmptyStateView::default();
+    let emodel = EmptyState {
+        title: "Nothing here".into(),
+        detail: "Muted helper copy".into(),
+        action: None,
+    };
+    struct InkText(Vec<(String, tekes_ui_tokens::Rgba)>);
+    impl ButtonTextRenderer for InkText {
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            FixedText.measure(value, role, max_width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            value: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: tekes_ui_tokens::Rgba,
+        ) {
+            self.0.push((value.to_owned(), ink));
+        }
+    }
+    let mut text = InkText(Vec::new());
+    empty.render(
+        &mut Scene::new(),
+        &mut text,
+        &emodel,
+        Rect::new(0., 0., 360., 160.),
+        None,
+        palette(),
+        role(),
+    );
+    let primary =
+        tekes_ui_tokens::surface_palette::resolve_surface(palette(), "canvas", "content", "rest")
+            .unwrap()
+            .text;
+    let muted = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette(),
+        "canvas",
+        "data-category-label",
+        "rest",
+    )
+    .unwrap()
+    .text;
+    let title_ink = text.0.iter().find(|(s, _)| s == &emodel.title).unwrap().1;
+    let detail_ink = text.0.iter().find(|(s, _)| s == &emodel.detail).unwrap().1;
+    assert_eq!(title_ink, primary);
+    assert_eq!(detail_ink, muted);
 }

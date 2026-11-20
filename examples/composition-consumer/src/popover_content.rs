@@ -5,8 +5,7 @@ use tekes_ui_controls::{
     extended::{Axis, Stack},
     layout::MeasuredChild,
 };
-use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::proposal;
+use tekes_ui_scene::{Rect, Size};
 pub const ROOT: ComponentId = ComponentId(9100);
 pub const CALLER: ComponentId = ComponentId(9101);
 pub const OTHER: ComponentId = ComponentId(9102);
@@ -18,37 +17,6 @@ pub const CANCEL: ComponentId = ComponentId(9108);
 pub const SAVE: ComponentId = ComponentId(9109);
 const ACTIONS: ComponentId = ComponentId(9110);
 const CAPTION: ComponentId = ComponentId(9107);
-#[derive(Debug)]
-struct Caption;
-impl Component for Caption {
-    fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        MeasuredChild::new(t.measure(
-            "Consumer-owned preferences · 自定义内容",
-            proposal::TextRole::UiCaption,
-            a.width,
-        ))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        t: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        _: Rect,
-        theme: ContentTheme,
-    ) {
-        t.draw(
-            scene,
-            "Consumer-owned preferences · 自定义内容",
-            proposal::TextRole::UiCaption,
-            frame,
-            tekes_ui_controls::ButtonTextAlign::Leading,
-            theme.palette.color("primary-text").unwrap(),
-        );
-    }
-    fn semantics(&self) -> ContentSemantics {
-        ContentSemantics::new(ContentRole::Text, "Consumer-owned preferences · 自定义内容")
-    }
-}
 #[derive(Debug)]
 struct Screen(Vec<Content>);
 impl Component for Screen {
@@ -88,7 +56,10 @@ impl Scenario {
                 },
                 flexible_child: None,
                 children: vec![
-                    Content::new(CAPTION, Caption),
+                    Content::new(
+                        CAPTION,
+                        TextContent::caption("Consumer-owned preferences · 自定义内容"),
+                    ),
                     Content::new(
                         EDITOR,
                         TextFieldContent::new("Workspace name", "Retained draft · 草稿 A😀B"),

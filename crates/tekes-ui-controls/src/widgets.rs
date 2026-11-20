@@ -54,6 +54,14 @@ impl ButtonSize {
         proposal::metric("spacing", name).expect("button inset token")
     }
 
+    pub(crate) fn scaled_horizontal_inset(
+        self,
+        text: &mut (impl ButtonTextRenderer + ?Sized),
+        role: proposal::TextRole,
+    ) -> f32 {
+        self.inset() * button_typography_scale(text, role)
+    }
+
     fn vertical_inset(self, role: proposal::TextRole) -> f32 {
         ((self.minimum_height() - role.style().line_height) * 0.5).max(0.0)
     }

@@ -361,6 +361,10 @@ impl RadioGroupView {
         let minimum = proposal::metric("size", "size-comfortable-row")
             .expect("design system comfortable row");
         let row_gap = tekes_ui_tokens::Spacing::Snug.value();
+        let pad_x = tekes_ui_tokens::Spacing::Regular.value();
+        let indicator_size_nominal = 18.0;
+        let indicator_gap = tekes_ui_tokens::Spacing::Regular.value();
+        let chrome_width = pad_x + indicator_size_nominal + indicator_gap + pad_x;
         let intrinsic_widths: Vec<f32> = if axis == Axis::Horizontal {
             (0..model.len())
                 .map(|index| {
@@ -369,7 +373,7 @@ impl RadioGroupView {
                         .measure(label, proposal::TextRole::UiBody, f32::MAX)
                         .width
                         .max(0.)
-                        + 40.)
+                        + chrome_width)
                         .max(56.)
                 })
                 .collect()
@@ -397,7 +401,7 @@ impl RadioGroupView {
         let mut labels_metrics = Vec::with_capacity(model.len());
         for (index, item_width) in item_widths.iter().enumerate() {
             let label = labels.get(index).copied().unwrap_or("");
-            let width = (*item_width - 40.).max(0.);
+            let width = (*item_width - chrome_width).max(0.);
             let measured = text
                 .measure(label, proposal::TextRole::UiBody, width)
                 .height;
@@ -466,19 +470,20 @@ impl RadioGroupView {
             // Text is vertically centered as a paragraph in its row. Align
             // the control to the first line box, not the paragraph midpoint.
             let first_line_center = r.min_y() + (r.size.height - measured) * 0.5 + first_line * 0.5;
-            let indicator_size = 18_f32.min(r.size.width.max(0.));
-            let indicator_x = r.min_x() + 8_f32.min((r.size.width - indicator_size).max(0.) * 0.5);
+            let indicator_size = indicator_size_nominal.min(r.size.width.max(0.));
+            let indicator_x = r.min_x() + pad_x.min((r.size.width - indicator_size).max(0.) * 0.5);
             let indicator = Rect::new(
                 indicator_x,
                 first_line_center - indicator_size * 0.5,
                 indicator_size,
                 indicator_size,
             );
-            let label_start = 36_f32.min(r.size.width.max(0.));
+            let label_start =
+                (pad_x + indicator_size_nominal + indicator_gap).min(r.size.width.max(0.));
             let label = Rect::new(
                 r.min_x() + label_start,
                 r.min_y(),
-                (r.size.width - 40.).max(0.),
+                (r.size.width - chrome_width).max(0.),
                 r.size.height,
             );
             indicators.push(indicator);
@@ -1985,7 +1990,7 @@ mod tests {
         let radio_measure = text.measure(
             "A long label that wraps across several lines",
             proposal::TextRole::UiBody,
-            50.0,
+            48.0,
         );
         let first_line_center = radio_layout.rows[0].frame().min_y()
             + (radio_layout.rows[0].frame().size.height - radio_measure.height) * 0.5
@@ -2313,5 +2318,31 @@ mod tests {
             "a fully clipped switch must release focus"
         );
         assert_eq!(view.pointer_up(point, &mut model), SelectionEvent::Ignored);
+    }
+
+    #[test]
+    fn radio_group_uses_symmetric_horizontal_insets() {
+        let palette = Palette::new(Theme::LIGHT, 0).expect("registered Gallery brand");
+        let mut text = TestText::default();
+        let mut scene = Scene::new();
+        let radio = RadioGroup::new(2);
+        let mut view = RadioGroupView::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &radio,
+            Rect::new(0., 0., 200., 120.),
+            None,
+            palette,
+            &["First", "Second"],
+        );
+        let row = layout.rows[0].frame();
+        let left_inset = layout.indicators[0].min_x() - row.min_x();
+        let indicator_gap = layout.labels[0].min_x() - layout.indicators[0].max_x();
+        let right_inset = row.max_x() - layout.labels[0].max_x();
+        let regular = tekes_ui_tokens::Spacing::Regular.value();
+        assert!((left_inset - regular).abs() <= 0.01);
+        assert!((indicator_gap - regular).abs() <= 0.01);
+        assert!((right_inset - regular).abs() <= 0.01);
     }
 }

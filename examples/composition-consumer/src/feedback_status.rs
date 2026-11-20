@@ -2,14 +2,13 @@
 //! Reuses existing passive controls; this is a consumer fixture, not a Kit protocol.
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
+    ButtonTextRenderer,
     composition::*,
     extended::{Progress, StatusBadge},
-    feedback_view::{ProgressView, SkeletonView, StatusBadgeView},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
-use tekes_ui_tokens::{Spacing, proposal};
+use tekes_ui_tokens::Spacing;
 pub const STATUS: ComponentId = ComponentId(9821);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -65,36 +64,62 @@ impl State {
 #[derive(Debug)]
 struct Feedback {
     state: Rc<Cell<State>>,
-    badge: StatusBadgeView,
-    progress: ProgressView,
-    skeleton: SkeletonView,
+    badge: StatusBadgeContent,
+    progress_label: TextContent,
+    progress: ProgressContent,
+    skeleton: SkeletonContent,
+}
+impl Feedback {
+    fn new(state: Rc<Cell<State>>) -> Result<Self, CompositionError> {
+        let initial = state.get();
+        let badge = StatusBadgeContent::new(initial.outcome.badge(), initial.outcome.label())?;
+        let progress_label = TextContent::caption(initial.progress_label());
+        let progress = ProgressContent::new("Progress", initial.value.unwrap_or(0.));
+        let skeleton = SkeletonContent::default();
+        Ok(Self {
+            state,
+            badge,
+            progress_label,
+            progress,
+            skeleton,
+        })
+    }
+    fn sync(&mut self) {
+        let state = self.state.get();
+        self.badge
+            .update(
+                state.outcome.badge(),
+                state.outcome.label(),
+                None,
+                None,
+                false,
+            )
+            .expect("valid Feedback outcome badge");
+        self.progress_label.text = state.progress_label();
+        self.progress.model = Progress::new(state.value.unwrap_or(0.));
+        self.progress.model.indeterminate = state.value.is_none();
+    }
 }
 impl Component for Feedback {
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.sync();
         let state = self.state.get();
         let gap = Spacing::Regular.value();
-        let badge = text.measure(
-            state.outcome.label(),
-            proposal::TextRole::UiBody,
-            (available.width - gap * 2.).max(0.),
-        );
-        let label = text.measure(
-            &state.progress_label(),
-            proposal::TextRole::UiBody,
-            available.width,
-        );
+        let badge = self.badge.measure(text, available).size;
+        let label = self.progress_label.measure(text, available).size;
+        let bar = self.progress.measure(text, available).size;
+        let skeleton_h = if state.outcome == Outcome::Loading && state.value.is_none() {
+            let skel = self
+                .skeleton
+                .measure(text, Size::new(available.width * 0.65, available.height))
+                .size;
+            gap + skel.height
+        } else {
+            0.
+        };
         MeasuredChild::new(Size::new(
             available.width,
-            badge.height
-                + gap * 2.
-                + label.height
-                + gap * 2.
-                + 12.
-                + if state.outcome == Outcome::Loading && state.value.is_none() {
-                    gap + 12.
-                } else {
-                    0.
-                },
+            badge.height + gap + label.height + gap + bar.height + skeleton_h,
         ))
     }
     fn paint(
@@ -105,71 +130,56 @@ impl Component for Feedback {
         clip: Rect,
         theme: ContentTheme,
     ) {
+        self.sync();
         let state = self.state.get();
         let gap = Spacing::Regular.value();
-        let width = frame.size.width;
-        let measured = text.measure(
-            state.outcome.label(),
-            proposal::TextRole::UiBody,
-            (width - gap * 2.).max(0.),
-        );
+        let width = frame.size.width.max(0.);
+        let badge_size = self.badge.measure(text, frame.size).size;
         let badge = Rect::new(
             frame.min_x(),
             frame.min_y(),
-            (measured.width + gap * 2.).min(width),
-            measured.height + gap * 2.,
+            badge_size.width.min(width),
+            badge_size.height,
         );
-        let layout = self.badge.render(
-            scene,
-            state.outcome.badge(),
-            badge,
-            Some(clip),
-            theme.palette,
-        );
-        if let Some(visible) = layout.visible {
-            scene.push_clip(visible);
-            text.draw(
-                scene,
-                state.outcome.label(),
-                proposal::TextRole::UiBody,
-                Rect::new(
-                    badge.min_x() + gap,
-                    badge.min_y() + gap,
-                    (badge.size.width - gap * 2.).max(0.),
-                    measured.height,
-                ),
-                ButtonTextAlign::Center,
-                StatusBadgeView::label_color(theme.palette),
-            );
-            scene.pop_clip();
-        }
-        let label = state.progress_label();
-        let label_size = text.measure(&label, proposal::TextRole::UiBody, width);
+        self.badge.paint(scene, text, badge, clip, theme);
+
+        let label_size = self.progress_label.measure(text, frame.size).size;
         let label_frame = Rect::new(frame.min_x(), badge.max_y() + gap, width, label_size.height);
         if let Some(visible) = label_frame.intersection(&clip).filter(|r| !r.is_empty()) {
             scene.push_clip(visible);
-            text.draw(
-                scene,
-                &label,
-                proposal::TextRole::UiBody,
-                label_frame,
-                ButtonTextAlign::Leading,
-                theme.palette.color("primary-text").unwrap(),
-            );
+            self.progress_label
+                .paint(scene, text, label_frame, clip, theme);
             scene.pop_clip();
         }
-        let bar = Rect::new(frame.min_x(), label_frame.max_y() + gap, width, 12.);
-        let mut model = Progress::new(state.value.unwrap_or(0.));
-        model.indeterminate = state.value.is_none();
-        self.progress
-            .render(scene, model, bar, Some(clip), theme.palette);
+
+        let bar_size = self
+            .progress
+            .measure(text, Size::new(width, frame.size.height))
+            .size;
+        let bar = Rect::new(
+            frame.min_x(),
+            label_frame.max_y() + gap,
+            width,
+            bar_size.height,
+        );
+        self.progress.paint(scene, text, bar, clip, theme);
         if state.outcome == Outcome::Loading && state.value.is_none() {
             // A separate caller-owned loading placeholder; its presence is not a progress value.
-            self.skeleton.render(
+            let skel_size = self
+                .skeleton
+                .measure(text, Size::new(width * 0.65, frame.size.height))
+                .size;
+            self.skeleton.paint(
                 scene,
-                Rect::new(bar.min_x(), bar.max_y() + gap, width * 0.65, 12.),
-                Some(clip),
-                theme.palette,
+                text,
+                Rect::new(
+                    bar.min_x(),
+                    bar.max_y() + gap,
+                    skel_size.width,
+                    skel_size.height,
+                ),
+                clip,
+                theme,
             );
         }
     }
@@ -197,15 +207,7 @@ impl Scenario {
             outcome: Outcome::Unverified,
             value: None,
         }));
-        let host = ContentHost::new(Content::new(
-            STATUS,
-            Feedback {
-                state: state.clone(),
-                badge: Default::default(),
-                progress: Default::default(),
-                skeleton: Default::default(),
-            },
-        ))?;
+        let host = ContentHost::new(Content::new(STATUS, Feedback::new(state.clone())?))?;
         Ok(Self { host, state })
     }
     /// Caller publishes measured progress and independently determined outcome.

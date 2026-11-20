@@ -94,10 +94,13 @@ fn original_view_content_geometry_packets_and_action_owner() {
                             .activated
                     );
                     let packet = resolve_surface(palette, surface, "content", "rest").unwrap();
+                    let secondary =
+                        resolve_surface(palette, surface, "data-category-label", "rest").unwrap();
                     for p in actual.primitives() {
                         if let Primitive::Glyphs(run) = p {
                             assert!(
                                 run.color == packet.text
+                                    || run.color == secondary.text
                                     || run.color
                                         == resolve_surface(
                                             palette,

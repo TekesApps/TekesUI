@@ -126,7 +126,8 @@ impl Content {
     pub fn surface(&self) -> Option<&'static str> {
         self.surface
     }
-    pub(crate) fn with_secondary_foreground(mut self) -> Self {
+    /// Style this text node with the canonical secondary foreground on its resolved Surface.
+    pub fn with_secondary_foreground(mut self) -> Self {
         self.secondary_foreground = true;
         self
     }

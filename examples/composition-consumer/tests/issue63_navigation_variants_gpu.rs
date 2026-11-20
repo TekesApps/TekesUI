@@ -551,7 +551,7 @@ fn render_case(
                 ("root".into(), content_frame(&host, ROOT)),
             ]);
             assertions = serde_json::json!({"selected_and_rest_tab_quads_match_generated_roles":true,"original_textfield_surface_and_coretext_ink":true,"natural_two_line_label_layout_recorded":true});
-            extra = serde_json::json!({"semantic_nodes":semantic_json(&host),"tab_item_semantic_frames_pt":node.parts.iter().map(|p|rect(p.frame)).collect::<Vec<_>>(),"natural_two_line_header_height_pt":tabs_frame.size.height-panel.size.height,
+            extra = serde_json::json!({"semantic_nodes":semantic_json(&host),"tab_item_semantic_frames_pt":node.parts.iter().map(|p|rect(p.frame)).collect::<Vec<_>>(),"natural_two_line_header_height_pt":(panel.min_y()-tabs_frame.min_y()-tekes_ui_tokens::Spacing::Regular.value()).max(0.),
                 "surface_roles":{"selected_tab":format!("{}/action-quiet/selected",case.surface),"rest_tab":format!("{}/action-quiet/rest",case.surface),"textfield_panel":format!("{}/input/rest",case.surface)}});
         }
         Component::Command => {

@@ -49,13 +49,14 @@ impl ToastView {
     ) -> Size {
         let width = width.max(0.0);
         let stacked = width < 280.0;
-        let right_inset = if stacked { 12.0 } else { 50.0 };
-        let leading_inset = 36.0;
-        let gap = if stacked { 8.0 } else { 4.0 };
+        let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
+        let marker_diameter = 10.0;
+        let leading_inset = pad + marker_diameter + gap;
         let available_action_width = if stacked {
-            (width - 24.0).max(0.0)
+            (width - pad * 2.0).max(0.0)
         } else {
-            (width - leading_inset - gap - right_inset).max(0.0)
+            (width - leading_inset - gap - pad).max(0.0)
         };
         let natural_action = ButtonModel::measure(
             text,
@@ -70,17 +71,15 @@ impl ToastView {
                 .height
                 .max(34.0);
         let content_width = if stacked {
-            (width - leading_inset - 12.0).max(0.0)
+            (width - leading_inset - pad).max(0.0)
         } else {
-            (width - leading_inset - gap - action_width - right_inset).max(0.0)
+            (width - leading_inset - gap - action_width - pad).max(0.0)
         };
         let content_height = text.measure(message, role, content_width).height.max(34.0);
         let height = if stacked {
-            12.0 + content_height + gap + action_height + 10.0
+            pad + content_height + gap + action_height + pad
         } else {
-            62.0_f32
-                .max(12.0 + content_height + 16.0)
-                .max(10.0 + action_height + 10.0)
+            pad + content_height.max(action_height) + pad
         };
         Size::new(width, height)
     }
@@ -95,13 +94,14 @@ impl ToastView {
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
         let stacked = Self::stacked(frame);
-        let right_inset = if stacked { 12.0 } else { 50.0 };
-        let leading_inset = 36.0;
-        let gap = if stacked { 8.0 } else { 4.0 };
+        let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
+        let marker_diameter = 10.0;
+        let leading_inset = pad + marker_diameter + gap;
         let available_action_width = if stacked {
-            (frame.size.width - 24.0).max(0.0)
+            (frame.size.width - pad * 2.0).max(0.0)
         } else {
-            (frame.size.width - leading_inset - gap - right_inset).max(0.0)
+            (frame.size.width - leading_inset - gap - pad).max(0.0)
         };
         let natural_action = ButtonModel::measure(
             text,
@@ -113,14 +113,15 @@ impl ToastView {
         let dismiss_w = natural_action.width.max(90.0).min(available_action_width);
         let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
-            .max(34.0);
+            .max(34.0)
+            .min(frame.size.height.max(0.));
         let dismiss_x = if stacked {
             frame.min_x() + (frame.size.width - dismiss_w) * 0.5
         } else {
-            frame.min_x() + (frame.size.width - right_inset - dismiss_w).max(0.0)
+            frame.min_x() + (frame.size.width - pad - dismiss_w).max(0.0)
         };
         let content_width = if stacked {
-            (frame.size.width - leading_inset - 12.0).max(0.0)
+            (frame.size.width - leading_inset - pad).max(0.0)
         } else {
             (dismiss_x - gap - (frame.min_x() + leading_inset)).max(0.0)
         };
@@ -132,7 +133,7 @@ impl ToastView {
             frame,
             content: Rect::new(
                 frame.min_x() + leading_inset,
-                frame.min_y() + 12.,
+                frame.min_y() + pad,
                 content_width,
                 content_height,
             ),
@@ -142,14 +143,9 @@ impl ToastView {
         let dismiss_y = if stacked {
             self.layout.content.max_y() + gap
         } else {
-            frame.min_y() + 10.0
+            frame.min_y() + (frame.size.height - dismiss_h).max(0.0) * 0.5
         };
-        let logical_dismiss_frame = Rect::new(
-            dismiss_x,
-            dismiss_y,
-            dismiss_w,
-            dismiss_h.min(frame.size.height.max(0.)),
-        );
+        let logical_dismiss_frame = Rect::new(dismiss_x, dismiss_y, dismiss_w, dismiss_h);
         self.logical_dismiss_frame =
             (model.visible && !self.inactive && valid_logical_target(logical_dismiss_frame, clip))
                 .then_some(logical_dismiss_frame);
@@ -160,8 +156,8 @@ impl ToastView {
             &model.message,
             role,
             message,
-            frame.min_x() + 14.,
-            10.,
+            frame.min_x() + pad,
+            marker_diameter,
         );
         let h = text
             .measure(&model.message, role, message.size.width)
@@ -403,23 +399,52 @@ impl BannerView {
         role: proposal::TextRole,
     ) -> Size {
         let width = width.max(0.0);
+        let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
+        let marker_diameter = 12.0;
+        let leading_inset = pad + marker_diameter + gap;
         if Self::stacked(width, dismissible) {
-            let message_width = (width - 46.0).max(0.0);
-            let message_height = text.measure(message, role, message_width).height.max(54.0);
-            let action_width = (width - 46.0).clamp(0.0, 180.0);
+            let message_width = (width - leading_inset - pad).max(0.0);
+            let message_height = text.measure(message, role, message_width).height.max(34.0);
+            let available_action_width = (width - pad * 2.0).max(0.0);
+            let action_width = ButtonModel::measure(
+                text,
+                "Dismiss",
+                available_action_width,
+                ButtonSize::Body,
+                role,
+            )
+            .width
+            .max(92.0)
+            .min(available_action_width);
             let action_height =
                 ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
                     .height
                     .max(34.0);
-            Size::new(width, 6.0 + message_height + 8.0 + action_height + 10.0)
+            Size::new(width, pad + message_height + gap + action_height + pad)
         } else {
-            let message_width = if dismissible {
-                (width - 170.0 - 50.0).max(0.0)
+            let action_size = if dismissible {
+                let available = (width - leading_inset - gap - pad).max(0.0);
+                let action_w =
+                    ButtonModel::measure(text, "Dismiss", available, ButtonSize::Body, role)
+                        .width
+                        .max(92.0)
+                        .min(available);
+                let action_h =
+                    ButtonModel::measure(text, "Dismiss", action_w, ButtonSize::Body, role)
+                        .height
+                        .max(34.0);
+                Size::new(action_w, action_h)
             } else {
-                (width - 40.0).max(0.0)
+                Size::default()
             };
-            let message_height = text.measure(message, role, message_width).height.max(54.0);
-            Size::new(width, 74.0_f32.max(message_height + 12.0))
+            let message_width = if dismissible {
+                (width - leading_inset - gap - action_size.width - pad).max(0.0)
+            } else {
+                (width - leading_inset - pad).max(0.0)
+            };
+            let message_height = text.measure(message, role, message_width).height.max(34.0);
+            Size::new(width, pad + message_height.max(action_size.height) + pad)
         }
     }
 
@@ -440,41 +465,62 @@ impl BannerView {
         role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
+        let pad = tekes_ui_tokens::Spacing::Relaxed.value();
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
+        let marker_diameter = 12.0;
+        let leading_inset = pad + marker_diameter + gap;
         self.layout = ViewLayout {
             frame,
-            content: safe_inset(frame, 12., 8.),
+            content: safe_inset(frame, pad, pad),
             visible: model.visible.then_some(visible).flatten(),
         };
         let stacked = Self::stacked(frame.size.width, model.dismissible);
-        let dismiss_x = if stacked {
-            frame.min_x() + 34.0
+        let available_action_width = if stacked {
+            (frame.size.width - pad * 2.0).max(0.0)
         } else {
-            frame.min_x() + (frame.size.width - 170.).max(0.)
+            (frame.size.width - leading_inset - gap - pad).max(0.0)
         };
-        let dismiss_w = if stacked {
-            (frame.size.width - 46.0).clamp(0.0, 180.0)
-        } else {
-            // The original inline anchor leaves this trailing action region.
-            // Measure the standard Button's label and scaled padding within it.
-            let available = (frame.size.width.min(170.) - 12.).max(0.);
-            ButtonModel::measure(text, "Dismiss", available, ButtonSize::Body, role)
-                .width
-                .max(92.)
-                .min(available)
-        };
+        let dismiss_w = ButtonModel::measure(
+            text,
+            "Dismiss",
+            available_action_width,
+            ButtonSize::Body,
+            role,
+        )
+        .width
+        .max(92.0)
+        .min(available_action_width);
         let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
             .height
-            .max(34.)
-            .min((frame.size.height - 16.).max(0.));
-        let dismiss_y = if stacked {
-            let msg_width = (frame.size.width - 46.0).max(0.0);
-            let measured_message_height = text
-                .measure(&model.message, role, msg_width)
-                .height
-                .max(54.);
-            frame.min_y() + 6.0 + measured_message_height + 8.0
+            .max(34.0)
+            .min(frame.size.height.max(0.0));
+        let dismiss_x = if stacked {
+            frame.min_x() + (frame.size.width - dismiss_w) * 0.5
         } else {
-            frame.min_y() + 16.0
+            frame.min_x() + (frame.size.width - pad - dismiss_w).max(0.0)
+        };
+        let msg_width = if stacked {
+            (frame.size.width - leading_inset - pad).max(0.0)
+        } else if model.dismissible {
+            (dismiss_x - gap - (frame.min_x() + leading_inset)).max(0.0)
+        } else {
+            (frame.size.width - leading_inset - pad).max(0.0)
+        };
+        let height = text
+            .measure(&model.message, role, msg_width)
+            .height
+            .max(34.0)
+            .min((frame.size.height - pad * 2.0).max(0.0));
+        let message = Rect::new(
+            frame.min_x() + leading_inset,
+            frame.min_y() + pad,
+            msg_width,
+            height,
+        );
+        let dismiss_y = if stacked {
+            message.max_y() + gap
+        } else {
+            frame.min_y() + (frame.size.height - dismiss_h).max(0.0) * 0.5
         };
         let logical_dismiss_frame = Rect::new(dismiss_x, dismiss_y, dismiss_w, dismiss_h);
         self.logical_dismiss_frame = (model.visible
@@ -483,27 +529,13 @@ impl BannerView {
             && valid_logical_target(logical_dismiss_frame, clip))
         .then_some(logical_dismiss_frame);
         self.dismiss_layout = None;
-
-        let msg_width = if stacked {
-            (frame.size.width - 46.).max(0.)
-        } else if model.dismissible {
-            (dismiss_x - frame.min_x() - 50.).max(0.)
-        } else {
-            (frame.size.width - 40.).max(0.)
-        };
-        let height = text
-            .measure(&model.message, role, msg_width)
-            .height
-            .max(54.)
-            .min((frame.size.height - 12.).max(0.));
-        let message = Rect::new(frame.min_x() + 34., frame.min_y() + 6., msg_width, height);
         let marker = notice_marker_frame(
             text,
             &model.message,
             role,
             message,
-            frame.min_x() + 12.,
-            12.,
+            frame.min_x() + pad,
+            marker_diameter,
         );
         let h = text
             .measure(&model.message, role, message.size.width)
@@ -594,7 +626,7 @@ impl BannerView {
         self.dismiss_button.set_surface(surface);
         let _action =
             self.dismiss_button
-                .surface_colors(palette, paint::ButtonVariant::Primary, surface);
+                .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
         paint_notice_background(
             scene,
             self.layout.frame,
@@ -629,7 +661,7 @@ impl BannerView {
                 Some(v),
                 palette,
                 p.role,
-                paint::ButtonVariant::Primary,
+                paint::ButtonVariant::Quiet,
             );
         }
         scene.pop_clip();

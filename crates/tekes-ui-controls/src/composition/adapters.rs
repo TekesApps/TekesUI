@@ -346,29 +346,31 @@ impl Component for DialogContent {
         if !self.is_presented() {
             return;
         }
-        let pad = Spacing::Relaxed.value();
-        let gap = Spacing::Regular.value();
-        let raw_w = (f.size.width - 16.).max(0.);
+        let viewport_margin = Spacing::Regular.value();
+        let pad = Spacing::Loose.value();
+        let gap = Spacing::Relaxed.value();
+        let raw_w = (f.size.width - viewport_margin * 2.).max(0.);
+        let raw_h = (f.size.height - viewport_margin * 2.).max(0.);
         let w = self
             .max_width
             .filter(|limit| limit.is_finite())
             .map_or(raw_w, |limit| raw_w.min(limit.max(0.)));
         let inner = (w - pad * 2.).max(0.);
         let header = self.slots[0]
-            .measure(t, Size::new(inner, f.size.height))
+            .measure(t, Size::new(inner, raw_h))
             .size
             .height;
         let footer = self.slots[2]
-            .measure(t, Size::new(inner, f.size.height))
+            .measure(t, Size::new(inner, raw_h))
             .size
             .height;
-        let body_available = (f.size.height - 2. * pad - 2. * gap - header - footer).max(0.);
+        let body_available = (raw_h - 2. * pad - 2. * gap - header - footer).max(0.);
         let body = self.slots[1]
             .measure(t, Size::new(inner, body_available))
             .size
             .height
             .min(body_available);
-        let h = (header + footer + body + 2. * pad + 2. * gap).min(f.size.height);
+        let h = (header + footer + body + 2. * pad + 2. * gap).min(raw_h);
         self.modal = Rect::new(
             f.min_x() + (f.size.width - w) * 0.5,
             f.min_y() + (f.size.height - h) * 0.5,
@@ -577,5 +579,58 @@ impl ListContent {
                 ],
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod dialog_geometry_tests {
+    use super::*;
+
+    #[test]
+    fn dialog_uses_symmetric_viewport_margins_and_pad_exceeds_gap() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut dialog = DialogContent::new(
+            "Confirm",
+            Content::new(ComponentId(1), TextContent::heading("Title")),
+            Content::new(ComponentId(2), TextContent::new("Body copy")),
+            Content::new(ComponentId(3), Button::new("OK")),
+        );
+        dialog.model.open = true;
+        assert!(dialog.is_open());
+        let viewport = Rect::new(0., 0., 400., 300.);
+        dialog.arrange(&mut Text, viewport, viewport);
+        let modal = dialog.modal_frame();
+        assert!(modal.min_x() - viewport.min_x() >= Spacing::Regular.value() - 0.01);
+        assert!(viewport.max_x() - modal.max_x() >= Spacing::Regular.value() - 0.01);
+        assert!(modal.min_y() - viewport.min_y() >= Spacing::Regular.value() - 0.01);
+        assert!(viewport.max_y() - modal.max_y() >= Spacing::Regular.value() - 0.01);
+        let header = dialog.slots[0].frame();
+        let body = dialog.slots[1].frame();
+        let footer = dialog.slots[2].frame();
+        let pad_top = header.min_y() - modal.min_y();
+        let pad_bottom = modal.max_y() - footer.max_y();
+        let gap1 = body.min_y() - header.max_y();
+        let gap2 = footer.min_y() - body.max_y();
+        assert!((pad_top - Spacing::Loose.value()).abs() <= 0.01);
+        assert!((pad_bottom - Spacing::Loose.value()).abs() <= 0.01);
+        assert!(pad_top > gap1 && pad_top > gap2);
     }
 }

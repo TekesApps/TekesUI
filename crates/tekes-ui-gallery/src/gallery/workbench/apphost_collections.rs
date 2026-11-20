@@ -118,7 +118,9 @@ pub(in crate::gallery::workbench) trait MatrixPainter:
                 height,
             ),
             ButtonTextAlign::Leading,
-            tekes_ui_tokens::ColorRole::PrimaryText.resolve(palette.theme),
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, "canvas", "content", "rest")
+                .expect("matrix heading Surface packet")
+                .text,
         );
         height
     }

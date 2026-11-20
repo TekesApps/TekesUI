@@ -48,13 +48,20 @@ fn actual_compound_and_list_badges_forward_the_public_text_renderer_scale() {
                     palette,
                 )
                 .unwrap();
+                let badge_surface = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "canvas",
+                    "surface-frame",
+                    "rest",
+                )
+                .unwrap();
                 let widths = scene
                     .primitives()
                     .iter()
                     .filter_map(|p| match p {
                         Primitive::Quad(q)
-                            if q.fill == palette.color("surface-panel").unwrap()
-                                && q.border_color == palette.color("separator").unwrap()
+                            if q.fill == badge_surface.background
+                                && q.border_color == badge_surface.boundary.unwrap()
                                 && q.border_width > 0. =>
                         {
                             Some(q.border_width)

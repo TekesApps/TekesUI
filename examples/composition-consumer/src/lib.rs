@@ -1,7 +1,7 @@
 //! Independent workspace, public APIs only. The embedding application supplies
 //! its text renderer and registered approved-icon images. No Gallery imports.
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
+    ButtonTextRenderer,
     composition::*,
     extended::{Axis, Stack},
     layout::MeasuredChild,
@@ -58,41 +58,6 @@ impl Component for Icon {
         );
     }
 }
-#[derive(Debug)]
-struct Badge(String);
-impl Component for Badge {
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        let s = text.measure(&self.0, proposal::TextRole::UiCaption, available.width);
-        MeasuredChild::new(Size::new(
-            s.width + Spacing::Regular.value(),
-            s.height + Spacing::Tight.value(),
-        ))
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        _: Rect,
-        theme: ContentTheme,
-    ) {
-        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
-            scene,
-            frame,
-            theme.palette,
-            true,
-            text.backing_scale(),
-        );
-        text.draw(
-            scene,
-            &self.0,
-            proposal::TextRole::UiCaption,
-            frame,
-            ButtonTextAlign::Center,
-            theme.palette.color("primary-text").unwrap(),
-        );
-    }
-}
 pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionError> {
     let caption = Content::new(
         ComponentId(4),
@@ -137,7 +102,7 @@ pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionErr
                     },
                 ),
                 caption,
-                Content::new(ComponentId(7), Badge("Local".into())),
+                Content::new(ComponentId(7), BadgeContent::new("Local")?),
             ],
         },
     );
@@ -150,7 +115,7 @@ pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tekes_ui_controls::ControlKey;
+    use tekes_ui_controls::{ButtonTextAlign, ControlKey};
     use tekes_ui_tokens::{Palette, Theme};
     #[derive(Default)]
     struct Text;

@@ -128,12 +128,28 @@ fn finite_parent_measurement_and_ancestor_clip_use_original_view() {
     let mut c = ProgressContent::new("P", 0.);
     let mut t = coretext::Text::new(1.);
     for (a, want) in [
-        (Size::new(100., 23.), Size::new(100., 23.)),
+        (
+            Size::new(100., 23.),
+            Size::new(100., ProgressContent::DEFAULT_HEIGHT),
+        ),
+        (
+            Size::new(240., 1e8),
+            Size::new(240., ProgressContent::DEFAULT_HEIGHT),
+        ),
+        (Size::new(100., 8.), Size::new(100., 8.)),
         (Size::new(f32::INFINITY, f32::NAN), Size::default()),
         (Size::new(-2., -1.), Size::default()),
     ] {
         assert_eq!(c.measure(&mut t, a).size, want);
     }
+    assert_eq!(
+        ProgressContent::new("P2", 0.5)
+            .with_max_width(120.)
+            .with_height(18.)
+            .measure(&mut t, Size::new(240., 1e8))
+            .size,
+        Size::new(120., 18.)
+    );
     let f = Rect::new(0.25, 0.5, 120., 12.);
     let clip = Rect::new(10., 0., 60., 40.);
     let mut v = ProgressView::default();
@@ -284,7 +300,7 @@ fn visible_progress_reports_readonly_range_known_unknown_without_focus_or_action
         .into_iter()
         .find(|n| n.id == BAR)
         .unwrap();
-    assert_eq!(node.semantics.value.as_deref(), Some("进度未知"));
+    assert_eq!(node.semantics.value.as_deref(), Some("Indeterminate"));
     assert_eq!(s.host.value_range(BAR), None);
     assert!(s.host.drain_action_records().is_empty());
 }

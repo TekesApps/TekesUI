@@ -835,7 +835,7 @@ fn tree_icon_render_reuses_full_and_partial_row_clips() {
 fn data_table_measures_final_sorted_header_label_before_positioning_rows() {
     let mut model = DataTable::new(1, 2);
     model.sort_by(0);
-    let headers = ["name field".to_owned(), "Kind".to_owned()];
+    let headers = ["primary field".to_owned(), "Kind".to_owned()];
     let rows = vec![vec!["A".to_owned(), "Text".to_owned()]];
     let mut view = DataTableView::new();
     let mut text = RecordingText::default();
@@ -855,7 +855,27 @@ fn data_table_measures_final_sorted_header_label_before_positioning_rows() {
     assert!(
         text.measured
             .iter()
-            .any(|(label, _)| label == "name field  ↕")
+            .any(|(label, _)| label == "primary field ↑")
+    );
+    let header_rect = text
+        .drawn
+        .iter()
+        .zip(text.draw_rects.iter())
+        .find(|(label, _)| label.as_str() == "primary field ↑")
+        .map(|(_, rect)| *rect)
+        .expect("rendered sorted header");
+    let cell_rect = text
+        .drawn
+        .iter()
+        .zip(text.draw_rects.iter())
+        .find(|(label, _)| label.as_str() == "A")
+        .map(|(_, rect)| *rect)
+        .expect("rendered first column cell");
+    assert!(
+        (header_rect.min_x() - cell_rect.min_x()).abs() <= 0.01,
+        "header min_x={} vs cell min_x={}",
+        header_rect.min_x(),
+        cell_rect.min_x()
     );
     assert_eq!(layout.headers[0].frame.size.height, 80.0);
     assert_eq!(layout.rows[0].frame.min_y(), frame.min_y() + 86.0);

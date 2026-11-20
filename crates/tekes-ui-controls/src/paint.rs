@@ -604,10 +604,11 @@ pub(crate) fn skeleton_on_surface(
     let colors = resolve_surface(palette, surface, "skeleton", "rest")?;
     let boundary = colors.boundary.ok_or(SurfaceError::UnknownRole)?;
     let stroke = metric("stroke", "stroke-rule", 1.0);
-    scene.push_quad(Quad::new(rect, colors.background).with_corner_radius(4.));
+    let radius = metric("radius", "radius-badge", 4.0);
+    scene.push_quad(Quad::new(rect, colors.background).with_corner_radius(radius));
     scene.push_quad(
         Quad::new(rect, Rgba::new(0., 0., 0., 0.))
-            .with_corner_radius(4.)
+            .with_corner_radius(radius)
             .with_border(stroke, boundary),
     );
     Ok(())

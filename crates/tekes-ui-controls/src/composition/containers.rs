@@ -966,6 +966,27 @@ impl TextContent {
             role: proposal::TextRole::UiBody,
         }
     }
+    /// Override the typographic role on this text node.
+    pub fn with_role(mut self, role: proposal::TextRole) -> Self {
+        self.role = role;
+        self
+    }
+    /// Construct heading text (`TextRole::UiHeading`).
+    pub fn heading(text: impl Into<String>) -> Self {
+        Self::new(text).with_role(proposal::TextRole::UiHeading)
+    }
+    /// Construct label text (`TextRole::UiLabel`).
+    pub fn label(text: impl Into<String>) -> Self {
+        Self::new(text).with_role(proposal::TextRole::UiLabel)
+    }
+    /// Construct secondary explanatory text (`TextRole::UiSecondary`).
+    pub fn secondary(text: impl Into<String>) -> Self {
+        Self::new(text).with_role(proposal::TextRole::UiSecondary)
+    }
+    /// Construct caption/helper text (`TextRole::UiCaption`).
+    pub fn caption(text: impl Into<String>) -> Self {
+        Self::new(text).with_role(proposal::TextRole::UiCaption)
+    }
     pub(super) fn text_effects_work(&self, n: usize) -> Result<usize, PreparedEffectsError> {
         PreparedEffects::local_work(n)?
             .checked_add(
@@ -998,15 +1019,29 @@ impl Component for TextContent {
         _clip: Rect,
         theme: ContentTheme,
     ) {
+        let ink = theme.foreground.unwrap_or_else(|| {
+            let usage = match self.role {
+                proposal::TextRole::UiSecondary | proposal::TextRole::UiCaption => {
+                    "data-category-label"
+                }
+                _ => "content",
+            };
+            tekes_ui_tokens::surface_palette::resolve_surface(
+                theme.palette,
+                theme.surface(),
+                usage,
+                "rest",
+            )
+            .expect("validated TextContent Surface packet")
+            .text
+        });
         text.draw(
             scene,
             &self.text,
             self.role,
             frame,
             ButtonTextAlign::Leading,
-            theme
-                .foreground
-                .unwrap_or_else(|| theme.palette.color("primary-text").expect("text role")),
+            ink,
         )
     }
     fn semantics(&self) -> ContentSemantics {

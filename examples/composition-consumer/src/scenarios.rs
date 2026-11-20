@@ -30,42 +30,6 @@ pub mod ids {
     pub const DIALOG_CONFIRM: ComponentId = DIALOG_SAVE;
 }
 
-#[derive(Debug)]
-struct Badge(String);
-impl Component for Badge {
-    fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        let measured = t.measure(&self.0, proposal::TextRole::UiCaption, a.width);
-        MeasuredChild::new(Size::new(
-            measured.width + Spacing::Regular.value(),
-            measured.height + Spacing::Tight.value(),
-        ))
-    }
-    fn paint(
-        &mut self,
-        s: &mut Scene,
-        t: &mut dyn ButtonTextRenderer,
-        f: Rect,
-        _: Rect,
-        theme: ContentTheme,
-    ) {
-        tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
-            s,
-            f,
-            theme.palette,
-            true,
-            t.backing_scale(),
-        );
-        t.draw(
-            s,
-            &self.0,
-            proposal::TextRole::UiCaption,
-            f,
-            ButtonTextAlign::Center,
-            theme.palette.color("primary-text").unwrap(),
-        );
-    }
-}
-
 /// A row owns its own action while the nested Switch owns its hit target.
 #[derive(Debug)]
 struct ActionRow {
@@ -222,7 +186,7 @@ pub fn heterogeneous_list() -> Result<ListFixture, CompositionError> {
                     role: proposal::TextRole::UiHeading,
                 },
             ),
-            Content::new(ids::LIST_BADGE, Badge("Managed".into())),
+            Content::new(ids::LIST_BADGE, BadgeContent::new("Managed")?),
             Content::new(
                 ids::LIST_SWITCH,
                 SwitchContent::new("Use system appearance", true),

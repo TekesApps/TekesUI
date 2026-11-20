@@ -448,7 +448,7 @@ mod tests {
             assert_eq!(node.value_range, (!unknown).then_some([0., 100.]));
             assert_eq!(
                 node.semantics.value.as_deref(),
-                Some(if unknown { "进度未知" } else { "45%" })
+                Some(if unknown { "Indeterminate" } else { "45%" })
             );
             assert!(!node.focused);
             for request in [

@@ -1128,12 +1128,13 @@ impl DataTableContent {
         height: f32,
     ) -> TableContentMetrics {
         let cw = width.max(0.) / self.model.snapshot().columns.len().max(1) as f32;
+        let inset_x2 = DataTableView::cell_horizontal_inset(text) * 2.;
         let mut result = TableContentMetrics::default();
         let mut i = 0;
         for col in &self.model.snapshot().columns {
             let v = if self.headers.get(&col.key).is_some_and(Option::is_some) {
                 let size = self.children[i]
-                    .measure(text, Size::new((cw - 16.).max(0.), height))
+                    .measure(text, Size::new((cw - inset_x2).max(0.), height))
                     .size;
                 i += 1;
                 Some(size)
@@ -1161,13 +1162,13 @@ impl DataTableContent {
                 for col in 0..self.model.snapshot().columns.len() {
                     let accessory = refs[col * 2 + 1].map(|j| {
                         w.children[j]
-                            .measure(text, Size::new((cw - 16.).max(0.), height))
+                            .measure(text, Size::new((cw - inset_x2).max(0.), height))
                             .size
                     });
-                    let aw = accessory.map_or(0., |s| s.width.min((cw - 16.).max(0.)));
+                    let aw = accessory.map_or(0., |s| s.width.min((cw - inset_x2).max(0.)));
                     let main = refs[col * 2].map(|j| {
                         w.children[j]
-                            .measure(text, Size::new((cw - 16. - aw).max(0.), height))
+                            .measure(text, Size::new((cw - inset_x2 - aw).max(0.), height))
                             .size
                     });
                     row.push((main, accessory));
@@ -1185,14 +1186,16 @@ impl DataTableContent {
         clip: Rect,
     ) {
         let own = clip.intersection(&l.frame).unwrap_or_default();
+        let inset = DataTableView::cell_horizontal_inset(text);
+        let inset_x2 = inset * 2.;
         let mut i = 0;
         for (j, col) in self.model.snapshot().columns.iter().enumerate() {
             if self.headers.get(&col.key).is_some_and(Option::is_some) {
                 if let Some(h) = l.headers.get(j) {
                     let f = Rect::new(
-                        h.frame.min_x() + 8.,
+                        h.frame.min_x() + inset,
                         h.frame.min_y(),
-                        (h.frame.size.width - 16.).max(0.),
+                        (h.frame.size.width - inset_x2).max(0.),
                         h.frame.size.height,
                     );
                     self.children[i].arrange(text, f, own);
@@ -1211,24 +1214,24 @@ impl DataTableContent {
                     let mut k = 0;
                     for j in 0..self.model.snapshot().columns.len() {
                         let cw = l.columns[j].size.width;
-                        let x = l.columns[j].min_x() + 8.;
+                        let x = l.columns[j].min_x() + inset;
                         let aw = self.metrics.cells[index][j]
                             .1
-                            .map_or(0., |s| s.width.min((cw - 16.).max(0.)));
+                            .map_or(0., |s| s.width.min((cw - inset_x2).max(0.)));
                         for (slot, f) in [
                             (
                                 2 * j,
                                 Rect::new(
                                     x,
                                     layout.frame.min_y(),
-                                    (cw - 16. - aw).max(0.),
+                                    (cw - inset_x2 - aw).max(0.),
                                     layout.frame.size.height,
                                 ),
                             ),
                             (
                                 2 * j + 1,
                                 Rect::new(
-                                    x + (cw - 16. - aw).max(0.),
+                                    x + (cw - inset_x2 - aw).max(0.),
                                     layout.frame.min_y(),
                                     aw,
                                     layout.frame.size.height,
