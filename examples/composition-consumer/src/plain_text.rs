@@ -113,9 +113,9 @@ impl Scenario {
             &value.payload,
             proposal::TextRole::UiBody,
         );
-        let baseline = body.surface.input().external_baseline();
+        let baseline = body.input().external_baseline();
         assert!(matches!(
-            body.surface.apply_external_value(
+            body.apply_external_value(
                 &baseline,
                 &value,
                 ExternalSelection::Reset,
@@ -200,9 +200,9 @@ pub fn process_actions(host: &mut ContentHost, value: &mut DraftRevision) -> boo
                 .unwrap()
                 .component_mut::<TextFieldContent>()
                 .unwrap();
-            let baseline = field.surface.input().external_baseline();
+            let baseline = field.input().external_baseline();
             if matches!(
-                field.surface.apply_external_value(
+                field.apply_external_value(
                     &baseline,
                     &next,
                     ExternalSelection::Preserve,

@@ -113,7 +113,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
         let text = host
             .get(ComponentId(1))
             .and_then(|content| content.component::<TextFieldContent>())
-            .map(|field| field.surface.text().to_owned());
+            .map(|field| field.text().to_owned());
         eprintln!(
             "DEMO_COMMAND owner={owner} command={command} count={} text={text:?}",
             command_count.get()
@@ -131,7 +131,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
             let text = host
                 .get(ComponentId(1))
                 .and_then(|content| content.component::<TextFieldContent>())
-                .map(|field| field.surface.text().to_owned());
+                .map(|field| field.text().to_owned());
             eprintln!(
                 "DEMO_ACTION owner={actions_owner} action={:?} payload={:?} text={text:?}",
                 record.action, record.payload

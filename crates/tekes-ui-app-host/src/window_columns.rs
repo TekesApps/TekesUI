@@ -873,8 +873,6 @@ mod local_clipboard_tests {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .surface
-                    .input_mut()
                     .select_range(selection.clone())
             );
         });
@@ -1147,7 +1145,6 @@ mod local_clipboard_tests {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .text()
                     .to_owned();
             });
@@ -1394,17 +1391,15 @@ mod local_clipboard_tests {
                     .as_mut()
                     .unwrap()
                     .with_host(&mut |h| {
-                        let input = h
+                        let field = h
                             .get_mut(ComponentId(1))
                             .unwrap()
                             .component_mut::<TextFieldContent>()
-                            .unwrap()
-                            .surface
-                            .input_mut();
+                            .unwrap();
                         match mode {
-                            "readonly" => input.set_read_only(true),
-                            "disabled" => input.set_disabled(true),
-                            _ => assert!(input.set_marked_range(Some(1..3))),
+                            "readonly" => field.set_read_only(true),
+                            "disabled" => field.set_disabled(true),
+                            _ => assert!(field.set_marked_range(Some(1..3))),
                         }
                     });
                 assert!(host.local_content_input(&event, &clipboard).unwrap());
@@ -1431,16 +1426,18 @@ mod local_clipboard_tests {
                 .as_mut()
                 .unwrap()
                 .with_host(&mut |h| {
-                    let input = h
+                    let field = h
                         .get_mut(ComponentId(1))
                         .unwrap()
                         .component_mut::<TextFieldContent>()
-                        .unwrap()
-                        .surface
-                        .input_mut();
-                    input.set_text("A😀B");
-                    input.select_range(1..3);
-                    input.set_read_only(command == tekes_ui_platform_macos::TextEditCommand::Copy);
+                        .unwrap();
+                    field.replace_value(
+                        "A😀B",
+                        tekes_ui_controls::ExternalSelection::Reset,
+                        tekes_ui_controls::ExternalUndo::Reset,
+                    );
+                    field.select_range(1..3);
+                    field.set_read_only(command == tekes_ui_platform_macos::TextEditCommand::Copy);
                 });
             host.local_content_input(&Event::TextCommand(command), &clipboard)
                 .unwrap();
@@ -1468,7 +1465,6 @@ mod local_clipboard_tests {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .invalidate_text_layout();
             });
         host.local_content_input(
@@ -1488,7 +1484,6 @@ mod local_clipboard_tests {
                     .unwrap()
                     .component_mut::<TextFieldContent>()
                     .unwrap()
-                    .surface
                     .invalidate_text_layout();
                 h.with_text_input(&mut host.text, |h| {
                     assert!(h.focused_text().unwrap().paragraph().is_some());
@@ -1616,11 +1611,12 @@ mod local_scroll_tests {
     #[test]
     fn local_body_area_native_gesture_keeps_owner_inside_same_container() {
         use tekes_ui_controls::composition::{TextFieldContent, TextViewport};
-        let mut field = TextFieldContent::new("Area", "");
-        field.show_metadata = false;
-        field.viewport = TextViewport::Fixed(90.);
-        field.surface =
-            tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false);
+        let field = TextFieldContent::from_surface(
+            "Area",
+            tekes_ui_controls::TextSurface::new(&"editable line\n".repeat(80), true, false),
+        )
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fixed(90.));
         let local = LocalContainer::new("area", Content::new(ComponentId(1), field)).unwrap();
         let mut host = AppWindow::from_columns(vec![local.into()])
             .unwrap()

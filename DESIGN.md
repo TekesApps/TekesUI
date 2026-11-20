@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.3` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.4` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 表单字段、受控文本契约与分组设置行（`v0.4.4` / #372, #374, #369）
+
+- **共享 Field 呈现与 Surface 对比度路由（#372）**：`FieldPresentation::emphasized_form()` 成为 `tekes-ui-controls` 共享字段呈现契约，`FieldView::set_surface` 按配置表面从 `tekes-ui-tokens` 语义表面包解析标签与提示/错误文本前景色；Gallery `apphost_patterns.rs` 的 `FormMetadata` 与 `apphost_field_meta.rs` 的 `Fixture` 包装层已全部移除，改为直接配置 `TextFieldContent`（`set_field_presentation`、`set_max_width`、`with_presentation`）。
+- **受控文本适配器外观与封装边界（#374）**：`TextFieldContent::{field, view, surface}` 收紧为 `pub(crate)` 并移除 `SearchFieldContent` 的 `Deref` 透传；外部调用统一经由 `TextFieldContent` / `SearchFieldContent` 的配置、布局、阅读流、选区及外部值同步外观方法（`from_surface`、`multiline`、`apply_external_value`、`check_external_value`、`replace_value`、`set_reading_document`、`follow_latest`、`set_error`、`set_help`、`set_required` 等）驱动状态，确保衍生文本与 Clear/语义投影同步。
+- **共享分组设置行与 Settings 布局（#369）**：原 `tekes-ui-settings` 私有 `SettingsRow` 升级为 `tekes-ui-controls::composition::GroupedFormRowContent`（默认继承 `"panel"` 表面、基于 `probe_w` 的统一本征列宽测量分配与 `SwitchView::TRACK_WIDTH = 48pt`、`c-settings-group-ground` / `radius-panel` 与内缩分割线）；`SettingsForm` 接入 schema 分组标题（`StackContent::titled_section` / `SECTION_HEADER_GAP = 8pt`）、`16pt` `PANEL_SECTION_GAP`、全宽通栏 `ScrollContent::document`（移除 `390pt` 宽度上限及 `tekes-ui-app-host/src/window_settings.rs` 外层 `16pt` 重复留白与四边裁剪内缩），以及采用 `TextContent::with_error_foreground()` 的水平 `save_error` 提示条。
 
 ### 组合容器单一留白与格式塔层级（`v0.4.3` / #376, #377, #375）
 

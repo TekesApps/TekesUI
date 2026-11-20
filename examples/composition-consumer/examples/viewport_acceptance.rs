@@ -125,7 +125,7 @@ mod macos {
                 .into_iter()
                 .map(|id| {
                     let field = self.fixture.field(id);
-                    let s = &field.surface;
+                    let s = &field.surface();
                     serde_json::json!({
                         "id": id.0,
                         "text": s.text(),
@@ -284,7 +284,7 @@ mod macos {
                 self.reports.push(serde_json::json!({
                     "event": format!("{e:?}"),
                     "response": format!("{response:?}"),
-                    "value": self.fixture.field(COMPOSER).surface.text()
+                    "value": self.fixture.field(COMPOSER).surface().text()
                 }));
             }
             self.publish(w);

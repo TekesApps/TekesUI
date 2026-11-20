@@ -256,8 +256,8 @@ impl Component for DialogScreen {
 }
 
 pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
-    let mut text_field = TextFieldContent::new("Display name", "Workspace");
-    text_field.field.help = "Choose a name visible to everyone on the team.".into();
+    let text_field = TextFieldContent::new("Display name", "Workspace")
+        .with_help("Choose a name visible to everyone on the team.");
     let form = Content::new(
         ids::DIALOG_GRID,
         GridContent {
@@ -346,7 +346,7 @@ pub fn validate_dialog(host: &mut ContentHost) -> bool {
     let invalid = host
         .get(ids::DIALOG_FIELD)
         .and_then(|c| c.component::<TextFieldContent>())
-        .is_none_or(|f| f.surface.text().trim().is_empty());
+        .is_none_or(|f| f.text().trim().is_empty());
     let Some(field) = host
         .get_mut(ids::DIALOG_FIELD)
         .and_then(|c| c.component_mut::<TextFieldContent>())
@@ -354,11 +354,11 @@ pub fn validate_dialog(host: &mut ContentHost) -> bool {
         return false;
     };
     if invalid {
-        field.field.error = Some("Enter a workspace name.".into());
+        field.set_error(Some("Enter a workspace name.".into()));
         host.focus(Some(ids::DIALOG_FIELD), true);
         false
     } else {
-        field.field.error = None;
+        field.set_error(None);
         true
     }
 }

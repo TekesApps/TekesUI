@@ -22,16 +22,15 @@ struct Query {
 }
 impl Query {
     fn sync_query(&mut self) {
-        if self.model.query != self.editor.surface.text() {
-            self.model.set_query(self.editor.surface.text().to_owned());
+        if self.model.query != self.editor.text() {
+            self.model.set_query(self.editor.text().to_owned());
         }
     }
     fn selection(&mut self, index: usize) {
         self.selected_value = self.model.items.get(index).cloned();
         let value = self.model.query.clone();
-        let len = self.editor.surface.input().len();
-        self.editor.surface.input_mut().insert(&value, Some(0..len));
-        self.editor.surface.clear_clauses();
+        let len = self.editor.input().len();
+        self.editor.insert_text(&value, Some(0..len));
     }
     fn menu_key(&mut self, key: ControlKey, down: bool) -> ContentResponse {
         let before = (
@@ -138,7 +137,7 @@ impl Component for Query {
             s,
             &mut text,
             &mut self.model,
-            self.editor.surface.outer(),
+            self.editor.surface().outer(),
             c,
             Some(c),
             theme.palette,
@@ -204,7 +203,7 @@ impl Component for Query {
                     ..Default::default()
                 }
             }
-            ContentEvent::PointerDown(p) if !self.editor.surface.contains_visible(*p) => {
+            ContentEvent::PointerDown(p) if !self.editor.surface().contains_visible(*p) => {
                 self.model.open = false;
                 self.view.options.cancel();
                 ContentResponse {
@@ -344,9 +343,9 @@ pub fn fixture_content(
         view,
         selected_value: None,
     };
-    query.editor.field.error = validation;
+    query.editor.set_error(validation);
     if let Some(value) = initial_query {
-        query.editor.surface.input_mut().insert(value, None);
+        query.editor.insert_text(value, None);
         query.sync_query();
         query.menu_key(ControlKey::Enter, true);
     }
@@ -400,7 +399,6 @@ impl Scenario {
             .component::<Query>()
             .unwrap()
             .editor
-            .surface
             .text()
     }
     pub fn selected(&self) -> Option<&str> {
@@ -446,8 +444,7 @@ impl Scenario {
             .component_mut::<Query>()
             .unwrap()
             .editor
-            .field
-            .error = error;
+            .set_error(error);
     }
     /// Native preedit owns its data boundary. Reject a response while composing;
     /// unique labels are fixture domain IDs, as in the existing Select example.

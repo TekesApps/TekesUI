@@ -125,13 +125,13 @@ fn a_valid_backend_can_recover_after_failure_without_replacing_or_focusing_edito
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        let baseline = before.surface.input().external_baseline();
+        let baseline = before.surface().input().external_baseline();
         let version = before
             .reading
             .as_ref()
             .and_then(ReadingController::document_version)
             .cloned();
-        let value = before.surface.text().to_owned();
+        let value = before.surface().text().to_owned();
         assert_eq!(
             render(&mut h, &mut t, positive()).0,
             Err(CompositionError::MissingTextServices(FIELD))
@@ -144,8 +144,8 @@ fn a_valid_backend_can_recover_after_failure_without_replacing_or_focusing_edito
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(after.surface.input().external_baseline(), baseline);
-        assert_eq!(after.surface.text(), value);
+        assert_eq!(after.surface().input().external_baseline(), baseline);
+        assert_eq!(after.surface().text(), value);
         assert_eq!(
             after
                 .reading
@@ -153,7 +153,7 @@ fn a_valid_backend_can_recover_after_failure_without_replacing_or_focusing_edito
                 .and_then(ReadingController::document_version),
             version.as_ref()
         );
-        assert!(after.surface.paragraph().is_some());
+        assert!(after.surface().paragraph().is_some());
         assert_eq!(h.focused(), None);
         assert!(paints.get() > 0);
         assert!(h.focus(Some(FIELD), true));
@@ -176,7 +176,7 @@ fn inactive_zero_width_or_height_does_not_shape_and_valid_reopen_retains_attachm
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .external_baseline();
         render(&mut h, &mut t, positive()).0.unwrap();

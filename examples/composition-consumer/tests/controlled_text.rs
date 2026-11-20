@@ -278,10 +278,8 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
         let id = ComponentId(700);
         let mut field = TextFieldContent::new("editor", "old");
         field.submit_policy = TextSubmitPolicy::Enter;
-        let baseline = field.surface.input().external_baseline();
-        field
-            .surface
-            .apply_external_value(&baseline, &value("A", 1, "old"), S::Reset, U::Reset);
+        let baseline = field.input().external_baseline();
+        field.apply_external_value(&baseline, &value("A", 1, "old"), S::Reset, U::Reset);
         let mut host = ContentHost::new(Content::new(id, field)).unwrap();
         host.focus(Some(id), true);
         let input = ContentKeyEvent {
@@ -303,9 +301,8 @@ fn a_controlled_revision_or_document_change_fences_the_native_key_even_without_a
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        let expected = f.surface.input().external_baseline();
-        f.surface
-            .apply_external_value(&expected, &value(key, 2, "old"), S::Reset, U::Reset);
+        let expected = f.input().external_baseline();
+        f.apply_external_value(&expected, &value(key, 2, "old"), S::Reset, U::Reset);
         host.event(&ContentEvent::Commit {
             text: "late".into(),
             replacement: None,

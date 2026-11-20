@@ -5,25 +5,140 @@ fn schema() -> Schema {
 }
 
 #[derive(Default)]
-struct ListText;
+struct ListText {
+    type_scale: f32,
+    draws: Vec<(String, tekes_ui_tokens::Rgba)>,
+}
+impl ListText {
+    fn scale(&self) -> f32 {
+        if self.type_scale > 0. {
+            self.type_scale
+        } else {
+            1.
+        }
+    }
+    fn shape_paragraph(
+        &self,
+        text: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        width: Option<f32>,
+    ) -> tekes_ui_text::Paragraph {
+        let scale = self.scale();
+        let char_w = 8. * scale;
+        let line_h = f64::from(role.style().line_height * scale);
+        let natural = text.chars().count() as f32 * char_w;
+        let max_w = width.filter(|w| w.is_finite()).unwrap_or(f32::MAX);
+        let line_count = if max_w <= 0. || natural <= max_w {
+            1
+        } else {
+            (natural / max_w.max(char_w)).ceil().max(1.) as usize
+        };
+        let para_w = f64::from(natural.min(max_w));
+        let u16_len = text.encode_utf16().count();
+        let lines = (0..line_count)
+            .map(|idx| tekes_ui_text::Line {
+                index: idx,
+                utf16: 0..u16_len,
+                bytes: 0..text.len(),
+                ascent: line_h * 0.8,
+                descent: line_h * 0.2,
+                leading: 0.,
+                height: line_h,
+                top: idx as f64 * line_h,
+                baseline_y: idx as f64 * line_h + line_h * 0.8,
+                width: para_w,
+                width_trimmed: para_w,
+                runs: vec![],
+                carets: (0..=u16_len)
+                    .map(|i| (i, i as f64 * f64::from(char_w)))
+                    .collect(),
+                graphemes: vec![],
+                has_newline: false,
+            })
+            .collect::<Vec<_>>();
+        tekes_ui_text::Paragraph {
+            lines,
+            height: line_count as f64 * line_h,
+            width: para_w,
+            default_line_height: line_h,
+            fonts: vec![],
+            utf16_len: u16_len,
+        }
+    }
+}
+impl tekes_ui_controls::TextSurfaceTextRenderer for ListText {
+    fn push_visible(
+        &mut self,
+        _: &mut tekes_ui_scene::Scene,
+        _: &tekes_ui_text::Paragraph,
+        _: tekes_ui_scene::Point,
+        _: tekes_ui_tokens::Rgba,
+        _: tekes_ui_scene::Rect,
+    ) {
+    }
+}
+impl tekes_ui_controls::TextSurfaceHost for ListText {
+    fn type_scale(&self) -> f32 {
+        self.scale()
+    }
+    fn shape_surface(
+        &mut self,
+        text: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        width: Option<f32>,
+    ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+        std::rc::Rc::new(self.shape_paragraph(text, role, width))
+    }
+    fn shape_label(
+        &mut self,
+        text: &str,
+        role: tekes_ui_tokens::proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
+        let mut p = self.shape_paragraph(text, role, Some(width));
+        if let Some(max_lines) = options.max_lines
+            && p.lines.len() > max_lines.get()
+        {
+            p.lines.truncate(max_lines.get());
+            let line_h = p.default_line_height;
+            p.height = max_lines.get() as f64 * line_h;
+        }
+        Some(std::rc::Rc::new(tekes_ui_text::LabelLayout::new(
+            text,
+            p,
+            f64::from(width),
+            0.,
+            vec![],
+        )))
+    }
+}
 impl tekes_ui_controls::ButtonTextRenderer for ListText {
+    fn text_surface_host(&mut self) -> Option<&mut dyn tekes_ui_controls::TextSurfaceHost> {
+        Some(self)
+    }
+    fn resolved_font_size(&mut self, role: tekes_ui_tokens::proposal::TextRole) -> f32 {
+        role.style().size * self.scale()
+    }
     fn measure(
         &mut self,
         text: &str,
-        _: tekes_ui_tokens::proposal::TextRole,
+        role: tekes_ui_tokens::proposal::TextRole,
         width: f32,
     ) -> tekes_ui_scene::Size {
-        tekes_ui_scene::Size::new((text.chars().count() as f32 * 8.).min(width), 16.)
+        let p = self.shape_paragraph(text, role, Some(width));
+        tekes_ui_scene::Size::new(p.width as f32, p.height as f32)
     }
     fn draw(
         &mut self,
         _: &mut tekes_ui_scene::Scene,
-        _: &str,
+        text: &str,
         _: tekes_ui_tokens::proposal::TextRole,
         _: tekes_ui_scene::Rect,
         _: tekes_ui_controls::ButtonTextAlign,
-        _: tekes_ui_tokens::Rgba,
+        ink: tekes_ui_tokens::Rgba,
     ) {
+        self.draws.push((text.to_owned(), ink));
     }
 }
 
@@ -66,7 +181,6 @@ fn shared_form_uses_real_controls_and_keeps_mounts_across_value_updates() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
             .text(),
         "Changed"
     );
@@ -106,7 +220,7 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
     let frame = Rect::new(0., 0., 260., 500.);
     let palette = Palette::from(Theme::LIGHT);
     sidebar
-        .render(&mut Scene::new(), &mut ListText, frame, palette)
+        .render(&mut Scene::new(), &mut ListText::default(), frame, palette)
         .unwrap();
     let group = sidebar
         .host()
@@ -133,7 +247,7 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
     let mut painted = Scene::new();
     adapted.paint(
         &mut painted,
-        &mut ListText,
+        &mut ListText::default(),
         frame,
         frame,
         ContentTheme::from(palette),
@@ -143,7 +257,7 @@ fn sidebar_uses_standard_list_paint_and_selection_routes_without_button_styles()
     model.selected = Some(1);
     ListView::new().render(
         &mut standard,
-        &mut ListText,
+        &mut ListText::default(),
         &model,
         &labels,
         frame,
@@ -218,11 +332,21 @@ fn autosave_form_has_no_footer_and_preserves_original_text_mount_during_errors()
     }
     let mount = form.host().semantic_mount(ComponentId(100));
     let field = form.host().get(ComponentId(100)).unwrap();
-    let surface = &field.component::<TextFieldContent>().unwrap().surface;
-    assert_eq!(surface.alignment(), TextSurfaceAlignment::Trailing);
-    assert_eq!(surface.presentation(), TextSurfacePresentation::Content);
+    let tf = field.component::<TextFieldContent>().unwrap();
+    assert_eq!(tf.alignment(), TextSurfaceAlignment::Trailing);
+    assert_eq!(tf.surface_presentation(), TextSurfacePresentation::Content);
     form.save_error(Some("write failed"), false);
-    assert!(form.host().get(ComponentId(5)).is_some());
+    form.render(
+        &mut tekes_ui_scene::Scene::new(),
+        &mut ListText::default(),
+        tekes_ui_scene::Rect::new(0., 0., 560., 400.),
+        tekes_ui_tokens::Palette::from(tekes_ui_tokens::Theme::LIGHT),
+    )
+    .unwrap();
+    let apply = form.host().get(ComponentId(5)).unwrap().frame();
+    let discard = form.host().get(ComponentId(6)).unwrap().frame();
+    assert_eq!(apply.min_y(), discard.min_y());
+    assert!(apply.max_x() < discard.min_x());
     assert_eq!(form.host().semantic_mount(ComponentId(100)), mount);
     form.save_error(None, false);
     assert!(form.host().get(ComponentId(5)).is_none());
@@ -230,11 +354,7 @@ fn autosave_form_has_no_footer_and_preserves_original_text_mount_during_errors()
     let field = form.host().get(ComponentId(100)).unwrap();
     assert_eq!(form.host().semantic_mount(ComponentId(100)), mount);
     assert_eq!(
-        field
-            .component::<TextFieldContent>()
-            .unwrap()
-            .surface
-            .alignment(),
+        field.component::<TextFieldContent>().unwrap().alignment(),
         TextSurfaceAlignment::Trailing
     );
 }
@@ -327,7 +447,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     sidebar
         .render(
             &mut Scene::new(),
-            &mut WithIconRenderer::new(&mut ListText, &mut Icons),
+            &mut WithIconRenderer::new(&mut ListText::default(), &mut Icons),
             frame,
             Theme::LIGHT.into(),
         )
@@ -409,7 +529,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         sidebar
             .render(
                 &mut Scene::new(),
-                &mut WithIconRenderer::new(&mut ListText, &mut Icons),
+                &mut WithIconRenderer::new(&mut ListText::default(), &mut Icons),
                 frame,
                 Theme::LIGHT.into(),
             )
@@ -461,7 +581,7 @@ fn sidebar_queued_selection_keeps_business_key_after_programmatic_sync() {
     sidebar
         .render(
             &mut Scene::new(),
-            &mut ListText,
+            &mut ListText::default(),
             Rect::new(0., 0., 260., 500.),
             Theme::LIGHT.into(),
         )
@@ -514,7 +634,7 @@ fn sidebar_hidden_item_revokes_queued_selection_instead_of_retargeting() {
     sidebar
         .render(
             &mut Scene::new(),
-            &mut ListText,
+            &mut ListText::default(),
             Rect::new(0., 0., 260., 500.),
             Theme::LIGHT.into(),
         )
@@ -554,10 +674,10 @@ fn sidebar_hidden_item_revokes_queued_selection_instead_of_retargeting() {
 
 #[test]
 fn grouped_form_keeps_rows_contiguous_and_separates_schema_groups() {
-    use tekes_ui_controls::composition::ComponentId;
+    use tekes_ui_controls::composition::{ComponentId, StackContent};
     use tekes_ui_scene::{CornerRadii, Primitive, Rect, Scene};
     use tekes_ui_tokens::{Palette, Spacing, Theme};
-    // Three real controls: two in one schema group, one in the next.
+    // Three real controls: two in one schema group, one in the next, keeping real labels intact.
     let definition = schema();
     let mut schema = definition.clone();
     let field = definition.settings[1].clone();
@@ -571,27 +691,16 @@ fn grouped_form_keeps_rows_contiguous_and_separates_schema_groups() {
         .collect();
     let draft = Draft::new(Snapshot::default());
     let mut form = SettingsForm::new_autosave(&schema, &draft).unwrap();
-    // This geometry fixture uses measured labels, not a font-shaping service.
-    // Keep original rows and control mounts; real wrapping is checked by the
-    // SettingsRow multiline test and the native appearance candidate.
-    for i in 0..3 {
-        let id = ComponentId((1_u64 << 32) + i * 4 + 1);
-        form.with_host_mut(|host| {
-            *host.get_mut(id).unwrap() = tekes_ui_controls::composition::Content::new(
-                id,
-                tekes_ui_controls::composition::TextContent::new("Setting"),
-            );
-        });
-    }
     let mount = form.host().semantic_mount(ComponentId(100));
+    let mut text = ListText::default();
     for width in [260., 900.] {
         for theme in [Theme::LIGHT, Theme::DARK] {
             let mut scene = Scene::new();
             let palette = Palette::from(theme);
             form.render(
                 &mut scene,
-                &mut ListText,
-                Rect::new(0., 0., width, 500.),
+                &mut text,
+                Rect::new(0., 0., width, 700.),
                 palette,
             )
             .unwrap();
@@ -603,18 +712,42 @@ fn grouped_form_keeps_rows_contiguous_and_separates_schema_groups() {
                         .frame()
                 })
                 .collect();
+            let first_heading = form.host().get(ComponentId(1_u64 << 50)).unwrap().frame();
+            let second_heading = form
+                .host()
+                .get(ComponentId((1_u64 << 50) + 1))
+                .unwrap()
+                .frame();
             assert_eq!(
                 rows[0].max_y(),
                 rows[1].min_y(),
                 "one continuous group ground"
             );
-            assert_eq!(rows[2].min_y() - rows[1].max_y(), Spacing::Relaxed.value());
+            assert_eq!(
+                rows[0].min_y() - first_heading.max_y(),
+                StackContent::SECTION_HEADER_GAP
+            );
+            assert_eq!(
+                second_heading.min_y() - rows[1].max_y(),
+                StackContent::PANEL_SECTION_GAP
+            );
+            assert_eq!(
+                rows[2].min_y() - second_heading.max_y(),
+                StackContent::SECTION_HEADER_GAP
+            );
             let body = form.host().get(ComponentId(11)).unwrap().frame();
             assert_eq!(body.size.width, width.min(560.));
+            assert_eq!(
+                body.size.height, 700.,
+                "ScrollContent owns document height without 390pt cap"
+            );
             assert_eq!(body.min_x(), (width - body.size.width) * 0.5);
             let content = form.host().get(ComponentId(20)).unwrap().frame();
+            let inset = Spacing::Loose.value();
             assert_eq!(rows[0].size.width, content.size.width);
-            assert_eq!(rows[0].min_x(), content.min_x());
+            assert_eq!(rows[0].min_x(), body.min_x() + inset);
+            assert_eq!(body.max_x() - rows[0].max_x(), inset);
+            assert_eq!(first_heading.min_y(), body.min_y() + inset);
             let grounds: Vec<_> = scene
                 .primitives()
                 .iter()
@@ -661,4 +794,154 @@ fn grouped_form_keeps_rows_contiguous_and_separates_schema_groups() {
             assert_eq!(form.host().semantic_mount(ComponentId(100)), mount);
         }
     }
+}
+
+#[test]
+fn full_production_settings_form_preserves_long_labels_scaling_and_horizontal_save_error() {
+    use tekes_ui_controls::composition::{ComponentId, TextContent, TextFieldContent};
+    use tekes_ui_scene::{Rect, Scene};
+    use tekes_ui_tokens::{Palette, Spacing, Theme};
+    let mut def = schema();
+    def.settings[0].label =
+        "Long wrapping production workspace title setting that must fit narrow panels cleanly"
+            .into();
+    let draft = Draft::new(Snapshot::default());
+    let mut form = SettingsForm::new_autosave(&def, &draft).unwrap();
+    form.save_error(Some("Failed to persist settings snapshot"), false);
+
+    for scale in [1.0, 1.5] {
+        let mut text = ListText {
+            type_scale: scale,
+            draws: Vec::new(),
+        };
+        for width in [260., 560.] {
+            let viewport = Rect::new(0., 0., width, 700.);
+            form.render(
+                &mut Scene::new(),
+                &mut text,
+                viewport,
+                Palette::from(Theme::LIGHT),
+            )
+            .unwrap();
+
+            let heading0 = form.host().get(ComponentId(1_u64 << 50)).unwrap().frame();
+            let heading1 = form
+                .host()
+                .get(ComponentId((1_u64 << 50) + 1))
+                .unwrap()
+                .frame();
+            assert_eq!(
+                form.host()
+                    .get(ComponentId(1_u64 << 50))
+                    .unwrap()
+                    .component::<TextContent>()
+                    .unwrap()
+                    .text,
+                "工作区"
+            );
+            assert_eq!(
+                form.host()
+                    .get(ComponentId((1_u64 << 50) + 1))
+                    .unwrap()
+                    .component::<TextContent>()
+                    .unwrap()
+                    .text,
+                "阅读"
+            );
+            let row0 = form.host().get(ComponentId(1_u64 << 32)).unwrap().frame();
+            let row1 = form
+                .host()
+                .get(ComponentId((1_u64 << 32) + 4))
+                .unwrap()
+                .frame();
+            let row2 = form
+                .host()
+                .get(ComponentId((1_u64 << 32) + 8))
+                .unwrap()
+                .frame();
+            let label0 = form
+                .host()
+                .get(ComponentId((1_u64 << 32) + 1))
+                .unwrap()
+                .frame();
+            let control0 = form.host().get(ComponentId(100)).unwrap().frame();
+            let block = Spacing::Tight.value();
+            let intra_content_gap = (row1.min_y() + block) - (row0.max_y() - block);
+            let inter_content_gap = (row2.min_y() + block) - (row1.max_y() - block);
+            assert!(
+                inter_content_gap > intra_content_gap,
+                "inter-group content gap ({inter_content_gap}) must exceed intra-group ({intra_content_gap})"
+            );
+            assert!(label0.max_x() <= control0.min_x());
+            assert!(label0.min_x() >= row0.min_x() + Spacing::Loose.value());
+            assert!(control0.max_x() <= row0.max_x() - Spacing::Loose.value());
+            assert!(label0.max_y() <= row0.max_y() - block);
+            assert!(heading0.max_x() <= viewport.max_x() && heading1.max_x() <= viewport.max_x());
+
+            let status_frame = form.host().get(ComponentId(2)).unwrap().frame();
+            let apply_frame = form.host().get(ComponentId(5)).unwrap().frame();
+            let discard_frame = form.host().get(ComponentId(6)).unwrap().frame();
+            assert_eq!(apply_frame.min_y(), discard_frame.min_y());
+            assert!(apply_frame.max_x() < discard_frame.min_x());
+            assert!(status_frame.max_y() < apply_frame.min_y());
+            let error_ink = tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                Palette::from(Theme::LIGHT),
+                "canvas",
+                "input",
+                "rest",
+                tekes_ui_tokens::surface_palette::SurfaceOptions {
+                    error: true,
+                    read_only: false,
+                },
+            )
+            .unwrap()
+            .helper
+            .unwrap();
+            assert!(
+                text.draws
+                    .contains(&("Failed to persist settings snapshot".into(), error_ink)),
+                "autosave error status must resolve canonical error helper ink"
+            );
+        }
+    }
+
+    // replace_values preserves help text, presentation, trailing alignment and mount, and refuses active IME.
+    let mount = form.host().semantic_mount(ComponentId(100));
+    assert!(form.focus(Some(ComponentId(100)), false));
+    form.with_host_mut(|host| {
+        let tf = host
+            .get_mut(ComponentId(100))
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap();
+        assert!(tf.set_composition_preview("中", 1..1, None, std::iter::once(0..1).collect()));
+        let blocked = tf.replace_value(
+            "Overwritten",
+            tekes_ui_controls::ExternalSelection::Reset,
+            tekes_ui_controls::ExternalUndo::Reset,
+        );
+        assert_eq!(
+            blocked,
+            tekes_ui_controls::ExternalValueResult::Conflict(
+                tekes_ui_controls::ExternalValueConflict::Composition
+            )
+        );
+    });
+    form.replace_values(&def, &draft);
+    let tf = form
+        .host()
+        .get(ComponentId(100))
+        .unwrap()
+        .component::<TextFieldContent>()
+        .unwrap();
+    assert_eq!(tf.text(), "My Workspace");
+    assert_eq!(
+        tf.surface_presentation(),
+        tekes_ui_controls::TextSurfacePresentation::Content
+    );
+    assert_eq!(
+        tf.alignment(),
+        tekes_ui_controls::TextSurfaceAlignment::Trailing
+    );
+    assert_eq!(form.host().semantic_mount(ComponentId(100)), mount);
 }

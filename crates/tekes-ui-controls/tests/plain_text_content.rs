@@ -62,20 +62,20 @@ use tekes_ui_scene::{Point, Primitive};
 fn plain_document_has_no_form_geometry_and_parent_clipping_does_not_reshape_it() {
     let value = "中文😀 e\u{301} selects and wraps without input decoration.\n".repeat(20);
     let mut body =
-        TextFieldContent::read_only_content("Document name", &value, proposal::TextRole::UiBody);
-    body.field.help = "semantic description only".into();
+        TextFieldContent::read_only_content("Document name", &value, proposal::TextRole::UiBody)
+            .with_help("semantic description only");
     let size = body.measure(&mut Text, Size::new(300., 10000.)).size;
     let frame = Rect::new(30., 40., 300., size.height);
     body.arrange(&mut Text, frame, frame);
-    assert_eq!(body.surface.outer(), body.surface.inner());
+    assert_eq!(body.surface().outer(), body.surface().inner());
     assert_eq!(
-        body.surface.outer().size.height,
-        body.surface.paragraph().unwrap().height as f32
+        body.surface().outer().size.height,
+        body.surface().paragraph().unwrap().height as f32
     );
-    let shaped = body.surface.paragraph().unwrap().clone();
+    let shaped = body.surface().paragraph().unwrap().clone();
     body.arrange(&mut Text, frame, Rect::new(70., 110., 160., 60.));
-    assert!(Rc::ptr_eq(&shaped, body.surface.paragraph().unwrap()));
-    assert_eq!(body.surface.width(), Some(300.));
+    assert!(Rc::ptr_eq(&shaped, body.surface().paragraph().unwrap()));
+    assert_eq!(body.surface().width(), Some(300.));
     let mut scene = Scene::new();
     body.paint(
         &mut scene,
@@ -91,10 +91,10 @@ fn plain_document_has_no_form_geometry_and_parent_clipping_does_not_reshape_it()
             .any(|p| matches!(p, Primitive::Quad(_)))
     );
     assert_eq!(body.semantics().name, "Document name");
-    assert!(body.surface.input().is_read_only());
+    assert!(body.is_read_only());
 
     let mut form = TextFieldContent::new("Ordinary field", "value");
-    assert_eq!(form.surface.presentation(), TextSurfacePresentation::Field);
+    assert_eq!(form.surface_presentation(), TextSurfacePresentation::Field);
     let h = form.measure(&mut Text, Size::new(300., 1000.)).size.height;
     form.arrange(
         &mut Text,
@@ -115,13 +115,12 @@ fn plain_document_has_no_form_geometry_and_parent_clipping_does_not_reshape_it()
             .iter()
             .any(|p| matches!(p, Primitive::Quad(_)))
     );
-    assert!(form.surface.inner().size.width < form.surface.outer().size.width);
+    assert!(form.surface().inner().size.width < form.surface().outer().size.width);
 }
 
 #[test]
 fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing() {
-    let mut disabled = TextFieldContent::new("Disabled", "disabled value");
-    disabled.surface.input_mut().set_disabled(true);
+    let disabled = TextFieldContent::new("Disabled", "disabled value").with_disabled(true);
     let root = Content::new(
         ComponentId(200),
         StackContent {
@@ -164,7 +163,7 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .inner()
                 .intersection(&clip)
                 .unwrap()
@@ -189,7 +188,6 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
             .input();
         (
             input.text().to_owned(),
@@ -210,7 +208,6 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
             .input();
         assert_eq!(
             (
@@ -397,45 +394,42 @@ fn plain_document_keeps_utf16_selection_across_controlled_append_and_rejects_sta
         version: 1,
         payload: original.into(),
     };
-    let initial = body.surface.input().external_baseline();
+    let initial = body.input().external_baseline();
     assert!(matches!(
-        body.surface
-            .apply_external_value(&initial, &first, S::Reset, U::Reset),
+        body.apply_external_value(&initial, &first, S::Reset, U::Reset),
         R::Applied { .. }
     ));
     assert!(
         body.accessibility_action(None, &AccessibilityAction::SetSelection(2..4))
             .consumed
     );
-    assert_eq!(body.surface.input().selected_text(), "😀");
-    let selected = body.surface.input().external_baseline();
+    assert_eq!(body.input().selected_text(), "😀");
+    let selected = body.input().external_baseline();
     let second = DraftRevision {
         identity: "document-A".into(),
         version: 2,
         payload: format!("{original}\n流式追加"),
     };
     assert!(matches!(
-        body.surface
-            .apply_external_value(&selected, &second, S::Preserve, U::Preserve),
+        body.apply_external_value(&selected, &second, S::Preserve, U::Preserve),
         R::Applied { .. }
     ));
-    assert_eq!(body.surface.input().selection(), 2..4);
-    assert_eq!(body.surface.input().selected_text(), "😀");
+    assert_eq!(body.input().selection(), 2..4);
+    assert_eq!(body.input().selected_text(), "😀");
     assert!(matches!(
-        body.surface
-            .apply_external_value(&initial, &first, S::Reset, U::Reset),
+        body.apply_external_value(&initial, &first, S::Reset, U::Reset),
         R::Conflict(_)
     ));
     assert!(matches!(
-        body.surface.apply_external_value(
-            &body.surface.input().external_baseline(),
+        body.apply_external_value(
+            &body.input().external_baseline(),
             &first,
             S::Reset,
             U::Reset
         ),
         R::Conflict(_)
     ));
-    assert_eq!(body.surface.text(), second.payload);
-    assert!(body.surface.input().is_read_only());
+    assert_eq!(body.text(), second.payload);
+    assert!(body.is_read_only());
     assert_eq!(body.semantics().value, Some(second.payload));
 }

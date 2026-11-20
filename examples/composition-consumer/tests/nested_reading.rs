@@ -36,7 +36,7 @@ fn inner(host: &ContentHost) -> &TextFieldContent {
         .unwrap()
 }
 fn wheel(host: &mut ContentHost, delta: f32, time: f64, momentum: bool) -> ContentResponse {
-    let point = inner(host).surface.inner().center();
+    let point = inner(host).surface().inner().center();
     host.event(&ContentEvent::Scroll {
         position: point,
         delta: Point::new(0., delta),
@@ -52,21 +52,19 @@ fn inner_history_scroll_pauses_parent_follow_without_moving_parent_or_composer()
     let (mut host, mut text, version) = fixture();
     assert!(parent(&host).is_following_latest());
     host.focus(Some(COMPOSER), true);
-    let input = host
+    let field = host
         .get_mut(COMPOSER)
         .unwrap()
         .component_mut::<TextFieldContent>()
-        .unwrap()
-        .surface
-        .input_mut();
-    input.preedit("ni", 0..2, None);
-    let before = input.external_baseline();
+        .unwrap();
+    field.set_composition_preview("ni", 0..2, None, vec![]);
+    let before = field.input().external_baseline();
     assert!(wheel(&mut host, 160., 1., false).consumed);
     paint(&mut host, &mut text);
     let outer_offset = parent(&host).scroll.offset;
-    assert!(inner(&host).surface.scroll().offset.y > 100.);
+    assert!(inner(&host).surface().scroll().offset.y > 100.);
     assert!(wheel(&mut host, -60., 2., false).consumed);
-    assert!(inner(&host).surface.scroll().offset.y < 150.);
+    assert!(inner(&host).surface().scroll().offset.y < 150.);
     assert_eq!(
         parent(&host).scroll.offset,
         outer_offset,
@@ -96,7 +94,7 @@ fn inner_history_scroll_pauses_parent_follow_without_moving_parent_or_composer()
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface;
+        .surface();
     assert_eq!(surface.input().external_baseline(), before);
     assert!(surface.marked().is_some());
     assert!(host.drain_actions().is_empty());
@@ -143,10 +141,7 @@ fn nonoverflow_bubbles_once_editable_stays_local_and_ineligible_sources_do_not_n
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field
-        .surface
-        .scroll_mut()
-        .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Disabled);
+    field.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Disabled);
     let appended = ComponentId(53007);
     host.insert(
         BODY,
@@ -185,8 +180,6 @@ fn nonoverflow_bubbles_once_editable_stays_local_and_ineligible_sources_do_not_n
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_read_only(false);
     paint(&mut host, &mut text);
     wheel(&mut host, 160., 1., false);
@@ -198,13 +191,11 @@ fn nonoverflow_bubbles_once_editable_stays_local_and_ineligible_sources_do_not_n
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_disabled(true);
     paint(&mut host, &mut text);
-    let before = inner(&host).surface.scroll().offset;
+    let before = inner(&host).surface().scroll().offset;
     wheel(&mut host, -60., 1., false);
-    assert_eq!(inner(&host).surface.scroll().offset, before);
+    assert_eq!(inner(&host).surface().scroll().offset, before);
     // Disabled child leaves this wheel unhandled. Its eligible parent may
     // process that original wheel normally; that is not a child notification.
     assert!(!parent(&host).is_following_latest());
@@ -365,10 +356,7 @@ fn modal_and_interactive_overlay_scopes_do_not_notify_background_reading() {
             min: 120.,
             max: 120.,
         };
-        field
-            .surface
-            .scroll_mut()
-            .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
+        field.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
         field
     };
     host.insert(
@@ -391,7 +379,7 @@ fn modal_and_interactive_overlay_scopes_do_not_notify_background_reading() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .inner()
         .center();
     for (delta, time) in [(160., 1.), (-60., 2.)] {
@@ -422,7 +410,7 @@ fn modal_and_interactive_overlay_scopes_do_not_notify_background_reading() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .inner()
         .center();
     for (delta, time) in [(160., 3.), (-60., 4.)] {
@@ -462,7 +450,7 @@ fn readonly_keyboard_navigation_pauses_parent_even_when_no_parent_reveal_is_need
         );
         assert_eq!(parent(&host).scroll.offset, before);
         assert_eq!(host.focused(), Some(INNER));
-        assert!(!inner(&host).surface.text().is_empty());
+        assert!(!inner(&host).surface().text().is_empty());
     }
 }
 
@@ -472,20 +460,20 @@ fn original_readonly_selection_and_scrollbar_capture_pause_parent_without_copyin
         let (mut host, mut text, _) = fixture();
         host.focus(Some(COMPOSER), true);
         let point = if scrollbar {
-            let surface = &inner(&host).surface;
+            let surface = &inner(&host).surface();
             surface
                 .scroll()
                 .thumb(true, surface.track(true), 24.)
                 .center()
         } else {
-            inner(&host).surface.inner().center()
+            inner(&host).surface().inner().center()
         };
         let before = parent(&host).scroll.offset;
         let response = host.event(&ContentEvent::PointerDown(point));
         assert!(response.consumed && response.capture_pointer);
         assert!(host.pointer_capture().is_some_and(|(id, _)| id == INNER));
         assert_eq!(
-            inner(&host).surface.scroll().dragging_axis(),
+            inner(&host).surface().scroll().dragging_axis(),
             scrollbar.then_some(true)
         );
         assert!(
@@ -521,13 +509,11 @@ fn original_readonly_selection_and_scrollbar_capture_pause_parent_without_copyin
 fn programmatic_readonly_selection_is_not_a_user_history_notice() {
     let (mut host, mut text, _) = fixture();
     assert!(host.focus(Some(INNER), true));
-    let surface = &mut host
-        .get_mut(INNER)
+    host.get_mut(INNER)
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface;
-    surface.input_mut().set_selection(0, 10);
+        .set_selection(0, 10);
     paint(&mut host, &mut text);
     assert!(
         parent(&host).is_following_latest(),
@@ -645,7 +631,7 @@ fn cancelled_native_callback_cannot_pause_the_new_original_readonly_owner() {
 #[test]
 fn retained_pointer_release_cancel_and_remount_do_not_replay_manual_reading_intent() {
     let (mut host, mut text, _) = fixture();
-    let point = inner(&host).surface.inner().center();
+    let point = inner(&host).surface().inner().center();
     host.event(&ContentEvent::PointerDown(point));
     assert!(!parent(&host).is_following_latest());
     host.get_mut(PARENT)
@@ -692,7 +678,7 @@ fn original_scrollbar_drag_and_track_click_never_reveal_the_old_insertion_caret(
     for thumb_drag in [false, true] {
         let (mut host, mut text, _) = fixture();
         host.focus(Some(INNER), true);
-        let surface = &inner(&host).surface;
+        let surface = &inner(&host).surface();
         let track = surface.track(true);
         let point = if thumb_drag {
             surface.scroll().thumb(true, track, 24.).center()
@@ -711,23 +697,23 @@ fn original_scrollbar_drag_and_track_click_never_reveal_the_old_insertion_caret(
                 point.y + 20.,
             )));
         }
-        let offset = inner(&host).surface.scroll().offset.y;
+        let offset = inner(&host).surface().scroll().offset.y;
         assert!(
             offset > 50.,
             "old caret reveal undid original scrollbar input: {offset}"
         );
         host.event(&ContentEvent::PointerUp(point));
         assert!(
-            (inner(&host).surface.scroll().offset.y - offset).abs() < 0.01,
+            (inner(&host).surface().scroll().offset.y - offset).abs() < 0.01,
             "release restored old caret"
         );
-        assert_eq!(inner(&host).surface.input().selection(), selection);
+        assert_eq!(inner(&host).surface().input().selection(), selection);
         assert_eq!(parent(&host).scroll.offset, before_parent);
         assert!(!parent(&host).is_following_latest());
         assert!(host.pointer_capture().is_none());
         paint(&mut host, &mut text);
         assert!(
-            (inner(&host).surface.scroll().offset.y - offset).abs() < 0.01,
+            (inner(&host).surface().scroll().offset.y - offset).abs() < 0.01,
             "next layout restored old caret"
         );
     }
@@ -736,25 +722,43 @@ fn original_scrollbar_drag_and_track_click_never_reveal_the_old_insertion_caret(
 #[test]
 fn public_surface_reveal_cannot_steal_an_active_original_scrollbar_gesture() {
     let (mut host, _, _) = fixture();
-    let surface = &mut host
+    let point = {
+        let surface = host
+            .get(INNER)
+            .unwrap()
+            .component::<TextFieldContent>()
+            .unwrap()
+            .surface();
+        surface
+            .scroll()
+            .thumb(true, surface.track(true), 24.)
+            .center()
+    };
+    let field = host
         .get_mut(INNER)
         .unwrap()
         .component_mut::<TextFieldContent>()
-        .unwrap()
-        .surface;
-    let point = surface
-        .scroll()
-        .thumb(true, surface.track(true), 24.)
-        .center();
-    assert!(surface.pointer_down(point, false, 1, 24.).is_some());
-    assert!(surface.pointer_drag(Point::new(point.x, point.y + 20.), 24.));
-    let offset = surface.scroll().offset;
+        .unwrap();
+    assert!(
+        field
+            .event(&ContentEvent::PointerDown(point))
+            .capture_pointer
+    );
+    assert!(
+        field
+            .event(&ContentEvent::PointerMove(Point::new(
+                point.x,
+                point.y + 20.
+            )))
+            .changed
+    );
+    let offset = field.surface().scroll().offset;
     assert!(offset.y > 50.);
-    surface.reveal();
+    field.reveal();
     assert_eq!(
-        surface.scroll().offset,
+        field.surface().scroll().offset,
         offset,
         "raw TextSurface host revealed an old caret during owned scrollbar drag"
     );
-    surface.pointer_up();
+    field.event(&ContentEvent::PointerUp(Point::new(point.x, point.y + 20.)));
 }

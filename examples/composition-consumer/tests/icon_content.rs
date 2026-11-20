@@ -276,7 +276,7 @@ fn failed_icon_and_background_glyph_update_preserve_original_composer_marked() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         (s.text().to_owned(), s.selection(), s.marked())
     };
@@ -311,7 +311,7 @@ fn failed_icon_and_background_glyph_update_preserve_original_composer_marked() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert_eq!((s.text().to_owned(), s.selection(), s.marked()), before);
     assert_eq!(host.capture_focus(), capture);
@@ -357,7 +357,7 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         (i.text().to_owned(), i.selection(), i.marked())
     };
@@ -392,7 +392,7 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
         assert_eq!(binding, h.focused_text_binding());
@@ -438,7 +438,7 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
     assert_eq!(binding, h.focused_text_binding());
@@ -527,7 +527,7 @@ fn business_status_declarations_and_passive_semantic_updates_keep_original_marke
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         (i.text().to_owned(), i.selection(), i.marked())
     };
@@ -571,7 +571,7 @@ fn business_status_declarations_and_passive_semantic_updates_keep_original_marke
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input();
         assert_eq!((i.text().to_owned(), i.selection(), i.marked()), before);
     }

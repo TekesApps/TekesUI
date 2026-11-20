@@ -1078,9 +1078,11 @@ mod tests {
                         .unwrap()
                         .component_mut::<TextFieldContent>()
                         .unwrap()
-                        .surface
-                        .input_mut()
-                        .set_text(&value);
+                        .replace_value(
+                            &value,
+                            tekes_ui_controls::ExternalSelection::Reset,
+                            tekes_ui_controls::ExternalUndo::Reset,
+                        );
                 }
             }
             fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
@@ -1271,16 +1273,14 @@ mod text_state_tests {
         let frame = Rect::new(0., 0., 300., 80.);
         render(&mut host, frame, frame);
         host.focus(Some(FIELD), true);
-        let input = host
+        let field = host
             .get_mut(FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
-            .unwrap()
-            .surface
-            .input_mut();
-        input.select(1, false);
-        input.select(3, true);
-        assert!(input.set_marked_range(Some(1..3)));
+            .unwrap();
+        field.select(1, false);
+        field.select(3, true);
+        assert!(field.set_marked_range(Some(1..3)));
         let state = text_state(&host).unwrap();
         assert_eq!(state.text, "A😀B");
         assert_eq!(state.caret_index, 3);
@@ -1330,16 +1330,12 @@ mod text_state_tests {
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
-            .surface
-            .input_mut()
             .set_disabled(true);
         assert!(text_state(&host).is_none());
         host.get_mut(FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
-            .surface
-            .input_mut()
             .set_disabled(false);
         host.set_window_active(false);
         assert!(text_state(&host).is_none());

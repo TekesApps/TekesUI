@@ -28,8 +28,10 @@ impl Default for Sidebar {
 }
 impl Sidebar {
     pub fn new() -> Self {
-        let mut draft = TextFieldContent::new("Composer A", "");
-        draft.surface = TextSurface::new("Draft belongs to A", true, false);
+        let draft = TextFieldContent::from_surface(
+            "Composer A",
+            TextSurface::new("Draft belongs to A", true, false),
+        );
         let menu = || {
             MenuContent::context_menu(
                 "Session actions",

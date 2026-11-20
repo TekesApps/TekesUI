@@ -83,10 +83,7 @@ pub(crate) fn action(host: &mut ContentHost, id: ComponentId) -> bool {
         page.elapsed = 0.;
         page.last_time = None;
     } else {
-        let field = page.field_mut(0);
-        if let Some(reading) = &mut field.reading {
-            reading.follow_latest(&mut field.surface);
-        }
+        page.field_mut(0).follow_latest();
     }
     true
 }
@@ -95,11 +92,11 @@ pub(crate) fn action(host: &mut ContentHost, id: ComponentId) -> bool {
 pub(crate) fn surface_scroll_metrics(host: &ContentHost) -> Option<(f32, f32)> {
     let page = host.get(SPECIMEN)?.component::<TextPage>()?;
     let last = page.count.checked_sub(1)?;
-    let surface = &page
+    let surface = page
         .children
         .get(last)?
         .component::<TextFieldContent>()?
-        .surface;
+        .surface();
     Some((surface.scroll().limit().y, surface.inner().size.height))
 }
 
@@ -115,11 +112,9 @@ pub(crate) fn scroll_surface_to(host: &mut ContentHost, offset: f32) -> bool {
         return false;
     };
     let field = page.field_mut(last);
-    if let Some(reading) = &mut field.reading {
-        reading.stop_following(&mut field.surface);
-    }
-    let current = field.surface.scroll().offset.y;
-    field.surface.scroll_mut().scroll_by(0., offset - current);
+    field.stop_following();
+    let current = field.surface().scroll().offset.y;
+    field.scroll_by(0., offset - current);
     true
 }
 
@@ -163,11 +158,11 @@ pub(crate) fn scroll_surface_event(
 pub(crate) fn scroll_reference_state(host: &ContentHost) -> Option<[f32; 2]> {
     let page = host.get(SPECIMEN)?.component::<TextPage>()?;
     let last = page.count.checked_sub(1)?;
-    let surface = &page
+    let surface = page
         .children
         .get(last)?
         .component::<TextFieldContent>()?
-        .surface;
+        .surface();
     Some([
         surface.scroll().offset.y,
         surface.scroll().visual_offset().y,
@@ -178,11 +173,11 @@ pub(crate) fn scroll_reference_state(host: &ContentHost) -> Option<[f32; 2]> {
 pub(crate) fn scroll_reference_fixture(host: &ContentHost) -> Option<serde_json::Value> {
     let page = host.get(SPECIMEN)?.component::<TextPage>()?;
     let last = page.count.checked_sub(1)?;
-    let s = &page
+    let s = page
         .children
         .get(last)?
         .component::<TextFieldContent>()?
-        .surface;
+        .surface();
     let paragraph = s.paragraph()?;
     if s.shaped() != s.text() {
         return None;
@@ -239,7 +234,7 @@ impl TextPage {
             "\n\nUpdate {}. This paragraph is appended on request. While reading earlier lines, your place stays anchored; choose Return to latest to follow new text.",
             self.appended
         );
-        self.field_mut(0).surface.append_text(&update);
+        self.field_mut(0).append_text(&update);
     }
     fn advance(&mut self, text: &dyn ButtonTextRenderer, visible: bool) {
         let Some(clock) = text.motion_context() else {
@@ -324,10 +319,9 @@ impl Component for TextPage {
         let surfaces: Vec<_> = self.children[..self.count]
             .iter()
             .map(|node| {
-                &node
-                    .component::<TextFieldContent>()
+                node.component::<TextFieldContent>()
                     .expect("original text field")
-                    .surface
+                    .surface()
             })
             .collect();
         let heights: Vec<_> = self.children[..self.count]
@@ -335,7 +329,7 @@ impl Component for TextPage {
             .map(|node| {
                 let field = node.component::<TextFieldContent>().unwrap();
                 text.measure(
-                    &self.locale.text(&field.field.label),
+                    &self.locale.text(&field.field().label),
                     proposal::TextRole::UiHeading,
                     f32::MAX,
                 )

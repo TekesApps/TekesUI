@@ -79,7 +79,7 @@ impl Component for SelectionParent {
 fn host(role: ContentRole) -> (ContentHost, ComponentId) {
     let id = ComponentId(107);
     let mut field = TextFieldContent::new("Choice", "A😀B");
-    field.surface.input_mut().select_range(1..3);
+    field.select_range(1..3);
     let choice = Content::new(id, SelectionField { field, role });
     let root = match role {
         ContentRole::RadioButton => Content::new(
@@ -129,7 +129,7 @@ fn original_coretext_surface_cannot_turn_selection_roles_into_text_owners_in_pub
             original.field.text_surface().is_some(),
             "the same original owner retains a real TextSurface for {role:?}"
         );
-        assert!(!original.field.surface.input().selection().is_empty());
+        assert!(!original.field.surface().input().selection().is_empty());
         assert!(
             h.text_surface(id).is_none(),
             "ContentHost keeps selection roles out of text capability queries"

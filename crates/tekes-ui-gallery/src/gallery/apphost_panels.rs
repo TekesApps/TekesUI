@@ -510,17 +510,17 @@ impl PanelContent {
                                         .unwrap()
                                         .component_mut::<TextFieldContent>()
                                         .unwrap();
-                                    let baseline = field.surface.input().external_baseline();
+                                    let baseline = field.surface().input().external_baseline();
                                     let revision = tekes_ui_controls::DraftRevision {
                                         identity: "gallery-inspector-value".into(),
                                         version: field
-                                            .surface
+                                            .surface()
                                             .input()
                                             .external_value()
                                             .map_or(1, |v| v.version + 1),
                                         payload: value,
                                     };
-                                    let result = field.surface.apply_external_value(
+                                    let result = field.apply_external_value(
                                         &baseline,
                                         &revision,
                                         tekes_ui_controls::ExternalSelection::Reset,

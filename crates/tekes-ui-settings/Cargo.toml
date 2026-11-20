@@ -19,6 +19,9 @@ tekes-ui-controls = { workspace = true, optional = true }
 tekes-ui-scene = { workspace = true, optional = true }
 tekes-ui-tokens = { workspace = true, optional = true }
 
+[dev-dependencies]
+tekes-ui-text = { workspace = true }
+
 [[test]]
 name = "number_field"
 required-features = ["fs-store", "ui"]

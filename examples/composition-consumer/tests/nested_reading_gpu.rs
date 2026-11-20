@@ -32,21 +32,19 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                     };
                     paint(&mut host, &mut text);
                     host.focus(Some(COMPOSER), true);
-                    let input = host
+                    let field = host
                         .get_mut(COMPOSER)
                         .unwrap()
                         .component_mut::<TextFieldContent>()
-                        .unwrap()
-                        .surface
-                        .input_mut();
-                    input.preedit("ni", 0..2, None);
-                    let baseline = input.external_baseline();
+                        .unwrap();
+                    field.set_composition_preview("ni", 0..2, None, vec![]);
+                    let baseline = field.input().external_baseline();
                     let point = host
                         .get(INNER)
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap()
-                        .surface
+                        .surface()
                         .inner()
                         .center();
                     for (delta, time) in [(160., 1.), (-60., 2.)] {

@@ -39,10 +39,10 @@ impl ControlledEditorFixture {
             ),
             ("B", DraftJournal::new("B", "B 草稿").unwrap()),
         ]);
-        let mut field = TextFieldContent::new("受控输入", "");
-        field.surface = TextSurface::new("", true, false);
-        let baseline = field.surface.input().external_baseline();
-        field.surface.apply_external_value(
+        let mut field =
+            TextFieldContent::from_surface("受控输入", TextSurface::new("", true, false));
+        let baseline = field.input().external_baseline();
+        field.apply_external_value(
             &baseline,
             journals["A"].current(),
             ExternalSelection::Reset,
@@ -82,22 +82,19 @@ impl ControlledEditorFixture {
         result
     }
     pub fn editor(&self) -> &TextSurface {
-        &self
-            .host
+        self.host
             .get(EDITOR)
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
     }
-    fn editor_mut(&mut self) -> &mut TextSurface {
-        &mut self
-            .host
+    fn field_mut(&mut self) -> &mut TextFieldContent {
+        self.host
             .get_mut(EDITOR)
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
-            .surface
     }
     pub fn authority(&self) -> &DraftRevision {
         self.journals[self.key].current()
@@ -116,7 +113,7 @@ impl ControlledEditorFixture {
     }
     fn apply_captured(&mut self) {
         if let Some((value, baseline)) = self.captured.clone() {
-            self.last_result = Some(self.editor_mut().apply_external_value(
+            self.last_result = Some(self.field_mut().apply_external_value(
                 &baseline,
                 &value,
                 ExternalSelection::Reset,
@@ -151,7 +148,7 @@ impl ControlledEditorFixture {
                 .unwrap();
             let value = self.authority().clone();
             let baseline = self.editor().input().external_baseline();
-            self.last_result = Some(self.editor_mut().apply_external_value(
+            self.last_result = Some(self.field_mut().apply_external_value(
                 &baseline,
                 &value,
                 ExternalSelection::Preserve,
@@ -182,7 +179,7 @@ impl ControlledEditorFixture {
             self.key = if self.key == "A" { "B" } else { "A" };
             let value = self.authority().clone();
             let baseline = self.editor().input().external_baseline();
-            self.last_result = Some(self.editor_mut().apply_external_value(
+            self.last_result = Some(self.field_mut().apply_external_value(
                 &baseline,
                 &value,
                 ExternalSelection::Reset,
@@ -198,7 +195,7 @@ impl ControlledEditorFixture {
                 .edit(text, |_| Ok(()))
                 .unwrap();
             let value = self.authority().clone();
-            self.last_result = Some(self.editor_mut().apply_external_value(
+            self.last_result = Some(self.field_mut().apply_external_value(
                 &baseline,
                 &value,
                 ExternalSelection::Preserve,

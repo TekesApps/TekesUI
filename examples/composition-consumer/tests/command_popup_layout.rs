@@ -159,7 +159,7 @@ fn floating_query_paints_its_opaque_surface_before_label_and_editor() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .outer();
     let covers = |outer: &Rect, inner: Rect| {
         outer.min_x() <= inner.min_x()
@@ -248,7 +248,7 @@ fn header_only_empty_query_keeps_original_editor_and_clamps_to_viewport() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .len();
     assert!(
@@ -272,7 +272,7 @@ fn header_only_empty_query_keeps_original_editor_and_clamps_to_viewport() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text(),
         "still no matching command"

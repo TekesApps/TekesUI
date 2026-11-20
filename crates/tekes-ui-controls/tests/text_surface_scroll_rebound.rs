@@ -120,11 +120,10 @@ fn read_only_text_field() -> TextFieldContent {
     let body = "A day by the window.\n".repeat(48);
     let mut surface = TextSurface::new(&body, true, true);
     surface.set_presentation(TextSurfacePresentation::Content);
-    let mut field = TextFieldContent::new("Text · select and copy", "");
-    field.surface = surface;
+    let mut field = TextFieldContent::from_surface("Text · select and copy", surface)
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fill);
     field.reading = Some(ReadingController::default());
-    field.show_metadata = false;
-    field.viewport = TextViewport::Fill;
     field
 }
 

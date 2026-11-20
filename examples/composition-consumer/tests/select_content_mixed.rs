@@ -277,7 +277,7 @@ fn actual_original_reading_fixture_menu_wheel_does_not_record_background_history
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
     );
     for (i, (precise, begin, end, momentum)) in [
         (false, true, true, false),
@@ -314,7 +314,7 @@ fn actual_original_reading_fixture_menu_wheel_does_not_record_background_history
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
             ),
             inner
         );
@@ -335,8 +335,8 @@ fn accepted_original_pointer_transfers_marked_composer_and_opens_once() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(editor.surface.text(), before.text);
-    assert!(editor.surface.marked().is_none());
+    assert_eq!(editor.surface().text(), before.text);
+    assert!(editor.surface().marked().is_none());
     assert!(
         h.get(SELECT)
             .unwrap()
@@ -373,8 +373,8 @@ fn original_composer_send_gate_and_single_undo_survive_select_confirmation() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(editor.surface.text(), before.text);
-    assert!(editor.surface.marked().is_none());
+    assert_eq!(editor.surface().text(), before.text);
+    assert!(editor.surface().marked().is_none());
     assert!(
         h.accessibility_action(SELECT, None, AccessibilityAction::Press)
             .consumed
@@ -398,9 +398,9 @@ fn original_composer_send_gate_and_single_undo_survive_select_confirmation() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    assert!(editor.surface.input_mut().undo());
-    assert_eq!(editor.surface.text(), "A😀B");
-    assert!(!editor.surface.input_mut().undo());
+    assert!(editor.undo());
+    assert_eq!(editor.surface().text(), "A😀B");
+    assert!(!editor.undo());
     assert!(h.focus(Some(EDITOR), true));
     assert!(h.event(&enter()).activated);
     let records = h.drain_action_records();

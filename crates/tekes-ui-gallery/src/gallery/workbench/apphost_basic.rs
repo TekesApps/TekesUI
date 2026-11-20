@@ -1267,7 +1267,7 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .external_baseline();
         press_navigation_story(&mut story, &mut text, ComponentId(COMMAND + 1), None);
@@ -1278,8 +1278,8 @@ mod tests {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(editor.surface.text(), "Open");
-        assert_eq!(editor.surface.input().external_baseline(), baseline);
+        assert_eq!(editor.text(), "Open");
+        assert_eq!(editor.surface().input().external_baseline(), baseline);
         // Original CommandPalette::open starts a new lookup with an empty query.
         press_navigation_story(&mut story, &mut text, SPECIMEN, None);
         assert_eq!(

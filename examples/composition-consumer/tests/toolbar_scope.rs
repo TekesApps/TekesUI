@@ -137,7 +137,7 @@ fn window_controls_and_editor_stay_fixed_through_both_container_transitions_and_
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
                     .text(),
                 "保留搜索"
             );

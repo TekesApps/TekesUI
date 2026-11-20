@@ -1,9 +1,7 @@
 //! Minimal application-owned layout producer for #27. The original field,
 //! editor and reading controller stay owned by their production components.
 use std::{cell::Cell, rc::Rc};
-use tekes_ui_controls::{
-    ButtonTextRenderer, ReadingController, composition::*, layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*, layout::MeasuredChild};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::proposal;
 pub const PANE: ComponentId = ComponentId(9910);
@@ -71,11 +69,9 @@ pub fn fixture(
         TextFieldContent::new("field", "keep😀value")
     };
     if readonly {
-        let mut reading = ReadingController::default();
-        reading
-            .set_document(&mut field.surface, "document-A", 1, "line A\nline B 😀")
+        field
+            .set_reading_document("document-A", 1, "line A\nline B 😀")
             .unwrap();
-        field.reading = Some(reading);
     }
     let pane = Pane {
         active: false,

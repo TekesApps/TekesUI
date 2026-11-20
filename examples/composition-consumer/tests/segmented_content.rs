@@ -287,8 +287,10 @@ fn original_view_geometry_and_paint_match_at_focus_and_clip() {
 #[test]
 fn real_composer_marked_selection_and_binding_gate_before_original_view() {
     let editor = ComponentId(111);
-    let mut field = TextFieldContent::new("Composer", "draft 原文");
-    field.surface = tekes_ui_controls::TextSurface::new("draft 原文", true, false);
+    let field = TextFieldContent::from_surface(
+        "Composer",
+        tekes_ui_controls::TextSurface::new("draft 原文", true, false),
+    );
     let content = Content::new(
         ComponentId(1),
         StackContent {

@@ -80,7 +80,7 @@ fn context_menu_second_consumer_original_b_action_preserves_a_draft_selection_an
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .selection();
     let frame = sidebar.host.get(B).unwrap().frame();
@@ -115,7 +115,7 @@ fn context_menu_second_consumer_original_b_action_preserves_a_draft_selection_an
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert_eq!(input.text(), "Draft belongs to A");
     assert_eq!(input.selection(), selection);
@@ -137,7 +137,7 @@ fn context_menu_second_consumer_marked_policy_and_immutable_a_b_actions() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .marked()
         .clone();
@@ -154,7 +154,7 @@ fn context_menu_second_consumer_marked_policy_and_immutable_a_b_actions() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .marked(),
         before

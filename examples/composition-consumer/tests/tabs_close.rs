@@ -428,7 +428,7 @@ fn approved_close_falls_right_then_left_and_reopen_preserves_mount_and_draft() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text(),
         "retained draft"
@@ -568,7 +568,7 @@ impl Component for FakeAuxiliary {
     fn semantic_part_text_layout(&self, part: usize) -> Option<ContentTextLayout> {
         (part == 0 && self.parent_text).then(|| ContentTextLayout {
             input: ContentTextInput::from_surface(
-                &TextFieldContent::new("invalid Tab text", "").surface,
+                TextFieldContent::new("invalid Tab text", "").surface(),
             ),
             multiline: false,
             lines: Vec::new(),

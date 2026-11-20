@@ -47,8 +47,10 @@ impl Default for Transcript {
 }
 impl Transcript {
     pub fn new() -> Self {
-        let mut composer = TextFieldContent::new("Composer", "");
-        composer.surface = TextSurface::new("Original composer draft", true, false);
+        let composer = TextFieldContent::from_surface(
+            "Composer",
+            TextSurface::new("Original composer draft", true, false),
+        );
         let mut preview =
             HoverPreviewContent::new("Turn preview", content("Input A", "Output A")).unwrap();
         preview.set_max_content_width(Some(220.));

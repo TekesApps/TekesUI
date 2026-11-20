@@ -565,4 +565,216 @@ mod placeholder_tests {
             assert!(field.view.layout().slot.size.height > 0.);
         }
     }
+
+    #[test]
+    fn emphasized_presentation_and_max_width_stay_within_single_textfield_owner() {
+        struct RecordingScaleText {
+            scale: f32,
+            draws: Vec<(String, proposal::TextRole, tekes_ui_tokens::Rgba)>,
+        }
+        impl ButtonTextRenderer for RecordingScaleText {
+            fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
+                Some(self)
+            }
+            fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+                role.style().size * self.scale
+            }
+            fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+                let char_w = 8. * self.scale;
+                let natural = text.chars().count() as f32 * char_w;
+                let width = max_width.max(char_w);
+                let lines = (natural / width).ceil().max(1.);
+                Size::new(
+                    natural.min(max_width.max(0.)),
+                    lines * role.style().line_height * self.scale,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                text: &str,
+                role: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                ink: tekes_ui_tokens::Rgba,
+            ) {
+                self.draws.push((text.to_owned(), role, ink));
+            }
+        }
+        impl TextSurfaceTextRenderer for RecordingScaleText {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &Paragraph,
+                _: Point,
+                _: tekes_ui_tokens::Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        impl TextSurfaceHost for RecordingScaleText {
+            fn type_scale(&self) -> f32 {
+                self.scale
+            }
+            fn shape_surface(
+                &mut self,
+                text: &str,
+                role: proposal::TextRole,
+                _: Option<f32>,
+            ) -> Rc<Paragraph> {
+                let len = text.encode_utf16().count();
+                let h = f64::from(role.style().line_height * self.scale);
+                Rc::new(Paragraph {
+                    lines: vec![Line {
+                        index: 0,
+                        utf16: 0..len,
+                        bytes: 0..text.len(),
+                        ascent: h * 0.8,
+                        descent: h * 0.2,
+                        leading: 0.,
+                        height: h,
+                        top: 0.,
+                        baseline_y: h * 0.8,
+                        width: len as f64 * 8. * f64::from(self.scale),
+                        width_trimmed: len as f64 * 8. * f64::from(self.scale),
+                        runs: vec![],
+                        carets: (0..=len).map(|i| (i, i as f64 * 8.)).collect(),
+                        graphemes: vec![],
+                        has_newline: false,
+                    }],
+                    height: h,
+                    width: len as f64 * 8. * f64::from(self.scale),
+                    default_line_height: h,
+                    fonts: vec![],
+                    utf16_len: len,
+                })
+            }
+        }
+
+        let mut default_field = TextFieldContent::new("Workspace name", "Studio")
+            .with_help("Use a clear name for your workspace.");
+        let mut emphasized = TextFieldContent::new("Workspace name", "Studio")
+            .with_presentation(crate::feedback_view::FieldPresentation::emphasized_form())
+            .with_max_width(600.)
+            .with_help("Use a clear name for your workspace.");
+
+        let mut text = RecordingScaleText {
+            scale: 1.0,
+            draws: Vec::new(),
+        };
+        let def_size = default_field.measure(&mut text, Size::new(820., 400.)).size;
+        let emp_size = emphasized.measure(&mut text, Size::new(820., 400.)).size;
+        assert_eq!(def_size.width, 820.);
+        assert_eq!(emp_size.width, 600.);
+        assert!(emp_size.height > def_size.height);
+        assert_eq!(
+            text.draws.len(),
+            0,
+            "measure must not allocate throwaway paint"
+        );
+
+        let frame = Rect::new(16., 24., 820., emp_size.height);
+        emphasized.arrange(&mut text, frame, frame);
+        let layout = emphasized.view().layout();
+        assert_eq!(layout.slot.min_y(), layout.label.max_y() + 4.);
+        assert_eq!(layout.message.min_y(), layout.slot.max_y() + 6.);
+        assert!(layout.slot.size.height >= 36.);
+        assert_eq!(emphasized.surface().outer(), layout.slot);
+
+        let panel_theme = ContentTheme {
+            surface: "panel",
+            surface_declared: true,
+            ..ContentTheme::from(Palette::from(tekes_ui_tokens::Theme::LIGHT))
+        };
+        emphasized.paint(&mut Scene::new(), &mut text, frame, frame, panel_theme);
+        assert!(
+            text.draws
+                .iter()
+                .any(|(s, r, _)| s == "Workspace name" && *r == proposal::TextRole::UiHeading)
+        );
+        assert!(text.draws.iter().any(|(s, r, ink)| {
+            s == "Use a clear name for your workspace."
+                && *r == proposal::TextRole::UiCaption
+                && *ink
+                    == tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                        panel_theme.palette,
+                        "panel",
+                        "input",
+                        "rest",
+                        Default::default(),
+                    )
+                    .unwrap()
+                    .helper
+                    .unwrap()
+        }));
+
+        // Narrow width & 1.5x scale grow wrapped label/message slots cleanly.
+        emphasized.set_label("Very long emphasized workspace title that must wrap in narrow hosts");
+        emphasized.set_error(Some(
+            "Validation error: workspace identifier cannot exceed 64 visible characters.".into(),
+        ));
+        let narrow_1x = emphasized
+            .measure(
+                &mut RecordingScaleText {
+                    scale: 1.0,
+                    draws: Vec::new(),
+                },
+                Size::new(200., 600.),
+            )
+            .size;
+        let narrow_scaled = emphasized
+            .measure(
+                &mut RecordingScaleText {
+                    scale: 1.5,
+                    draws: Vec::new(),
+                },
+                Size::new(200., 600.),
+            )
+            .size;
+        assert!(narrow_scaled.height > narrow_1x.height);
+    }
+
+    #[test]
+    fn replace_value_preserves_surface_config_mount_and_ime_guard() {
+        let field = TextFieldContent::new("Font family", "Mono")
+            .with_surface_presentation(TextSurfacePresentation::Content)
+            .with_alignment(crate::TextSurfaceAlignment::Trailing)
+            .with_help("Preferred monospace font");
+        let mut host = ContentHost::new(Content::new(ComponentId(100), field)).unwrap();
+        let mount = host.semantic_mount(ComponentId(100)).unwrap();
+
+        let node = host.get_mut(ComponentId(100)).unwrap();
+        let tf = node.component_mut::<TextFieldContent>().unwrap();
+        let res = tf.replace_value(
+            "Inter",
+            crate::ExternalSelection::Reset,
+            crate::ExternalUndo::Reset,
+        );
+        assert!(matches!(
+            res,
+            crate::ExternalValueResult::Applied { changed: true, .. }
+        ));
+        assert_eq!(tf.text(), "Inter");
+        assert_eq!(tf.surface_presentation(), TextSurfacePresentation::Content);
+        assert_eq!(tf.alignment(), crate::TextSurfaceAlignment::Trailing);
+        assert_eq!(tf.field().help, "Preferred monospace font");
+        assert_eq!(host.semantic_mount(ComponentId(100)), Some(mount));
+
+        let tf = host
+            .get_mut(ComponentId(100))
+            .unwrap()
+            .component_mut::<TextFieldContent>()
+            .unwrap();
+        assert!(tf.set_composition_preview("中", 1..1, None, std::iter::once(0..1).collect()));
+        let blocked = tf.replace_value(
+            "Other",
+            crate::ExternalSelection::Reset,
+            crate::ExternalUndo::Reset,
+        );
+        assert_eq!(
+            blocked,
+            crate::ExternalValueResult::Conflict(crate::ExternalValueConflict::Composition)
+        );
+        assert_eq!(tf.text(), "中Inter");
+    }
 }

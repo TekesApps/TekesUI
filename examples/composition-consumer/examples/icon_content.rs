@@ -183,7 +183,7 @@ fn main() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
                     .input();
                 let state = serde_json::json!({"pid":std::process::id(),"phase":self.review_phase,"composer":{"text":composer.text(),"selection":composer.selection(),"marked":composer.marked(),"mount":self.host.semantic_mount(COMPOSER)},"icon_visible":icon.map(Component::active),"icon_mount":self.host.semantic_mount(ICON),"active":w.is_active(),"status_tone":format!("{:?}",icon.and_then(IconContent::status_tone)),"icon_disabled":icon.map(IconContent::is_disabled),"indeterminate":icon.map(IconContent::is_indeterminate),"reduced_motion":self.text.reduced_motion,"frame_requested":self.host.animation_frame_requested(),"scale":self.text.scale,"width":width,"height":height,"root_surface":surface,"glyph":icon.map(|icon|icon.glyph().name),"focused":self.host.focused().map(|id|id.0),"commands":self.commands,"screen":screen.map(|s|serde_json::json!({"name":s.name,"builtin":s.builtin})),"nodes":nodes.iter().map(|n|serde_json::json!({"id":n.id.0,"mount":self.host.semantic_mount(n.id),"name":n.semantics.name,"role":format!("{:?}",n.semantics.role),"frame":[n.frame.min_x(),n.frame.min_y(),n.frame.size.width,n.frame.size.height],"visible":n.visible.map(|r|[r.min_x(),r.min_y(),r.size.width,r.size.height])})).collect::<Vec<_>>()});
                 std::fs::write(

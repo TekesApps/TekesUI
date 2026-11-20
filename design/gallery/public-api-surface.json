@@ -1059,6 +1059,12 @@
       "reason": "Experimental composition adapter for the existing component family, exercised by the independent composition consumer; does not imply every family has migrated or native acceptance passed."
     },
     {
+      "api": "tekes_ui_controls::composition::GroupedFormRowContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared two-column grouped form row layout, panel surface propagation and inset divider container; children retain original labels and control states, parent owns scrolling."
+    },
+    {
       "api": "tekes_ui_controls::composition::HostRevealBudget",
       "category": "composition",
       "components": [],

@@ -570,7 +570,7 @@ impl super::Host {
                     .and_then(|node| {
                         node.component::<tekes_ui_controls::composition::TextFieldContent>()
                     })
-                    .map(|field| (field.surface.text().to_owned(), field.surface.marked()));
+                    .map(|field| (field.text().to_owned(), field.surface().marked()));
             });
         value.ok_or_else(|| anyhow::anyhow!("original text field missing: {id}"))
     }

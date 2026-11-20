@@ -4,7 +4,7 @@ use super::*;
 use crate::feedback_view::FieldView;
 use crate::{
     DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult, Field, ReadingController,
-    TextEditBaseline, TextInput, TextSurface, TextSurfacePresentation,
+    TextEditBaseline, TextInput, TextSurface, TextSurfaceAlignment, TextSurfacePresentation,
 };
 
 mod component_impl;
@@ -93,9 +93,11 @@ pub(super) struct CachedPlaceholder {
 
 #[derive(Debug)]
 pub struct TextFieldContent {
-    pub field: Field,
-    pub view: FieldView,
-    pub surface: TextSurface,
+    pub(crate) field: Field,
+    pub(crate) view: FieldView,
+    pub(crate) surface: TextSurface,
+    field_presentation: crate::feedback_view::FieldPresentation,
+    max_width: Option<f32>,
     /// Optional explicit reading intent; ordinary editor instances leave this None.
     pub reading: Option<ReadingController>,
     pub tab_policy: TextTabPolicy,
@@ -140,13 +142,30 @@ impl TextFieldContent {
     }
 
     pub fn new(label: impl Into<String>, value: &str) -> Self {
+        let mut surface = TextSurface::new(value, false, false);
+        surface.scroll.set_scrollbar_visibility(false, true);
+        Self::from_surface(label, surface)
+    }
+
+    /// Multiline editable field backed by the shared `TextFieldContent` and `TextSurface` owner.
+    pub fn multiline(label: impl Into<String>, value: &str) -> Self {
+        let mut surface = TextSurface::new(value, true, false);
+        surface.scroll.set_scrollbar_visibility(false, true);
+        Self::from_surface(label, surface)
+    }
+
+    /// Construct a `TextFieldContent` owning an initially configured `TextSurface`.
+    /// Prefer facade setters and `apply_external_value`/`replace_value` after mount.
+    pub fn from_surface(label: impl Into<String>, surface: TextSurface) -> Self {
         let mut content = Self {
             field: Field {
                 label: label.into(),
                 ..Default::default()
             },
             view: FieldView::default(),
-            surface: TextSurface::new(value, false, false),
+            surface,
+            field_presentation: crate::feedback_view::FieldPresentation::default(),
+            max_width: None,
             reading: None,
             tab_policy: TextTabPolicy::Navigate,
             submit_policy: TextSubmitPolicy::None,
@@ -169,7 +188,7 @@ impl TextFieldContent {
             backing_scale: 1.,
             last_frame: None,
         };
-        content.surface.scroll.set_scrollbar_visibility(false, true);
+        content.sync_clear();
         content
     }
 
@@ -225,6 +244,360 @@ impl TextFieldContent {
 
     pub fn input(&self) -> &TextInput {
         &self.surface.input
+    }
+
+    pub fn surface(&self) -> &TextSurface {
+        &self.surface
+    }
+
+    pub fn field(&self) -> &Field {
+        &self.field
+    }
+
+    pub fn view(&self) -> &FieldView {
+        &self.view
+    }
+
+    pub fn field_presentation(&self) -> crate::feedback_view::FieldPresentation {
+        self.field_presentation
+    }
+
+    pub fn with_presentation(
+        mut self,
+        presentation: crate::feedback_view::FieldPresentation,
+    ) -> Self {
+        self.field_presentation = presentation;
+        self
+    }
+
+    pub fn set_field_presentation(
+        &mut self,
+        presentation: crate::feedback_view::FieldPresentation,
+    ) {
+        self.field_presentation = presentation;
+    }
+
+    pub fn max_width(&self) -> Option<f32> {
+        self.max_width
+    }
+
+    pub fn with_max_width(mut self, max_width: f32) -> Self {
+        self.set_max_width(Some(max_width));
+        self
+    }
+
+    pub fn set_max_width(&mut self, max_width: Option<f32>) {
+        self.max_width = max_width.filter(|w| w.is_finite()).map(|w| w.max(0.));
+    }
+
+    pub fn surface_presentation(&self) -> TextSurfacePresentation {
+        self.surface.presentation
+    }
+
+    pub fn with_surface_presentation(mut self, presentation: TextSurfacePresentation) -> Self {
+        self.set_surface_presentation(presentation);
+        self
+    }
+
+    pub fn set_surface_presentation(&mut self, presentation: TextSurfacePresentation) {
+        self.surface.set_presentation(presentation);
+        self.sync_clear();
+    }
+
+    pub fn alignment(&self) -> TextSurfaceAlignment {
+        self.surface.alignment
+    }
+
+    pub fn with_alignment(mut self, alignment: TextSurfaceAlignment) -> Self {
+        self.set_alignment(alignment);
+        self
+    }
+
+    pub fn set_alignment(&mut self, alignment: TextSurfaceAlignment) {
+        self.surface.set_alignment(alignment);
+    }
+
+    pub fn role(&self) -> proposal::TextRole {
+        self.surface.role
+    }
+
+    pub fn with_role(mut self, role: proposal::TextRole) -> Self {
+        self.set_role(role);
+        self
+    }
+
+    pub fn set_role(&mut self, role: proposal::TextRole) {
+        self.surface.set_role(role);
+    }
+
+    pub fn is_multiline(&self) -> bool {
+        self.surface.input.multiline
+    }
+
+    pub fn is_read_only(&self) -> bool {
+        self.surface.input.read_only
+    }
+
+    pub fn is_disabled(&self) -> bool {
+        self.surface.input.disabled
+    }
+
+    pub fn wrap(&self) -> bool {
+        self.surface.wrap
+    }
+
+    pub fn set_label(&mut self, label: impl Into<String>) {
+        self.field.label = label.into();
+    }
+
+    pub fn with_help(mut self, help: impl Into<String>) -> Self {
+        self.field.help = help.into();
+        self
+    }
+
+    pub fn set_help(&mut self, help: impl Into<String>) {
+        self.field.help = help.into();
+    }
+
+    pub fn with_required(mut self, required: bool) -> Self {
+        self.field.required = required;
+        self
+    }
+
+    pub fn set_required(&mut self, required: bool) {
+        self.field.required = required;
+    }
+
+    pub fn with_error(mut self, error: Option<String>) -> Self {
+        self.set_error(error);
+        self
+    }
+
+    pub fn with_viewport(mut self, viewport: TextViewport) -> Self {
+        self.viewport = viewport;
+        self
+    }
+
+    pub fn with_show_metadata(mut self, show_metadata: bool) -> Self {
+        self.show_metadata = show_metadata;
+        self
+    }
+
+    pub fn with_read_only(mut self, read_only: bool) -> Self {
+        self.set_read_only(read_only);
+        self
+    }
+
+    pub fn set_read_only(&mut self, read_only: bool) {
+        self.surface.input.set_read_only(read_only);
+        self.sync_clear();
+    }
+
+    pub fn with_disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.surface.input.set_disabled(disabled);
+        self.sync_clear();
+    }
+
+    pub fn with_multiline(mut self, multiline: bool) -> Self {
+        self.set_multiline(multiline);
+        self
+    }
+
+    pub fn set_multiline(&mut self, multiline: bool) {
+        self.surface.set_multiline(multiline);
+        self.sync_clear();
+    }
+
+    pub fn set_wrap(&mut self, wrap: bool) {
+        self.surface.set_wrap(wrap);
+    }
+
+    pub fn set_scroll_policy(
+        &mut self,
+        horizontal: crate::ScrollPolicy,
+        vertical: crate::ScrollPolicy,
+    ) {
+        self.surface.scroll.set_scroll_policy(horizontal, vertical);
+    }
+
+    pub fn set_scrollbar_visibility(&mut self, horizontal: bool, vertical: bool) {
+        self.surface
+            .scroll
+            .set_scrollbar_visibility(horizontal, vertical);
+    }
+
+    pub fn set_reduced_motion(&mut self, reduced: bool) {
+        self.surface.scroll.set_reduced_motion(reduced);
+    }
+
+    pub fn scroll_by(&mut self, dx: f32, dy: f32) -> bool {
+        self.surface.scroll.scroll_by(dx, dy)
+    }
+
+    pub fn reveal(&mut self) {
+        self.surface.reveal();
+    }
+
+    pub fn select(&mut self, utf16: usize, extend: bool) {
+        self.surface.input.select(utf16, extend);
+    }
+
+    pub fn select_all(&mut self) {
+        self.surface.input.select_all();
+    }
+
+    pub fn select_range(&mut self, range: Range<usize>) -> bool {
+        self.surface.input.select_range(range)
+    }
+
+    pub fn set_selection(&mut self, anchor: usize, caret: usize) {
+        self.surface.input.set_selection(anchor, caret);
+    }
+
+    pub fn insert_text(&mut self, text: &str, replacement: Option<Range<usize>>) -> bool {
+        let changed = self.surface.input.insert(text, replacement);
+        self.surface.clauses.clear();
+        self.sync_clear();
+        changed
+    }
+
+    pub fn append_text(&mut self, suffix: &str) {
+        self.surface.append_text(suffix);
+        self.sync_clear();
+    }
+
+    pub fn undo(&mut self) -> bool {
+        let changed = self.surface.input.undo();
+        self.sync_clear();
+        changed
+    }
+
+    pub fn redo(&mut self) -> bool {
+        let changed = self.surface.input.redo();
+        self.sync_clear();
+        changed
+    }
+
+    pub fn set_marked_range(&mut self, range: Option<Range<usize>>) -> bool {
+        self.surface.input.set_marked_range(range)
+    }
+
+    pub fn set_composition_preview(
+        &mut self,
+        text: &str,
+        selected: Range<usize>,
+        replacement: Option<Range<usize>>,
+        clauses: Vec<Range<usize>>,
+    ) -> bool {
+        let changed = self.surface.input.preedit(text, selected, replacement);
+        self.surface.clauses = clauses;
+        changed
+    }
+
+    pub fn unmark(&mut self) {
+        self.surface.input.unmark();
+        self.surface.clauses.clear();
+    }
+
+    pub fn invalidate_text_layout(&mut self) {
+        self.surface.invalidate_text_layout();
+    }
+
+    pub fn check_external_value(
+        &self,
+        expected: &TextEditBaseline,
+        value: &DraftRevision,
+        selection: ExternalSelection,
+        undo: ExternalUndo,
+    ) -> ExternalValueResult {
+        self.surface
+            .check_external_value(expected, value, selection, undo)
+    }
+
+    pub fn apply_external_value(
+        &mut self,
+        expected: &TextEditBaseline,
+        value: &DraftRevision,
+        selection: ExternalSelection,
+        undo: ExternalUndo,
+    ) -> ExternalValueResult {
+        self.apply_external_and_sync(expected, value, selection, undo)
+    }
+
+    /// Synchronously replace this field's value while preserving presentation,
+    /// alignment, metadata, and mount identity. Rejects active IME composition.
+    pub fn replace_value(
+        &mut self,
+        value: impl Into<String>,
+        selection: ExternalSelection,
+        undo: ExternalUndo,
+    ) -> ExternalValueResult {
+        let baseline = self.surface.input.external_baseline();
+        let current = self.surface.input.external_value();
+        let identity = current.map_or_else(
+            || "tekes-ui:TextFieldContent".into(),
+            |current| current.identity.clone(),
+        );
+        let version = match current {
+            Some(current) => match current.version.checked_add(1) {
+                Some(version) => version,
+                None => {
+                    return ExternalValueResult::Conflict(crate::ExternalValueConflict::Revision);
+                }
+            },
+            None => 1,
+        };
+        let revision = DraftRevision {
+            identity,
+            version,
+            payload: value.into(),
+        };
+        self.apply_external_and_sync(&baseline, &revision, selection, undo)
+    }
+
+    pub fn set_reading_document(
+        &mut self,
+        key: impl Into<String>,
+        revision: u64,
+        text: &str,
+    ) -> Result<crate::ReadingDocumentVersion, crate::ReadingUpdateError> {
+        let reading = self.reading.get_or_insert_with(ReadingController::default);
+        reading.set_document(&mut self.surface, key, revision, text)
+    }
+
+    pub fn update_reading_document(
+        &mut self,
+        expected: &crate::ReadingDocumentVersion,
+        revision: u64,
+        text: &str,
+        mappings: &[crate::TextRangeMapping],
+    ) -> Result<crate::ReadingUpdate, crate::ReadingUpdateError> {
+        let reading = self
+            .reading
+            .as_mut()
+            .ok_or(crate::ReadingUpdateError::WrongDocument)?;
+        reading.update_document(&mut self.surface, expected, revision, text, mappings)
+    }
+
+    pub fn follow_latest(&mut self) -> bool {
+        let Some(reading) = &mut self.reading else {
+            return false;
+        };
+        reading.follow_latest(&mut self.surface);
+        true
+    }
+
+    pub fn stop_following(&mut self) -> bool {
+        let Some(reading) = &mut self.reading else {
+            return false;
+        };
+        reading.stop_following(&mut self.surface);
+        true
     }
 
     pub fn set_submit_policy(&mut self, policy: TextSubmitPolicy) {
@@ -591,30 +964,38 @@ impl TextFieldContent {
         }
     }
 
-    fn field_presentation(
+    fn effective_field_presentation(
         &self,
         t: &mut dyn ButtonTextRenderer,
     ) -> crate::feedback_view::FieldPresentation {
-        let mut presentation = crate::feedback_view::FieldPresentation::default();
+        let mut presentation = self.field_presentation;
         if self.surface.input.multiline {
             let type_scale = t.text_surface_host().map_or(1., |host| host.type_scale());
-            presentation.slot_min_height = self.surface.minimum_outer_height(type_scale);
+            presentation.slot_min_height = presentation
+                .slot_min_height
+                .max(self.surface.minimum_outer_height(type_scale));
         }
         presentation
     }
 
-    pub(super) fn effective_frame(&self, t: &mut dyn ButtonTextRenderer, f: Rect) -> Rect {
+    fn effective_width(&self, t: &mut dyn ButtonTextRenderer, width: f32) -> f32 {
+        let mut width = if width.is_finite() { width.max(0.) } else { 0. };
         if let Some(em) = self.inline_width_em {
-            let max_w = (t.resolved_font_size(proposal::TextRole::UiBody) * em).max(0.);
-            Rect::new(
-                f.origin.x,
-                f.origin.y,
-                f.size.width.min(max_w),
-                f.size.height,
-            )
-        } else {
-            f
+            width = width.min((t.resolved_font_size(proposal::TextRole::UiBody) * em).max(0.));
         }
+        if let Some(max_width) = self.max_width {
+            width = width.min(max_width);
+        }
+        width
+    }
+
+    pub(super) fn effective_frame(&self, t: &mut dyn ButtonTextRenderer, f: Rect) -> Rect {
+        Rect::new(
+            f.origin.x,
+            f.origin.y,
+            self.effective_width(t, f.size.width),
+            f.size.height,
+        )
     }
 
     pub(super) fn field_layout(
@@ -635,7 +1016,7 @@ impl TextFieldContent {
                 ..Default::default()
             };
         }
-        let mut presentation = self.field_presentation(t);
+        let mut presentation = self.effective_field_presentation(t);
         if self.viewport != TextViewport::Form {
             let base = FieldView::default().measure_with_presentation(
                 &mut TextAdapter(t),
@@ -737,21 +1118,13 @@ impl TextFieldContent {
         t: &mut dyn ButtonTextRenderer,
         a: Size,
     ) -> MeasuredChild {
-        let a = if let Some(em) = self.inline_width_em {
-            Size::new(
-                a.width
-                    .min(t.resolved_font_size(proposal::TextRole::UiBody) * em),
-                a.height,
-            )
-        } else {
-            a
-        };
+        let width = self.effective_width(t, a.width);
         let l = self.field_layout(
             t,
-            Rect::new(0., 0., a.width, a.height),
-            Rect::new(0., 0., a.width, a.height),
+            Rect::new(0., 0., width, a.height),
+            Rect::new(0., 0., width, a.height),
         );
-        MeasuredChild::new(Size::new(a.width, l.slot.max_y().max(l.message.max_y())))
+        MeasuredChild::new(Size::new(width, l.slot.max_y().max(l.message.max_y())))
     }
 
     pub(super) fn editor_arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
@@ -784,10 +1157,11 @@ impl TextFieldContent {
         // Arrangement owns the exact viewport. Paint must not shape/resize a
         // second time or derive a different slot from an unrelated height.
         if self.show_metadata && self.surface.presentation == TextSurfacePresentation::Field {
-            let mut presentation = self.field_presentation(t);
+            let mut presentation = self.effective_field_presentation(t);
             if self.viewport != TextViewport::Form {
                 presentation.slot_height = Some(self.surface.outer.size.height);
             }
+            let _ = self.view.set_surface(theme.surface());
             self.view.render_with_presentation(
                 s,
                 &mut TextAdapter(t),

@@ -180,14 +180,14 @@ fn plain_content_token_dependencies_exclude_form_chrome_and_metadata() {
                         "Accessible name",
                         "中文😀 e\u{301} text",
                         tekes_ui_tokens::proposal::TextRole::UiBody,
-                    );
-                    body.surface.input_mut().set_disabled(state == "disabled");
+                    )
+                    .with_disabled(state == "disabled");
                     let h = body.measure(&mut Text, Size::new(300., 1000.)).size.height;
                     let f = Rect::new(0., 0., 300., h);
                     body.arrange(&mut Text, f, f);
                     body.set_focus(state == "focus" || state == "selection", true);
                     if state == "selection" {
-                        body.surface.input_mut().select_range(0..4);
+                        body.select_range(0..4);
                     }
                     body.paint(
                         &mut Scene::new(),

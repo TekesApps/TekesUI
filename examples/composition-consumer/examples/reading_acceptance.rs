@@ -51,9 +51,8 @@ mod macos {
                 fixture: {
                     let mut fixture = ReadingFixture::new();
                     if std::env::var_os("TEKESUI_TEXT_EDIT_AUDIT").is_some() {
-                        use tekes_ui_controls::{
-                            TextSurface,
-                            composition::{TextFieldContent, TextSubmitPolicy, TextTabPolicy},
+                        use tekes_ui_controls::composition::{
+                            TextFieldContent, TextSubmitPolicy, TextTabPolicy,
                         };
                         let field = fixture
                             .controls
@@ -61,8 +60,12 @@ mod macos {
                             .unwrap()
                             .component_mut::<TextFieldContent>()
                             .unwrap();
-                        let current_text = field.surface.text().to_owned();
-                        field.surface = TextSurface::new(&current_text, true, false);
+                        field.set_read_only(false);
+                        field.set_multiline(true);
+                        field.set_scroll_policy(
+                            tekes_ui_controls::ScrollPolicy::Disabled,
+                            tekes_ui_controls::ScrollPolicy::Auto,
+                        );
                         field.tab_policy = TextTabPolicy::Insert;
                         field.submit_policy = TextSubmitPolicy::CommandEnter;
                     }

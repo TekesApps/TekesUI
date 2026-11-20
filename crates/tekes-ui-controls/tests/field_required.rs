@@ -3,8 +3,7 @@ use tekes_ui_tokens::proposal;
 #[test]
 fn ordinary_semantics_default_to_optional_without_creating_validation() {
     assert!(!ContentSemantics::new(ContentRole::TextInput, "Field").required);
-    let mut field = TextFieldContent::new("Name", "");
-    field.field.required = true;
+    let field = TextFieldContent::new("Name", "").with_required(true);
     let semantics = field.semantics();
     assert!(semantics.required);
     assert!(!semantics.invalid);
@@ -19,11 +18,13 @@ fn required_is_independent_of_readonly_disabled_error_and_multiline_policies() {
             for readonly in [false, true] {
                 for disabled in [false, true] {
                     for invalid in [false, true] {
-                        let mut field = TextFieldContent::new("Name", "Existing");
-                        field.surface = TextSurface::new("Existing", multiline, readonly);
-                        field.surface.input_mut().set_disabled(disabled);
-                        field.field.required = required;
-                        field.field.error = invalid.then(|| "Existing validation".into());
+                        let field = TextFieldContent::from_surface(
+                            "Name",
+                            TextSurface::new("Existing", multiline, readonly),
+                        )
+                        .with_disabled(disabled)
+                        .with_required(required)
+                        .with_error(invalid.then(|| "Existing validation".into()));
                         let s = field.semantics();
                         assert_eq!(s.required, required);
                         assert_eq!(s.disabled, disabled);
@@ -43,11 +44,11 @@ fn content_presentation_keeps_explicit_metadata_without_reintroducing_form_decor
     let mut field =
         TextFieldContent::read_only_content("Document", "Existing", proposal::TextRole::UiBody);
     assert!(!field.semantics().required);
-    field.field.required = true;
+    field.set_required(true);
     assert!(field.semantics().required);
     assert_eq!(
-        field.surface.presentation(),
+        field.surface_presentation(),
         tekes_ui_controls::TextSurfacePresentation::Content
     );
-    assert!(field.surface.input().is_read_only());
+    assert!(field.is_read_only());
 }

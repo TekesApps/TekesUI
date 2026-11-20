@@ -58,7 +58,7 @@ fn inline_width_follows_real_typography_and_allocation_without_form_metadata() {
             assert!(ordinary.show_metadata);
             assert!(!inline.show_metadata);
             assert!(inline_size.height > 0. && inline_size.height < ordinary_size.height);
-            assert!(!inline.surface.input().is_multiline());
+            assert!(!inline.surface().input().is_multiline());
 
             let mut host = host();
             let scene = render(&mut host, &mut text, available);
@@ -123,8 +123,6 @@ fn inline_retains_original_editor_preedit_binding_and_disabled_input_contract() 
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_disabled(true);
     assert!(
         !host
@@ -144,7 +142,7 @@ fn inline_retains_original_editor_preedit_binding_and_disabled_input_contract() 
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .text(),
         "中文"
     );

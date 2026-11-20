@@ -121,7 +121,6 @@ fn matrix(renderer: &str) -> Vec<Content> {
 pub(super) struct TextFixture {
     field: TextFieldContent,
     name: &'static str,
-    state: ControlState,
 }
 impl TextFixture {
     pub(super) fn new(multiline: bool, name: &'static str, state: ControlState) -> Self {
@@ -132,21 +131,22 @@ impl TextFixture {
         } else {
             "Sample text"
         };
-        let mut field = TextFieldContent::new("Visual input fixture", value);
-        field.show_metadata = false;
-        field.viewport = TextViewport::Fixed(if multiline { 140. } else { 40. });
-        field.surface = tekes_ui_controls::TextSurface::new(value, multiline, name == "read-only");
-        field.surface.input_mut().set_disabled(state.disabled);
-        field.field.error = state.error.then(|| "A name is required.".into());
+        let mut field = TextFieldContent::from_surface(
+            "Visual input fixture",
+            tekes_ui_controls::TextSurface::new(value, multiline, name == "read-only"),
+        )
+        .with_show_metadata(false)
+        .with_viewport(TextViewport::Fixed(if multiline { 140. } else { 40. }))
+        .with_disabled(state.disabled)
+        .with_error(state.error.then(|| "A name is required.".into()));
         if matches!(name, "selection" | "composing") {
-            field.surface.input_mut().select_range(0..6);
+            field.select_range(0..6);
         }
         if name == "composing" {
-            field.surface.input_mut().preedit("输入", 2..2, None);
-            field.surface.set_clauses(vec![0..1, 1..2]);
+            field.set_composition_preview("输入", 2..2, None, vec![0..1, 1..2]);
         }
         field.set_focus(state.focused, state.focused);
-        Self { field, name, state }
+        Self { field, name }
     }
 }
 impl Component for TextFixture {
@@ -159,28 +159,25 @@ impl Component for TextFixture {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.field.arrange(text, frame, clip);
         if self.name == "pressed" {
-            let center = self.field.surface.inner().center();
-            self.field.surface.pointer_down(
-                center,
-                false,
-                1,
-                tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap(),
-            );
+            let center = self.field.surface().inner().center();
+            let _ = self.field.pointer_event(&PointerEvent {
+                position: center,
+                phase: PointerPhase::Down,
+                button: Some(PointerButton::Primary),
+                modifiers: PointerModifiers::default(),
+                click_count: 1,
+            });
         }
     }
     fn paint(
         &mut self,
         scene: &mut Scene,
         text: &mut dyn ButtonTextRenderer,
-        _: Rect,
-        _: Rect,
+        frame: Rect,
+        clip: Rect,
         theme: ContentTheme,
     ) {
-        if let Some(host) = text.text_surface_host() {
-            self.field
-                .surface
-                .draw(host, scene, theme.palette, self.state.focused, true);
-        }
+        self.field.paint(scene, text, frame, clip, theme);
     }
 }
 const SELECT_CASES: [&str; 9] = [
@@ -325,12 +322,8 @@ impl Component for NavigationFixture {
                 },
                 state,
             );
-            let length = self.field.field.surface.text().len();
-            self.field
-                .field
-                .surface
-                .input_mut()
-                .insert(&model.query, Some(0..length));
+            let length = self.field.field.text().len();
+            self.field.field.insert_text(&model.query, Some(0..length));
             self.field.arrange(text, self.trigger, clip);
         }
     }

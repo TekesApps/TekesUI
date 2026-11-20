@@ -87,14 +87,14 @@ fn all_four_edges_only_focus_and_preserve_original_selection_and_readonly_state(
     for edge in 0..4 {
         let mut host = setup();
         let mount = host.semantic_mount(EDITOR).unwrap();
-        field(&mut host).surface.input_mut().select_range(1..3);
-        let before = field(&mut host).surface.input().external_baseline();
+        field(&mut host).select_range(1..3);
+        let before = field(&mut host).surface().input().external_baseline();
         let point = edges(&host)[edge];
         assert!(!host.get(EDITOR).unwrap().frame().contains(point));
         let event = ContentEvent::PointerDown(point);
         assert_eq!(host.padding_focus_target(&event), Some(EDITOR));
         assert_eq!(
-            field(&mut host).surface.input().external_baseline(),
+            field(&mut host).surface().input().external_baseline(),
             before,
             "query is pure"
         );
@@ -102,11 +102,17 @@ fn all_four_edges_only_focus_and_preserve_original_selection_and_readonly_state(
         assert!(response.consumed && !response.capture_pointer);
         assert_eq!(host.focused(), Some(EDITOR));
         assert_eq!(host.semantic_mount(EDITOR).unwrap(), mount);
-        assert_eq!(field(&mut host).surface.input().external_baseline(), before);
-        assert!(field(&mut host).surface.input().is_read_only());
+        assert_eq!(
+            field(&mut host).surface().input().external_baseline(),
+            before
+        );
+        assert!(field(&mut host).surface().input().is_read_only());
         for point in edges(&host) {
             assert!(!click(&mut host, point).capture_pointer);
-            assert_eq!(field(&mut host).surface.input().external_baseline(), before);
+            assert_eq!(
+                field(&mut host).surface().input().external_baseline(),
+                before
+            );
         }
         assert!(host.drain_actions().is_empty());
     }
@@ -209,7 +215,7 @@ fn unavailable_or_stale_mounts_and_foreign_subtrees_refuse_the_original_declarat
         let mut host = setup();
         let point = edges(&host)[0];
         match mutation {
-            0 => field(&mut host).surface.input_mut().set_disabled(true),
+            0 => field(&mut host).set_disabled(true),
             1 => {
                 host.get_mut(BAND)
                     .unwrap()

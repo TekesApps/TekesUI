@@ -90,12 +90,12 @@ fn render(h: &mut ContentHost, w: f32, hgt: f32) {
     .unwrap();
 }
 fn composer(n: u64) -> Content {
-    let mut field = TextFieldContent::new("Message", "");
-    field.surface = TextSurface::new("draft", true, false);
-    field.viewport = TextViewport::Grow {
-        min: 56.,
-        max: 120.,
-    };
+    let field = TextFieldContent::from_surface("Message", TextSurface::new("draft", true, false))
+        .with_viewport(TextViewport::Grow {
+            min: 56.,
+            max: 120.,
+        });
+    let mut field = field;
     field.submit_policy = TextSubmitPolicy::CommandEnter;
     Content::new(id(n), field)
 }
@@ -1092,8 +1092,8 @@ fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner(
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    let marked = field.surface.marked();
-    let text = field.surface.text().to_owned();
+    let marked = field.surface().marked();
+    let text = field.surface().text().to_owned();
     let epoch = host.focus_epoch();
     let focused = host.focused();
     let frame = Rect::new(0., 0., 600., 300.);
@@ -1114,8 +1114,8 @@ fn checked_render_refuses_a_broken_split_without_blurring_original_marked_owner(
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.marked(), marked);
-    assert_eq!(field.surface.text(), text);
+    assert_eq!(field.surface().marked(), marked);
+    assert_eq!(field.surface().text(), text);
 }
 #[test]
 fn doubleclick_terminates_the_original_host_capture_even_without_an_intervening_up() {

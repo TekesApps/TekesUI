@@ -19,8 +19,8 @@ impl Default for ActionFixture {
 }
 impl ActionFixture {
     pub fn new() -> Self {
-        let mut editor = TextFieldContent::new("仅提交意图", "");
-        editor.surface = TextSurface::new("", true, false);
+        let mut editor =
+            TextFieldContent::from_surface("仅提交意图", TextSurface::new("", true, false));
         editor.submit_policy = TextSubmitPolicy::CommandEnter;
         let mut host = ContentHost::new(Content::new(
             ROOT,

@@ -607,16 +607,14 @@ fn a_real_editor_retains_undo_history_and_selection_after_item_navigation() {
             text: "Retained edit".into(),
             replacement: None,
         });
-        let input = f
+        let field = f
             .host
             .get_mut(COMPOSER)
             .unwrap()
             .component_mut::<TextFieldContent>()
-            .unwrap()
-            .surface
-            .input_mut();
-        input.select(usize::from(reverse), false);
-        input.select(usize::from(!reverse), true);
+            .unwrap();
+        field.select(usize::from(reverse), false);
+        field.select(usize::from(!reverse), true);
         let baseline = f.host.focused_text().unwrap().input().external_baseline();
         f.navigate(TARGET, navigation, &mut t).unwrap();
         composer_unchanged(&f, &baseline);

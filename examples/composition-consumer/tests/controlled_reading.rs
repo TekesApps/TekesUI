@@ -14,21 +14,19 @@ fn draft(revision: u64, text: &str) -> DraftRevision {
     }
 }
 fn editor(s: &Scenario) -> &TextSurface {
-    &s.host
+    s.host
         .get(COMPOSER)
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
 }
-fn editor_mut(s: &mut Scenario) -> &mut TextSurface {
-    &mut s
-        .host
+fn editor_mut(s: &mut Scenario) -> &mut TextFieldContent {
+    s.host
         .get_mut(COMPOSER)
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
 }
 fn snapshot(s: &Scenario) -> String {
     format!(
@@ -45,9 +43,9 @@ fn snapshot(s: &Scenario) -> String {
 }
 fn setup() -> (Scenario, tekes_ui_controls::ReadingDocumentVersion) {
     let mut s = Scenario::reading_document().unwrap();
-    let surface = editor_mut(&mut s);
-    let b = surface.input().external_baseline();
-    surface.apply_external_value(&b, &draft(1, "local😀"), S::Reset, U::Reset);
+    let field = editor_mut(&mut s);
+    let b = field.input().external_baseline();
+    field.apply_external_value(&b, &draft(1, "local😀"), S::Reset, U::Reset);
     let v = s.attach_reading("transcript-A", 1).unwrap();
     s.host.focus(Some(COMPOSER), true);
     (s, v)
@@ -60,11 +58,11 @@ fn invalid_editor_preflight_never_advances_reading_or_mutates_transcript() {
         let mut next = draft(2, "remote");
         let conflict = match failure {
             "stale" => {
-                editor_mut(&mut s).input_mut().insert("!", None);
+                editor_mut(&mut s).insert_text("!", None);
                 C::StaleBaseline
             }
             "composition" => {
-                editor_mut(&mut s).input_mut().preedit("ni", 2..2, None);
+                editor_mut(&mut s).set_composition_preview("ni", 2..2, None, vec![]);
                 C::Composition
             }
             "revision" => {
@@ -115,7 +113,7 @@ fn reading_rejection_or_structural_failure_precedes_any_editor_apply() {
 #[test]
 fn complete_public_consumer_retains_original_editor_focus_selection_and_undo() {
     let (mut s, v) = setup();
-    editor_mut(&mut s).input_mut().select_range(5..7);
+    editor_mut(&mut s).select_range(5..7);
     let baseline = editor(&s).input().external_baseline();
     let v2 = publish(
         &mut s,
@@ -130,9 +128,9 @@ fn complete_public_consumer_retains_original_editor_focus_selection_and_undo() {
     assert_eq!(editor(&s).input().selection(), 6..8);
     assert_eq!(s.host.focused(), Some(COMPOSER));
     assert!(s.item_keys().contains(&ComponentId(18000)));
-    assert!(editor_mut(&mut s).input_mut().undo());
+    assert!(editor_mut(&mut s).undo());
     assert_eq!(editor(&s).text(), "local😀");
-    assert!(editor_mut(&mut s).input_mut().redo());
+    assert!(editor_mut(&mut s).redo());
     assert_eq!(editor(&s).text(), "新local😀");
     let before = editor(&s).input().external_baseline();
     assert_ne!(
@@ -146,8 +144,7 @@ fn complete_public_consumer_retains_original_editor_focus_selection_and_undo() {
 fn duplicate_ack_can_append_transcript_without_disturbing_local_preedit() {
     let (mut s, version) = setup();
     let baseline = editor(&s).input().external_baseline();
-    editor_mut(&mut s).input_mut().preedit("ni", 2..2, None);
-    editor_mut(&mut s).set_clauses(std::iter::once(0..2).collect());
+    editor_mut(&mut s).set_composition_preview("ni", 2..2, None, std::iter::once(0..2).collect());
     let before = format!("{:?}", editor(&s));
     let updated = publish(
         &mut s,

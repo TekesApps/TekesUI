@@ -54,7 +54,7 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
 }
 
 use tekes_ui_composition_consumer::text_viewport::*;
-use tekes_ui_controls::{ScrollPolicy, TextInput};
+use tekes_ui_controls::{ExternalSelection, ExternalUndo, ScrollPolicy};
 fn render(f: &mut ViewportFixture, width: f32, height: f32) {
     let rect = Rect::new(70., 90., width, height);
     f.host
@@ -71,8 +71,8 @@ fn render(f: &mut ViewportFixture, width: f32, height: f32) {
 fn stock_stack_and_fields_fill_remaining_space_and_grow_then_scroll() {
     let mut f = ViewportFixture::new();
     render(&mut f, 400., 600.);
-    let small = f.field(COMPOSER).surface.outer();
-    let transcript = f.field(TRANSCRIPT).surface.outer();
+    let small = f.field(COMPOSER).surface().outer();
+    let transcript = f.field(TRANSCRIPT).surface().outer();
     assert_eq!(small.size.height, 56.);
     assert!(transcript.size.height > 350.);
     f.event(&ContentEvent::Commit {
@@ -84,14 +84,14 @@ line"
         replacement: None,
     });
     render(&mut f, 400., 600.);
-    assert!(f.field(COMPOSER).surface.outer().size.height > small.size.height);
+    assert!(f.field(COMPOSER).surface().outer().size.height > small.size.height);
     let long = "行 English 中文 😀\n".repeat(100);
     f.event(&ContentEvent::Commit {
         text: long,
         replacement: None,
     });
     render(&mut f, 400., 600.);
-    let input = &f.field(COMPOSER).surface;
+    let input = &f.field(COMPOSER).surface();
     assert_eq!(input.outer().size.height, 160.);
     assert!(input.scroll().limit().y > 0.);
     let nodes = f.host.semantics();
@@ -114,9 +114,9 @@ fn measuring_and_resizing_preserves_ime_selection_history_and_reading_state() {
         replacement: None,
         clauses: vec![],
     });
-    let before = format!("{:?}", f.field(COMPOSER).surface.input());
+    let before = format!("{:?}", f.field(COMPOSER).surface().input());
     render(&mut f, 220., 450.);
-    assert_eq!(format!("{:?}", f.field(COMPOSER).surface.input()), before);
+    assert_eq!(format!("{:?}", f.field(COMPOSER).surface().input()), before);
     assert_eq!(f.host.focused(), Some(COMPOSER));
     assert_eq!(
         f.field(TRANSCRIPT)
@@ -134,22 +134,24 @@ fn measuring_and_resizing_preserves_ime_selection_history_and_reading_state() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::Undo,
     ));
-    assert_eq!(f.field(COMPOSER).surface.text(), "");
+    assert_eq!(f.field(COMPOSER).surface().text(), "");
 }
 #[test]
 fn wrap_fixed_height_and_existing_scroll_policy_share_arranged_geometry() {
     let mut f = ViewportFixture::new();
     let field = f.field_mut(COMPOSER);
     field.viewport = TextViewport::Fixed(90.);
-    field.field.help = "帮助内容".into();
-    *field.surface.input_mut() = TextInput::new(&"English中文😀".repeat(50), true);
-    field.surface.set_wrap(false);
-    field
-        .surface
-        .scroll_mut()
-        .set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
+    field.set_help("帮助内容");
+    field.set_multiline(true);
+    field.replace_value(
+        "English中文😀".repeat(50),
+        ExternalSelection::Reset,
+        ExternalUndo::Reset,
+    );
+    field.set_wrap(false);
+    field.set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
     render(&mut f, 240., 600.);
-    let input = &f.field(COMPOSER).surface;
+    let input = f.field(COMPOSER).surface();
     assert_eq!(input.outer().size.height, 90.);
     assert!(input.scroll().limit().x > 0.);
     assert_eq!(input.width(), None);
@@ -161,19 +163,19 @@ fn wrap_fixed_height_and_existing_scroll_policy_share_arranged_geometry() {
         .unwrap();
     assert_eq!(semantic.frame, input.outer());
     assert!(input.outer().min_x() >= 70. && input.outer().min_y() > 90.);
-    let layout = f.field(COMPOSER).view.layout();
+    let layout = f.field(COMPOSER).view().layout();
     assert!(layout.message.min_y() >= input.outer().max_y());
-    f.field_mut(COMPOSER).surface.set_wrap(true);
+    f.field_mut(COMPOSER).set_wrap(true);
     render(&mut f, 240., 600.);
-    assert!(f.field(COMPOSER).surface.width().is_some());
-    assert!(f.field(COMPOSER).surface.scroll().limit().y > 0.);
+    assert!(f.field(COMPOSER).surface().width().is_some());
+    assert!(f.field(COMPOSER).surface().scroll().limit().y > 0.);
 }
 
 #[test]
 fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size() {
     let mut f = ViewportFixture::new();
     render(&mut f, 400., 600.);
-    let surface = &f.field(COMPOSER).surface;
+    let surface = &f.field(COMPOSER).surface();
     let editing = format!("{:?}", surface.input());
     let geometry = (
         surface.outer(),
@@ -200,7 +202,7 @@ fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size()
     assert!(measured.size.height > 56.);
     // Intrinsic shaping may populate the private measurement cache. It must
     // not publish that paragraph as arranged editing/IME/scroll geometry.
-    let surface = &f.field(COMPOSER).surface;
+    let surface = &f.field(COMPOSER).surface();
     assert_eq!(format!("{:?}", surface.input()), editing);
     assert_eq!(
         (
@@ -239,7 +241,7 @@ fn intrinsic_measurement_does_not_mutate_arranged_surface_or_default_form_size()
     let old = legacy.render(
         &mut Scene::new(),
         &mut Text,
-        &form.field,
+        form.field(),
         Rect::new(0., 0., 300., 1000.),
         None,
         Theme::LIGHT.into(),
@@ -255,9 +257,9 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::SelectAll,
     ));
-    let original = f.field(TRANSCRIPT).surface.text().to_owned();
+    let original = f.field(TRANSCRIPT).surface().text().to_owned();
     assert_eq!(
-        f.field(TRANSCRIPT).surface.input().selected_text(),
+        f.field(TRANSCRIPT).surface().input().selected_text(),
         original
     );
     assert!(
@@ -270,9 +272,9 @@ fn readonly_fill_uses_original_selection_and_rejects_user_edits() {
     f.event(&ContentEvent::TextCommand(
         tekes_ui_controls::TextEditCommand::DeleteBackward,
     ));
-    assert_eq!(f.field(TRANSCRIPT).surface.text(), original);
+    assert_eq!(f.field(TRANSCRIPT).surface().text(), original);
     assert_eq!(
-        f.field(TRANSCRIPT).surface.input().selected_text(),
+        f.field(TRANSCRIPT).surface().input().selected_text(),
         original
     );
 }
@@ -356,7 +358,7 @@ fn nonzero_origin_clip_and_backing_scales_share_caret_hit_and_semantic_frame() {
                     Theme::LIGHT.into(),
                 )
                 .unwrap();
-            let surface = &f.field(COMPOSER).surface;
+            let surface = &f.field(COMPOSER).surface();
             let node = f
                 .host
                 .semantics()
@@ -396,15 +398,9 @@ fn actual_viewport_modes_reuse_current_input_tokens_across_themes_and_brands() {
                     let mut f = ViewportFixture::new();
                     let input = f.field_mut(COMPOSER);
                     input.viewport = viewport;
-                    input.surface.set_wrap(wrap);
-                    input
-                        .surface
-                        .input_mut()
-                        .insert(&"中文 English 😀 e\u{301}\n".repeat(30), None);
-                    input
-                        .surface
-                        .scroll_mut()
-                        .set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
+                    input.set_wrap(wrap);
+                    input.insert_text(&"中文 English 😀 e\u{301}\n".repeat(30), None);
+                    input.set_scroll_policy(ScrollPolicy::Auto, ScrollPolicy::Auto);
                     let frame = Rect::new(25., 35., 350., 700.);
                     let (scene, lookups) = tekes_ui_tokens::audit::capture(|| {
                         let mut scene = Scene::new();
@@ -419,7 +415,7 @@ fn actual_viewport_modes_reuse_current_input_tokens_across_themes_and_brands() {
                             .unwrap();
                         scene
                     });
-                    let input = &f.field(COMPOSER).surface;
+                    let input = f.field(COMPOSER).surface();
                     assert!(scene.primitives().iter().any(
                         |p| matches!(p,tekes_ui_scene::Primitive::Quad(q) if q.rect==input.outer())
                     ));
@@ -453,7 +449,7 @@ fn public_ax_layout_uses_real_wrapped_lines_for_unfocused_readonly_and_composer(
     // Both semantic owners, including the unfocused read-only transcript, have
     // their own shaped geometry. A focused-only IME snapshot cannot substitute.
     for id in [TRANSCRIPT, COMPOSER] {
-        let surface = &f.field(id).surface;
+        let surface = &f.field(id).surface();
         let p = surface.paragraph().unwrap();
         let origin = surface.origin();
         let layout = AccessibilityTextLayout {

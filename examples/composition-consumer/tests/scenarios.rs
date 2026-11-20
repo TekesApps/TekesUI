@@ -566,9 +566,9 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input_mut().select(1, false);
-    field.surface.input_mut().preedit("你", 1..1, None);
-    assert!(field.surface.marked().is_some());
+    field.select(1, false);
+    field.set_composition_preview("你", 1..1, None, vec![]);
+    assert!(field.surface().marked().is_some());
     fixture
         .host
         .reorder(
@@ -590,8 +590,8 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.marked().is_some());
-    assert!(field.surface.text().contains('你'));
+    assert!(field.surface().marked().is_some());
+    assert!(field.surface().text().contains('你'));
     assert!(fixture.host.get(ids::LIST_FIELD).unwrap().frame().max_y() <= list.max_y() + 0.1);
     assert_ne!(
         fixture
@@ -816,7 +816,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                         .unwrap()
                         .component::<TextFieldContent>()
                         .unwrap()
-                        .surface
+                        .surface()
                         .input()
                         .text()
                         .starts_with("Edited owned draft")
@@ -993,7 +993,7 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                             .unwrap()
                             .component::<TextFieldContent>()
                             .unwrap()
-                            .surface
+                            .surface()
                             .input()
                             .text(),
                         "Retained draft · 草稿 A😀B"
@@ -1052,9 +1052,9 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input_mut().select_all();
-    field.surface.input_mut().preedit("新工作区", 4..4, None);
-    let preserved = field.surface.text().to_owned();
+    field.select_all();
+    field.set_composition_preview("新工作区", 4..4, None, vec![]);
+    let preserved = field.surface().text().to_owned();
     host.close_dialog();
     render(&mut host, &mut text);
     host.show_dialog(ids::DIALOG).unwrap();
@@ -1064,7 +1064,7 @@ fn rich_dialog_uses_modal_focus_escape_restore_and_owned_form_state() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text(),
         preserved
@@ -1083,11 +1083,11 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface.input_mut().select_all();
-    field.surface.input_mut().insert("", None);
-    field.surface.input_mut().preedit("", 0..0, None);
-    let marked = field.surface.marked();
-    let selection = field.surface.input().selection();
+    field.select_all();
+    field.insert_text("", None);
+    field.set_composition_preview("", 0..0, None, vec![]);
+    let marked = field.surface().marked();
+    let selection = field.surface().input().selection();
     assert!(!scenarios::validate_dialog(&mut host));
     assert!(host.semantics().iter().any(|s| s.id == ids::DIALOG));
     let field = host
@@ -1096,11 +1096,11 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .component::<TextFieldContent>()
         .unwrap();
     assert_eq!(
-        field.field.error.as_deref(),
+        field.field().error.as_deref(),
         Some("Enter a workspace name.")
     );
-    assert_eq!(field.surface.marked(), marked);
-    assert_eq!(field.surface.input().selection(), selection);
+    assert_eq!(field.surface().marked(), marked);
+    assert_eq!(field.surface().input().selection(), selection);
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
     render(&mut host, &mut text);
     host.event(&ContentEvent::Commit {
@@ -1113,7 +1113,7 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .field
+            .field()
             .error,
         None
     );
@@ -1122,7 +1122,7 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .text()
         .to_owned();
@@ -1134,8 +1134,8 @@ fn rich_dialog_validation_uses_field_error_and_preserves_marked_selection() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert_eq!(field.surface.text(), value);
-    assert_eq!(field.field.error, None);
+    assert_eq!(field.surface().text(), value);
+    assert_eq!(field.field().error, None);
 }
 
 #[test]
@@ -1319,7 +1319,7 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text(),
         "AX workspace"
@@ -1422,7 +1422,7 @@ fn accessibility_actions_respect_modal_scope_and_reject_closed_dialog_targets() 
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input()
         .text()
         .to_owned();
@@ -1443,7 +1443,7 @@ fn accessibility_actions_respect_modal_scope_and_reject_closed_dialog_targets() 
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text(),
         value,
@@ -1489,8 +1489,6 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_read_only(true);
     assert!(act(&mut host, AccessibilityAction::SetSelection(5..6)).consumed);
     assert!(
@@ -1504,8 +1502,6 @@ fn accessibility_text_selection_reuses_editor_graphemes_undo_and_composition_pri
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap()
-        .surface
-        .input_mut()
         .set_read_only(false);
     host.event(&ContentEvent::Preedit {
         text: "pin".into(),
@@ -1560,7 +1556,7 @@ fn input_blur_finalizes_the_draft_and_dialog_reopen_has_no_stale_composition() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .input();
     assert_eq!(input.text(), visible);
     assert!(input.marked().is_none());
@@ -1707,11 +1703,17 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
     for multiline in [false, true] {
         let mut host = scenarios::rich_dialog().unwrap();
         let mut text = HostText::default();
-        host.get_mut(ids::DIALOG_FIELD)
+        let field = host
+            .get_mut(ids::DIALOG_FIELD)
             .unwrap()
             .component_mut::<TextFieldContent>()
-            .unwrap()
-            .surface = tekes_ui_controls::TextSurface::new("A😀e\u{301}中", multiline, false);
+            .unwrap();
+        field.set_multiline(multiline);
+        field.replace_value(
+            "A😀e\u{301}中",
+            tekes_ui_controls::ExternalSelection::Reset,
+            tekes_ui_controls::ExternalUndo::Reset,
+        );
         host.show_dialog(ids::DIALOG).unwrap();
         render(&mut host, &mut text);
         assert!(text.visible_surfaces > 0);
@@ -1751,8 +1753,6 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
-            .surface
-            .input_mut()
             .set_read_only(true);
         assert!(
             host.accessibility_action(
@@ -1781,8 +1781,6 @@ fn input_family_reuses_composed_text_services_for_multiline_read_only_and_ime() 
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap()
-            .surface
-            .input_mut()
             .set_disabled(true);
         host.event(&ContentEvent::Commit {
             text: "y".into(),
@@ -1802,15 +1800,18 @@ fn input_pointer_contract_reuses_live_field_capture_in_a_modal_consumer() {
         for read_only in [false, true] {
             let mut host = scenarios::rich_dialog().unwrap();
             let mut text = HostText::default();
-            host.get_mut(ids::DIALOG_FIELD)
+            let field = host
+                .get_mut(ids::DIALOG_FIELD)
                 .unwrap()
                 .component_mut::<TextFieldContent>()
-                .unwrap()
-                .surface = tekes_ui_controls::TextSurface::new(
+                .unwrap();
+            field.set_multiline(multiline);
+            field.replace_value(
                 "A😀 e\u{301} 中文 sample",
-                multiline,
-                read_only,
+                tekes_ui_controls::ExternalSelection::Reset,
+                tekes_ui_controls::ExternalUndo::Reset,
             );
+            field.set_read_only(read_only);
             host.show_dialog(ids::DIALOG).unwrap();
             render(&mut host, &mut text);
             let point = host
@@ -1876,7 +1877,17 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .component_mut::<TextFieldContent>()
         .unwrap();
     assert!(field.reading.is_none());
-    field.surface = tekes_ui_controls::TextSurface::new(&document, true, true);
+    field.set_multiline(true);
+    field.set_scroll_policy(
+        tekes_ui_controls::ScrollPolicy::Disabled,
+        tekes_ui_controls::ScrollPolicy::Auto,
+    );
+    field.replace_value(
+        &document,
+        tekes_ui_controls::ExternalSelection::Reset,
+        tekes_ui_controls::ExternalUndo::Reset,
+    );
+    field.set_read_only(true);
     field.reading = Some(tekes_ui_controls::ReadingController::default());
     host.get_mut(ids::DIALOG_SAVE)
         .unwrap()
@@ -1890,12 +1901,8 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field
-        .reading
-        .as_mut()
-        .unwrap()
-        .follow_latest(&mut field.surface);
-    field.surface.append_text("\nFirst streamed update.");
+    field.follow_latest();
+    field.append_text("\nFirst streamed update.");
     render(&mut host, &mut text);
     let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
     assert_eq!(surface.scroll().offset.y, surface.scroll().limit().y);
@@ -1916,11 +1923,9 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .component_mut::<TextFieldContent>()
         .unwrap();
     assert!(!field.reading.as_ref().unwrap().is_following_latest());
-    let offset = field.surface.scroll().offset.y;
-    assert!(offset > 0. && offset < field.surface.scroll().limit().y);
-    field
-        .surface
-        .append_text("\nSecond streamed update while reading.");
+    let offset = field.surface().scroll().offset.y;
+    assert!(offset > 0. && offset < field.surface().scroll().limit().y);
+    field.append_text("\nSecond streamed update while reading.");
     render(&mut host, &mut text);
     assert!(
         (host
@@ -1943,11 +1948,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field
-        .reading
-        .as_mut()
-        .unwrap()
-        .follow_latest(&mut field.surface);
+    field.follow_latest();
     render(&mut host, &mut text);
     assert_eq!(host.focused(), Some(ids::DIALOG_SAVE));
     let surface = host.text_surface(ids::DIALOG_FIELD).unwrap();
@@ -1958,11 +1959,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field
-        .reading
-        .as_mut()
-        .unwrap()
-        .follow_latest(&mut field.surface);
+    field.follow_latest();
     assert_eq!(host.focused(), Some(ids::DIALOG_FIELD));
     assert!(
         host.semantics()
@@ -1980,11 +1977,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field
-        .reading
-        .as_mut()
-        .unwrap()
-        .follow_latest(&mut field.surface);
+    field.follow_latest();
     assert_eq!(host.focused(), Some(ids::DIALOG_SAVE));
 }
 
@@ -1997,8 +1990,17 @@ fn ordinary_text_field_wheel_does_not_reveal_old_caret_or_enable_following() {
         .unwrap()
         .component_mut::<TextFieldContent>()
         .unwrap();
-    field.surface =
-        tekes_ui_controls::TextSurface::new(&"Long document line.\n".repeat(100), true, true);
+    field.set_multiline(true);
+    field.set_scroll_policy(
+        tekes_ui_controls::ScrollPolicy::Disabled,
+        tekes_ui_controls::ScrollPolicy::Auto,
+    );
+    field.replace_value(
+        "Long document line.\n".repeat(100),
+        tekes_ui_controls::ExternalSelection::Reset,
+        tekes_ui_controls::ExternalUndo::Reset,
+    );
+    field.set_read_only(true);
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
     let point = host
@@ -2023,9 +2025,9 @@ fn ordinary_text_field_wheel_does_not_reveal_old_caret_or_enable_following() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap();
-    assert!(field.surface.scroll().offset.y > 0.);
+    assert!(field.surface().scroll().offset.y > 0.);
     assert!(field.reading.is_none());
-    assert_eq!(field.surface.input().caret(), 0);
+    assert_eq!(field.surface().input().caret(), 0);
 }
 
 #[test]
@@ -2491,7 +2493,7 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text()
             .to_owned();
@@ -2512,7 +2514,7 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .input()
             .text()
             .to_owned();
@@ -2537,9 +2539,9 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap();
-        assert_eq!(field.surface.text(), visible_draft);
-        assert_eq!(field.surface.input().selection(), 2..5);
-        assert!(field.surface.marked().is_none());
+        assert_eq!(field.surface().text(), visible_draft);
+        assert_eq!(field.surface().input().selection(), 2..5);
+        assert!(field.surface().marked().is_none());
         assert!(scenario.host.focus(Some(c::EDITOR), true));
         if kind == Kind::Tabs {
             scenario.select(1);
@@ -2578,7 +2580,7 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .input()
                 .text(),
             visible_draft
@@ -2599,7 +2601,7 @@ fn retained_content_status_changes_cancel_hidden_ime_input_without_losing_the_dr
                 .unwrap()
                 .component::<TextFieldContent>()
                 .unwrap()
-                .surface
+                .surface()
                 .input()
                 .text(),
             before
@@ -2816,11 +2818,11 @@ fn required_metadata_reaches_real_form_slots_and_preserves_editor_state() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap();
-                let layout = field.view.layout();
+                let layout = field.view().layout();
                 let mark = layout.required_mark.unwrap();
                 assert!(mark.size.width > 0.);
                 let shaped_label = text.measure(
-                    &field.field.label,
+                    &field.field().label,
                     proposal::TextRole::UiBody,
                     layout.label.size.width,
                 );
@@ -2832,8 +2834,8 @@ fn required_metadata_reaches_real_form_slots_and_preserves_editor_state() {
                 assert!(mark.max_x() <= frame.max_x() + 0.01);
                 assert!(layout.slot.min_y() >= layout.label.max_y());
                 assert!(layout.message.min_y() >= layout.slot.max_y());
-                assert_eq!(field.surface.outer(), layout.slot);
-                assert_eq!(field.surface.text(), value);
+                assert_eq!(field.surface().outer(), layout.slot);
+                assert_eq!(field.surface().text(), value);
                 assert_eq!(layout.has_error, id == ERROR);
                 let semantics = field.semantics();
                 assert_eq!(semantics.disabled, id == DISABLED);
@@ -3113,7 +3115,7 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                     .unwrap()
                     .component::<TextFieldContent>()
                     .unwrap()
-                    .surface
+                    .surface()
                     .input()
                     .text(),
                 "Workspace"

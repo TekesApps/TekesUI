@@ -457,8 +457,10 @@ impl TextDemo {
                 } else {
                     "TextEditor · 单行"
                 };
-                let mut field = tekes_ui_controls::composition::TextFieldContent::new(label, "");
-                field.surface = surface.view;
+                let mut field = tekes_ui_controls::composition::TextFieldContent::from_surface(
+                    label,
+                    surface.view,
+                );
                 field.reading = surface.reading;
                 field.show_metadata = false;
                 field.viewport = tekes_ui_controls::composition::TextViewport::Fill;

@@ -516,13 +516,9 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .unwrap()
             .component_mut::<TextFieldContent>()
             .unwrap();
-        history.surface.input_mut().select_range(3..8);
-        history.surface.scroll_mut().scroll_by(0., 120.);
-        history
-            .reading
-            .as_mut()
-            .unwrap()
-            .stop_following(&mut history.surface);
+        history.select_range(3..8);
+        history.scroll_by(0., 120.);
+        history.stop_following();
     }
 
     assert!(
@@ -531,7 +527,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .scroll()
             .offset
             .y
@@ -544,7 +540,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
         .unwrap()
         .component::<TextFieldContent>()
         .unwrap()
-        .surface
+        .surface()
         .scroll()
         .offset;
     let command = f
@@ -562,7 +558,7 @@ fn selection_backspace_and_reading_sibling_keep_original_state() {
             .unwrap()
             .component::<TextFieldContent>()
             .unwrap()
-            .surface
+            .surface()
             .scroll()
             .offset,
         scroll

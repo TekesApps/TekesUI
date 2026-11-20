@@ -21,6 +21,7 @@ pub struct Content {
     pub(super) help_revision: u64,
     pub(super) surface: Option<&'static str>,
     pub(super) secondary_foreground: bool,
+    pub(super) error_foreground: bool,
     // Cached value last notified to this owner; notice and ordinary owner
     // notification semantics differ. This is not a generic activity fact.
     pub(super) activity_effective: bool,
@@ -61,6 +62,7 @@ impl Content {
             help_revision: 0,
             surface: None,
             secondary_foreground: false,
+            error_foreground: false,
             activity_effective: true,
             activity_parent: true,
             composition_active: true,
@@ -129,6 +131,13 @@ impl Content {
     /// Style this text node with the canonical secondary foreground on its resolved Surface.
     pub fn with_secondary_foreground(mut self) -> Self {
         self.secondary_foreground = true;
+        self.error_foreground = false;
+        self
+    }
+    /// Style this text node with the canonical error helper foreground on its resolved Surface.
+    pub fn with_error_foreground(mut self) -> Self {
+        self.error_foreground = true;
+        self.secondary_foreground = false;
         self
     }
     pub(super) fn resolved_theme(&self, theme: ContentTheme) -> ContentTheme {
@@ -146,7 +155,23 @@ impl Content {
             icon_foreground: None,
             ..theme
         });
-        if self.secondary_foreground {
+        if self.error_foreground {
+            resolved.foreground = Some(
+                tekes_ui_tokens::surface_palette::resolve_surface_with_options(
+                    resolved.palette,
+                    resolved.surface(),
+                    "input",
+                    "rest",
+                    tekes_ui_tokens::surface_palette::SurfaceOptions {
+                        error: true,
+                        read_only: false,
+                    },
+                )
+                .expect("error text Surface packet")
+                .helper
+                .expect("error text helper ink"),
+            );
+        } else if self.secondary_foreground {
             resolved.foreground = Some(
                 tekes_ui_tokens::surface_palette::resolve_surface(
                     resolved.palette,

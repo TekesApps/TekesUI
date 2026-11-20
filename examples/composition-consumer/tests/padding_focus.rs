@@ -82,7 +82,7 @@ fn input(h: &mut ContentHost) -> &mut TextFieldContent {
 #[test]
 fn padding_focuses_original_editor_without_capture_or_synthetic_caret_mapping() {
     let mut h = setup();
-    let before = input(&mut h).surface.input().external_baseline();
+    let before = input(&mut h).surface().input().external_baseline();
     let p = padding(&h);
     assert!(h.event(&ContentEvent::PointerDown(p)).consumed);
     assert_eq!(h.focused(), Some(EDITOR));
@@ -103,8 +103,8 @@ fn already_focused_padding_preserves_preedit_selection_and_undo() {
             text: "retained".into(),
             replacement: None,
         });
-        input(&mut h).surface.input_mut().select(2, false);
-        input(&mut h).surface.input_mut().select(1, true);
+        input(&mut h).select(2, false);
+        input(&mut h).select(1, true);
         if composing {
             h.event(&ContentEvent::Preedit {
                 text: "ni".into(),
@@ -155,8 +155,8 @@ fn readonly_disabled_hidden_and_parent_disabled_reject_redirect() {
         let mut h = setup();
         let p = padding(&h);
         match state {
-            0 => input(&mut h).surface.input_mut().set_read_only(true),
-            1 => input(&mut h).surface.input_mut().set_disabled(true),
+            0 => input(&mut h).set_read_only(true),
+            1 => input(&mut h).set_disabled(true),
             2 => {
                 h.get_mut(BAND)
                     .unwrap()
@@ -340,7 +340,7 @@ fn old_editor_key_chain_cannot_leak_across_atomic_padding_focus_switch() {
             characters_ignoring_modifiers: "n".into(),
         },
     });
-    let before = input(&mut h).surface.input().external_baseline();
+    let before = input(&mut h).surface().input().external_baseline();
     let p = padding(&h);
     click(&mut h, p);
     assert_eq!(h.focused(), Some(EDITOR));
@@ -402,8 +402,8 @@ fn padding_intent_is_read_only_and_dispatch_resolves_the_same_original_editor() 
         text: "retained".into(),
         replacement: None,
     });
-    input(&mut h).surface.input_mut().select(2, false);
-    input(&mut h).surface.input_mut().select(1, true);
+    input(&mut h).select(2, false);
+    input(&mut h).select(1, true);
     h.event(&ContentEvent::Preedit {
         text: "ni".into(),
         selection: 0..2,
@@ -522,8 +522,8 @@ fn padding_intent_dispatch_rechecks_mutated_availability_and_mount() {
         let event = ContentEvent::PointerDown(padding(&h));
         assert_eq!(h.padding_focus_target(&event), Some(EDITOR));
         match mutation {
-            0 => input(&mut h).surface.input_mut().set_read_only(true),
-            1 => input(&mut h).surface.input_mut().set_disabled(true),
+            0 => input(&mut h).set_read_only(true),
+            1 => input(&mut h).set_disabled(true),
             2 => {
                 h.get_mut(BAND)
                     .unwrap()

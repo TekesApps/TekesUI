@@ -221,26 +221,24 @@ mod consumer {
                         "aux_activations":aux.component::<Button>().unwrap().activations,
                         "aux_pressed":aux.component::<Button>().unwrap().button.state.pressed,
                         "view_revision":self.revision,"overlay_activations":self.host.get(ComponentId(6)).unwrap().component::<Button>().unwrap().activations,
-                        "toolbar_calls":self.toolbar_calls,"submits":self.submits,"focused":self.host.focused().map(|id|id.0),"composing":self.host.is_composing(),"edit_text":self.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface.text()}),
+                        "toolbar_calls":self.toolbar_calls,"submits":self.submits,"focused":self.host.focused().map(|id|id.0),"composing":self.host.is_composing(),"edit_text":self.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().text()}),
                     )
                 }
                 RequestBody::Message { topic, .. } if topic == "bind_same_value" => {
-                    let input = self
+                    let field = self
                         .host
                         .get_mut(EDIT)
                         .unwrap()
                         .component_mut::<TextFieldContent>()
-                        .unwrap()
-                        .surface
-                        .input_mut();
-                    let baseline = input.external_baseline();
+                        .unwrap();
+                    let baseline = field.input().external_baseline();
                     let value = tekes_ui_controls::DraftRevision {
                         identity: "wire-document".into(),
                         version: 1,
-                        payload: input.text().to_owned(),
+                        payload: field.text().to_owned(),
                     };
                     ensure!(matches!(
-                        input.apply_external_value(
+                        field.apply_external_value(
                             &baseline,
                             &value,
                             tekes_ui_controls::ExternalSelection::Preserve,

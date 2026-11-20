@@ -908,6 +908,9 @@ pub struct SwitchView {
     motion_suspended: bool,
 }
 impl SwitchView {
+    /// Intrinsic track width of the shared Switch control.
+    pub const TRACK_WIDTH: f32 = 48.0;
+
     /// Host validation does not disable toggling or erase the current value.
     pub fn set_error(&mut self, error: bool) {
         self.error = error;
@@ -1162,7 +1165,7 @@ impl SwitchView {
         let toggle_frame = Rect::new(
             normalized.min_x(),
             first_line_center + 1.0 - 13.0,
-            48.0,
+            Self::TRACK_WIDTH,
             26.0,
         );
         let paint_clip = match (clip, outer.visible_frame()) {

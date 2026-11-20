@@ -1,6 +1,6 @@
 //! Issue53 independent declaration: the SDK owns nested reading input/routing.
 use tekes_ui_controls::{
-    ReadingController, ReadingDocumentVersion, ScrollArea, ScrollPolicy,
+    ReadingDocumentVersion, ScrollArea, ScrollPolicy,
     composition::*,
     extended::{Axis, Stack},
 };
@@ -28,15 +28,10 @@ pub fn build() -> Result<(ContentHost, State), CompositionError> {
         min: 120.,
         max: 120.,
     };
+    inner.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
     inner
-        .surface
-        .scroll_mut()
-        .set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
-    let mut reading = ReadingController::default();
-    reading
-        .set_document(&mut inner.surface, "inner-document", 1, &value)
+        .set_reading_document("inner-document", 1, &value)
         .unwrap();
-    inner.reading = Some(reading);
     let mut host = ContentHost::new(Content::new(
         ROOT,
         StackContent {

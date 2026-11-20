@@ -11,19 +11,21 @@ pub const ERROR: ComponentId = ComponentId(9402);
 pub const DISABLED: ComponentId = ComponentId(9403);
 
 pub fn build() -> Result<ContentHost, CompositionError> {
-    let mut normal = TextFieldContent::new(
+    let normal = TextFieldContent::new(
         "Required workspace display name with a wrapping label",
         "Workspace",
-    );
-    normal.field.required = true;
-    normal.field.help = "Use a name that other people can recognize.".into();
-    let mut error = TextFieldContent::new("Required project name needing correction", "Existing");
-    error.field.required = true;
-    error.field.error = Some("This name already exists. Choose another name.".into());
-    let mut disabled = TextFieldContent::new("Disabled required workspace name", "Preserved");
-    disabled.field.required = true;
-    disabled.field.help = "Unavailable while the workspace is locked.".into();
-    disabled.surface.input_mut().set_disabled(true);
+    )
+    .with_required(true)
+    .with_help("Use a name that other people can recognize.");
+    let error = TextFieldContent::new("Required project name needing correction", "Existing")
+        .with_required(true)
+        .with_error(Some(
+            "This name already exists. Choose another name.".into(),
+        ));
+    let disabled = TextFieldContent::new("Disabled required workspace name", "Preserved")
+        .with_required(true)
+        .with_help("Unavailable while the workspace is locked.")
+        .with_disabled(true);
     ContentHost::new(Content::new(
         ROOT,
         StackContent {

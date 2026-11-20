@@ -197,7 +197,10 @@ fn typed_actions_keep_multiple_arrivals_once_and_keyboard_latest_uses_actual_but
         .component::<TextFieldContent>()
         .unwrap();
     assert!(f.reading.as_ref().unwrap().is_following_latest());
-    assert_eq!(f.surface.scroll().offset.y, f.surface.scroll().limit().y);
+    assert_eq!(
+        f.surface().scroll().offset.y,
+        f.surface().scroll().limit().y
+    );
     activate(&mut host, ZOOM);
     activate(&mut host, WIDTH);
     source.process_actions(&mut host, Duration::ZERO);

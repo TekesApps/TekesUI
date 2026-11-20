@@ -125,7 +125,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "selection_utf16": input.as_ref().map(|s| format!("{}..{}", s.selection.start, s.selection.end)),
                 "marked_utf16": input.as_ref().and_then(|s| s.marked.as_ref()).map(|r| format!("{}..{}", r.start, r.end)),
                 "is_composing": self.tree.is_composing(),
-                "editor_internal_scroll_offset": editor.map(|field| format!("{:?}", field.surface.scroll().offset)),
+                "editor_internal_scroll_offset": editor.map(|field| format!("{:?}", field.surface().scroll().offset)),
                 "scroll_mount": self.tree.semantic_mount(panel_fixture::SCROLL),
                 "scroll_offset": scroll.map(|owner| format!("{:?}", owner.scroll.offset)),
                 "scroll_limit": scroll.map(|owner| format!("{:?}", owner.scroll.limit())),
@@ -222,7 +222,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .tree
                         .get(panel_fixture::EDITOR)
                         .and_then(|node| node.component::<TextFieldContent>())
-                        .map(|field| field.surface.scroll().offset.y)
+                        .map(|field| field.surface().scroll().offset.y)
                         .unwrap_or_default();
                     assert!(
                         offset.abs() > 0.01,
