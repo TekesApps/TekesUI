@@ -417,16 +417,28 @@ pub(crate) struct BasicStory {
 impl BasicStory {
     pub(crate) fn new(entry: &'static Entry) -> Self {
         let state = StoryState::for_entry(entry);
-        let mut children = vec![
-            super::story_heading(92004, entry.title()),
-            text(92005, super::story_docs(entry)),
+        let intro = Content::new(
+            ComponentId(92014),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
+                    super::story_heading(92004, entry.title()),
+                    text(92005, super::story_docs(entry)),
+                ],
+                flexible_child: None,
+            },
+        );
+        let children = vec![
+            intro,
+            section_bar(entry, COMMAND),
+            Self::body(entry, &state),
         ];
-        children.push(section_bar(entry, COMMAND));
-        children.push(Self::body(entry, &state));
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            ListContent::scrollable(format!("{} stories", entry.title()), ROWS, children)
-                .content_padding(16.),
+            ScrollContent::document(StackContent::document_sections(ROWS, children)),
         ))
         .expect("unique basic story IDs");
         host.set_action_events(true);
@@ -492,16 +504,18 @@ impl BasicStory {
         }
     }
     fn body(entry: &'static Entry, state: &StoryState) -> Content {
-        let mut children = vec![text(
-            92007,
-            [
-                "Docs",
-                "Playground",
-                "State matrix",
-                "Behaviors",
-                "Edge cases",
-                "Variants / sizes",
-            ][state.section],
+        let mut children = vec![Content::new(
+            ComponentId(92007),
+            TextContent::heading(
+                [
+                    "Docs",
+                    "Playground",
+                    "State matrix",
+                    "Behaviors",
+                    "Edge cases",
+                    "Variants / sizes",
+                ][state.section],
+            ),
         )];
         match state.section {
             0 => {
@@ -562,10 +576,14 @@ impl BasicStory {
                 children.push(text(92008, "Visual fixtures only — simulated focus is not a focus test. Real interaction: Playground."));
                 if entry.renderer() == "checkbox" {
                     for (i, (name, state, checked)) in matrix_states().into_iter().enumerate() {
-                        children.push(text(92300 + i as u64 * 2, name));
-                        children.push(Content::new(
-                            ComponentId(92301 + i as u64 * 2),
-                            MatrixCheckbox::new(state, checked),
+                        children.push(StackContent::labeled_specimen(
+                            ComponentId(92350 + i as u64),
+                            ComponentId(92300 + i as u64 * 2),
+                            name,
+                            Content::new(
+                                ComponentId(92301 + i as u64 * 2),
+                                MatrixCheckbox::new(state, checked),
+                            ),
                         ));
                     }
                 } else {
@@ -574,19 +592,23 @@ impl BasicStory {
                         .filter(|(name, _)| *name != "error + focus")
                         .enumerate()
                     {
-                        children.push(text(92300 + i as u64 * 2, name));
-                        children.push(Content::new(
-                            ComponentId(92301 + i as u64 * 2),
-                            ButtonFixture {
-                                state,
-                                label: if state.loading {
-                                    "Loading…"
-                                } else {
-                                    "Sample"
+                        children.push(StackContent::labeled_specimen(
+                            ComponentId(92350 + i as u64),
+                            ComponentId(92300 + i as u64 * 2),
+                            name,
+                            Content::new(
+                                ComponentId(92301 + i as u64 * 2),
+                                ButtonFixture {
+                                    state,
+                                    label: if state.loading {
+                                        "Loading…"
+                                    } else {
+                                        "Sample"
+                                    },
+                                    size: ButtonSize::Body,
+                                    variant: ButtonVariant::Quiet,
                                 },
-                                size: ButtonSize::Body,
-                                variant: ButtonVariant::Quiet,
-                            },
+                            ),
                         ));
                     }
                 }

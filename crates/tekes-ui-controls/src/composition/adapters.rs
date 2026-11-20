@@ -555,8 +555,8 @@ impl ListContent {
     pub const SECTION_GAP: f32 = Spacing::Regular.value();
 
     /// Build a titled list section (`[UiCaption header, items]`) whose header-to-items gap
-    /// equals `ListContent`'s inter-section gap (`SECTION_GAP`), ensuring equal vertical
-    /// spacing above and below section headers while preserving caller-owned IDs.
+    /// equals `ListContent::SECTION_GAP`, ensuring equal vertical spacing above and below
+    /// section headers while preserving caller-owned IDs.
     pub fn section(
         group_id: ComponentId,
         header_id: ComponentId,
@@ -577,6 +577,52 @@ impl ListContent {
                     Content::new(header_id, heading).with_secondary_foreground(),
                     items,
                 ],
+            },
+        )
+    }
+
+    /// Compose a fixed non-scrolling header above a scrolling `ListContent` with
+    /// symmetric `Spacing::Loose` (16 pt) outer insets, shared horizontal alignment,
+    /// `Spacing::Regular` (8 pt) scroll-clip clearance below the header, and a
+    /// flush right scrollbar track.
+    #[allow(clippy::too_many_arguments)]
+    pub fn scrollable_with_header(
+        root_id: ComponentId,
+        header_frame_id: ComponentId,
+        scroll_id: ComponentId,
+        items_id: ComponentId,
+        name: impl Into<String>,
+        header: Content,
+        children: Vec<Content>,
+    ) -> Content {
+        let pad = Spacing::Loose.value();
+        let clip_gap = Spacing::Regular.value();
+        let header_wrap = StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
+            },
+            flexible_child: None,
+            children: vec![header],
+        }
+        .into_content_with_padding(
+            header_frame_id,
+            crate::layout::Insets::new(pad, pad, clip_gap, pad),
+        );
+        let scroll = Content::new(
+            scroll_id,
+            Self::scrollable(name, items_id, children)
+                .content_insets(crate::layout::Insets::new(clip_gap, pad, pad, pad)),
+        );
+        Content::new(
+            root_id,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                flexible_child: Some(scroll_id),
+                children: vec![header_wrap, scroll],
             },
         )
     }
@@ -632,5 +678,75 @@ mod dialog_geometry_tests {
         assert!((pad_top - Spacing::Loose.value()).abs() <= 0.01);
         assert!((pad_bottom - Spacing::Loose.value()).abs() <= 0.01);
         assert!(pad_top > gap1 && pad_top > gap2);
+    }
+
+    #[test]
+    fn list_scrollable_with_header_aligns_columns_and_preserves_clip_clearance() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let header = StackContent {
+            model: Stack {
+                axis: Axis::Horizontal,
+                gap: Spacing::Regular.value(),
+            },
+            flexible_child: Some(ComponentId(10)),
+            children: vec![
+                Content::new(ComponentId(10), Button::new("Header Action")),
+                Content::new(ComponentId(11), Button::new("Search")),
+            ],
+        }
+        .into_content_with_distribution(
+            ComponentId(9),
+            proposal::layout::MainAxisDistribution::SpaceBetween,
+        );
+        let mut host = ContentHost::new(ListContent::scrollable_with_header(
+            ComponentId(1),
+            ComponentId(2),
+            ComponentId(3),
+            ComponentId(4),
+            "Sidebar",
+            header,
+            vec![Content::new(ComponentId(5), TextContent::new("Row 1"))],
+        ))
+        .unwrap();
+        let viewport = Rect::new(0., 0., 260., 300.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            viewport,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let leading = host.get(ComponentId(10)).unwrap().frame();
+        let trailing = host.get(ComponentId(11)).unwrap().frame();
+        let header_frame = host.get(ComponentId(9)).unwrap().frame();
+        let scroll_frame = host.get(ComponentId(3)).unwrap().frame();
+        let row_frame = host.get(ComponentId(5)).unwrap().frame();
+        assert_eq!(leading.min_x() - viewport.min_x(), 16.);
+        assert_eq!(viewport.max_x() - trailing.max_x(), 16.);
+        assert_eq!(header_frame.min_y() - viewport.min_y(), 16.);
+        assert_eq!(scroll_frame.min_x(), viewport.min_x());
+        assert_eq!(scroll_frame.max_x(), viewport.max_x());
+        assert_eq!(scroll_frame.min_y() - header_frame.max_y(), 8.);
+        assert_eq!(row_frame.min_x(), leading.min_x());
+        assert_eq!(row_frame.min_y() - header_frame.max_y(), 16.);
     }
 }

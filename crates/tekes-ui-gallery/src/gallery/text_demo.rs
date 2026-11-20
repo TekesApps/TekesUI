@@ -772,19 +772,8 @@ impl TextDemo {
         let multiline = self.surfaces[0].input().is_multiline();
         *self.surfaces[0].input_mut() = tekes_ui_controls::TextInput::new(value, multiline);
     }
-    #[cfg(test)]
-    pub fn search_fixture() -> Self {
-        let mut field = Self::search();
-        field.surfaces[0].fixture = true;
-        field
-    }
     pub fn query(&self) -> &str {
         self.surfaces[0].text()
-    }
-    #[cfg(test)]
-    #[cfg(test)]
-    pub fn build_search(&mut self, ctx: &mut PageCtx<'_>, rect: Rect, scene: &mut Scene) {
-        self.build_search_clipped(ctx, rect, None, scene);
     }
     #[cfg(test)]
     pub fn build_search_clipped(

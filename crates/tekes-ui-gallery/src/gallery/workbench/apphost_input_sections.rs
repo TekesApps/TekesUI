@@ -13,16 +13,18 @@ fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
 pub(super) fn body(entry: &'static Entry, section: usize) -> Content {
-    let mut children = vec![text(
-        91200,
-        [
-            "Docs",
-            "Playground",
-            "State matrix",
-            "Behaviors",
-            "Edge cases",
-            "Variants / sizes",
-        ][section],
+    let mut children = vec![Content::new(
+        ComponentId(91200),
+        TextContent::heading(
+            [
+                "Docs",
+                "Playground",
+                "State matrix",
+                "Behaviors",
+                "Edge cases",
+                "Variants / sizes",
+            ][section],
+        ),
     )];
     match section {
         0 => {
@@ -75,10 +77,14 @@ fn matrix(renderer: &str) -> Vec<Content> {
             )
         }));
         for (i, (name, state)) in states.into_iter().enumerate() {
-            children.push(text(91300 + i as u64 * 2, name));
-            children.push(Content::new(
-                ComponentId(91301 + i as u64 * 2),
-                TextFixture::new(renderer == "area", name, state),
+            children.push(StackContent::labeled_specimen(
+                ComponentId(91350 + i as u64),
+                ComponentId(91300 + i as u64 * 2),
+                name,
+                Content::new(
+                    ComponentId(91301 + i as u64 * 2),
+                    TextFixture::new(renderer == "area", name, state),
+                ),
             ));
         }
     } else {
@@ -92,16 +98,20 @@ fn matrix(renderer: &str) -> Vec<Content> {
         .iter()
         .enumerate()
         {
-            children.push(text(91300 + i as u64 * 2, *name));
-            children.push(Content::new(
-                ComponentId(91301 + i as u64 * 2),
-                NavigationFixture {
-                    select: renderer == "select",
-                    name,
-                    trigger: Rect::default(),
-                    height: 0.,
-                    field: TextFixture::new(false, name, ControlState::default()),
-                },
+            children.push(StackContent::labeled_specimen(
+                ComponentId(91350 + i as u64),
+                ComponentId(91300 + i as u64 * 2),
+                *name,
+                Content::new(
+                    ComponentId(91301 + i as u64 * 2),
+                    NavigationFixture {
+                        select: renderer == "select",
+                        name,
+                        trigger: Rect::default(),
+                        height: 0.,
+                        field: TextFixture::new(false, name, ControlState::default()),
+                    },
+                ),
             ));
         }
     }

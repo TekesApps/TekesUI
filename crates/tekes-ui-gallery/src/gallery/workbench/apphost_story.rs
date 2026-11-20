@@ -67,7 +67,10 @@ fn root(mut specimen: Content) -> Content {
         ));
     }
     let mut children = vec![
-        text(91004, "Original Playground"),
+        Content::new(
+            ComponentId(91004),
+            TextContent::heading("Original Playground"),
+        ),
         Content::new(
             ComponentId(91005),
             StackContent {
@@ -85,7 +88,10 @@ fn root(mut specimen: Content) -> Content {
     ];
     if !select && !combo {
         children.extend([
-            text(91006, "Original edge-case controls"),
+            Content::new(
+                ComponentId(91006),
+                TextContent::heading("Original edge-case controls"),
+            ),
             Content::new(ComponentId(CONTROL + 14), Button::new("Long mixed text")),
             Content::new(ComponentId(CONTROL + 15), Button::new("Empty text")),
         ]);
@@ -97,8 +103,7 @@ fn root(mut specimen: Content) -> Content {
     }
     Content::new(
         ROOT,
-        ListContent::scrollable(
-            "Gallery input story",
+        ScrollContent::document(StackContent::document_sections(
             ROWS,
             vec![
                 super::story_heading(91008, entry.title()),
@@ -115,8 +120,7 @@ fn root(mut specimen: Content) -> Content {
                     },
                 ),
             ],
-        )
-        .content_padding(Spacing::Loose.value()),
+        )),
     )
 }
 

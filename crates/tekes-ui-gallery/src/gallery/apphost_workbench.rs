@@ -11,16 +11,14 @@ use tekes_ui_app_host::{
     OthersOptions, PresentationOptions,
 };
 #[cfg(test)]
-use tekes_ui_controls::composition::{
-    KeyValueTableContent, RichContent, RichDocument, ScrollContent,
-};
+use tekes_ui_controls::composition::{KeyValueTableContent, RichContent, RichDocument};
 use tekes_ui_controls::{
     CheckState,
     composition::{
         CheckboxContent, ComponentId, Content, ContentActionPayload, ContentHost,
         InspectionSnapshot, KeyedSelectableListContent, ListContent, ListDisplayUpdate,
-        ListIntentKind, ListRowDisplay, SearchFieldContent, StackContent, TextContent,
-        TextFieldContent,
+        ListIntentKind, ListRowDisplay, ScrollContent, SearchFieldContent, StackContent,
+        TextContent, TextFieldContent,
     },
     extended::{Axis, KeyedListSnapshot, ListBudget, ListItemKey, Stack},
 };
@@ -440,9 +438,8 @@ impl From<ContentHost> for MountedPage {
 pub(super) fn composition_fixture() -> Content {
     Content::new(
         ComponentId(200),
-        ListContent::scrollable(
+        ListContent::new(
             "Composition example",
-            ComponentId(201),
             vec![
                 text(
                     202,
@@ -519,14 +516,26 @@ fn page_host(page: &str, palette: &Rc<Cell<Palette>>) -> anyhow::Result<MountedP
         )));
     }
     if entry.renderer() == "apphost" {
-        let mut host = ContentHost::new(Content::new(
-            ComponentId(124000),
-            ListContent::scrollable(
-                entry.title(),
-                ComponentId(124001),
-                vec![
+        let intro = Content::new(
+            ComponentId(124005),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
                     workbench::story_heading(124002, entry.title()),
                     text(124003, workbench::story_docs(entry)),
+                ],
+                flexible_child: None,
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(124000),
+            ScrollContent::document(StackContent::document_sections(
+                ComponentId(124001),
+                vec![
+                    intro,
                     text(
                         124004,
                         format!(
@@ -540,7 +549,7 @@ fn page_host(page: &str, palette: &Rc<Cell<Palette>>) -> anyhow::Result<MountedP
                         tekes_ui_controls::composition::Button::new("Open AppHost demonstration"),
                     ),
                 ],
-            ),
+            )),
         ))
         .map_err(|error| anyhow::anyhow!("AppHost launcher: {error:?}"))?;
         host.set_action_events(true);
@@ -563,34 +572,49 @@ fn page_host(page: &str, palette: &Rc<Cell<Palette>>) -> anyhow::Result<MountedP
         )));
     }
     if matches!(entry.renderer(), "docs" | "index") {
-        let mut children = vec![
-            workbench::story_heading(93001, entry.title()),
-            text(93002, workbench::story_docs(entry)),
-        ];
+        let mut children = vec![Content::new(
+            ComponentId(93005),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
+                    workbench::story_heading(93001, entry.title()),
+                    text(93002, workbench::story_docs(entry)),
+                ],
+                flexible_child: None,
+            },
+        )];
         if entry.renderer() == "docs" {
             children.push(text(93003, workbench::overview_copy(entry)));
         } else {
-            children.extend(
-                workbench::entries()
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, item)| !item.component().is_empty())
-                    .map(|(i, item)| {
-                        Content::new(
-                            ComponentId(94000 + i as u64),
-                            tekes_ui_controls::composition::Button::new(format!(
-                                "{}{}",
-                                item.title(),
-                                if item.planned() { " · planned" } else { "" }
-                            )),
-                        )
-                    }),
-            );
+            let items = workbench::entries()
+                .iter()
+                .enumerate()
+                .filter(|(_, item)| !item.component().is_empty())
+                .map(|(i, item)| {
+                    Content::new(
+                        ComponentId(94000 + i as u64),
+                        tekes_ui_controls::composition::Button::new(format!(
+                            "{}{}",
+                            item.title(),
+                            if item.planned() { " · planned" } else { "" }
+                        )),
+                    )
+                })
+                .collect();
+            children.push(Content::new(
+                ComponentId(93006),
+                ListContent::new(entry.title(), items),
+            ));
         }
         let mut host = ContentHost::new(Content::new(
             ComponentId(93000),
-            ListContent::scrollable(entry.title(), ComponentId(93004), children)
-                .content_padding(16.),
+            ScrollContent::document(StackContent::document_sections(
+                ComponentId(93004),
+                children,
+            )),
         ))
         .map_err(|error| anyhow::anyhow!("Gallery reference: {error:?}"))?;
         host.set_action_events(true);
@@ -822,7 +846,7 @@ impl ContainerContent for NavContent {
         let page = self.state.borrow().selection().page.clone();
         if self.page != page {
             for section in &self.sections {
-                let key = section.items.iter().find_map(|(candidate, _)| {
+                let key = section.items.iter().find_map(|candidate| {
                     let super::Page::Workbench(index) = candidate;
                     (workbench::entries()[*index].slug() == directory_page(&page))
                         .then_some(ListItemKey(*index as u64 + 1))
@@ -872,35 +896,18 @@ fn navigation(state: SharedWorkbench) -> anyhow::Result<LocalContainer> {
     let sections = navigation_sections("");
     let selected = workbench::route(directory_page(&state.borrow().selection().page))
         .expect("registered current page");
-    let inset = Spacing::Loose.value();
-    let search = StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 0.,
-        },
-        children: vec![Content::new(
-            FILTER,
-            SearchFieldContent::new("Filter Gallery pages", ""),
-        )],
-        flexible_child: None,
-    }
-    .into_content_with_padding(
-        ComponentId(11),
-        tekes_ui_controls::layout::Insets::new(inset, inset, 0., inset),
-    );
-    let root = Content::new(
+    let section_contents = sections
+        .iter()
+        .map(|section| super::navigation::section_content(section, selected))
+        .collect();
+    let root = ListContent::scrollable_with_header(
         ComponentId(10),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            children: vec![
-                search,
-                super::navigation::directory_content(&sections, selected),
-            ],
-            flexible_child: Some(super::navigation::SCROLL),
-        },
+        ComponentId(11),
+        super::navigation::SCROLL,
+        super::navigation::LIST,
+        "Components",
+        Content::new(FILTER, SearchFieldContent::new("Filter Gallery pages", "")),
+        section_contents,
     );
     let mut host =
         ContentHost::new(root).map_err(|error| anyhow::anyhow!("Gallery navigation: {error:?}"))?;
@@ -916,7 +923,6 @@ fn navigation(state: SharedWorkbench) -> anyhow::Result<LocalContainer> {
             sections,
         },
     )
-    .content_padding(0.)
     .search_entry(FILTER)
     .on_action(move |_, records| {
         for record in records {
@@ -930,7 +936,7 @@ fn navigation(state: SharedWorkbench) -> anyhow::Result<LocalContainer> {
                     ListIntentKind::Activated => Some(intent.key),
                     ListIntentKind::SelectionChanged => intent.selected_key,
                 };
-                if let Some(index) = section.items.iter().find_map(|(page, _)| {
+                if let Some(index) = section.items.iter().find_map(|page| {
                     let super::Page::Workbench(index) = page;
                     (key == Some(ListItemKey(*index as u64 + 1))).then_some(*index)
                 }) {

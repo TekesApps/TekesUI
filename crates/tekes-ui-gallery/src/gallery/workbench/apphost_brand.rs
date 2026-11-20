@@ -413,7 +413,37 @@ impl BrandStory {
                 arranged: false,
             },
         );
-        let document = Content::new(ComponentId(120060), ListContent::scrollable("Brand candidate matrix", ComponentId(120001), vec![text(120002, "Choose a hue direction"), text(120003, "Selecting a direction prepares a compiler-generated candidate. It does not change the app palette; only Confirm use applies it globally."), grid(120004, directions, 480., 2, 4), grid(120005, vec![current, candidate], 720., 1, 2)]).content_padding(20.));
+        let intro = Content::new(
+            ComponentId(120006),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
+                    Content::new(
+                        ComponentId(120002),
+                        TextContent::heading("Choose a hue direction"),
+                    ),
+                    text(
+                        120003,
+                        "Selecting a direction prepares a compiler-generated candidate. It does not change the app palette; only Confirm use applies it globally.",
+                    ),
+                ],
+                flexible_child: None,
+            },
+        );
+        let document = Content::new(
+            ComponentId(120060),
+            ScrollContent::document(StackContent::document_sections(
+                ComponentId(120001),
+                vec![
+                    intro,
+                    grid(120004, directions, 480., 2, 4),
+                    grid(120005, vec![current, candidate], 720., 1, 2),
+                ],
+            )),
+        );
         let host = ContentHost::new(super::apphost_layout::dialog_viewport(
             ComponentId(120000),
             vec![document, dialog],

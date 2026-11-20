@@ -5,9 +5,13 @@ use crate::gallery::locale::Locale;
 use tekes_ui_controls::{
     composition::*,
     extended::{Axis, Stack},
+    layout::Insets,
 };
+use tekes_ui_tokens::Spacing;
 const ROOT: ComponentId = ComponentId(99100);
 const COPY: ComponentId = ComponentId(99103);
+const HEADER: ComponentId = ComponentId(99106);
+const SPECIMEN_WRAP: ComponentId = ComponentId(99107);
 const COMMAND: u64 = 99200;
 pub(crate) struct AppHostDocuments {
     pub(crate) host: ContentHost,
@@ -27,18 +31,30 @@ impl AppHostDocuments {
             .unwrap_or_default();
         let (live, calibration) = Self::live(entry.renderer(), locale);
         let live_id = live.id();
+        let inset = Spacing::Loose.value();
+        let header = StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: Spacing::Regular.value(),
+            },
+            children: vec![
+                super::story_heading(99101, entry.title()),
+                super::apphost_basic::section_bar(entry, COMMAND),
+            ],
+            flexible_child: None,
+        }
+        .into_content_with_padding(
+            HEADER,
+            Insets::new(inset, inset, Spacing::Regular.value(), inset),
+        );
         let mut host = ContentHost::new(Content::new(
             ROOT,
             StackContent {
                 model: Stack {
                     axis: Axis::Vertical,
-                    gap: 12.,
+                    gap: 0.,
                 },
-                children: vec![
-                    super::story_heading(99101, entry.title()),
-                    super::apphost_basic::section_bar(entry, COMMAND),
-                    live,
-                ],
+                children: vec![header, live],
                 flexible_child: Some(live_id),
             },
         ))
@@ -58,18 +74,31 @@ impl AppHostDocuments {
         renderer: &str,
         locale: Locale,
     ) -> (Content, Option<apphost_text_pages::CalibrationPage>) {
+        let inset = Spacing::Loose.value();
+        let content_insets = Insets::new(Spacing::Regular.value(), inset, inset, inset);
         if renderer == "calibration" {
             let page = apphost_text_pages::CalibrationPage::new(locale);
             let live = Content::new(
                 ComponentId(99105),
-                ScrollContent::new(tekes_ui_controls::ScrollArea::default(), page.content()),
+                ScrollContent::new(tekes_ui_controls::ScrollArea::default(), page.content())
+                    .content_insets(content_insets)
+                    .scrollbar(true),
             );
             (live, Some(page))
         } else {
-            (
-                apphost_text_pages::content(renderer, locale).expect("supported document renderer"),
-                None,
-            )
+            let live =
+                apphost_text_pages::content(renderer, locale).expect("supported document renderer");
+            let id = live.id();
+            let wrapped = StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: 0.,
+                },
+                children: vec![live],
+                flexible_child: Some(id),
+            }
+            .into_content_with_padding(SPECIMEN_WRAP, content_insets);
+            (wrapped, None)
         }
     }
     pub(crate) fn prepare_resources(
@@ -92,20 +121,27 @@ impl AppHostDocuments {
         if section == 0 {
             lines.extend(super::contract_summary(self.entry));
         }
+        let inset = Spacing::Loose.value();
         Content::new(
             COPY,
-            ListContent::scrollable(
-                "Document story guidance",
-                ComponentId(99104),
-                lines
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, line)| {
-                        Content::new(ComponentId(99110 + i as u64), TextContent::new(line))
-                    })
-                    .collect(),
+            ScrollContent::new(
+                tekes_ui_controls::ScrollArea::default(),
+                Content::new(
+                    ComponentId(99104),
+                    ListContent::new(
+                        "Document story guidance",
+                        lines
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, line)| {
+                                Content::new(ComponentId(99110 + i as u64), TextContent::new(line))
+                            })
+                            .collect(),
+                    ),
+                ),
             )
-            .content_padding(16.),
+            .content_insets(Insets::new(Spacing::Regular.value(), inset, inset, inset))
+            .scrollbar(true),
         )
     }
     pub(crate) fn select_section(&mut self, section: usize) {

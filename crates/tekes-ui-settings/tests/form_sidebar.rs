@@ -309,9 +309,10 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap();
     assert_eq!(root.children().len(), 2);
     assert!(root.children()[1].component::<ScrollContent>().is_some());
-    let header_inset = root.children()[0].component::<StackContent>().unwrap();
-    assert_eq!(header_inset.children().len(), 1);
-    let header = header_inset.children()[0]
+    let header = sidebar
+        .host()
+        .get(ComponentId(5))
+        .unwrap()
         .component::<StackContent>()
         .unwrap();
     assert_eq!(
@@ -336,10 +337,43 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     assert!(back_mount.is_some() && scroll_mount.is_some());
     let search = sidebar.host().get(ComponentId(10)).unwrap().frame();
     let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+    let header_frame = sidebar.host().get(ComponentId(5)).unwrap().frame();
+    let scroll_frame = sidebar.host().get(ComponentId(1)).unwrap().frame();
+    let first_heading = sidebar.host().get(ComponentId(100)).unwrap().frame();
+    let first_list = sidebar.host().get(ComponentId(101)).unwrap().frame();
+    let second_heading = sidebar.host().get(ComponentId(102)).unwrap().frame();
     assert_eq!(search.center().y, back.center().y);
     assert_eq!(
         back.min_x(),
         frame.min_x() + tekes_ui_tokens::Spacing::Loose.value()
+    );
+    assert_eq!(
+        header_frame.min_y(),
+        frame.min_y() + tekes_ui_tokens::Spacing::Loose.value()
+    );
+    assert_eq!(
+        scroll_frame.min_y() - header_frame.max_y(),
+        tekes_ui_tokens::Spacing::Regular.value(),
+        "pinned header keeps 8pt clip clearance above scrolling list"
+    );
+    assert_eq!(scroll_frame.max_x(), frame.max_x());
+    assert_eq!(
+        first_heading.min_x(),
+        back.min_x(),
+        "sidebar header and scrolled group headings align on leading edge"
+    );
+    assert_eq!(
+        first_heading.min_y() - header_frame.max_y(),
+        tekes_ui_tokens::Spacing::Loose.value(),
+        "symmetric 16pt header-to-first-heading gap instead of fractured 28pt"
+    );
+    assert_eq!(
+        second_heading.min_y() - first_list.max_y(),
+        tekes_ui_controls::composition::ListContent::SECTION_GAP
+    );
+    assert_eq!(
+        first_list.min_y() - first_heading.max_y(),
+        tekes_ui_controls::composition::ListContent::SECTION_GAP
     );
     assert_eq!(
         search.max_x(),

@@ -230,9 +230,11 @@ pub(super) fn matrix(renderer: &str) -> Vec<Content> {
     cases
         .into_iter()
         .enumerate()
-        .flat_map(|(i, (title, state))| {
-            [
-                Content::new(ComponentId(101100 + i as u64 * 2), TextContent::new(title)),
+        .map(|(i, (title, state))| {
+            StackContent::labeled_specimen(
+                ComponentId(101150 + i as u64),
+                ComponentId(101100 + i as u64 * 2),
+                title,
                 Content::new(
                     ComponentId(101101 + i as u64 * 2),
                     Fixture {
@@ -242,7 +244,7 @@ pub(super) fn matrix(renderer: &str) -> Vec<Content> {
                             .expect("canonical disclosure glyph"),
                     },
                 ),
-            ]
+            )
         })
         .collect()
 }

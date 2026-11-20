@@ -203,13 +203,16 @@ fn settings_columns(
                 sidebar: true,
             },
         )),
-        crate::Column::from(crate::LocalContainer::from_source(
-            "settings-center",
-            SettingsColumn {
-                state: surface.clone(),
-                sidebar: false,
-            },
-        )),
+        crate::Column::from(
+            crate::LocalContainer::from_source(
+                "settings-center",
+                SettingsColumn {
+                    state: surface.clone(),
+                    sidebar: false,
+                },
+            )
+            .content_padding(tekes_ui_tokens::Spacing::Loose.value()),
+        ),
     ]
 }
 impl Host {

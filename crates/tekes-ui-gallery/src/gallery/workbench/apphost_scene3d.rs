@@ -393,19 +393,26 @@ impl AppHostScene3D {
                 flexible_child: None,
             },
         );
-        let mut host = ContentHost::new(Content::new(
-            ROOT,
-            ListContent::scrollable(
-                "Scene3D stories",
-                ROWS,
-                vec![
+        let intro = Content::new(
+            ComponentId(95008),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
                     super::story_heading(95004, entry.title()),
                     text(95005, super::story_docs(entry)),
-                    commands,
-                    Self::body(entry, true, state.clone()),
                 ],
-            )
-            .content_padding(16.),
+                flexible_child: None,
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            ROOT,
+            ScrollContent::document(StackContent::document_sections(
+                ROWS,
+                vec![intro, commands, Self::body(entry, true, state.clone())],
+            )),
         ))
         .map_err(|e| anyhow::anyhow!("Scene3D host: {e:?}"))?;
         host.set_action_events(true);
@@ -426,7 +433,7 @@ impl AppHostScene3D {
                         gap: 12.,
                     },
                     children: vec![
-                        text(95007, "Playground"),
+                        Content::new(ComponentId(95007), TextContent::heading("Playground")),
                         Content::new(SPECIMEN, PreviewContent(state)),
                     ],
                     flexible_child: None,

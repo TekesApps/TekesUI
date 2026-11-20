@@ -65,28 +65,19 @@ pub(super) fn matrix(state: &StoryState) -> Content {
         field.label = "Workspace name".into();
         field.help = "Use a clear name for your workspace.".into();
         field.error = control.error.then(|| "A name is required.".into());
-        children.push(Content::new(
+        children.push(StackContent::labeled_specimen(
+            ComponentId(120150 + i as u64),
             ComponentId(120100 + i as u64 * 2),
-            TextContent::new(name),
-        ));
-        children.push(Content::new(
-            ComponentId(120101 + i as u64 * 2),
-            Fixture {
-                field,
-                view: FieldView::default(),
-                input: TextFixture::new(false, "default", control),
-            },
+            name,
+            Content::new(
+                ComponentId(120101 + i as u64 * 2),
+                Fixture {
+                    field,
+                    view: FieldView::default(),
+                    input: TextFixture::new(false, "default", control),
+                },
+            ),
         ));
     }
-    Content::new(
-        ComponentId(120099),
-        StackContent {
-            model: tekes_ui_controls::extended::Stack {
-                axis: tekes_ui_controls::extended::Axis::Vertical,
-                gap: 24.,
-            },
-            children,
-            flexible_child: None,
-        },
-    )
+    StackContent::panel_sections(ComponentId(120099), children)
 }

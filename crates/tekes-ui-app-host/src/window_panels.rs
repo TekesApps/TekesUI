@@ -101,13 +101,10 @@ impl Panel {
     pub(super) fn from_column(
         index: usize,
         column: crate::Column,
-        presentation: Option<&crate::PresentationState>,
+        _presentation: Option<&crate::PresentationState>,
     ) -> Self {
         let mut panel = Self::new(index as u32, column.id().to_owned());
         panel.options = column.options().clone();
-        if presentation.is_some_and(|state| state.nav_bar_id() != Some(panel.module_id.as_str())) {
-            panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();
-        }
         if let Some(padding) = panel.options.content_padding {
             panel.content_padding = padding;
         }

@@ -143,10 +143,6 @@ impl SettingsSidebar {
             ));
             next += 1;
         }
-        let scroll = Content::new(
-            ComponentId(1),
-            ListContent::scrollable("Settings", ComponentId(2), groups),
-        );
         let root = if back {
             let mut back_button = Button::new("〈 返回")
                 .with_accessible_name("返回主窗口")
@@ -177,38 +173,20 @@ impl SettingsSidebar {
                 ComponentId(5),
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween,
             );
-            Content::new(
+            ListContent::scrollable_with_header(
                 ComponentId(3),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: tekes_ui_tokens::Spacing::Relaxed.value(),
-                    },
-                    children: vec![
-                        StackContent {
-                            model: Stack {
-                                axis: Axis::Vertical,
-                                gap: 0.,
-                            },
-                            flexible_child: None,
-                            children: vec![header],
-                        }
-                        .into_content_with_padding(
-                            ComponentId(12),
-                            tekes_ui_controls::layout::Insets::new(
-                                tekes_ui_tokens::Spacing::Loose.value(),
-                                tekes_ui_tokens::Spacing::Loose.value(),
-                                0.,
-                                tekes_ui_tokens::Spacing::Loose.value(),
-                            ),
-                        ),
-                        scroll,
-                    ],
-                    flexible_child: Some(ComponentId(1)),
-                },
+                ComponentId(12),
+                ComponentId(1),
+                ComponentId(2),
+                "Settings",
+                header,
+                groups,
             )
         } else {
-            scroll
+            Content::new(
+                ComponentId(1),
+                ListContent::scrollable("Settings", ComponentId(2), groups),
+            )
         };
         let mut host = ContentHost::new(root)
             .map_err(|e| SettingsError::Ui(format!("Settings sidebar: {e:?}")))?;

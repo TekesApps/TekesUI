@@ -2695,6 +2695,65 @@ mod toolbar_geometry_tests {
             });
     }
     #[test]
+    fn default_container_padding_is_zero_so_scroll_list_owns_single_document_inset() {
+        use tekes_ui_controls::composition::{Content, ListContent, TextContent};
+        let padding = tekes_ui_tokens::Spacing::Loose.value();
+        let local = crate::LocalContainer::new(
+            "pane",
+            Content::new(
+                ComponentId(40),
+                ListContent::scrollable(
+                    "Body",
+                    ComponentId(41),
+                    vec![Content::new(
+                        ComponentId(42),
+                        TextContent::new("Actual body"),
+                    )],
+                ),
+            ),
+        )
+        .unwrap();
+        let mut host = crate::AppWindow::from_containers(
+            vec![local.into()],
+            crate::PresentationOptions::new("pane"),
+        )
+        .unwrap()
+        .into_host(false);
+        host.mount_columns();
+        assert_eq!(host.panel_mgr.panels[0].content_padding, 0.);
+        let bounds = Rect::new(0., 0., 300., 260.);
+        host.panel_geometry(0, bounds, 1., 48., 0.).unwrap();
+        let frame = host.panel_mgr.panels[0].content_frame();
+        assert_eq!(frame.min_x(), bounds.min_x());
+        assert_eq!(frame.max_x(), bounds.max_x());
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |content| {
+                let items = content.get(ComponentId(41)).unwrap().frame();
+                assert_eq!(items.min_x() - bounds.min_x(), padding);
+                assert_eq!(bounds.max_x() - items.max_x(), padding);
+                assert_eq!(items.min_y() - frame.min_y(), padding);
+                let actual = content.get(ComponentId(42)).unwrap().frame();
+                assert_eq!(actual.min_x(), items.min_x());
+                assert_eq!(actual.min_y(), items.min_y());
+                assert!(actual.max_x() <= items.max_x());
+            });
+    }
+    #[test]
     fn ordinary_others_uses_one_row_and_one_padding_for_local_and_wire_geometry() {
         let mut panel = Panel::new(0, "hidden-worker".into());
         panel.content_padding = tekes_ui_tokens::Spacing::Loose.value();

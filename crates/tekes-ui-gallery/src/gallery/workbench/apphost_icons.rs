@@ -194,22 +194,33 @@ impl AppHostIcons {
             query: String::new(),
             error: None,
         }));
-        let mut host = ContentHost::new(Content::new(
-            ROOT,
-            ListContent::scrollable(
-                "Icon catalogue",
-                ROWS,
-                vec![
+        let intro = Content::new(
+            ComponentId(98507),
+            StackContent {
+                model: tekes_ui_controls::extended::Stack {
+                    axis: tekes_ui_controls::extended::Axis::Vertical,
+                    gap: StackContent::SECTION_HEADER_GAP,
+                },
+                children: vec![
                     super::story_heading(98503, entry.title()),
                     Content::new(
                         ComponentId(98504),
                         TextContent::new(super::story_docs(entry)),
                     ),
+                ],
+                flexible_child: None,
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            ROOT,
+            ScrollContent::document(StackContent::document_sections(
+                ROWS,
+                vec![
+                    intro,
                     super::apphost_basic::section_bar(entry, COMMAND),
                     Self::playground(state.clone()),
                 ],
-            )
-            .content_padding(16.),
+            )),
         ))
         .map_err(|e| anyhow::anyhow!("Icons host: {e:?}"))?;
         host.set_action_events(true);
@@ -229,7 +240,7 @@ impl AppHostIcons {
             ListContent::new(
                 "Playground",
                 vec![
-                    Content::new(ComponentId(98506), TextContent::new("Playground")),
+                    Content::new(ComponentId(98506), TextContent::heading("Playground")),
                     Content::new(SEARCH, search),
                     Content::new(SPECIMEN, Catalogue(state)),
                 ],
@@ -703,5 +714,34 @@ mod tests {
             }
         }
         assert!(sampled >= 3);
+    }
+    #[test]
+    fn apphost_icons_catalogue_starts_without_ghost_search_offset_below_real_search() {
+        let mut page = page();
+        let mut text = TextEngine::new();
+        let mut images = Images::default();
+        let scene = draw(&mut page, &mut text, &mut images, 800.).unwrap();
+        let search = page.host.get(SEARCH).unwrap().frame();
+        let specimen = page.host.get(SPECIMEN).unwrap().frame();
+        assert!(specimen.min_y() >= search.max_y());
+        let first_card = scene
+            .primitives()
+            .iter()
+            .filter_map(|p| match p {
+                Primitive::Quad(q)
+                    if q.rect.min_x() >= specimen.min_x() - 0.1
+                        && q.rect.min_y() >= specimen.min_y()
+                        && q.rect.size.height >= 140. =>
+                {
+                    Some(q.rect)
+                }
+                _ => None,
+            })
+            .min_by(|a, b| a.min_y().total_cmp(&b.min_y()))
+            .expect("first icon catalogue tile");
+        assert!(
+            (first_card.min_y() - specimen.min_y() - 64.0).abs() < 0.1,
+            "catalogue must not reserve a phantom 48pt search offset inside SPECIMEN: card={first_card:?} specimen={specimen:?}"
+        );
     }
 }

@@ -29,16 +29,23 @@ pub(crate) fn destination(id: ComponentId) -> Option<&'static str> {
         .map(|g| g.0)
 }
 pub(crate) fn index_host(entry: &'static super::Entry) -> anyhow::Result<ContentHost> {
-    let mut children = vec![super::story_heading(100001, entry.title())];
-    children.extend(
-        GROUPS
-            .iter()
-            .enumerate()
-            .map(|(i, g)| Content::new(ComponentId(GROUP_ACTION + i as u64), Button::new(g.2))),
-    );
+    let items = GROUPS
+        .iter()
+        .enumerate()
+        .map(|(i, g)| Content::new(ComponentId(GROUP_ACTION + i as u64), Button::new(g.2)))
+        .collect();
     let mut host = ContentHost::new(Content::new(
         ComponentId(100000),
-        ListContent::scrollable("Cross-component consistency", ComponentId(100002), children),
+        ScrollContent::document(StackContent::document_sections(
+            ComponentId(100002),
+            vec![
+                super::story_heading(100001, entry.title()),
+                Content::new(
+                    ComponentId(100003),
+                    ListContent::new("Cross-component consistency", items),
+                ),
+            ],
+        )),
     ))
     .map_err(|e| anyhow::anyhow!("quality index: {e:?}"))?;
     host.set_action_events(true);
@@ -271,8 +278,7 @@ impl Component for Showcase {
 pub(crate) fn host_for(category: &'static str) -> anyhow::Result<ContentHost> {
     ContentHost::new(Content::new(
         ComponentId(100000),
-        ListContent::scrollable(
-            &catalog::group(category).name,
+        ScrollContent::document(StackContent::document_sections(
             ComponentId(100002),
             vec![
                 super::story_heading(100001, &catalog::group(category).name),
@@ -286,7 +292,7 @@ pub(crate) fn host_for(category: &'static str) -> anyhow::Result<ContentHost> {
                     },
                 ),
             ],
-        ),
+        )),
     ))
     .map_err(|e| anyhow::anyhow!("quality group: {e:?}"))
 }
@@ -336,14 +342,13 @@ impl Component for Geometry {
 pub(crate) fn geometry_host(entry: &'static super::Entry) -> anyhow::Result<ContentHost> {
     ContentHost::new(Content::new(
         ComponentId(100000),
-        ListContent::scrollable(
-            entry.title(),
+        ScrollContent::document(StackContent::document_sections(
             ComponentId(100002),
             vec![
                 super::story_heading(100001, entry.title()),
                 Content::new(PREVIEW, Geometry),
             ],
-        ),
+        )),
     ))
     .map_err(|e| anyhow::anyhow!("geometry calibration: {e:?}"))
 }

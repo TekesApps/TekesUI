@@ -162,14 +162,13 @@ pub(in crate::gallery::workbench) fn apphost_breadcrumb_matrix()
     breadcrumb_cases()
         .into_iter()
         .enumerate()
-        .flat_map(|(i, case)| {
-            [
-                Content::new(
-                    ComponentId(91700 + i as u64 * 2),
-                    TextContent::new(case.title),
-                ),
+        .map(|(i, case)| {
+            StackContent::labeled_specimen(
+                ComponentId(91750 + i as u64),
+                ComponentId(91700 + i as u64 * 2),
+                case.title,
                 Content::new(ComponentId(91701 + i as u64 * 2), BreadcrumbFixture(case)),
-            ]
+            )
         })
         .collect()
 }

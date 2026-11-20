@@ -1,7 +1,7 @@
 //! Documents and Inspector panel hosts for the AppHost Gallery workbench.
 
 use super::apphost_specimens::{Selection, specimens};
-use super::apphost_workbench::{CHOOSER, SharedWorkbench, list, rows, stack, text};
+use super::apphost_workbench::{CHOOSER, SharedWorkbench, list, rows, text};
 use super::workbench;
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_app_host::{ContainerContent, LocalContainer};
@@ -12,9 +12,10 @@ use tekes_ui_controls::{
         InspectionSnapshot, KeyValueTableContent, ListIntentKind, RichContent, RichDocument,
         ScrollContent, StackContent, TextContent, TextFieldContent,
     },
-    extended::{KeyedListItem, KeyedListSnapshot, ListDatasetKey, ListItemKey},
+    extended::{Axis, KeyedListItem, KeyedListSnapshot, ListDatasetKey, ListItemKey, Stack},
+    layout::Insets,
 };
-use tekes_ui_tokens::proposal::TextRole;
+use tekes_ui_tokens::{Spacing, proposal::TextRole};
 
 fn chooser_snapshot(selection: &Selection) -> KeyedListSnapshot {
     let items = std::iter::once(KeyedListItem {
@@ -97,6 +98,7 @@ pub(super) fn document_key(selection: &Selection) -> String {
 }
 
 pub(super) fn document_scroll(key: &str, source: &str) -> Content {
+    let inset = Spacing::Loose.value();
     Content::new(
         DOCUMENT_SCROLL,
         ScrollContent::new(
@@ -106,7 +108,9 @@ pub(super) fn document_scroll(key: &str, source: &str) -> Content {
                 RichContent::new(key, 1, RichDocument::from_markdown(source))
                     .expect("nonempty Gallery document identity"),
             ),
-        ),
+        )
+        .content_insets(Insets::new(Spacing::Regular.value(), inset, inset, inset))
+        .scrollbar(true),
     )
 }
 
@@ -369,14 +373,7 @@ pub(super) fn inspector_body(
 fn inspector_sections(groups: &[InspectorGroup], mut next_id: u64) -> Vec<Content> {
     let mut sections = Vec::new();
     for (index, group) in groups.iter().enumerate() {
-        let heading = Content::new(
-            ComponentId(10_000 + index as u64 * 2),
-            TextContent {
-                text: group.title.into(),
-                role: TextRole::UiHeading,
-            },
-        );
-        let table_id = ComponentId(10_001 + index as u64 * 2);
+        let base = 10_000 + index as u64 * 3;
         let mut rows = Vec::new();
         for (label, value) in &group.rows {
             rows.push((
@@ -388,8 +385,13 @@ fn inspector_sections(groups: &[InspectorGroup], mut next_id: u64) -> Vec<Conten
             ));
             next_id += 2;
         }
-        sections.push(heading);
-        sections.push(Content::new(table_id, KeyValueTableContent::new(rows)));
+        sections.push(KeyValueTableContent::section(
+            ComponentId(base),
+            ComponentId(base + 1),
+            group.title,
+            ComponentId(base + 2),
+            rows,
+        ));
     }
     sections
 }
@@ -447,7 +449,10 @@ impl PanelContent {
                         self.host
                             .insert(
                                 DOCUMENT_SCROLL,
-                                stack(DOCUMENT_READER.0, inspector_sections(&groups, 10_010)),
+                                StackContent::panel_sections(
+                                    DOCUMENT_READER,
+                                    inspector_sections(&groups, 10_100),
+                                ),
                             )
                             .expect("Inspector scroll content");
                     } else {
@@ -463,81 +468,93 @@ impl PanelContent {
                             .unwrap()
                             .children
                             .iter()
+                            .filter_map(|section| section.component::<StackContent>())
+                            .flat_map(|stack| stack.children.iter())
                             .filter_map(|node| node.component::<KeyValueTableContent>())
                             .flat_map(|table| table.cells().iter().map(|cell| cell.id().0))
                             .max()
-                            .map_or(10_010, |id| id + 1);
-                        for (index, section) in
+                            .map_or(10_100, |id| id + 1);
+                        for (group, section) in
                             inspector_sections(&groups, next_id).into_iter().enumerate()
                         {
-                            let group = index / 2;
                             if self.inspector_groups.get(group) == groups.get(group) {
                                 continue;
                             }
-                            if self.inspector_groups[group]
-                                .rows
-                                .iter()
-                                .map(|(label, _)| label)
-                                .eq(groups[group].rows.iter().map(|(label, _)| label))
-                            {
-                                if index % 2 == 1 {
-                                    let values: Vec<_> = self
-                                        .host
-                                        .get(section.id())
-                                        .unwrap()
-                                        .component::<KeyValueTableContent>()
-                                        .unwrap()
-                                        .cells()
-                                        .chunks_exact(2)
-                                        .zip(&groups[group].rows)
-                                        .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
-                                        .collect();
-                                    for (id, value) in values {
-                                        if self.host.text_surface(id).unwrap().text() == value {
-                                            continue;
-                                        }
-                                        let field = self
-                                            .host
-                                            .get_mut(id)
-                                            .unwrap()
-                                            .component_mut::<TextFieldContent>()
-                                            .unwrap();
-                                        let baseline = field.surface.input().external_baseline();
-                                        let revision = tekes_ui_controls::DraftRevision {
-                                            identity: "gallery-inspector-value".into(),
-                                            version: field
-                                                .surface
-                                                .input()
-                                                .external_value()
-                                                .map_or(1, |v| v.version + 1),
-                                            payload: value,
-                                        };
-                                        let result = field.surface.apply_external_value(
-                                            &baseline,
-                                            &revision,
-                                            tekes_ui_controls::ExternalSelection::Reset,
-                                            tekes_ui_controls::ExternalUndo::Reset,
-                                        );
-                                        assert!(
-                                            matches!(
-                                                result,
-                                                tekes_ui_controls::ExternalValueResult::Applied { .. }
-                                            ),
-                                            "synchronous Inspector value publication: {result:?}"
-                                        );
+                            if self.inspector_groups.get(group).is_some_and(|prev| {
+                                prev.title == groups[group].title
+                                    && prev
+                                        .rows
+                                        .iter()
+                                        .map(|(label, _)| label)
+                                        .eq(groups[group].rows.iter().map(|(label, _)| label))
+                            }) {
+                                let table_id = ComponentId(10_002 + group as u64 * 3);
+                                let values: Vec<_> = self
+                                    .host
+                                    .get(table_id)
+                                    .unwrap()
+                                    .component::<KeyValueTableContent>()
+                                    .unwrap()
+                                    .cells()
+                                    .chunks_exact(2)
+                                    .zip(&groups[group].rows)
+                                    .map(|(cells, (_, value))| (cells[1].id(), value.clone()))
+                                    .collect();
+                                for (id, value) in values {
+                                    if self.host.text_surface(id).unwrap().text() == value {
+                                        continue;
                                     }
+                                    let field = self
+                                        .host
+                                        .get_mut(id)
+                                        .unwrap()
+                                        .component_mut::<TextFieldContent>()
+                                        .unwrap();
+                                    let baseline = field.surface.input().external_baseline();
+                                    let revision = tekes_ui_controls::DraftRevision {
+                                        identity: "gallery-inspector-value".into(),
+                                        version: field
+                                            .surface
+                                            .input()
+                                            .external_value()
+                                            .map_or(1, |v| v.version + 1),
+                                        payload: value,
+                                    };
+                                    let result = field.surface.apply_external_value(
+                                        &baseline,
+                                        &revision,
+                                        tekes_ui_controls::ExternalSelection::Reset,
+                                        tekes_ui_controls::ExternalUndo::Reset,
+                                    );
+                                    assert!(
+                                        matches!(
+                                            result,
+                                            tekes_ui_controls::ExternalValueResult::Applied { .. }
+                                        ),
+                                        "synchronous Inspector value publication: {result:?}"
+                                    );
                                 }
                                 continue;
                             }
-                            self.host
-                                .remove(section.id())
-                                .expect("mounted Inspector section");
+                            if self.host.get(section.id()).is_some() {
+                                self.host
+                                    .remove(section.id())
+                                    .expect("mounted Inspector section");
+                            }
                             self.host
                                 .insert(DOCUMENT_READER, section)
                                 .expect("Inspector section");
                         }
-                        let order: Vec<_> = (0..groups.len() * 2)
-                            .map(|index| ComponentId(10_000 + index as u64))
+                        for extra in groups.len()..self.inspector_groups.len() {
+                            let extra_id = ComponentId(10_000 + extra as u64 * 3);
+                            if self.host.get(extra_id).is_some() {
+                                self.host
+                                    .remove(extra_id)
+                                    .expect("retired Inspector section");
+                            }
+                        }
+                        let order: Vec<_> = (0..groups.len())
+                            .map(|index| ComponentId(10_000 + index as u64 * 3))
                             .collect();
                         self.host
                             .reorder(DOCUMENT_READER, &order)
@@ -611,42 +628,57 @@ pub(super) fn panel_source(
     state: SharedWorkbench,
     inspector: bool,
 ) -> anyhow::Result<PanelContent> {
+    let inset = Spacing::Loose.value();
     let snapshot = chooser_snapshot(state.borrow().selection());
-    let mut host = ContentHost::new(stack(
-        20,
-        vec![
-            Content::new(CHOOSER, list("Inspect specimen", &snapshot, 2000)),
-            if inspector {
-                Content::new(
-                    DOCUMENT_SCROLL,
-                    ScrollContent::new(ScrollArea::default(), stack(DOCUMENT_READER.0, Vec::new()))
-                        .scrollbar(true),
-                )
-            } else {
-                let selection = state.borrow().selection().clone();
-                document_scroll(&document_key(&selection), &document_body(&selection))
+    let mut header_children = vec![Content::new(
+        CHOOSER,
+        list("Inspect specimen", &snapshot, 2000),
+    )];
+    if !inspector {
+        header_children.push(Content::new(
+            DOCUMENT_NOTICE,
+            TextContent::new(DOCUMENT_HELP),
+        ));
+    }
+    let header = StackContent {
+        model: Stack {
+            axis: Axis::Vertical,
+            gap: Spacing::Regular.value(),
+        },
+        children: header_children,
+        flexible_child: None,
+    }
+    .into_content_with_padding(
+        ComponentId(25),
+        Insets::new(inset, inset, Spacing::Regular.value(), inset),
+    );
+    let body = if inspector {
+        Content::new(
+            DOCUMENT_SCROLL,
+            ScrollContent::new(
+                ScrollArea::default(),
+                StackContent::panel_sections(DOCUMENT_READER, Vec::new()),
+            )
+            .content_insets(Insets::new(Spacing::Regular.value(), inset, inset, inset))
+            .scrollbar(true),
+        )
+    } else {
+        let selection = state.borrow().selection().clone();
+        document_scroll(&document_key(&selection), &document_body(&selection))
+    };
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(20),
+        StackContent {
+            model: Stack {
+                axis: Axis::Vertical,
+                gap: 0.,
             },
-        ],
+            children: vec![header, body],
+            flexible_child: Some(DOCUMENT_SCROLL),
+        },
     ))
     .map_err(|error| anyhow::anyhow!("Gallery panel: {error:?}"))?;
-    if !inspector {
-        host.insert(
-            ComponentId(20),
-            Content::new(DOCUMENT_NOTICE, TextContent::new(DOCUMENT_HELP)),
-        )
-        .expect("Gallery document help");
-        host.reorder(
-            ComponentId(20),
-            &[CHOOSER, DOCUMENT_NOTICE, DOCUMENT_SCROLL],
-        )
-        .expect("Gallery document order");
-    }
     host.set_action_events(true);
-    host.get_mut(ComponentId(20))
-        .unwrap()
-        .component_mut::<StackContent>()
-        .unwrap()
-        .flexible_child = Some(ComponentId(22));
     Ok(PanelContent {
         host,
         state,

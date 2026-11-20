@@ -287,17 +287,16 @@ pub(super) fn variants() -> Vec<Content> {
     VARIANTS
         .into_iter()
         .enumerate()
-        .flat_map(|(i, ratio)| {
-            [
-                Content::new(
-                    ComponentId(123100 + i as u64 * 2),
-                    TextContent::new(format!("Leading {:.0}%", ratio * 100.)),
-                ),
+        .map(|(i, ratio)| {
+            StackContent::labeled_specimen(
+                ComponentId(123150 + i as u64),
+                ComponentId(123100 + i as u64 * 2),
+                format!("Leading {:.0}%", ratio * 100.),
                 Content::new(
                     ComponentId(123101 + i as u64 * 2),
                     Variant(SplitView::new(ratio)),
                 ),
-            ]
+            )
         })
         .collect()
 }
