@@ -2,12 +2,7 @@
 //! caller-provided popup position or second overlay engine is used for painting.
 use std::path::Path;
 use tekes_ui_composition_consumer::hover_preview::*;
-use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*, layout::MeasuredChild};
 use tekes_ui_platform_macos::selftest::Action;
 use tekes_ui_scene::{Rect, Size};
 const ROW: ComponentId = ComponentId(24800);
@@ -43,14 +38,10 @@ impl Review {
         let b = f.host.remove(TICK_B).unwrap();
         let row = Content::new(
             ROW,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![Content::new(SPACE, AnchorSpace { width: 0. }), a, b],
-            },
+            StackContent::horizontal(
+                8.,
+                vec![Content::new(SPACE, AnchorSpace { width: 0. }), a, b],
+            ),
         );
         f.host.insert(ROOT, row).unwrap();
         // A data update requires a laid-out anchor. This initial fixture body is

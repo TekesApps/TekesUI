@@ -209,8 +209,8 @@ fn text_content_retained_themes_keep_semantic_text_role_and_actual_canvas_ink() 
             .unwrap()
             .component::<TextContent>()
             .unwrap();
-        assert_eq!(body.text, source);
-        assert_eq!(body.role, proposal::TextRole::UiBody);
+        assert_eq!(body.text(), source);
+        assert_eq!(body.role(), proposal::TextRole::UiBody);
         let semantics = host.semantics();
         assert_eq!(semantics.len(), 1);
         assert_eq!(semantics[0].semantics.role, ContentRole::Text);

@@ -1,10 +1,6 @@
 //! Public passive solid badge with ordinary Text, independent actions and original Composer.
 use crate::scroll_updates::{COMPOSER, LATEST, ROOT, SCROLLER, Scenario};
-use tekes_ui_controls::{
-    ButtonTextRenderer, ReadingDocumentVersion,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextRenderer, ReadingDocumentVersion, composition::*};
 use tekes_ui_scene::Rect;
 use tekes_ui_tokens::Spacing;
 pub const ROW: ComponentId = ComponentId(58000);
@@ -31,18 +27,14 @@ pub fn build() -> Result<(Scenario, ReadingDocumentVersion), CompositionError> {
         ROOT,
         Content::new(
             ROW,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Tight.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Tight.value(),
+                vec![
                     Content::new(LABEL, TextContent::new("Transfer")),
                     Content::new(BAR, badge),
                     Content::new(RESULT, TextContent::new("Awaiting verification")),
                 ],
-            },
+            ),
         ),
     )?;
     scenario

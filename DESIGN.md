@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.5` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.6` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 组合控件封装、列表行收敛与边界加固（`v0.4.6` / #370, #373, #380）
+
+- **共享图标-文本组合行（#370）**：`tekes-ui-controls::composition` 新增 `IconTextContent`（使用 `Spacing::Snug` = `6.0pt` 间距、弹性换行文本、去重装饰语义图标抑制与 `host_reveal_passthrough` 透传），迁移 `examples/composition-consumer` 的 `tree_content`、`selectable_list_content`、`datatable_content`，移除 `selectable_list_content.rs` 中的重复装饰器 `ConsumerDecoration`，仅在 `datatable_content.rs` 保留 1 个将 `Component` 钩子委托给 `IconTextContent` 的定制包装见证。
+- **列表内部节点封装与分节容器（#373）**：`ListContent::{name, rows}` 收紧为私有，保留 `items()` / `items_mut()` / `name()` / `gap()` 公开访问契约；`ListContent::section` 收口使用 crate 内部 `ListSectionContent`，在固定 2 槽与揭示透传不变式下保护内部行容器不被外部绕过。
+- **公开控件字段全面封装与 AppHost 去魔数（#380）**：`Button`、`StackContent`、`GridContent`、`ScrollContent`、`MenuContent`、`SwitchContent`、`SliderContent`、`DialogContent`、`PopoverContent`、`ProgressContent`、`LinkContent`、`TabsContent`、`SeparatorContent`、`TextContent`、`TabStripContent`、`NumberFieldContent` 与 `ContentTheme` 的可变 `pub` 字段统一收紧并通过显式构造函数、不可变读取器与验证 Setter 暴露（仅 `legacy_selectable_list::SelectableListContent` 保留历史 `pub` 字段）；`crates/tekes-ui-app-host/src/window_settings.rs` 全面清理生产与测试路径中的 `ComponentId(4)` 魔数硬编码并收敛为 `SettingsSidebar` 语义接口。完整原生窗口、实机 AX、物理 IME、VoiceOver 与 120Hz 性能验收仍作为独立证据类别保留在 `#56` 单独追踪。
 
 ### 共享表面路由、容器组合与演示收敛（`v0.4.5` / #379, #371）
 

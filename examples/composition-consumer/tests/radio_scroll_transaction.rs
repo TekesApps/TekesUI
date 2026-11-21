@@ -1,11 +1,7 @@
 #![cfg(target_os = "macos")]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    ControlKey, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ControlKey, ScrollArea, composition::*};
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Theme;
 const RADIO: ComponentId = ComponentId(10920);
@@ -18,20 +14,16 @@ fn fixture() -> (ContentHost, coretext::Text) {
             RadioGroupContent::new("Mode", vec!["One".into(), "Two".into(), "Three".into()]),
         ),
     );
-    scroll.viewport_height = Some(110.);
+    scroll.set_viewport_height(Some(110.));
     let mut h = ContentHost::new(Content::new(
         ComponentId(10900),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(EDITOR, TextFieldContent::new("Composer", "Draft A😀B")),
                 Content::new(ComponentId(10910), scroll),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);

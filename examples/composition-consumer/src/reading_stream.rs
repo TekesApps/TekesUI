@@ -1,11 +1,7 @@
 //! Caller-owned streamed text source. Reading, input, focus and actions stay in
 //! the existing public controls; this example supplies only arrivals and UI.
 use std::time::Duration;
-use tekes_ui_controls::{
-    ReadingController, TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingController, TextSurface, composition::*};
 use tekes_ui_tokens::Spacing;
 
 pub const ROOT: ComponentId = ComponentId(8800);
@@ -30,14 +26,7 @@ pub struct StreamState {
 fn row(id: u64, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children,
-        },
+        StackContent::horizontal(Spacing::Regular.value(), children),
     )
 }
 pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
@@ -56,13 +45,9 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
     composer.tab_policy = TextTabPolicy::Navigate;
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: Some(TRANSCRIPT),
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(
                     ComponentId(8809),
                     TextContent::new("阅读验收 · 追加不抢历史位置或草稿焦点"),
@@ -86,14 +71,15 @@ pub fn build() -> Result<(ContentHost, StreamState), CompositionError> {
                 Content::new(COMPOSER, composer),
                 Content::new(STATUS, TextContent::new("History · appended 0 · queued 0")),
             ],
-        },
+        )
+        .with_flexible_child(TRANSCRIPT),
     ))?;
     for id in [APPEND, STREAM, ZOOM, WIDTH] {
         host.get_mut(id)
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .variant = tekes_ui_controls::ButtonVariant::Quiet;
+            .set_variant(tekes_ui_controls::ButtonVariant::Quiet);
     }
     host.set_action_events(true);
     Ok((host, StreamState::default()))
@@ -158,15 +144,15 @@ impl StreamState {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = format!(
-            "{} · appended {} · queued {}",
-            if following {
-                "Following latest"
-            } else {
-                "History"
-            },
-            self.appended,
-            self.pending,
-        );
+            .set_text(format!(
+                "{} · appended {} · queued {}",
+                if following {
+                    "Following latest"
+                } else {
+                    "History"
+                },
+                self.appended,
+                self.pending,
+            ));
     }
 }

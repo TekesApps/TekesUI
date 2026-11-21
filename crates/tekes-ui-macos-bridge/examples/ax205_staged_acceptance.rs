@@ -107,8 +107,7 @@ mod native {
                 .unwrap()
                 .component::<SwitchContent>()
                 .unwrap()
-                .model
-                .checked,
+                .is_checked(),
             dialog_open: host
                 .get(DIALOG)
                 .unwrap()
@@ -369,8 +368,7 @@ mod native {
                                 .unwrap()
                                 .component::<SwitchContent>()
                                 .unwrap()
-                                .model
-                                .checked
+                                .is_checked()
                         );
                         self.publish_snapshot(window);
                         self.pending_evidence = Some(EvidencePhase::Value);

@@ -4,12 +4,7 @@ use super::Entry;
 use anyhow::Result;
 use std::{cell::RefCell, rc::Rc, time::Duration};
 use tekes_ui_app_host::ContainerRenderContext;
-use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*, layout::MeasuredChild};
 use tekes_ui_platform_macos as native;
 use tekes_ui_scene::{Rect, Scene, Size};
 
@@ -189,7 +184,7 @@ impl Component for PreviewContent {
         scene.push_clip(clip);
         state
             .preview
-            .paint_content(scene, frame, text, theme.palette);
+            .paint_content(scene, frame, text, theme.palette());
         if state.focused
             && state.focus_visible
             && let RequiredFocusSpace::Sufficient { witness, .. } = state.focus_space
@@ -199,7 +194,7 @@ impl Component for PreviewContent {
             tekes_ui_controls::extended::FocusRingMetrics::paint(
                 scene,
                 witness.inset(metrics.reserved_band()),
-                theme.palette,
+                theme.palette(),
                 0.,
             );
         }
@@ -381,12 +376,9 @@ impl AppHostScene3D {
         let state = Rc::new(RefCell::new(State::default()));
         let commands = Content::new(
             ComponentId(95006),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: tekes_ui_tokens::Spacing::Regular.value(),
-                },
-                children: vec![
+            StackContent::horizontal(
+                tekes_ui_tokens::Spacing::Regular.value(),
+                vec![
                     Content::new(
                         ComponentId(COMMAND + 1),
                         SegmentedControlContent::from_model(
@@ -402,22 +394,17 @@ impl AppHostScene3D {
                     ),
                     Content::new(ComponentId(COMMAND), Button::new("Reset")),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let intro = Content::new(
             ComponentId(95008),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     super::story_heading(95004, entry.title()),
                     text(95005, super::story_docs(entry)),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let mut host = ContentHost::new(Content::new(
             ROOT,
@@ -439,17 +426,13 @@ impl AppHostScene3D {
         if playground {
             Content::new(
                 BODY,
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 12.,
-                    },
-                    children: vec![
+                StackContent::vertical(
+                    12.,
+                    vec![
                         Content::new(ComponentId(95007), TextContent::heading("Playground")),
                         Content::new(SPECIMEN, PreviewContent(state)),
                     ],
-                    flexible_child: None,
-                },
+                ),
             )
         } else {
             Content::new(
@@ -647,8 +630,7 @@ mod tests {
                     .unwrap()
                     .component::<ScrollContent>()
                     .unwrap()
-                    .scroll
-                    .offset,
+                    .offset(),
                 state.frame,
                 state.clip,
             )
@@ -701,8 +683,7 @@ mod tests {
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset = Default::default();
+            .scroll_to(0., 0.);
         page.host
             .render(
                 &mut Scene::new(),
@@ -750,15 +731,13 @@ mod tests {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset;
+            .offset();
         page.host
             .get_mut(ROOT)
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset = Default::default();
+            .scroll_to(0., 0.);
         page.host
             .render(
                 &mut Scene::new(),
@@ -774,8 +753,7 @@ mod tests {
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset = offset;
+            .scroll_to(offset.x, offset.y);
         page.host
             .render(
                 &mut Scene::new(),

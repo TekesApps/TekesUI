@@ -11,7 +11,7 @@ fn apphost_all_registered_routes_mount_real_page_content() {
             .get(ComponentId(202))
             .and_then(|node| node.component::<TextContent>());
         assert!(
-            !notice.is_some_and(|copy| copy.text.starts_with("This route has not migrated")),
+            !notice.is_some_and(|copy| copy.text().starts_with("This route has not migrated")),
             "{}",
             entry.slug()
         );
@@ -464,15 +464,19 @@ fn apphost_workbench_inspector_replaces_retired_rows_and_keeps_unchanged_mount()
             .unwrap()
             .component::<StackContent>()
             .unwrap()
-            .children
+            .children()
             .iter()
             .filter_map(|section| section.component::<StackContent>())
-            .flat_map(|stack| stack.children.iter())
+            .flat_map(|stack| stack.children().iter())
             .filter_map(|node| node.component::<KeyValueTableContent>())
             .flat_map(|table| {
                 table.cells().chunks_exact(2).map(|pair| {
                     (
-                        pair[0].component::<TextContent>().unwrap().text.clone(),
+                        pair[0]
+                            .component::<TextContent>()
+                            .unwrap()
+                            .text()
+                            .to_owned(),
                         pair[1]
                             .component::<TextFieldContent>()
                             .unwrap()
@@ -618,8 +622,7 @@ fn apphost_workbench_inspector_scroll_preserves_mounts_and_skips_unchanged_snaps
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset
+                .offset()
                 .y;
             assert_eq!(host.semantic_mount(DOCUMENT_READER), reader_mount);
             let mounts: Vec<_> = host
@@ -649,13 +652,13 @@ fn inspector_value_id(host: &ContentHost, label: &str) -> ComponentId {
         .unwrap()
         .component::<StackContent>()
         .unwrap()
-        .children
+        .children()
         .iter()
         .filter_map(|section| section.component::<StackContent>())
-        .flat_map(|stack| stack.children.iter())
+        .flat_map(|stack| stack.children().iter())
         .filter_map(|node| node.component::<KeyValueTableContent>())
         .flat_map(|table| table.cells().chunks_exact(2))
-        .find(|pair| pair[0].component::<TextContent>().unwrap().text == label)
+        .find(|pair| pair[0].component::<TextContent>().unwrap().text() == label)
         .unwrap()[1]
         .id()
 }
@@ -792,7 +795,6 @@ fn apphost_workbench_inspector_layout_value_survives_invalidation_and_copies_cur
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
             .scroll_by(0., y - 300.);
     });
     render_panel(&mut inspector, &mut text);
@@ -1257,7 +1259,7 @@ fn apphost_workbench_link_reader_focus_waits_for_host_layout_then_accepts_keyboa
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .flexible_child = Some(DOCUMENT_SCROLL);
+        .set_flexible_child(Some(DOCUMENT_SCROLL));
     let mut panel = PanelContent {
         host,
         state,
@@ -1368,12 +1370,12 @@ fn apphost_workbench_unbundled_link_reports_without_replacing_reader() {
             host.accessibility_action(DOCUMENT_READER, Some(part), AccessibilityAction::Press);
             consume_document_links(host, &document_focus);
             assert_eq!(host.semantic_mount(DOCUMENT_READER), mount);
-            let notice = &host
+            let notice = host
                 .get(DOCUMENT_NOTICE)
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text;
+                .text();
             assert!(notice.contains("Link not opened"));
             assert!(notice.contains(target));
         });
@@ -1497,12 +1499,12 @@ fn apphost_display_progress_and_nested_panel_actions_keep_original_owners() {
                     .consumed,
                 "passive owner is not the nested action"
             );
-            let log = &host
+            let log = host
                 .get(ComponentId(92003))
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text;
+                .text();
             if route == "component-progress" {
                 assert_eq!(log.matches("progress:").count(), 4);
                 assert_eq!(
@@ -1510,7 +1512,7 @@ fn apphost_display_progress_and_nested_panel_actions_keep_original_owners() {
                         .unwrap()
                         .component::<TextContent>()
                         .unwrap()
-                        .text,
+                        .text(),
                     "100%"
                 );
                 assert!(
@@ -1518,9 +1520,7 @@ fn apphost_display_progress_and_nested_panel_actions_keep_original_owners() {
                         .unwrap()
                         .component::<Button>()
                         .unwrap()
-                        .button
-                        .state
-                        .disabled
+                        .is_disabled()
                 );
                 assert!(
                     !host
@@ -1566,7 +1566,7 @@ fn apphost_section_bar_keeps_one_row_and_reveals_last_command_at_narrow_width() 
                     .unwrap()
                     .component::<TextContent>()
                     .unwrap()
-                    .role,
+                    .role(),
                 TextRole::UiHeading
             );
             assert!(host.focus(Some(ComponentId(92100)), true));
@@ -1724,12 +1724,12 @@ fn apphost_selection_pages_preserve_real_changes_across_passive_sections() {
             match route {
                 "component-switch" => {
                     let c = content.component::<SwitchContent>().unwrap();
-                    assert!(c.model.checked && c.model.disabled);
+                    assert!(c.is_checked() && c.is_disabled());
                 }
                 "component-slider" => {
                     let c = content.component::<SliderContent>().unwrap();
-                    assert_eq!(c.model.value(), 55.);
-                    assert!(c.model.disabled);
+                    assert_eq!(c.value(), 55.);
+                    assert!(c.is_disabled());
                 }
                 _ => assert_eq!(
                     content
@@ -1751,12 +1751,12 @@ fn apphost_selection_pages_preserve_real_changes_across_passive_sections() {
             match route {
                 "component-switch" => {
                     let c = content.component::<SwitchContent>().unwrap();
-                    assert!(!c.model.checked && !c.model.disabled);
+                    assert!(!c.is_checked() && !c.is_disabled());
                 }
                 "component-slider" => {
                     let c = content.component::<SliderContent>().unwrap();
-                    assert_eq!(c.model.value(), 50.);
-                    assert!(!c.model.disabled);
+                    assert_eq!(c.value(), 50.);
+                    assert!(!c.is_disabled());
                 }
                 _ => assert_eq!(
                     content
@@ -1828,7 +1828,7 @@ fn apphost_button_loading_rejects_action_and_sections_preserve_fixture_state() {
             .unwrap()
             .component::<TextContent>()
             .unwrap()
-            .text;
+            .text();
         assert_eq!(log.matches("activate: primary action").count(), 1);
         render_text_host(host, &mut text);
         assert!(
@@ -1843,9 +1843,7 @@ fn apphost_button_loading_rejects_action_and_sections_preserve_fixture_state() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .loading
+                .is_loading()
         );
         assert!(
             !host
@@ -1879,9 +1877,7 @@ fn apphost_button_loading_rejects_action_and_sections_preserve_fixture_state() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .loading
+                .is_loading()
         );
         assert!(
             host.accessibility_action(ComponentId(92111), None, AccessibilityAction::Press)
@@ -1895,7 +1891,7 @@ fn apphost_button_loading_rejects_action_and_sections_preserve_fixture_state() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .label,
+                .label(),
             "A long action label 中日文"
         );
         assert!(
@@ -1904,12 +1900,12 @@ fn apphost_button_loading_rejects_action_and_sections_preserve_fixture_state() {
         );
     });
     focus.with_host(&mut |host| {
-        let log = &host
+        let log = host
             .get(ComponentId(92003))
             .unwrap()
             .component::<TextContent>()
             .unwrap()
-            .text;
+            .text();
         assert_eq!(log.matches("activate: primary action").count(), 2);
     });
 }
@@ -2065,7 +2061,7 @@ fn apphost_checkbox_sections_preserve_live_model_and_disable_without_remount() {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text,
+                .text(),
             "Edge cases"
         );
         assert_eq!(
@@ -2096,7 +2092,7 @@ fn apphost_checkbox_sections_preserve_live_model_and_disable_without_remount() {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text,
+                .text(),
             "Edge cases"
         );
     });
@@ -2394,12 +2390,12 @@ fn apphost_story_matrix_uses_single_inset_flush_scrollbar_and_gestalt_hierarchy(
             body_node.frame().min_y() - bar.max_y(),
             StackContent::DOCUMENT_SECTION_GAP
         );
-        let body_gap = body_node.component::<StackContent>().unwrap().model.gap;
+        let body_gap = body_node.component::<StackContent>().unwrap().gap();
         assert!(body_gap < StackContent::DOCUMENT_SECTION_GAP);
 
         let heading = host.get(ComponentId(92007)).unwrap();
         assert_eq!(
-            heading.component::<TextContent>().unwrap().role,
+            heading.component::<TextContent>().unwrap().role(),
             TextRole::UiHeading
         );
 
@@ -2410,7 +2406,7 @@ fn apphost_story_matrix_uses_single_inset_flush_scrollbar_and_gestalt_hierarchy(
         let label0 = host.get(ComponentId(92300)).unwrap();
         let spec0 = host.get(ComponentId(92301)).unwrap();
         assert_eq!(
-            label0.component::<TextContent>().unwrap().role,
+            label0.component::<TextContent>().unwrap().role(),
             TextRole::UiCaption
         );
         assert_eq!(

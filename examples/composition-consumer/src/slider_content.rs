@@ -1,8 +1,5 @@
 //! A real public range adapter in the existing heterogeneous content tree.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Slider, Stack},
-};
+use tekes_ui_controls::{composition::*, extended::Slider};
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(8500);
 pub const RANGE: ComponentId = ComponentId(8501);
@@ -15,13 +12,9 @@ pub fn build() -> Result<ContentHost, CompositionError> {
 pub fn fixture_content(value: f64) -> Content {
     Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(ComponentId(8504), TextContent::new("Volume")),
                 Content::new(
                     RANGE,
@@ -30,6 +23,6 @@ pub fn fixture_content(value: f64) -> Content {
                 Content::new(EDITOR, TextFieldContent::new("Draft", "Keep this draft")),
                 Content::new(ACTION, Button::new("Continue")),
             ],
-        },
+        ),
     )
 }

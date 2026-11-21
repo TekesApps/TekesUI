@@ -1775,12 +1775,15 @@ mod local_scroll_tests {
                 native(ScrollPhase::Began, ScrollPhase::None, -20.),
             );
             scroll(&mut host, |s| {
-                assert!(s.scroll.needs_animation(), "Began establishes the gesture")
+                assert!(
+                    s.scroll().needs_animation(),
+                    "Began establishes the gesture"
+                )
             });
             send(&mut host, native(terminal, ScrollPhase::None, 0.));
             scroll(&mut host, |s| {
                 assert!(
-                    !s.scroll.needs_animation(),
+                    !s.scroll().needs_animation(),
                     "zero-delta terminal ends the gesture"
                 )
             });
@@ -1788,9 +1791,7 @@ mod local_scroll_tests {
             wheel.precise = false;
             send(&mut host, wheel);
             let line = tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap();
-            scroll(&mut host, |s| {
-                assert_eq!(s.scroll.offset.y, 20. + 2. * line)
-            });
+            scroll(&mut host, |s| assert_eq!(s.offset().y, 20. + 2. * line));
         }
     }
     #[test]
@@ -1798,14 +1799,25 @@ mod local_scroll_tests {
         for reading in [false, true] {
             let (mut host, _) = host();
             if !reading {
-                scroll(&mut host, |s| {
-                    assert!(
-                        s.scroll
-                            .reveal_with(Rect::new(0., 600., 10., 20.), Default::default())
-                            .unwrap()
-                            .animated
-                    );
-                });
+                host.panel_mgr.panels[0]
+                    .local
+                    .as_mut()
+                    .unwrap()
+                    .with_host(&mut |h| {
+                        let plan = h
+                            .plan_host_reveal(
+                                ComponentId(2),
+                                tekes_ui_controls::ScrollRevealOptions {
+                                    placement: tekes_ui_controls::ScrollRevealPlacement::Centered,
+                                    animated: true,
+                                    ..Default::default()
+                                },
+                                &[],
+                                tekes_ui_controls::composition::HostRevealBudget::default(),
+                            )
+                            .unwrap();
+                        assert!(h.commit_host_reveal(plan).unwrap().animated);
+                    });
             }
             if reading {
                 host.panel_mgr.panels[0]
@@ -1827,20 +1839,21 @@ mod local_scroll_tests {
                 });
             }
             let mut before = Point::default();
-            scroll(&mut host, |s| before = s.scroll.offset);
+            scroll(&mut host, |s| before = s.offset());
             send(
                 &mut host,
                 native(ScrollPhase::None, ScrollPhase::Changed, 15.),
             );
             scroll(&mut host, |s| {
                 assert_eq!(
-                    s.scroll.offset, before,
+                    s.offset(),
+                    before,
                     "old OS momentum cannot take over navigation"
                 );
                 if reading {
                     assert!(s.is_following_latest());
                 } else {
-                    assert!(s.scroll.needs_animation());
+                    assert!(s.scroll().needs_animation());
                 }
             });
             // Zero-delta Began itself releases the fence before a new delta.
@@ -1854,10 +1867,7 @@ mod local_scroll_tests {
                 ),
             );
             scroll(&mut host, |s| {
-                assert_eq!(
-                    s.scroll.offset.y,
-                    before.y + if reading { -10. } else { 10. }
-                );
+                assert_eq!(s.offset().y, before.y + if reading { -10. } else { 10. });
                 if reading {
                     assert!(!s.is_following_latest());
                 }
@@ -1869,7 +1879,7 @@ mod local_scroll_tests {
         for reduced in [false, true] {
             let (mut host, _) = host();
             scroll(&mut host, |s| {
-                s.scroll.set_reduced_motion(reduced);
+                s.set_reduced_motion(reduced);
             });
             send(
                 &mut host,
@@ -1877,16 +1887,16 @@ mod local_scroll_tests {
             );
             send(&mut host, native(ScrollPhase::Ended, ScrollPhase::None, 0.));
             scroll(&mut host, |s| {
-                assert_eq!(s.scroll.offset.y, 0.);
+                assert_eq!(s.offset().y, 0.);
                 if reduced {
-                    assert_eq!(s.scroll.overscroll.y, 0.);
+                    assert_eq!(s.scroll().overscroll.y, 0.);
                 } else {
-                    assert!(s.scroll.overscroll.y < 0.);
-                    assert!(s.scroll.needs_animation());
+                    assert!(s.scroll().overscroll.y < 0.);
+                    assert!(s.scroll().needs_animation());
                     for _ in 0..120 {
-                        s.scroll.tick(1. / 60.);
+                        s.tick(1. / 60.);
                     }
-                    assert!(s.scroll.overscroll.y.abs() < 0.01);
+                    assert!(s.scroll().overscroll.y.abs() < 0.01);
                 }
             });
         }

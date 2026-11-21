@@ -4,7 +4,7 @@
 mod coretext;
 use tekes_ui_controls::{
     composition::{Button, ComponentId, Content, ContentHost, StackContent, TextContent},
-    extended::{Axis, Stack},
+    extended::Axis,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
@@ -15,17 +15,13 @@ fn stack_retained_theme_changes_preserve_measured_children_and_forward_semantic_
     const ACTION: ComponentId = ComponentId(121_012);
     let root = Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::horizontal(
+            8.,
+            vec![
                 Content::new(TEXT, TextContent::new("Account")),
                 Content::new(ACTION, Button::new("Open")),
             ],
-        },
+        ),
     )
     .with_surface("panel")
     .unwrap();
@@ -42,8 +38,7 @@ fn stack_retained_theme_changes_preserve_measured_children_and_forward_semantic_
             .unwrap()
             .component_mut::<StackContent>()
             .unwrap()
-            .model
-            .axis = axis;
+            .set_axis(axis);
         let mut original = None;
         let mut original_mount = None;
         for theme in Theme::ALL {
@@ -85,7 +80,7 @@ fn stack_retained_theme_changes_preserve_measured_children_and_forward_semantic_
             let button = action
                 .component::<Button>()
                 .unwrap()
-                .button
+                .model()
                 .layout()
                 .unwrap();
             let fill = scene

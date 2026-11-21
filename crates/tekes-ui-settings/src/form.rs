@@ -151,11 +151,7 @@ pub struct SettingsForm {
 fn stack(id: u64, axis: Axis, gap: f32, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
-        StackContent {
-            model: Stack { axis, gap },
-            children,
-            flexible_child: None,
-        },
+        StackContent::new(Stack { axis, gap }, children),
     )
 }
 
@@ -170,15 +166,8 @@ fn footer_actions(children: Vec<Content>) -> Content {
 
 fn footer_container(children: Vec<Content>) -> Content {
     let pad = Spacing::Loose.value();
-    StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: Spacing::Regular.value(),
-        },
-        children,
-        flexible_child: None,
-    }
-    .into_content_with_padding(FOOTER, Insets::new(Spacing::Regular.value(), pad, pad, pad))
+    StackContent::vertical(Spacing::Regular.value(), children)
+        .into_content_with_padding(FOOTER, Insets::new(Spacing::Regular.value(), pad, pad, pad))
 }
 impl SettingsForm {
     pub fn new(schema: &Schema, draft: &Draft) -> Result<Self> {
@@ -316,14 +305,7 @@ impl SettingsForm {
                 if !rows.is_empty() {
                     let card = Content::new(
                         ComponentId((1_u64 << 48) + group_index as u64),
-                        StackContent {
-                            model: Stack {
-                                axis: Axis::Vertical,
-                                gap: 0.,
-                            },
-                            children: rows,
-                            flexible_child: None,
-                        },
+                        StackContent::vertical(0., rows),
                     );
                     if group.label.trim().is_empty() {
                         children.push(card);
@@ -358,7 +340,9 @@ impl SettingsForm {
             .with_surface("panel")
             .map_err(|e| SettingsError::Ui(format!("Settings form surface: {e:?}")))?;
         // The body alone shrinks on small windows; footer remains reachable.
-        root.component_mut::<StackContent>().unwrap().flexible_child = Some(ComponentId(11));
+        root.component_mut::<StackContent>()
+            .unwrap()
+            .set_flexible_child(Some(ComponentId(11)));
         let mut host = ContentHost::new(root)
             .map_err(|e| SettingsError::Ui(format!("Settings form: {e:?}")))?;
         host.set_action_events(true);
@@ -432,8 +416,7 @@ impl SettingsForm {
                     .unwrap()
                     .component_mut::<MenuContent>()
                     .unwrap()
-                    .trigger
-                    .label = label.into();
+                    .set_trigger_label(label);
             }
         }
         for record in &records {
@@ -454,7 +437,7 @@ impl SettingsForm {
                 Some(field.text().to_owned())
             } else {
                 node.component::<SwitchContent>()
-                    .map(|v| v.model.checked.to_string())
+                    .map(|v| v.is_checked().to_string())
             };
             if let Some(raw) = raw {
                 draft.edit(f, raw);
@@ -550,7 +533,7 @@ impl SettingsForm {
             self.host
                 .get(*id)
                 .and_then(|n| n.component::<MenuContent>())
-                .is_some_and(|m| m.menu.is_open())
+                .is_some_and(|m| m.is_open())
         })
     }
     pub fn cancel_edits(&mut self) {
@@ -590,7 +573,7 @@ impl SettingsForm {
                 }
                 let _ = number.drain_value_changes();
             } else if let Some(switch) = node.component_mut::<SwitchContent>() {
-                switch.model.checked = raw == "true";
+                switch.set_checked(raw == "true");
             } else if let Some(radio) = node.component_mut::<RadioGroupContent>() {
                 let _ = radio.set_selected(f.options.iter().position(|o| o.value == raw));
             } else if let Some(menu) = node.component_mut::<MenuContent>() {
@@ -599,7 +582,9 @@ impl SettingsForm {
                     .iter()
                     .find(|o| o.value == raw)
                     .map_or(raw.as_str(), |o| o.label.as_str());
-                *menu = MenuContent::new(label, vec![]);
+                menu.close();
+                menu.set_selected(None);
+                menu.set_trigger_label(label);
                 let _ = menu.set_entries(
                     f.options
                         .iter()
@@ -622,9 +607,9 @@ impl SettingsForm {
         let _ = self.host.remove(FOOTER);
         if let Some(message) = message {
             let mut retry = tekes_ui_controls::Button::new("Retry");
-            retry.button.state.disabled = busy;
+            retry.set_disabled(busy);
             let mut discard = tekes_ui_controls::Button::new("Discard");
-            discard.button.state.disabled = busy;
+            discard.set_disabled(busy);
             self.host
                 .insert(
                     ROOT,
@@ -648,16 +633,14 @@ impl SettingsForm {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = message.into();
+            .set_text(message);
         for (id, disabled) in [(APPLY, !dirty || busy), (RESET, busy), (CANCEL, busy)] {
             self.host
                 .get_mut(id)
                 .unwrap()
                 .component_mut::<tekes_ui_controls::Button>()
                 .unwrap()
-                .button
-                .state
-                .disabled = disabled;
+                .set_disabled(disabled);
         }
     }
 }

@@ -293,17 +293,13 @@ fn real_composer_marked_selection_and_binding_gate_before_original_view() {
     );
     let content = Content::new(
         ComponentId(1),
-        StackContent {
-            model: tekes_ui_controls::extended::Stack {
-                axis: tekes_ui_controls::extended::Axis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(editor, field),
                 Content::new(ID, SegmentedControlContent::new("seg", labels())),
             ],
-        },
+        ),
     );
     let mut h = ContentHost::new(content).unwrap();
     h.set_action_events(true);
@@ -601,7 +597,7 @@ fn reading_item_identity_and_real_composer_survive_controlled_theme_updates() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     s.host
         .get_mut(ID)
@@ -620,7 +616,7 @@ fn reading_item_identity_and_real_composer_survive_controlled_theme_updates() {
         .component::<ScrollContent>()
         .unwrap();
     assert_eq!(scroll.reading_document_version(), Some(&version));
-    assert_eq!(scroll.scroll.offset, offset);
+    assert_eq!(scroll.scroll().offset, offset);
     assert_eq!(s.item_keys(), keys);
     assert_eq!(s.host.semantic_mount(ID), mount);
     assert_eq!(s.host.focused(), Some(COMPOSER));

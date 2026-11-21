@@ -46,7 +46,7 @@ pub fn view_context_theme(
 pub fn view_context_background(context: &ViewContext) -> Result<tekes_ui_tokens::Rgba> {
     let theme = view_context_theme(context)?;
     Ok(tekes_ui_tokens::surface_palette::resolve_surface(
-        theme.palette,
+        theme.palette(),
         theme.surface(),
         "content",
         "rest",
@@ -176,9 +176,9 @@ mod tests {
                 };
                 let resolved = view_context_theme(&context).unwrap();
                 assert_eq!(resolved.surface(), *surface);
-                assert_eq!(resolved.palette.theme, mode);
+                assert_eq!(resolved.palette().theme, mode);
                 let expected = tekes_ui_tokens::surface_palette::resolve_surface(
-                    resolved.palette,
+                    resolved.palette(),
                     surface,
                     "content",
                     "rest",

@@ -537,11 +537,7 @@ fn verify_component_view(module: &str, output: Option<&str>) -> anyhow::Result<(
         },
         time::{Duration, Instant},
     };
-    use tekes_ui_controls::{
-        ButtonTextAlign, ButtonTextRenderer,
-        composition::*,
-        extended::{Axis, Stack},
-    };
+    use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
     use tekes_ui_module_runtime::{ProcessContainer, ProcessStatus};
     use tekes_ui_render::Renderer;
     use tekes_ui_scene::{GlyphAtlas, Point, Rect, Scene, Size};
@@ -638,11 +634,7 @@ fn verify_component_view(module: &str, output: Option<&str>) -> anyhow::Result<(
     );
     let root = Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            children: vec![Content::new(ComponentId(2), component)],
-            flexible_child: None,
-        },
+        StackContent::vertical(0., vec![Content::new(ComponentId(2), component)]),
     );
     let mut host = ContentHost::new(root).map_err(|e| anyhow::anyhow!("{e:?}"))?;
     let mut renderer = Renderer::new_headless()?;

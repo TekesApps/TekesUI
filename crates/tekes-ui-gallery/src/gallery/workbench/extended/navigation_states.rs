@@ -207,7 +207,7 @@ impl tekes_ui_controls::composition::Component for BreadcrumbFixture {
             scene,
             frame,
             clip,
-            theme.palette,
+            theme.palette(),
             self.0,
         );
     }

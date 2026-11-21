@@ -354,11 +354,11 @@ impl Component for TextPage {
             heading
                 .component_mut::<TextContent>()
                 .expect("mounted heading TextContent")
-                .text = if label.is_empty() {
-                String::new()
-            } else {
-                self.locale.text(name).to_string()
-            };
+                .set_text(if label.is_empty() {
+                    String::new()
+                } else {
+                    self.locale.text(name).to_string()
+                });
             heading.arrange(text, label, clip);
             self.children[index].arrange(text, panel, clip);
         }
@@ -789,7 +789,7 @@ impl Component for CalibrationContent {
         };
         scene.push_clip(clip);
         calibration::build_content(
-            theme.palette.theme,
+            theme.palette().theme,
             &mut bridge,
             original,
             frame,

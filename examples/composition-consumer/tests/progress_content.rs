@@ -154,7 +154,7 @@ fn finite_parent_measurement_and_ancestor_clip_use_original_view() {
     let clip = Rect::new(10., 0., 60., 40.);
     let mut v = ProgressView::default();
     let mut s = Scene::new();
-    let layout = v.render(&mut s, c.model, f, Some(clip), Theme::LIGHT.into());
+    let layout = v.render(&mut s, c.model(), f, Some(clip), Theme::LIGHT.into());
     assert_eq!(layout.visible, f.intersection(&clip));
     assert!(!layout.hit_test(Point::new(1., 2.)));
     assert!(layout.hit_test(Point::new(20., 2.)));
@@ -444,7 +444,7 @@ fn all_host_states_preserve_composer_marked_binding_focus_and_original_reading_a
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text,
+                .text(),
             result
         );
         assert!(s.host.drain_action_records().is_empty());
@@ -460,7 +460,7 @@ fn all_host_states_preserve_composer_marked_binding_focus_and_original_reading_a
         let f = s.host.get(BAR).unwrap().frame();
         view.render(
             &mut expected,
-            bar.model,
+            bar.model(),
             f,
             Some(f),
             Palette::new(

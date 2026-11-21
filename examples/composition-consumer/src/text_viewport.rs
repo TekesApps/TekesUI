@@ -1,9 +1,5 @@
 //! Independent public-API caller: original fields and Stack, no custom arrange.
-use tekes_ui_controls::{
-    TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{TextSurface, composition::*};
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(9200);
 pub const TRANSCRIPT: ComponentId = ComponentId(9201);
@@ -40,18 +36,15 @@ impl ViewportFixture {
         composer.submit_policy = TextSubmitPolicy::CommandEnter;
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: Some(TRANSCRIPT),
-                children: vec![
+            StackContent::vertical(
+                Spacing::Regular.value(),
+                vec![
                     Content::new(TRANSCRIPT, transcript),
                     Content::new(COMPOSER, composer),
                     Content::new(SEND, Button::new("发送")),
                 ],
-            },
+            )
+            .with_flexible_child(TRANSCRIPT),
         ))
         .unwrap();
         host.focus(Some(COMPOSER), true);

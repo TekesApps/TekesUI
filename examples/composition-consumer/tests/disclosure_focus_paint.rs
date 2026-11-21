@@ -4,11 +4,7 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 use std::time::Duration;
-use tekes_ui_controls::{
-    ButtonFramePolicy, ButtonVariant,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonFramePolicy, ButtonVariant, composition::*};
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Theme, proposal};
 const DISCLOSURE: ComponentId = ComponentId(1);
@@ -19,26 +15,16 @@ const FRAME: Rect = Rect::new(24., 24., 260., 180.);
 const VIEWPORT: Rect = Rect::new(0., 0., 340., 260.);
 
 fn fixture_with_body(root_button: bool) -> ContentHost {
-    let mut button = Button::new("Opaque original body button");
-    button.variant = ButtonVariant::Primary;
-    button.button.frame_policy = ButtonFramePolicy::Exact;
+    let button = Button::new("Opaque original body button")
+        .with_variant(ButtonVariant::Primary)
+        .with_frame_policy(ButtonFramePolicy::Exact);
     // A real public body container makes the body's focus predicate recursive:
     // the Stack owns no focus, its original exact Button descendant does.
     let body_button = Content::new(BODY_BUTTON, button);
     let body = if root_button {
         body_button
     } else {
-        Content::new(
-            BODY,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                flexible_child: None,
-                children: vec![body_button],
-            },
-        )
+        Content::new(BODY, StackContent::vertical(0., vec![body_button]))
     };
     let mut host = ContentHost::new(Content::new(
         DISCLOSURE,

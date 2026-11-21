@@ -31,8 +31,8 @@ impl Component for OptionsGlyph {
             f,
             ButtonTextAlign::Center,
             theme
-                .foreground
-                .unwrap_or_else(|| theme.palette.color("primary-text").unwrap()),
+                .foreground()
+                .unwrap_or_else(|| theme.palette().color("primary-text").unwrap()),
         );
     }
 }
@@ -130,7 +130,7 @@ pub fn options() -> Vec<MenuEntry> {
 pub fn build() -> Result<ContentHost, CompositionError> {
     let mut menu = MenuContent::new("Session list options", Vec::new())
         .with_trigger_content("Session list options", Content::new(GLYPH, OptionsGlyph))?;
-    menu.trigger.button.frame_policy = ButtonFramePolicy::Exact;
+    menu.set_trigger_frame_policy(ButtonFramePolicy::Exact);
     menu.set_entries(options())
         .expect("fixed valid example declarations");
     let root = Content::new(

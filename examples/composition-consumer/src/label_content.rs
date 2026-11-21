@@ -1,8 +1,5 @@
 //! Readonly label policies on original production components; no business UI.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 use tekes_ui_text::{LabelOptions, LabelOverflow};
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(9900);
@@ -25,13 +22,6 @@ pub fn build() -> Result<ContentHost, CompositionError> {
     ];
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children,
-        },
+        StackContent::vertical(Spacing::Regular.value(), children),
     ))
 }

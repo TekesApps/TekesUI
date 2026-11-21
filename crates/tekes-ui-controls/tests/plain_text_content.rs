@@ -54,7 +54,6 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
 }
 
 use std::rc::Rc;
-use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::{ScrollArea, ScrollPolicy, TextSurfacePresentation};
 use tekes_ui_scene::{Point, Primitive};
 
@@ -123,12 +122,9 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
     let disabled = TextFieldContent::new("Disabled", "disabled value").with_disabled(true);
     let root = Content::new(
         ComponentId(200),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(ComponentId(201), TextFieldContent::new("Editable", "draft")),
                 Content::new(
                     ComponentId(202),
@@ -140,8 +136,7 @@ fn text_cursor_regions_follow_visible_text_viewports_without_focusing_or_editing
                 ),
                 Content::new(ComponentId(203), disabled),
             ],
-            flexible_child: None,
-        },
+        ),
     );
     let mut host = ContentHost::new(root).unwrap();
     let frame = Rect::new(0., 0., 280., 180.);
@@ -231,17 +226,13 @@ fn combo_cursor_uses_original_text_viewport_and_excludes_sibling_button() {
     const BUTTON: ComponentId = ComponentId(212);
     let mut host = ContentHost::new(Content::new(
         ComponentId(210),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(COMBO, ComboBoxContent::new("Choose", vec!["Alpha".into()])),
                 Content::new(BUTTON, Button::new("Apply")),
             ],
-            flexible_child: None,
-        },
+        ),
     ))
     .unwrap();
     let frame = Rect::new(0., 0., 280., 160.);
@@ -302,11 +293,10 @@ fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
     );
     let child = Content::new(
         ComponentId(3),
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            children: vec![body, Content::new(ComponentId(4), Button::new("Action"))],
-            flexible_child: None,
-        },
+        StackContent::vertical(
+            0.,
+            vec![body, Content::new(ComponentId(4), Button::new("Action"))],
+        ),
     );
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
@@ -335,8 +325,7 @@ fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y;
         assert!(
             host.event(&ContentEvent::Scroll {
@@ -355,8 +344,7 @@ fn plain_document_delegates_precise_and_wheel_scroll_to_its_single_parent() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y;
         assert!(after > before);
         host.render(

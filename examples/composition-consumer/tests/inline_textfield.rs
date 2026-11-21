@@ -2,11 +2,7 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 
-use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Theme, proposal};
 
@@ -21,17 +17,13 @@ fn text(scale: f32) -> coretext::Text {
 fn host() -> ContentHost {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 0.,
-            },
-            children: vec![Content::new(
+        StackContent::horizontal(
+            0.,
+            vec![Content::new(
                 FIELD,
                 TextFieldContent::inline("Search", "draft 😀", 12.),
             )],
-            flexible_child: None,
-        },
+        ),
     ))
     .unwrap()
 }

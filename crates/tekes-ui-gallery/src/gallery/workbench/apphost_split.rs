@@ -4,7 +4,7 @@ use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::*,
-    extended::{Axis, Pane, SplitView, Stack},
+    extended::{Axis, Pane, SplitView},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -30,10 +30,10 @@ impl Component for Choices {
         self.visible.get()
     }
     fn children(&self) -> &[Content] {
-        &self.stack.children
+        self.stack.children()
     }
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.stack.children)
+        Some(self.stack.children_mut())
     }
     fn host_reveal_passthrough(&self) -> bool {
         self.arranged
@@ -167,17 +167,13 @@ pub(super) fn playground(state: &StoryState) -> Vec<Content> {
                         Choices {
                             visible: constrained.clone(),
                             arranged: false,
-                            stack: StackContent {
-                                model: Stack {
-                                    axis: Axis::Horizontal,
-                                    gap: 8.,
-                                },
-                                children: vec![
+                            stack: StackContent::horizontal(
+                                8.,
+                                vec![
                                     Content::new(ComponentId(123091), Button::new("Show master")),
                                     Content::new(ComponentId(123092), Button::new("Show detail")),
                                 ],
-                                flexible_child: None,
-                            },
+                            ),
                         },
                     ),
                     Content::new(SPECIMEN, split),
@@ -217,12 +213,12 @@ pub(super) fn sync(state: &mut StoryState, host: &mut ContentHost) {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = help(config.ratio);
+            .set_text(help(config.ratio));
         host.get_mut(ComponentId(92003))
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = state.log.iter().cloned().collect::<Vec<_>>().join("\n");
+            .set_text(state.log.iter().cloned().collect::<Vec<_>>().join("\n"));
     }
 }
 pub(super) fn choose(host: &mut ContentHost, id: ComponentId) -> bool {
@@ -268,15 +264,15 @@ impl Component for Variant {
         tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
             s,
             leading,
-            theme.palette,
+            theme.palette(),
             true,
             t.backing_scale(),
         );
-        tekes_ui_controls::extended::separator(s, divider, theme.palette, Axis::Vertical);
+        tekes_ui_controls::extended::separator(s, divider, theme.palette(), Axis::Vertical);
         tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
             s,
             trailing,
-            theme.palette,
+            theme.palette(),
             true,
             t.backing_scale(),
         );

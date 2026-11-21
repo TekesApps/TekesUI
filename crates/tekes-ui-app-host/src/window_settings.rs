@@ -478,14 +478,7 @@ impl Host {
                 ) =>
             {
                 let point = Point::new(mouse.position.x as f32, mouse.position.y as f32);
-                back = self.layout.leading_visible
-                    && state
-                        .borrow()
-                        .sidebar
-                        .host()
-                        .get(ComponentId(4))
-                        .and_then(|node| node.visible())
-                        .is_some_and(|visible| visible.contains(point));
+                back = self.layout.leading_visible && state.borrow().sidebar.is_back_point(point);
                 (self.panel_mgr.panels[navigation_toolbar]
                     .mounted_toolbar
                     .host
@@ -516,7 +509,7 @@ impl Host {
                             .is_some()
                     });
                 back = self.layout.leading_visible
-                    && sidebar.sidebar.host().focused() == Some(ComponentId(4))
+                    && sidebar.sidebar.is_back_focused()
                     && matches!(key, Some(ControlKey::Enter | ControlKey::Space));
                 (focused_list
                     && matches!(
@@ -577,9 +570,7 @@ impl Host {
                         )
                 {
                     let state = state.borrow();
-                    back = state.sidebar.host().semantic_mount(ComponentId(4))
-                        == Some(target.component)
-                        && state.sidebar.host().get(ComponentId(4)).is_some();
+                    back = state.sidebar.is_back_semantic_mount(target.component);
                     back || state.sidebar.host().semantics().iter().any(|node| state.sidebar.host().semantic_mount(node.id) == Some(target.component)
                         && state.sidebar.host().get(node.id).is_some_and(|n| n.component::<tekes_ui_controls::composition::KeyedSelectableListContent>().is_some()))
                 } else {
@@ -2275,7 +2266,6 @@ mod settings_theme_radio_width_tests {
                                         .unwrap()
                                         .component_mut::<ScrollContent>()
                                         .unwrap()
-                                        .scroll
                                         .scroll_by(0., 80.)
                                 );
                             };
@@ -2288,8 +2278,7 @@ mod settings_theme_radio_width_tests {
                                     .unwrap()
                                     .component::<ScrollContent>()
                                     .unwrap()
-                                    .scroll
-                                    .offset
+                                    .offset()
                                     .y
                                     > 0.
                             );
@@ -2439,7 +2428,7 @@ mod pinned_header_tests {
             render_header(s, t, frame);
         };
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        let back = sidebar.back_button_frame().unwrap();
         assert!(sidebar.host().get(ComponentId(6)).is_none());
         let chip = sidebar.host().get(ComponentId(10)).unwrap().frame();
         let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
@@ -2456,13 +2445,13 @@ mod pinned_header_tests {
             wide_editor,
             sidebar.host().get(ComponentId(5)).unwrap().frame()
         );
-        assert!(sidebar.host().get(ComponentId(4)).is_none());
+        assert!(!sidebar.has_back_button());
         draw(&mut sidebar, &mut text);
         let search = sidebar.host().get(ComponentId(6)).unwrap().frame();
         let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
         assert_eq!(sidebar.host().focused(), Some(ComponentId(6)));
         assert!(sidebar.host().get(ComponentId(10)).is_none());
-        assert!(sidebar.host().get(ComponentId(4)).is_none());
+        assert!(!sidebar.has_back_button());
         assert_eq!(search, sidebar.host().get(ComponentId(5)).unwrap().frame());
         assert!(search.max_y() < scroll.min_y());
         assert!(
@@ -2532,17 +2521,8 @@ mod pinned_header_tests {
         );
         assert!(sidebar.cancel_search().unwrap());
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
-        assert!(
-            sidebar
-                .host()
-                .get(ComponentId(4))
-                .unwrap()
-                .component::<tekes_ui_controls::Button>()
-                .unwrap()
-                .label
-                .is_empty()
-        );
+        let back = sidebar.back_button_frame().unwrap();
+        assert!(sidebar.back_button().unwrap().label().is_empty());
         sidebar.event(&ContentEvent::PointerDown(back.center()));
         sidebar.event(&ContentEvent::PointerUp(back.center()));
         assert!(sidebar.take_back());
@@ -2563,13 +2543,8 @@ mod pinned_header_tests {
             render_header(s, t, frame);
         };
         draw(&mut sidebar, &mut text);
-        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
-        let back_button = sidebar
-            .host()
-            .get(ComponentId(4))
-            .unwrap()
-            .component::<tekes_ui_controls::Button>()
-            .unwrap();
+        let back = sidebar.back_button_frame().unwrap();
+        let back_button = sidebar.back_button().unwrap();
         let back_icon = back_button.icon().expect("embedded Back template icon");
         let arrow = back_icon.layout().frame;
         let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
@@ -2656,15 +2631,12 @@ mod pinned_header_tests {
         let chip = sidebar.host().get(ComponentId(10)).unwrap();
         let button = chip.component::<tekes_ui_controls::Button>().unwrap();
         assert!(
-            button.button.state.focused && button.button.state.focus_visible,
+            button.is_focused() && button.focus_visible(),
             "search keeps logical and keyboard focus after Escape"
         );
-        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        let back = sidebar.back_button_frame().unwrap();
         let arrow = sidebar
-            .host()
-            .get(ComponentId(4))
-            .unwrap()
-            .component::<tekes_ui_controls::Button>()
+            .back_button()
             .unwrap()
             .icon()
             .unwrap()
@@ -2842,7 +2814,7 @@ mod pinned_header_tests {
         assert!(sidebar.cancel_search().unwrap());
         render_header(&mut sidebar, &mut text, frame);
         assert!(sidebar.host().get(ComponentId(6)).is_none());
-        assert!(sidebar.host().get(ComponentId(4)).is_some());
+        assert!(sidebar.has_back_button());
         assert!(sidebar.host().get(ComponentId(10)).is_some());
         assert_eq!(sidebar.host().focused(), Some(ComponentId(103)));
         let list = sidebar
@@ -2878,11 +2850,11 @@ mod pinned_header_tests {
         let second_heading = sidebar.host().get(ComponentId(102)).unwrap();
         let second_list = sidebar.host().get(ComponentId(103)).unwrap();
         assert_eq!(
-            first_heading.component::<TextContent>().unwrap().role,
+            first_heading.component::<TextContent>().unwrap().role(),
             tekes_ui_tokens::proposal::TextRole::UiCaption
         );
         assert_eq!(
-            second_heading.component::<TextContent>().unwrap().role,
+            second_heading.component::<TextContent>().unwrap().role(),
             tekes_ui_tokens::proposal::TextRole::UiCaption
         );
         assert_eq!(
@@ -3547,7 +3519,7 @@ mod navigation_input_tests {
                     .unwrap()
                     .component::<tekes_ui_controls::composition::TextContent>()
                     .unwrap()
-                    .text
+                    .text()
                     .contains("修正数值")
             );
         }
@@ -3568,20 +3540,15 @@ mod navigation_input_tests {
                             .unwrap()
                             .borrow_mut()
                             .sidebar
-                            .focus(Some(ComponentId(4)), true)
+                            .focus_back(true)
                     );
                     render(&mut host);
                 }
                 let (point, mount) = {
                     let s = host.settings_mgr.settings.as_ref().unwrap().borrow();
                     (
-                        s.sidebar
-                            .host()
-                            .get(ComponentId(4))
-                            .unwrap()
-                            .frame()
-                            .center(),
-                        s.sidebar.host().semantic_mount(ComponentId(4)).unwrap(),
+                        s.sidebar.back_button_frame().unwrap().center(),
+                        s.sidebar.back_button_mount().unwrap(),
                     )
                 };
                 let publication = host.content_accessibility_publication(true).unwrap();
@@ -4438,7 +4405,7 @@ mod form_keyboard_owner_tests {
         assert!(surface.borrow_mut().sidebar.cancel_search().unwrap());
         let state = surface.borrow();
         assert!(state.sidebar.host().get(ComponentId(6)).is_none());
-        assert!(state.sidebar.host().get(ComponentId(4)).is_some());
+        assert!(state.sidebar.has_back_button());
         assert!(state.sidebar.host().get(ComponentId(10)).is_some());
         assert_eq!(state.form.host().focused(), Some(ComponentId(100)));
         drop(state);

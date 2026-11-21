@@ -1,8 +1,5 @@
 //! Ordinary labels and the original Button own all presentation and actions.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 use tekes_ui_text::{LabelOptions, LabelOverflow};
 use tekes_ui_tokens::Spacing;
 pub const SOURCE: &str = "工具👩🏽‍💻 · 中文 e\u{301}    +12 −3";
@@ -149,13 +146,6 @@ fn build_label(label: SemanticLabel) -> Result<ContentHost, Box<dyn std::error::
     ];
     Ok(ContentHost::new(Content::new(
         ComponentId(2500),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children,
-        },
+        StackContent::vertical(Spacing::Regular.value(), children),
     ))?)
 }

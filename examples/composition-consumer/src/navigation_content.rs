@@ -1,8 +1,5 @@
 //! Independent public API fixtures for navigation composition adapters.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 
 pub const ROOT: ComponentId = ComponentId(9_800);
 pub const BREADCRUMB: ComponentId = ComponentId(9_801);
@@ -22,17 +19,7 @@ pub fn breadcrumb(items: &[&str]) -> Result<ContentHost, CompositionError> {
             items: items.iter().map(|item| (*item).to_owned()).collect(),
         }),
     );
-    let mut host = ContentHost::new(Content::new(
-        ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.0,
-            },
-            children: vec![path],
-            flexible_child: None,
-        },
-    ))?;
+    let mut host = ContentHost::new(Content::new(ROOT, StackContent::vertical(0.0, vec![path])))?;
     host.set_action_events(true);
     Ok(host)
 }
@@ -40,32 +27,24 @@ pub fn breadcrumb(items: &[&str]) -> Result<ContentHost, CompositionError> {
 pub fn tabs() -> Result<ContentHost, CompositionError> {
     let label_one = Content::new(
         ComponentId(9_810),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 2.0,
-            },
-            children: vec![
+        StackContent::vertical(
+            2.0,
+            vec![
                 Content::new(ComponentId(9_811), TextContent::new("Overview")),
                 Content::new(ComponentId(9_812), TextContent::new("Welcome")),
             ],
-            flexible_child: None,
-        },
+        ),
     );
     let label_two = Content::new(ComponentId(9_813), TextContent::new("Settings"));
     let first_panel = Content::new(
         FIRST_PANEL,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.0,
-            },
-            children: vec![Content::new(
+        StackContent::vertical(
+            4.0,
+            vec![Content::new(
                 COMPOSER,
                 TextFieldContent::new("Workspace name", "Current workspace"),
             )],
-            flexible_child: None,
-        },
+        ),
     );
     let second_panel = Content::new(SECOND_PANEL, TextContent::new("Settings panel content"));
     let tabs = Content::new(
@@ -78,17 +57,7 @@ pub fn tabs() -> Result<ContentHost, CompositionError> {
             0,
         ),
     );
-    let mut host = ContentHost::new(Content::new(
-        ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.0,
-            },
-            children: vec![tabs],
-            flexible_child: None,
-        },
-    ))?;
+    let mut host = ContentHost::new(Content::new(ROOT, StackContent::vertical(0.0, vec![tabs])))?;
     host.set_action_events(true);
     Ok(host)
 }
@@ -114,17 +83,13 @@ pub fn command_palette() -> Result<ContentHost, CompositionError> {
     );
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.0,
-            },
-            children: vec![
+        StackContent::vertical(
+            8.0,
+            vec![
                 command,
                 Content::new(BACKGROUND_ACTION, Button::new("Background action")),
             ],
-            flexible_child: None,
-        },
+        ),
     ))?;
     host.set_action_events(true);
     Ok(host)

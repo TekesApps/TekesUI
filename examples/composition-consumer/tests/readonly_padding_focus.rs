@@ -202,9 +202,7 @@ fn original_sibling_action_wins_even_when_disabled_and_unconsumed() {
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     click(&mut host, point);
     assert_eq!(host.focused(), None);
     assert!(host.drain_actions().is_empty());

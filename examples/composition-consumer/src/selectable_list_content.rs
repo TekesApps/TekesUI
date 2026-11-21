@@ -29,62 +29,18 @@ pub fn rows(s: &KeyedListSnapshot) -> Vec<ListRowDisplay> {
         })
         .collect()
 }
-/// A consumer-defined passive wrapper opting into the same generic hook contract
-/// used by Table. This demonstrates support without a component-name whitelist.
-#[derive(Debug)]
-pub struct ConsumerDecoration {
-    pub body: StackContent,
-}
-impl Component for ConsumerDecoration {
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn children(&self) -> &[Content] {
-        &self.body.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.body.children)
-    }
-    fn measure(
-        &mut self,
-        t: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        a: tekes_ui_scene::Size,
-    ) -> tekes_ui_controls::layout::MeasuredChild {
-        self.body.measure(t, a)
-    }
-    fn arrange(
-        &mut self,
-        t: &mut dyn tekes_ui_controls::ButtonTextRenderer,
-        f: tekes_ui_scene::Rect,
-        c: tekes_ui_scene::Rect,
-    ) {
-        self.body.arrange(t, f, c)
-    }
-}
 pub fn build() -> Result<ContentHost, ListContentError> {
     let s = snapshot(false);
     let mut d = rows(&s);
     d[0].display = ListDisplayUpdate::Replace(Content::new(
         ComponentId(200),
-        ConsumerDecoration {
-            body: StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: 6.,
-                },
-                flexible_child: Some(ComponentId(202)),
-                children: vec![
-                    Content::new(
-                        ComponentId(201),
-                        IconContent::new("tekes-settings").unwrap(),
-                    ),
-                    Content::new(
-                        ComponentId(202),
-                        TextContent::new("Text with Icon\nsecond line"),
-                    ),
-                ],
-            },
-        },
+        IconTextContent::icon_label(
+            ComponentId(201),
+            "tekes-settings",
+            ComponentId(202),
+            "Text with Icon\nsecond line",
+        )
+        .unwrap(),
     ));
     let list = SelectableListContent::keyed(
         "Public list",
@@ -99,13 +55,9 @@ pub fn build() -> Result<ContentHost, ListContentError> {
     )?;
     let mut h = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), TextContent::new("Before list")),
                 Content::new(
                     READER,
@@ -114,7 +66,7 @@ pub fn build() -> Result<ContentHost, ListContentError> {
                 Content::new(COMPOSER, TextFieldContent::new("Composer", "draft😀")),
                 Content::new(ComponentId(3), TextContent::new("After list")),
             ],
-        },
+        ),
     ))?;
     h.set_scroll_reading_document(
         READER,

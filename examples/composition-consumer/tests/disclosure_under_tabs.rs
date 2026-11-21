@@ -4,10 +4,7 @@
 mod coretext;
 use std::{ops::Range, rc::Rc, time::Duration};
 use tekes_ui_controls::{
-    ButtonFramePolicy, ButtonVariant, ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-    layout_view::IconRenderer,
+    ButtonFramePolicy, ButtonVariant, ControlKey, composition::*, layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Primitive, Rect, Scene};
 use tekes_ui_tokens::{Rgba, Theme};
@@ -36,19 +33,12 @@ impl IconRenderer for Icons {
     }
 }
 fn stack(children: Vec<Content>) -> StackContent {
-    StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 8.,
-        },
-        flexible_child: None,
-        children,
-    }
+    StackContent::vertical(8., children)
 }
 fn fixture() -> (ContentHost, coretext::Text, Icons) {
     let mut action = Button::new("Original body action");
-    action.variant = ButtonVariant::Primary;
-    action.button.frame_policy = ButtonFramePolicy::Exact;
+    action.set_variant(ButtonVariant::Primary);
+    action.set_frame_policy(ButtonFramePolicy::Exact);
     let disclosure = DisclosureContent::new(
         TRIGGER,
         Content::new(

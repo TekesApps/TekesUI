@@ -45,8 +45,8 @@ fn paint(menu: &mut MenuContent, text: &mut Text) {
     );
 }
 fn unavailable(menu: &mut MenuContent, loading: bool) {
-    menu.trigger.button.state.disabled = !loading;
-    menu.trigger.button.state.loading = loading;
+    menu.set_disabled(!loading);
+    menu.set_loading(loading);
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn menu_trigger_reuses_button_unavailable_semantics_and_rejects_ax_open() {
                 .activated
         );
         assert!(
-            !menu.menu.is_open(),
+            !menu.is_open(),
             "unavailable AX Press must not open the menu"
         );
     }
@@ -77,7 +77,7 @@ fn open_menu_rejects_latest_unavailable_trigger_before_another_paint() {
     for loading in [false, true] {
         for action in [AccessibilityAction::Press, AccessibilityAction::Focus] {
             let mut menu = menu();
-            menu.menu.show(0);
+            menu.open();
             paint(&mut menu, &mut Text::default());
             unavailable(&mut menu, loading);
             assert!(menu.semantic_parts().is_empty());
@@ -85,8 +85,8 @@ fn open_menu_rejects_latest_unavailable_trigger_before_another_paint() {
             assert_eq!(menu.semantics().expanded, Some(false));
             let response = menu.accessibility_action(Some(1), &action);
             assert!(!response.activated && !response.consumed);
-            assert_eq!(menu.selected, None);
-            assert!(!menu.menu.is_open());
+            assert_eq!(menu.selected(), None);
+            assert!(!menu.is_open());
         }
     }
 }
@@ -95,12 +95,12 @@ fn open_menu_rejects_latest_unavailable_trigger_before_another_paint() {
 fn held_menu_pointer_is_cancelled_when_trigger_becomes_unavailable() {
     for loading in [false, true] {
         let mut menu = menu();
-        menu.menu.show(0);
+        menu.open();
         let mut text = Text::default();
         paint(&mut menu, &mut text);
         text.0 = 200;
         paint(&mut menu, &mut text);
-        let point = menu.popup.as_ref().unwrap().items[1].frame.center();
+        let point = menu.popup_layout().unwrap().items[1].frame.center();
         menu.overlay_event(&ContentEvent::PointerDown(point));
         unavailable(&mut menu, loading);
         assert!(
@@ -108,10 +108,10 @@ fn held_menu_pointer_is_cancelled_when_trigger_becomes_unavailable() {
                 .overlay_event(&ContentEvent::PointerUp(point))
                 .activated
         );
-        assert_eq!(menu.selected, None);
-        assert!(!menu.menu.is_open());
-        menu.trigger.button.state.disabled = false;
-        menu.trigger.button.state.loading = false;
+        assert_eq!(menu.selected(), None);
+        assert!(!menu.is_open());
+        menu.set_disabled(false);
+        menu.set_loading(false);
         assert!(
             !menu
                 .overlay_event(&ContentEvent::PointerUp(point))
@@ -126,7 +126,7 @@ fn held_menu_pointer_is_cancelled_when_trigger_becomes_unavailable() {
                 .activated
         );
         assert!(
-            !menu.menu.is_open(),
+            !menu.is_open(),
             "re-enabling cannot revive an old open/press intent"
         );
         menu.accessibility_action(None, &AccessibilityAction::Press);
@@ -135,7 +135,7 @@ fn held_menu_pointer_is_cancelled_when_trigger_becomes_unavailable() {
             menu.accessibility_action(Some(1), &AccessibilityAction::Press)
                 .activated
         );
-        assert_eq!(menu.selected, Some(1));
+        assert_eq!(menu.selected(), Some(1));
     }
 }
 
@@ -160,7 +160,6 @@ fn content_host_menu_trigger_pointer_down_and_up_open_original_overlay() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
 
@@ -170,10 +169,8 @@ fn content_host_menu_trigger_pointer_down_and_up_open_original_overlay() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .trigger
-            .button
-            .state
-            .pressed,
+            .trigger()
+            .is_pressed(),
         "ContentHost must run the original MenuButton trigger PointerDown reducer"
     );
     assert!(down.consumed && down.capture_pointer);
@@ -186,7 +183,6 @@ fn content_host_menu_trigger_pointer_down_and_up_open_original_overlay() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     host.render(
@@ -204,7 +200,7 @@ fn content_host_menu_trigger_pointer_down_and_up_open_original_overlay() {
 fn menu_unmount_discards_retained_paint_and_hit_layout() {
     let mut menu = menu();
     let mut text = Text::default();
-    menu.menu.show(0);
+    menu.open();
     paint(&mut menu, &mut text);
     text.0 = 200;
     paint(&mut menu, &mut text);
@@ -219,7 +215,7 @@ fn menu_unmount_discards_retained_paint_and_hit_layout() {
         !menu.overlay_presented(),
         "unmounted content must not replay old exit paint"
     );
-    assert!(menu.popup.is_none());
+    assert!(menu.popup_layout().is_none());
     menu.lifecycle(Lifecycle::Mounted);
     assert!(!menu.overlay_presented());
     assert!(menu.semantic_parts().is_empty());

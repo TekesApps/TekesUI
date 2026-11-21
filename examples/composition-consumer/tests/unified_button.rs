@@ -100,7 +100,7 @@ fn count(h: &ContentHost) -> usize {
         .unwrap()
         .component::<Button>()
         .unwrap()
-        .activations
+        .activations()
 }
 fn key(h: &mut ContentHost, key: ControlKey, down: bool) {
     h.event(&ContentEvent::Key { key, down });
@@ -113,7 +113,7 @@ fn near(a: f32, b: f32) {
 fn selected_fill_only_uses_fill_without_a_boundary_on_the_original_surface() {
     let mut button = Button::new("More");
     button.set_selection_fill_only(true);
-    button.button.state.selected = true;
+    button.set_selected(true);
     let mut h = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
     let scene = render_surface(&mut h, &mut Text::new(1.), Theme::LIGHT, "toolbar");
     let frame = h.semantics()[0].frame;
@@ -163,9 +163,7 @@ fn transparent_chrome_keeps_focus_hover_press_and_single_action_delivery() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .hovered
+            .is_hovered()
     );
     assert!(!has_background(&render(
         &mut h,
@@ -181,9 +179,7 @@ fn transparent_chrome_keeps_focus_hover_press_and_single_action_delivery() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .pressed
+            .is_pressed()
     );
     assert!(!has_background(&render(
         &mut h,
@@ -321,9 +317,7 @@ fn cancellation_capture_and_disabled_loading_are_identical_for_all_contents() {
                     .unwrap()
                     .component::<Button>()
                     .unwrap()
-                    .button
-                    .state
-                    .hovered
+                    .is_hovered()
             );
             assert!(h.event(&ContentEvent::PointerDown(p)).capture_pointer);
             key(&mut h, ControlKey::Escape, true);
@@ -340,8 +334,8 @@ fn cancellation_capture_and_disabled_loading_are_identical_for_all_contents() {
                 .unwrap()
                 .component_mut::<Button>()
                 .unwrap();
-            b.button.state.disabled = !loading;
-            b.button.state.loading = loading;
+            b.set_disabled(!loading);
+            b.set_loading(loading);
             render(&mut h, &mut t, Theme::LIGHT);
             h.event(&ContentEvent::PointerUp(p));
             assert!(
@@ -419,7 +413,7 @@ fn image_position_and_alignment_use_the_same_button_without_rebuilding_action_ow
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .image_position = position;
+            .set_image_position(position);
         let s = render(&mut h, &mut t, Theme::LIGHT);
         let image = s
             .primitives()
@@ -451,8 +445,8 @@ fn image_position_and_alignment_use_the_same_button_without_rebuilding_action_ow
             .unwrap()
             .component_mut::<Button>()
             .unwrap();
-        b.image_position = ButtonImagePosition::Leading;
-        b.content_alignment = alignment;
+        b.set_image_position(ButtonImagePosition::Leading);
+        b.set_content_alignment(alignment);
         render(&mut h, &mut t, Theme::LIGHT);
         centers.push(t.drawn[0].1.center().x);
     }
@@ -522,7 +516,7 @@ fn exact_toolbar_buttons_and_content_replacement_preserve_the_original_action() 
         .unwrap()
         .component_mut::<Button>()
         .unwrap();
-    b.button.frame_policy = ButtonFramePolicy::Exact;
+    b.set_frame_policy(ButtonFramePolicy::Exact);
     b.set_contents(ImageId(1));
     b.set_accessible_name(Some("Save".into()));
     render(&mut h, &mut t, Theme::LIGHT);
@@ -534,7 +528,7 @@ fn exact_toolbar_buttons_and_content_replacement_preserve_the_original_action() 
         .component::<Button>()
         .unwrap();
     assert_eq!(
-        b.button.layout().unwrap().frame,
+        b.model().layout().unwrap().frame,
         h.get(ComponentId(1)).unwrap().frame()
     );
     h.set_window_active(false);

@@ -214,13 +214,12 @@ mod tests {
         }
 
         fn scroll(&self) -> &ScrollArea {
-            &self
-                .host
+            self.host
                 .get(SCROLL)
                 .expect("SCROLL")
                 .component::<ScrollContent>()
                 .expect("ScrollContent")
-                .scroll
+                .scroll()
         }
 
         fn scroll_geometry(&self) -> ScrollGeometry {
@@ -234,7 +233,6 @@ mod tests {
                 .unwrap()
                 .component_mut::<ScrollContent>()
                 .unwrap()
-                .scroll
                 .scroll_by(delta.x, delta.y);
         }
 
@@ -858,7 +856,7 @@ mod tests {
                     .component::<KeyedSelectableListContent>()
                     .unwrap();
                 assert_eq!(
-                    next_header.component::<TextContent>().unwrap().role,
+                    next_header.component::<TextContent>().unwrap().role(),
                     proposal::TextRole::UiCaption
                 );
                 let prev_last = prev_list.semantic_parts().last().unwrap().frame;

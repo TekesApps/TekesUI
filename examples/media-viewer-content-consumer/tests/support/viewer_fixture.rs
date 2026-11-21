@@ -1,8 +1,4 @@
-use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
@@ -31,7 +27,7 @@ impl Actions {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations;
+                .activations();
             let delta = count
                 .checked_sub(self.seen[index])
                 .expect("original button was not replaced");
@@ -80,13 +76,9 @@ pub const DIALOG: ComponentId = ComponentId(20462);
 pub fn modal_fixture(gpu: &mut Renderer) -> ContentHost {
     ContentHost::new(Content::new(
         MODAL_ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(INVOKER, Button::new("Open viewer")),
                 Content::new(
                     DIALOG,
@@ -101,7 +93,7 @@ pub fn modal_fixture(gpu: &mut Renderer) -> ContentHost {
                     ),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap()
 }

@@ -619,7 +619,7 @@ fn caller_row_id_reveals_original_arranged_row_and_hidden_target_never_redirects
         .reveal_scroll_reading_item(READER, &version, ComponentId(129), options, &mut Text)
         .unwrap();
     assert_eq!(result.item, ComponentId(129));
-    assert!(reader(&h).scroll.offset.y > 0.);
+    assert!(reader(&h).offset().y > 0.);
     s.display_rows.retain(|k| *k != TableRowKey(29));
     update(&mut h, s).unwrap();
     paint(&mut h);

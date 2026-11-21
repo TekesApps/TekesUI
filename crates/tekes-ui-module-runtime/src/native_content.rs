@@ -1458,8 +1458,7 @@ mod tests {
                 .unwrap()
                 .component_mut::<ProgressContent>()
                 .unwrap()
-                .model
-                .indeterminate = unknown;
+                .set_indeterminate(unknown);
             host.render(
                 &mut Scene::new(),
                 &mut text,

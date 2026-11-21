@@ -3,7 +3,7 @@
 use tekes_ui_controls::{
     ReadingDocumentVersion, ScrollArea,
     composition::*,
-    extended::{Axis, CodeBlock, DiffView, Stack},
+    extended::{CodeBlock, DiffView},
 };
 pub const ROOT: ComponentId = ComponentId(25000);
 pub const READER: ComponentId = ComponentId(25001);
@@ -40,13 +40,9 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         .collect();
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            flexible_child: Some(READER),
-            children: vec![
+        StackContent::vertical(
+            12.,
+            vec![
                 Content::new(
                     READER,
                     ScrollContent::new(
@@ -59,7 +55,8 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                     TextFieldContent::new("Independent draft", "Untouched 中文😀"),
                 ),
             ],
-        },
+        )
+        .with_flexible_child(READER),
     ))?;
     host.set_scroll_reading_document(
         READER,

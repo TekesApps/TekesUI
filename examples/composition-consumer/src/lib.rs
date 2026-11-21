@@ -3,7 +3,6 @@
 use tekes_ui_controls::{
     ButtonTextRenderer,
     composition::*,
-    extended::{Axis, Stack},
     layout::MeasuredChild,
     layout_view::{IconRenderer, IconView},
 };
@@ -51,49 +50,36 @@ impl Component for Icon {
             frame,
             24.,
             Some(clip),
-            theme.palette,
+            theme.palette(),
             theme
-                .foreground
-                .unwrap_or_else(|| theme.palette.color("primary-text").unwrap()),
+                .foreground()
+                .unwrap_or_else(|| theme.palette().color("primary-text").unwrap()),
         );
     }
 }
 pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionError> {
     let caption = Content::new(
         ComponentId(4),
-        StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Tight.value(),
-            },
-            children: vec![
+        StackContent::vertical(
+            Spacing::Tight.value(),
+            vec![
                 Content::new(
                     ComponentId(5),
-                    TextContent {
-                        text: "Workspace settings".into(),
-                        role: proposal::TextRole::UiHeading,
-                    },
+                    TextContent::new("Workspace settings").with_role(proposal::TextRole::UiHeading),
                 ),
                 Content::new(
                     ComponentId(6),
-                    TextContent {
-                        text: "Theme, input and accessibility".into(),
-                        role: proposal::TextRole::UiCaption,
-                    },
+                    TextContent::new("Theme, input and accessibility")
+                        .with_role(proposal::TextRole::UiCaption),
                 ),
             ],
-        },
+        ),
     );
     let row = Content::new(
         ComponentId(2),
-        StackContent {
-            flexible_child: Some(ComponentId(4)),
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![
+        StackContent::horizontal(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(
                     ComponentId(3),
                     Icon {
@@ -104,7 +90,8 @@ pub fn compound_button(images: IconImages) -> Result<ContentHost, CompositionErr
                 caption,
                 Content::new(ComponentId(7), BadgeContent::new("Local")?),
             ],
-        },
+        )
+        .with_flexible_child(ComponentId(4)),
     );
     ContentHost::new(Content::new(
         ComponentId(1),
@@ -167,7 +154,7 @@ mod tests {
                     .unwrap()
                     .component::<Button>()
                     .unwrap()
-                    .activations,
+                    .activations(),
                 1
             );
         }

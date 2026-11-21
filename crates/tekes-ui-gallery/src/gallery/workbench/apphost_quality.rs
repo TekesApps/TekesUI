@@ -196,7 +196,7 @@ impl Component for Showcase {
         scene.push_clip(clip);
         showcase::build_with_text(
             self.category,
-            theme.palette.theme,
+            theme.palette().theme,
             &mut HostText(text),
             frame,
             scene,
@@ -315,7 +315,7 @@ impl Component for Geometry {
         theme: ContentTheme,
     ) {
         let backing = text.backing_scale();
-        let palette = theme.palette;
+        let palette = theme.palette();
         scene.push_clip(clip);
         crate::gallery::pages::primitives::build_calibration_with_labels(
             palette.theme,

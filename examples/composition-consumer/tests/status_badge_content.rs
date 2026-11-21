@@ -456,8 +456,8 @@ fn surface_inheritance_explicit_clear_and_solid_ink_ignore_decorative_overrides(
     }
     // Direct original Component contract receives decorative ink as an action child.
     let mut c = StatusBadgeContent::new(StatusBadge::Info, "Info").unwrap();
-    let mut theme = ContentTheme::from(Palette::from(Theme::LIGHT));
-    theme.foreground = Some(tekes_ui_tokens::Rgba::new(1., 0., 0., 1.));
+    let theme = ContentTheme::from(Palette::from(Theme::LIGHT))
+        .with_foreground(Some(tekes_ui_tokens::Rgba::new(1., 0., 0., 1.)));
     // This main API exposes foreground only; historical icon_foreground coverage
     // is not claimed here. StatusBadge renders text and solid ink, not icons.
     let mut scene = Scene::new();
@@ -465,7 +465,7 @@ fn surface_inheritance_explicit_clear_and_solid_ink_ignore_decorative_overrides(
     c.paint(&mut scene, &mut t, f, f, theme);
     for p in scene.primitives() {
         if let Primitive::Glyphs(run) = p {
-            assert_eq!(run.color, StatusBadgeView::label_color(theme.palette));
+            assert_eq!(run.color, StatusBadgeView::label_color(theme.palette()));
         }
     }
 }

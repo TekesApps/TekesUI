@@ -217,10 +217,13 @@ fn public_search_original_editor_pixels_and_surface_clip() {
                     // against the original public Button, without Host focus transfer.
                     if !partial && !original.text().is_empty() {
                         let clear_frame = host.semantics()[0].parts[0].frame;
-                        let mut clear = Button::new("×").with_accessible_name("Clear");
-                        clear.button.state.disabled = original.input().is_read_only()
-                            || original.input().is_disabled()
-                            || original.marked().is_some();
+                        let mut clear = Button::new("×")
+                            .with_accessible_name("Clear")
+                            .with_disabled(
+                                original.input().is_read_only()
+                                    || original.input().is_disabled()
+                                    || original.marked().is_some(),
+                            );
                         let mut button_text = coretext::Text::new(zoom);
                         button_text.services = true;
                         button_text.backing = backing;

@@ -8,11 +8,7 @@ use tekes_ui_composition_consumer::{
     content_status::{self, Kind, Status},
     slider_content,
 };
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-    layout_view::IconRenderer,
-};
+use tekes_ui_controls::{composition::*, layout_view::IconRenderer};
 use tekes_ui_scene::{ImageId, Rect, Scene};
 use tekes_ui_tokens::{Palette, Rgba, Spacing, Theme};
 
@@ -98,14 +94,7 @@ fn input_status_consumers_keep_independent_drafts_in_one_host() {
             .collect();
         let mut host = ContentHost::new(Content::new(
             ComponentId(91000),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children,
-                flexible_child: None,
-            },
+            StackContent::vertical(Spacing::Regular.value(), children),
         ))
         .unwrap();
         host.set_window_active(true);
@@ -171,14 +160,7 @@ fn tabs_disclosure_and_slider_consumers_preserve_independent_state_in_shared_hos
         };
         let mut host = ContentHost::new(Content::new(
             ComponentId(100000),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children,
-                flexible_child: None,
-            },
+            StackContent::vertical(Spacing::Regular.value(), children),
         ))
         .unwrap();
         host.set_window_active(true);
@@ -214,7 +196,7 @@ fn tabs_disclosure_and_slider_consumers_preserve_independent_state_in_shared_hos
                     .unwrap()
                     .component::<SliderContent>()
                     .unwrap()
-                    .model
+                    .model()
                     .value(),
                 60.
             );
@@ -234,7 +216,7 @@ fn tabs_disclosure_and_slider_consumers_preserve_independent_state_in_shared_hos
                     .unwrap()
                     .component::<SliderContent>()
                     .unwrap()
-                    .model
+                    .model()
                     .value(),
                 65.
             );

@@ -1,11 +1,7 @@
 //! Caller-owned composition of the existing bounded NumberField View.
 //! Two ordinary semantic/focus nodes delegate to one original model/View;
 //! they do not paint another stepper or implement another activation machine.
-use tekes_ui_controls::{
-    NumberField,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{NumberField, composition::*};
 use tekes_ui_tokens::{Spacing, proposal};
 
 pub const ROOT: ComponentId = ComponentId(9200);
@@ -40,27 +36,18 @@ fn number(
 pub fn build() -> Result<ContentHost, CompositionError> {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(
                     ComponentId(9209),
-                    TextContent {
-                        text: "Quantity · bounded stepper".into(),
-                        role: proposal::TextRole::UiBody,
-                    },
+                    TextContent::new("Quantity · bounded stepper")
+                        .with_role(proposal::TextRole::UiBody),
                 ),
                 number(QUANTITY, DECREMENT, INCREMENT, "Quantity", 2., false),
                 Content::new(
                     ComponentId(9219),
-                    TextContent {
-                        text: "At upper limit".into(),
-                        role: proposal::TextRole::UiBody,
-                    },
+                    TextContent::new("At upper limit").with_role(proposal::TextRole::UiBody),
                 ),
                 number(
                     LIMIT,
@@ -72,10 +59,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 ),
                 Content::new(
                     ComponentId(9229),
-                    TextContent {
-                        text: "Disabled quantity".into(),
-                        role: proposal::TextRole::UiBody,
-                    },
+                    TextContent::new("Disabled quantity").with_role(proposal::TextRole::UiBody),
                 ),
                 number(
                     DISABLED,
@@ -87,7 +71,7 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 ),
                 Content::new(AFTER, Button::new("After number")),
             ],
-        },
+        ),
     ))
 }
 /// Caller changes its authoritative model, without painting as a side effect.

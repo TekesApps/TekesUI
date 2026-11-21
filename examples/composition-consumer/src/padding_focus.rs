@@ -1,11 +1,7 @@
 //! Passive input decoration around one retained editor and a real sibling action.
 //! This consumer supplies only layout and IDs; ContentHost owns input routing.
 use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    feedback_view::SurfaceView,
-    layout::MeasuredChild,
+    ButtonTextRenderer, composition::*, feedback_view::SurfaceView, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Spacing, proposal};
@@ -68,7 +64,7 @@ impl Component for InputBand {
         theme: ContentTheme,
     ) {
         self.view
-            .render_at_scale(s, f, Some(clip), theme.palette, true, t.backing_scale());
+            .render_at_scale(s, f, Some(clip), theme.palette(), true, t.backing_scale());
     }
 }
 pub const READ_ONLY_TEXT: &str = "A😀B 中文 e\u{301} selectable";
@@ -110,17 +106,13 @@ fn build_with_text(
     };
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(BAND, band),
                 Content::new(OTHER, TextFieldContent::new("Other", "Other draft")),
             ],
-        },
+        ),
     ))?;
     host.set_action_events(true);
     if allow_read_only {

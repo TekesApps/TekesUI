@@ -1,11 +1,7 @@
 //! Mixed public Content under the existing ScrollContent. No scroll state machine
 //! or pixel compensation lives in this consumer. Reading is explicitly opt-in;
 //! the default scene remains a functional stress fixture, not visual acceptance.
-use tekes_ui_controls::{
-    ReadingDocumentVersion, ReadingUpdateError, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, ReadingUpdateError, ScrollArea, composition::*};
 use tekes_ui_tokens::{Spacing, proposal};
 
 pub const ROOT: ComponentId = ComponentId(9700);
@@ -32,13 +28,9 @@ impl Scenario {
             ITEMS,
             Content::new(
                 PANEL,
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: Spacing::Regular.value(),
-                    },
-                    flexible_child: None,
-                    children: vec![
+                StackContent::vertical(
+                    Spacing::Regular.value(),
+                    vec![
                         Content::new(
                             PANEL_TEXT,
                             TextContent::new("Nested content panel · 工具详情"),
@@ -50,7 +42,7 @@ impl Scenario {
                             TextFieldContent::new("Inline notes", "Local note"),
                         ),
                     ],
-                },
+                ),
             ),
         )?;
         let mut keys = s.item_keys();
@@ -65,8 +57,7 @@ impl Scenario {
             .unwrap()
             .component::<ListContent>()
             .unwrap()
-            .rows
-            .children
+            .items()
             .iter()
             .map(Content::id)
             .collect()
@@ -139,10 +130,11 @@ impl Scenario {
             .ok_or(ReadingUpdateError::InvalidDocument)?;
         let content = Content::new(
             id,
-            TextContent {
-                text: format!("Page {} · mixed Content document update", self.next),
-                role: proposal::TextRole::UiBody,
-            },
+            TextContent::new(format!(
+                "Page {} · mixed Content document update",
+                self.next
+            ))
+            .with_role(proposal::TextRole::UiBody),
         );
         let (version, ()) = self.host.update_scroll_reading_document(
             SCROLLER,
@@ -175,7 +167,7 @@ impl Scenario {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = value;
+                        .set_text(value);
                 })?;
         self.expanded = expanded;
         Ok(version)
@@ -184,19 +176,14 @@ impl Scenario {
         let mut children = vec![
             Content::new(
                 TOP,
-                TextContent {
-                    text: "Live document · 混合内容".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
+                TextContent::new("Live document · 混合内容")
+                    .with_role(proposal::TextRole::UiHeading),
             ),
             Content::new(TOGGLE, SwitchContent::new("Keep local draft", true)),
             Content::new(ACTION, Button::new("Inspect item")),
         ];
         for index in 0..20 {
-            children.push(Content::new(ComponentId(9720 + index), TextContent {
-                text: format!("Item {index:02} · 内容、面板与动作共用真实滚动容器。 Reflow must preserve a valid native scroll sequence."),
-                role: proposal::TextRole::UiBody,
-            }));
+            children.push(Content::new(ComponentId(9720 + index), TextContent::new(format!("Item {index:02} · 内容、面板与动作共用真实滚动容器。 Reflow must preserve a valid native scroll sequence.")).with_role(proposal::TextRole::UiBody)));
         }
         let scroll = ScrollContent::new(
             ScrollArea::default(),
@@ -205,20 +192,17 @@ impl Scenario {
         Ok(Self {
             host: ContentHost::new(Content::new(
                 ROOT,
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: Spacing::Regular.value(),
-                    },
-                    flexible_child: Some(SCROLLER),
-                    children: vec![
+                StackContent::vertical(
+                    Spacing::Regular.value(),
+                    vec![
                         Content::new(SCROLLER, scroll),
                         Content::new(
                             COMPOSER,
                             TextFieldContent::new("Independent draft", "Draft A😀B"),
                         ),
                     ],
-                },
+                )
+                .with_flexible_child(SCROLLER),
             ))?,
             next: 9800,
             expanded: false,
@@ -231,17 +215,15 @@ impl Scenario {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = top_text(self.expanded);
+            .set_text(top_text(self.expanded));
     }
     pub fn append(&mut self) -> Result<(), CompositionError> {
         self.host.insert(
             ITEMS,
             Content::new(
                 ComponentId(self.next),
-                TextContent {
-                    text: format!("Appended {} · streaming content update", self.next),
-                    role: proposal::TextRole::UiBody,
-                },
+                TextContent::new(format!("Appended {} · streaming content update", self.next))
+                    .with_role(proposal::TextRole::UiBody),
             ),
         )?;
         self.next += 1;

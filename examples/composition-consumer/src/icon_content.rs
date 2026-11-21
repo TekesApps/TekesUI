@@ -1,8 +1,5 @@
 //! Business declarations only; the SDK owns glyphs, input, help, AX and resources.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 pub const ROOT: ComponentId = ComponentId(20800);
 pub const ICON: ComponentId = ComponentId(20801);
 pub const BACK: ComponentId = ComponentId(20802);
@@ -21,13 +18,9 @@ pub fn build() -> Result<ContentHost, CompositionError> {
     back.set_help(Some("Back · original Button".into()));
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            12.,
+            vec![
                 Content::new(
                     ComponentId(20807),
                     TextContent::new("Canonical IconContent · one window resource service"),
@@ -37,13 +30,9 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                 Content::new(UNAVAILABLE, Button::new("Toggle unavailable")).preserving_focus(),
                 Content::new(
                     ComponentId(20808),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Horizontal,
-                            gap: 12.,
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::horizontal(
+                        12.,
+                        vec![
                             Content::new(
                                 ICON,
                                 IconContent::new("tekes-settings")
@@ -55,10 +44,10 @@ pub fn build() -> Result<ContentHost, CompositionError> {
                             Content::new(SWAP, Button::new("Swap glyph")).preserving_focus(),
                             Content::new(HIDE, Button::new("Hide icon")).preserving_focus(),
                         ],
-                    },
+                    ),
                 ),
             ],
-        },
+        ),
     ))?;
     host.set_action_events(true);
     Ok(host)

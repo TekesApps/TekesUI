@@ -257,7 +257,7 @@ fn hover_and_help_updates_keep_composer_preedit_selection_key_epoch_and_scroll()
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     hover(&mut h, &mut t);
     h.get_mut(FIRST)
@@ -276,7 +276,7 @@ fn hover_and_help_updates_keep_composer_preedit_selection_key_epoch_and_scroll()
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         offset
     );
@@ -321,7 +321,7 @@ fn original_pointer_keyboard_and_ax_actions_remain_once_and_close_help() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         3
     );
     t.now += 4000;
@@ -441,8 +441,7 @@ fn real_overlay_and_editor_capture_take_priority_over_help() {
         .unwrap()
         .component_mut::<MenuContent>()
         .unwrap()
-        .menu
-        .show(0);
+        .open();
     draw(&mut h, &mut t);
     assert!(h.help_tooltip().is_none());
     h.remove(menu).unwrap();
@@ -494,9 +493,7 @@ fn help_preserves_a_nonzero_original_reading_position() {
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap()
-        .scroll
-        .offset
-        .y = 80.;
+        .scroll_to(0., 80.);
     draw(&mut h, &mut t);
     let id = ComponentId(FIRST.0 + 4);
     let p = h.get(id).unwrap().visible().unwrap().center();
@@ -505,7 +502,7 @@ fn help_preserves_a_nonzero_original_reading_position() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     h.event(&ContentEvent::PointerMove(p));
     draw(&mut h, &mut t);
@@ -517,7 +514,7 @@ fn help_preserves_a_nonzero_original_reading_position() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         before
     );

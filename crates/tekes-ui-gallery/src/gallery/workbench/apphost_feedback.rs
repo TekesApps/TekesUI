@@ -3,7 +3,7 @@ use super::{Entry, StoryState};
 use tekes_ui_controls::{
     ButtonModel, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     composition::*,
-    extended::{self as controls, Axis, Banner, EmptyState, Popover, Stack, Toast, Tooltip},
+    extended::{self as controls, Banner, EmptyState, Popover, Toast, Tooltip},
     feedback_view::{
         BannerView, DialogView, EmptyStateView, MenuView, SurfaceView, ToastView, TooltipView,
     },
@@ -653,17 +653,7 @@ fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
 fn stack(id: ComponentId, children: Vec<Content>) -> Content {
-    Content::new(
-        id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            flexible_child: None,
-            children,
-        },
-    )
+    Content::new(id, StackContent::vertical(12., children))
 }
 #[derive(Debug)]
 struct Matrix {
@@ -681,10 +671,10 @@ impl Matrix {
         let mut renderer = FixtureRenderer(text);
         let mut ctx = FixtureContext {
             text: &mut renderer,
-            theme: theme.palette.theme,
+            theme: theme.palette().theme,
         };
         let mut y = bounds.min_y();
-        let palette = theme.palette;
+        let palette = theme.palette();
         match (self.renderer, self.variants) {
             ("tooltip", _) => matrix_tooltip(&mut ctx, scene, bounds, &mut y, palette),
             ("popover", _) => matrix_popover(&mut ctx, scene, bounds, &mut y, palette),
@@ -832,17 +822,13 @@ impl FeedbackStory {
         let state = StoryState::for_entry(entry);
         let intro = Content::new(
             ComponentId(103010),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     super::story_heading(103004, entry.title()),
                     text(103005, super::story_docs(entry)),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let children = vec![
             intro,
@@ -1033,11 +1019,10 @@ impl FeedbackStory {
         }
         if let Some(node) = self.host.get_mut(CONTROL) {
             if let Some(button) = node.component_mut::<Button>() {
-                button.button.state.disabled = self.state.disabled;
+                button.set_disabled(self.state.disabled);
             }
             if let Some(menu) = node.component_mut::<MenuContent>() {
-                menu.trigger.button.state.disabled = self.state.disabled;
-                menu.menu.set_disabled(self.state.disabled);
+                menu.set_disabled(self.state.disabled);
             }
         }
         if let Some(button) = self
@@ -1045,12 +1030,11 @@ impl FeedbackStory {
             .get_mut(ComponentId(COMMAND + 10))
             .and_then(|n| n.component_mut::<Button>())
         {
-            button.label = if self.state.disabled {
+            button.set_label(if self.state.disabled {
                 "Disabled: on"
             } else {
                 "Disabled: off"
-            }
-            .into();
+            });
         }
     }
     pub(crate) fn select_section(&mut self, section: usize) {
@@ -1235,14 +1219,14 @@ impl FeedbackStory {
                 .host
                 .get(id)
                 .and_then(|node| node.component::<TextContent>())
-                .is_some_and(|text| text.text != value)
+                .is_some_and(|text| text.text() != value)
             {
                 self.host
                     .get_mut(id)
                     .unwrap()
                     .component_mut::<TextContent>()
                     .unwrap()
-                    .text = value;
+                    .set_text(value);
             }
         }
         if self.entry.renderer() == "toast" {
@@ -1256,14 +1240,14 @@ impl FeedbackStory {
                 .host
                 .get(id)
                 .and_then(|node| node.component::<Button>())
-                .is_some_and(|button| button.label != label)
+                .is_some_and(|button| button.label() != label)
             {
                 self.host
                     .get_mut(id)
                     .unwrap()
                     .component_mut::<Button>()
                     .unwrap()
-                    .label = label.into();
+                    .set_label(label);
             }
         }
     }

@@ -90,7 +90,7 @@ fn final_progress_actual_gpu_readback() {
                         let mut scene = Scene::new();
                         ProgressView::default().render(&mut scene, model, frame, Some(clip), p);
                         let mut c = ProgressContent::new("GPU progress", value);
-                        c.model.indeterminate = unknown;
+                        c.set_indeterminate(unknown);
                         let mut h = ContentHost::new(Content::new(ComponentId(1), c)).unwrap();
                         let mut content = Scene::new();
                         h.render(&mut content, &mut t, frame, clip, p).unwrap();

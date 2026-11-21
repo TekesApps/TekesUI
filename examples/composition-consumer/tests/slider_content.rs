@@ -68,7 +68,7 @@ fn value(h: &ContentHost) -> f64 {
         .unwrap()
         .component::<SliderContent>()
         .unwrap()
-        .model
+        .model()
         .value()
 }
 #[test]
@@ -169,8 +169,7 @@ fn range_drag_is_isolated_and_disable_or_accessibility_update_cancels_old_captur
         .unwrap()
         .component_mut::<SliderContent>()
         .unwrap()
-        .model
-        .disabled = true;
+        .set_disabled(true);
     assert!(
         !h.accessibility_action(RANGE, None, AccessibilityAction::Increment)
             .consumed
@@ -181,8 +180,7 @@ fn range_drag_is_isolated_and_disable_or_accessibility_update_cancels_old_captur
         .unwrap()
         .component_mut::<SliderContent>()
         .unwrap()
-        .model
-        .disabled = false;
+        .set_disabled(false);
     assert!(!h.event(&ContentEvent::PointerUp(p)).activated);
     assert_eq!(value(&h), 50.);
     assert!(
@@ -190,7 +188,7 @@ fn range_drag_is_isolated_and_disable_or_accessibility_update_cancels_old_captur
             .unwrap()
             .component::<SliderContent>()
             .unwrap()
-            .view
+            .view()
             .is_captured()
     );
 }
@@ -224,8 +222,7 @@ fn public_slider_content_keeps_original_tokens_and_independent_focus_geometry() 
                         .unwrap()
                         .component_mut::<SliderContent>()
                         .unwrap()
-                        .model
-                        .disabled = disabled;
+                        .set_disabled(disabled);
                     if focused {
                         h.focus(Some(RANGE), true);
                     }
@@ -246,8 +243,8 @@ fn public_slider_content_keeps_original_tokens_and_independent_focus_geometry() 
                         Vec::<(String, String)>::new(),
                     );
                     let slider = h.get(RANGE).unwrap().component::<SliderContent>().unwrap();
-                    let l = slider.view.layout();
-                    assert_eq!(slider.model.value(), 50.);
+                    let l = slider.view().layout();
+                    assert_eq!(slider.model().value(), 50.);
                     let thumb = scene
                         .primitives()
                         .iter()
@@ -271,7 +268,7 @@ fn public_slider_content_keeps_original_tokens_and_independent_focus_geometry() 
                             .color(if disabled { "disabled-text" } else { "border" })
                             .unwrap()
                     );
-                    assert_eq!(slider.view.is_focused(), focused && !disabled);
+                    assert_eq!(slider.view().is_focused(), focused && !disabled);
                     assert_eq!(h.value_range(RANGE), Some(0.0..=100.0));
                     cases.push(serde_json::json!({"component":"tui.slider","range_state":if disabled{"disabled"}else if focused{"focus"}else{"rest"},"state_asserted":true,"context":"public SliderContent with TextFieldContent sibling","theme":format!("{theme:?}"),"brand":brand,"lookups":reads}));
                 }

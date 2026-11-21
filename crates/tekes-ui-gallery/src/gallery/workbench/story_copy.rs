@@ -1,6 +1,5 @@
 use super::Entry;
 use std::sync::OnceLock;
-use tekes_ui_tokens::proposal;
 
 /// Shared heading for migrated stories. The existing proposal heading role
 /// restores hierarchy; it is not a pixel-equivalence claim for legacy chrome.
@@ -9,9 +8,7 @@ pub(crate) fn story_heading(
     value: impl Into<String>,
 ) -> tekes_ui_controls::composition::Content {
     use tekes_ui_controls::composition::{ComponentId, Content, TextContent};
-    let mut content = TextContent::new(value);
-    content.role = proposal::TextRole::UiHeading;
-    Content::new(ComponentId(id), content)
+    Content::new(ComponentId(id), TextContent::heading(value))
 }
 
 pub(crate) fn api_reference(entry: &Entry) -> &str {

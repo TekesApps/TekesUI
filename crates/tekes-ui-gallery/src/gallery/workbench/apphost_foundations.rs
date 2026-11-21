@@ -72,10 +72,10 @@ impl Component for SampleContent {
         clip: Rect,
         theme: ContentTheme,
     ) {
-        self.1 = Some(theme.palette);
+        self.1 = Some(theme.palette());
         scene.push_clip(clip);
         let sample = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, 56.);
-        let palette = theme.palette;
+        let palette = theme.palette();
         let color = |role| palette.color(role).expect("registered foundation token");
         match self.0 {
             Sample::Semantic(role) => scene.push_quad(
@@ -276,17 +276,13 @@ impl AppHostFoundations {
         let state = StoryState::for_entry(entry);
         let intro = Content::new(
             ComponentId(97806),
-            StackContent {
-                model: tekes_ui_controls::extended::Stack {
-                    axis: tekes_ui_controls::extended::Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     super::story_heading(97802, entry.title()),
                     text(97803, super::story_docs(entry)),
                 ],
-            },
+            ),
         );
         let mut children = vec![intro];
         if entry.renderer() == "tokens" {
@@ -357,8 +353,7 @@ impl AppHostFoundations {
                     ("Caption — 0123456789", TextRole::UiCaption),
                     ("Composer — Natural paragraphs", TextRole::ComposerBody),
                 ].into_iter().enumerate() {
-                    let mut content = TextContent::new(label);
-                    content.role = role;
+                    let content = TextContent::new(label).with_role(role);
                     children.push(Content::new(ComponentId(SPECIMEN + i as u64), content));
                 }
             }

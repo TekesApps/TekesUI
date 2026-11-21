@@ -1,10 +1,6 @@
 //! Two-layer transcript preview from original Content in the original editor host.
 use std::num::NonZeroUsize;
-use tekes_ui_controls::{
-    TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{TextSurface, composition::*};
 use tekes_ui_text::{LabelOptions, LabelOverflow};
 pub const ROOT: ComponentId = ComponentId(24600);
 pub const TICK_A: ComponentId = ComponentId(24601);
@@ -25,14 +21,7 @@ pub fn content(input: &str, output: &str) -> Content {
     };
     Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![label(INPUT, input, 2), label(OUTPUT, output, 4)],
-        },
+        StackContent::vertical(8., vec![label(INPUT, input, 2), label(OUTPUT, output, 4)]),
     )
 }
 #[derive(Debug)]
@@ -56,19 +45,15 @@ impl Transcript {
         preview.set_max_content_width(Some(220.));
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(TICK_A, Button::new("Turn A")),
                     Content::new(TICK_B, Button::new("Turn B")),
                     Content::new(COMPOSER, composer),
                     Content::new(PREVIEW, preview),
                 ],
-            },
+            ),
         ))
         .unwrap();
         let version = host.bind_hover_preview(TICK_A, PREVIEW).unwrap();

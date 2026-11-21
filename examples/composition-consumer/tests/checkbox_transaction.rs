@@ -2,11 +2,7 @@
 //! Real original Checkbox/Scroll/Composer input owners; no GPU or native window claim.
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    CheckState, Checkbox, ControlKey, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{CheckState, Checkbox, ControlKey, ScrollArea, composition::*};
 use tekes_ui_macos_bridge::content_accessibility::{content_action, content_key};
 use tekes_ui_platform_macos::AccessibilityAction as Native;
 use tekes_ui_scene::{Rect, Scene};
@@ -22,20 +18,16 @@ fn setup(value: CheckState) -> (ContentHost, coretext::Text) {
             CheckboxContent::new("Original Checkbox · 完整标签", value),
         ),
     );
-    scroll.viewport_height = Some(100.);
+    scroll.set_viewport_height(Some(100.));
     let mut host = ContentHost::new(Content::new(
         ComponentId(10860),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(SCROLL, scroll),
                 Content::new(EDITOR, TextFieldContent::new("Composer", "kept draft 😀")),
             ],
-        },
+        ),
     ))
     .unwrap();
     let mut text = coretext::Text::new(1.);
@@ -243,7 +235,7 @@ fn scroll_marked_composer_refuses_strict_ax_and_tab_before_checkbox_or_focus_eff
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     for action in [Native::Press, Native::Focus, Native::SetValue("on".into())] {
         let target = content_key(&h, CHECK, None).unwrap();
@@ -266,7 +258,7 @@ fn scroll_marked_composer_refuses_strict_ax_and_tab_before_checkbox_or_focus_eff
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         offset
     );

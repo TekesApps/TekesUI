@@ -1,8 +1,5 @@
 //! Public Disclosure acceptance scene. Only business confirmation policy lives here.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 pub const ROOT: ComponentId = ComponentId(38000);
 pub const DISCLOSURE: ComponentId = ComponentId(38001);
 pub const TRIGGER: ComponentId = ComponentId(38002);
@@ -15,14 +12,7 @@ pub const TITLE_DETAIL: ComponentId = ComponentId(38008);
 pub const NAME: &str = "长期项目分组：摘要、正在进行的任务与中文说明";
 pub const DRAFT: &str = "Original body draft";
 fn stack(children: Vec<Content>) -> StackContent {
-    StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 8.,
-        },
-        flexible_child: None,
-        children,
-    }
+    StackContent::vertical(8., children)
 }
 pub fn build() -> Result<ContentHost, CompositionError> {
     let title = Content::new(

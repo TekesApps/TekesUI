@@ -1,11 +1,7 @@
 //! Independent public consumer. Host layout composes the intrinsic-height bar
 //! with ordinary Text siblings separately from the original scalar model.
 use crate::scroll_updates::{COMPOSER, LATEST, ROOT, SCROLLER, Scenario};
-use tekes_ui_controls::{
-    ReadingDocumentVersion,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, composition::*};
 use tekes_ui_tokens::Spacing;
 pub const ROW: ComponentId = ComponentId(58000);
 pub const LABEL: ComponentId = ComponentId(58001);
@@ -16,24 +12,20 @@ pub fn build() -> Result<(Scenario, ReadingDocumentVersion), CompositionError> {
     let version = scenario
         .attach_reading("progress-transcript", 1)
         .expect("valid original reading document");
-    let mut progress = ProgressContent::new("Transfer progress", 0.45);
-    progress.description = Some("Transferred portion; result is reported separately".into());
+    let progress = ProgressContent::new("Transfer progress", 0.45)
+        .with_description("Transferred portion; result is reported separately");
     scenario.host.insert(
         ROOT,
         Content::new(
             ROW,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Tight.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Tight.value(),
+                vec![
                     Content::new(LABEL, TextContent::new("Transfer")),
                     Content::new(BAR, progress),
                     Content::new(RESULT, TextContent::new("Awaiting verification")),
                 ],
-            },
+            ),
         ),
     )?;
     scenario
@@ -49,11 +41,11 @@ pub fn publish(host: &mut ContentHost, value: f32, unknown: bool, result: &str) 
         .unwrap()
         .component_mut::<ProgressContent>()
         .unwrap();
-    progress.model.set(value);
-    progress.model.indeterminate = unknown;
+    progress.set_value(value);
+    progress.set_indeterminate(unknown);
     host.get_mut(RESULT)
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text = result.into();
+        .set_text(result);
 }

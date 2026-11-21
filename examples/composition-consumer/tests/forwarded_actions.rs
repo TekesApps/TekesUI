@@ -78,25 +78,25 @@ fn public_paint_declaration_forwards_original_button_without_state_predicates() 
             assert!(wrapper.focus_decoration_above_siblings());
         }
         for state in 0..3 {
-            let b = &mut action_mut(&mut h, id).button;
-            b.state.disabled = state == 0;
-            b.state.loading = state == 1;
-            b.frame_policy = if state == 2 {
+            let b = action_mut(&mut h, id);
+            b.set_disabled(state == 0);
+            b.set_loading(state == 1);
+            b.set_frame_policy(if state == 2 {
                 ButtonFramePolicy::Minimum
             } else {
                 ButtonFramePolicy::Exact
-            };
+            });
             assert!(!action(&h, id).focus_decoration_above_siblings());
         }
-        let b = &mut action_mut(&mut h, id).button;
-        b.state.disabled = false;
-        b.state.loading = false;
-        b.frame_policy = ButtonFramePolicy::Exact;
+        let b = action_mut(&mut h, id);
+        b.set_disabled(false);
+        b.set_loading(false);
+        b.set_frame_policy(ButtonFramePolicy::Exact);
         h.focus(Some(id), false);
         assert!(!action(&h, id).focus_decoration_above_siblings());
     }
     let normal = h.get(NORMAL).unwrap().component::<Button>().unwrap();
-    assert_eq!(normal.button.frame_policy, ButtonFramePolicy::Minimum);
+    assert_eq!(normal.frame_policy(), ButtonFramePolicy::Minimum);
 }
 #[test]
 fn real_pointer_release_and_press_keep_original_once_only_capture() {
@@ -130,14 +130,14 @@ fn half_open_rows_and_original_geometry_are_unchanged() {
     let p = Point::new(f.center().x, f.max_y());
     assert!(
         !action(&h, WRAPPED_RELEASE)
-            .button
+            .model()
             .layout()
             .unwrap()
             .hit_test(p)
     );
     assert!(
         action(&h, WRAPPED_PRESS)
-            .button
+            .model()
             .layout()
             .unwrap()
             .hit_test(p)
@@ -169,8 +169,8 @@ fn original_cancel_disabled_loading_and_unmount_keep_input_ownership() {
                 0 => {
                     event(&mut h, ContentEvent::Cancel);
                 }
-                1 => action_mut(&mut h, id).button.state.disabled = true,
-                2 => action_mut(&mut h, id).button.state.loading = true,
+                1 => action_mut(&mut h, id).set_disabled(true),
+                2 => action_mut(&mut h, id).set_loading(true),
                 _ => {
                     h.remove(id).unwrap();
                 }
@@ -236,7 +236,7 @@ fn held_pointer_cancel_availability_and_unmount_preserve_original_phase() {
             let p = h.get(id).unwrap().frame().center();
             let down = event(&mut h, ContentEvent::PointerDown(p));
             assert_eq!(down.len(), usize::from(on_down));
-            assert!(action(&h, id).button.state.pressed);
+            assert!(action(&h, id).is_pressed());
             assert_eq!(
                 h.get(id)
                     .unwrap()
@@ -249,8 +249,8 @@ fn held_pointer_cancel_availability_and_unmount_preserve_original_phase() {
                 0 => {
                     assert!(event(&mut h, ContentEvent::Cancel).is_empty());
                 }
-                1 => action_mut(&mut h, id).button.state.disabled = true,
-                2 => action_mut(&mut h, id).button.state.loading = true,
+                1 => action_mut(&mut h, id).set_disabled(true),
+                2 => action_mut(&mut h, id).set_loading(true),
                 _ => {
                     h.remove(id).unwrap();
                 }
@@ -259,7 +259,7 @@ fn held_pointer_cancel_availability_and_unmount_preserve_original_phase() {
             // that action or synthesize another activation on release.
             assert!(event(&mut h, ContentEvent::PointerUp(p)).is_empty());
             if interruption != 3 {
-                assert!(!action(&h, id).button.state.pressed);
+                assert!(!action(&h, id).is_pressed());
                 assert_eq!(
                     h.get(id)
                         .unwrap()
@@ -268,8 +268,8 @@ fn held_pointer_cancel_availability_and_unmount_preserve_original_phase() {
                         .captures,
                     usize::from(on_down)
                 );
-                action_mut(&mut h, id).button.state.disabled = false;
-                action_mut(&mut h, id).button.state.loading = false;
+                action_mut(&mut h, id).set_disabled(false);
+                action_mut(&mut h, id).set_loading(false);
                 assert!(event(&mut h, ContentEvent::PointerUp(p)).is_empty());
                 let next_down = event(&mut h, ContentEvent::PointerDown(p));
                 let next_up = event(&mut h, ContentEvent::PointerUp(p));

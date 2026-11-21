@@ -1,8 +1,4 @@
-use tekes_ui_controls::{
-    Insets,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{Insets, composition::*};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::Size;
 
@@ -74,14 +70,7 @@ pub fn content(gpu: &mut Renderer) -> Content {
     ));
     let stack = Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            children,
-            flexible_child: Some(VIEW),
-        },
+        StackContent::vertical(4., children).with_flexible_child(VIEW),
     );
     let mut panel = PanelContent::new(stack).unwrap();
     panel.set_padding(Some(Insets::default())).unwrap();
@@ -103,17 +92,13 @@ pub fn refresh_buttons(host: &mut ContentHost) -> bool {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .disabled;
+            .is_disabled();
         if disabled == enabled {
             host.get_mut(id)
                 .unwrap()
                 .component_mut::<Button>()
                 .unwrap()
-                .button
-                .state
-                .disabled = !enabled;
+                .set_disabled(!enabled);
             changed = true;
         }
     }
@@ -161,5 +146,5 @@ pub fn refresh_status(host: &mut ContentHost) {
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text = text;
+        .set_text(text);
 }

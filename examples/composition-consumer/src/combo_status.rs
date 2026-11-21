@@ -2,11 +2,8 @@
 use crate::content_status::{Feedback, Status};
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey, TextSurface,
-    composition::*,
-    extended::{Axis, ComboBox, Stack},
-    layout::MeasuredChild,
-    layout_view::ComboBoxView,
+    ButtonTextRenderer, ControlKey, TextSurface, composition::*, extended::ComboBox,
+    layout::MeasuredChild, layout_view::ComboBoxView,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Spacing, proposal};
@@ -140,7 +137,7 @@ impl Component for Query {
             self.editor.surface().outer(),
             c,
             Some(c),
-            theme.palette,
+            theme.palette(),
             proposal::TextRole::UiBody,
             false,
         );
@@ -351,17 +348,13 @@ pub fn fixture_content(
     }
     Content::new(
         ids[0],
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(ids[2], Feedback::new(status.clone())),
                 Content::new(ids[1], query),
             ],
-            flexible_child: None,
-        },
+        ),
     )
 }
 impl Scenario {

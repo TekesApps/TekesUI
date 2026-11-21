@@ -349,8 +349,8 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
             for width in [180., 420.] {
                 for unavailable in [None, Some(false), Some(true)] {
                     let mut button = Button::new("Apply · 确认 A😀B");
-                    button.button.state.disabled = unavailable == Some(false);
-                    button.button.state.loading = unavailable == Some(true);
+                    button.set_disabled(unavailable == Some(false));
+                    button.set_loading(unavailable == Some(true));
                     let mut host =
                         ContentHost::new(Content::new(ComponentId(9701), button)).unwrap();
                     let mut text = HostText::default();
@@ -384,7 +384,7 @@ fn real_coretext_button_consumer_uses_shared_default_without_changing_action_pol
                             .unwrap()
                             .component::<Button>()
                             .unwrap()
-                            .activations,
+                            .activations(),
                         usize::from(unavailable.is_none())
                     );
                     let semantics = host
@@ -493,7 +493,7 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
         .unwrap()
         .component::<SwitchContent>()
         .unwrap()
-        .view
+        .view()
         .layout()
         .frame()
         .center();
@@ -513,7 +513,7 @@ fn independent_heterogeneous_list_preserves_mixed_children_and_isolates_row_acti
             .unwrap()
             .component::<SwitchContent>()
             .unwrap()
-            .model
+            .model()
             .checked
     );
     assert_eq!(
@@ -629,7 +629,6 @@ fn menu_keeps_its_semantic_keyboard_model_inside_heterogeneous_list() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     key(&mut fixture.host, ControlKey::Down, true);
@@ -640,8 +639,8 @@ fn menu_keeps_its_semantic_keyboard_model_inside_heterogeneous_list() {
         .unwrap()
         .component::<MenuContent>()
         .unwrap();
-    assert_eq!(menu.selected, Some(1));
-    assert!(!menu.menu.is_open());
+    assert_eq!(menu.selected(), Some(1));
+    assert!(!menu.is_open());
 }
 
 #[test]
@@ -683,7 +682,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                     .unwrap()
                     .component::<SwitchContent>()
                     .unwrap()
-                    .view
+                    .view()
                     .layout()
                     .frame()
                     .center();
@@ -696,7 +695,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                         .unwrap()
                         .component::<SwitchContent>()
                         .unwrap()
-                        .model
+                        .model()
                         .checked
                 );
                 assert_eq!(
@@ -706,7 +705,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                         .unwrap()
                         .component::<Button>()
                         .unwrap()
-                        .activations,
+                        .activations(),
                     0
                 );
                 fixture.host.focus(Some(p::SWITCH), true);
@@ -724,7 +723,7 @@ fn consumer_defined_popover_owns_one_real_tree_with_layout_edit_focus_and_exit()
                     .unwrap()
                     .component::<SwitchContent>()
                     .unwrap()
-                    .view
+                    .view()
                     .layout()
                     .frame()
                     .inset(-ring_outset);
@@ -901,8 +900,7 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                         .unwrap()
                         .component::<MenuContent>()
                         .unwrap()
-                        .popup
-                        .as_ref()
+                        .popup_layout()
                         .unwrap()
                         .items[1]
                         .frame
@@ -913,8 +911,8 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                         .unwrap()
                         .component_mut::<MenuContent>()
                         .unwrap();
-                    menu.trigger.button.state.disabled = !loading;
-                    menu.trigger.button.state.loading = loading;
+                    menu.set_disabled(!loading);
+                    menu.set_loading(loading);
                     let node = host
                         .semantics()
                         .into_iter()
@@ -940,10 +938,10 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                         .unwrap()
                         .component_mut::<MenuContent>()
                         .unwrap();
-                    assert_eq!(menu.selected, None);
-                    assert!(!menu.menu.is_open());
-                    menu.trigger.button.state.disabled = false;
-                    menu.trigger.button.state.loading = false;
+                    assert_eq!(menu.selected(), None);
+                    assert!(!menu.is_open());
+                    menu.set_disabled(false);
+                    menu.set_loading(false);
                     assert!(!host.event(&ContentEvent::PointerUp(point)).activated);
                     assert!(
                         host.accessibility_action(ids::LIST_MENU, None, AccessibilityAction::Press)
@@ -964,7 +962,7 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                             .unwrap()
                             .component::<MenuContent>()
                             .unwrap()
-                            .selected,
+                            .selected(),
                         Some(1)
                     );
                     let detached = host.remove(ids::LIST_MENU).unwrap();
@@ -983,7 +981,7 @@ fn heterogeneous_menu_reconciles_trigger_availability_and_retained_unmount() {
                         .component::<MenuContent>()
                         .unwrap();
                     assert_eq!(
-                        menu.selected,
+                        menu.selected(),
                         Some(1),
                         "unmount discards paint, not caller-owned selection"
                     );
@@ -1333,7 +1331,7 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
             .unwrap()
             .component::<SwitchContent>()
             .unwrap()
-            .model
+            .model()
             .checked
     );
 
@@ -1367,9 +1365,9 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
         .unwrap()
         .component::<MenuContent>()
         .unwrap();
-    assert_eq!(menu.selected, Some(1));
+    assert_eq!(menu.selected(), Some(1));
     assert_eq!(menu.semantics().value.as_deref(), Some("Team"));
-    assert!(!menu.menu.is_open());
+    assert!(!menu.is_open());
     assert!(
         !host
             .accessibility_action(ids::LIST_MENU, Some(1), AccessibilityAction::Press)
@@ -1381,8 +1379,7 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
         .unwrap()
         .component_mut::<SwitchContent>()
         .unwrap()
-        .model
-        .disabled = true;
+        .set_disabled(true);
     let disabled = host.accessibility_action(ids::LIST_SWITCH, None, AccessibilityAction::Press);
     assert!(!disabled.consumed);
     assert!(
@@ -1391,7 +1388,7 @@ fn public_accessibility_actions_use_live_component_and_menu_part_state() {
             .unwrap()
             .component::<SwitchContent>()
             .unwrap()
-            .model
+            .model()
             .checked
     );
 }
@@ -1620,7 +1617,6 @@ fn selection_validation_reaches_live_composition_semantics_without_disabling_the
         .unwrap()
         .component_mut::<SwitchContent>()
         .unwrap()
-        .view
         .set_error(true);
     render(&mut host, &mut text);
     let checked = host
@@ -1628,7 +1624,7 @@ fn selection_validation_reaches_live_composition_semantics_without_disabling_the
         .unwrap()
         .component::<SwitchContent>()
         .unwrap()
-        .model
+        .model()
         .checked;
     assert!(
         host.semantics()
@@ -1653,7 +1649,7 @@ fn selection_validation_reaches_live_composition_semantics_without_disabling_the
             .unwrap()
             .component::<SwitchContent>()
             .unwrap()
-            .model
+            .model()
             .checked,
         checked
     );
@@ -1662,8 +1658,8 @@ fn selection_validation_reaches_live_composition_semantics_without_disabling_the
         .unwrap()
         .component_mut::<SwitchContent>()
         .unwrap();
-    control.model.disabled = true;
-    let value = control.model.checked;
+    control.set_disabled(true);
+    let value = control.is_checked();
     render(&mut host, &mut text);
     let semantic = host
         .semantics()
@@ -1684,8 +1680,8 @@ fn selection_validation_reaches_live_composition_semantics_without_disabling_the
         .unwrap()
         .component_mut::<SwitchContent>()
         .unwrap();
-    assert_eq!(control.model.checked, value);
-    control.view.set_error(false);
+    assert_eq!(control.is_checked(), value);
+    control.set_error(false);
     render(&mut host, &mut text);
     assert!(
         !host
@@ -1893,7 +1889,7 @@ fn composed_reading_policy_keeps_history_and_keyboard_latest_does_not_steal_focu
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .label = "Return to latest".into();
+        .set_label("Return to latest");
     host.show_dialog(ids::DIALOG).unwrap();
     render(&mut host, &mut text);
     let field = host
@@ -2189,14 +2185,14 @@ fn native_text_backend_action_views_honor_model_changes_between_host_events() {
             .consumed
     );
     // Controlled application state arrives between pointer down and release.
-    icon.button.state.loading = true;
+    icon.set_loading(true);
     assert!(
         !icon
             .event(&ContentEvent::PointerUp(icon_frame.center()))
             .activated
     );
-    assert!(icon.button.state.loading);
-    icon.button.state.loading = false;
+    assert!(icon.is_loading());
+    icon.set_loading(false);
     icon.paint(
         &mut Scene::new(),
         &mut text,
@@ -2370,7 +2366,7 @@ fn native_text_icon_defaults_resolve_shared_tokens_and_preserve_explicit_layout(
                 frame,
                 Palette::from(Theme::LIGHT).into(),
             );
-            assert_eq!(model.button.layout().unwrap().frame, frame);
+            assert_eq!(model.model().layout().unwrap().frame, frame);
             let icon = scene
                 .primitives()
                 .iter()
@@ -3066,15 +3062,12 @@ fn rich_dialog_restores_only_the_original_mounted_invoker() {
                 1 => host
                     .reorder(ids::DIALOG_SCREEN, &[ids::DIALOG, ids::DIALOG_INVOKER])
                     .unwrap(),
-                2 => {
-                    host.get_mut(ids::DIALOG_INVOKER)
-                        .unwrap()
-                        .component_mut::<Button>()
-                        .unwrap()
-                        .button
-                        .state
-                        .disabled = true
-                }
+                2 => host
+                    .get_mut(ids::DIALOG_INVOKER)
+                    .unwrap()
+                    .component_mut::<Button>()
+                    .unwrap()
+                    .set_disabled(true),
                 3 => {
                     host.remove(ids::DIALOG_INVOKER).unwrap();
                 }
@@ -3168,7 +3161,7 @@ fn consumer_popover_dismiss_owns_space_down_without_activating_another_control()
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
 }
@@ -3342,7 +3335,7 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap();
-    scroll.scroll.scroll_by(0., 100.);
+    scroll.scroll_by(0., 100.);
     fixture.host.event(&ContentEvent::Scroll {
         position,
         delta: Point::new(0., 20.),
@@ -3358,7 +3351,7 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
         .y;
     fixture.toggle_top();
@@ -3374,7 +3367,7 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll;
+        .scroll();
     assert!(
         scroll.needs_animation(),
         "real composed ScrollContent retains gesture through text reflow"
@@ -3395,7 +3388,7 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll;
+        .scroll();
     assert_eq!(scroll.offset.y, offset + 12.);
     assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
     let after = fixture.host.focused_text().unwrap().input();
@@ -3410,7 +3403,7 @@ fn mixed_content_reflow_keeps_native_input_and_independent_composition() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .needs_animation()
     );
 }
@@ -3437,7 +3430,7 @@ fn mixed_content_return_survives_append_but_unmount_ends_input_ownership() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .overscroll;
     assert!(before.y < 0.);
     fixture.append().unwrap();
@@ -3449,12 +3442,12 @@ fn mixed_content_return_survives_append_but_unmount_ends_input_ownership() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .overscroll,
         before
     );
     let retained = fixture.host.remove(s::SCROLLER).unwrap();
-    let scroll = &retained.component::<ScrollContent>().unwrap().scroll;
+    let scroll = &retained.component::<ScrollContent>().unwrap().scroll();
     assert_eq!(scroll.overscroll, Point::default());
     assert!(!scroll.needs_animation());
     assert!(fixture.host.get(s::COMPOSER).is_some());
@@ -3490,7 +3483,6 @@ fn structured_content_prepend_and_reflow_keep_real_composer_and_stable_item() {
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap()
-        .scroll
         .scroll_by(0., delta);
     fixture
         .host
@@ -3527,7 +3519,7 @@ fn structured_content_prepend_and_reflow_keep_real_composer_and_stable_item() {
                 .unwrap()
                 .component_mut::<TextContent>()
                 .unwrap()
-                .text = "Expanded nested panel · 新内容\n".repeat(6);
+                .set_text("Expanded nested panel · 新内容\n".repeat(6));
         })
         .unwrap();
     version = v;
@@ -3745,7 +3737,6 @@ fn existing_single_surface_latest_actions_share_the_focus_preservation_contract(
 #[test]
 fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_blurring_composer() {
     use tekes_ui_composition_consumer::scroll_updates as s;
-    use tekes_ui_controls::extended::{Axis, Stack};
     let mut fixture = s::Scenario::reading_document().unwrap();
     let a = fixture.attach_reading("A", 1).unwrap();
     let a_keys = fixture.item_keys();
@@ -3762,14 +3753,14 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
         clauses: std::iter::once(0..2).collect(),
         replacement: None,
     });
-    let scroll = &mut fixture
+    let scroll = fixture
         .host
         .get_mut(s::SCROLLER)
         .unwrap()
         .component_mut::<ScrollContent>()
-        .unwrap()
-        .scroll;
-    scroll.scroll_by(0., scroll.limit().y * 0.5);
+        .unwrap();
+    let dy = scroll.scroll().limit().y * 0.5;
+    scroll.scroll_by(0., dy);
     fixture
         .host
         .render(&mut Scene::new(), &mut text, f, f, Theme::LIGHT.into())
@@ -3792,18 +3783,14 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
     let before = (input.text().to_owned(), input.marked(), input.selection());
     let mut b_content = vec![Content::new(
         ComponentId(12000),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(12001), TextContent::new("Document B panel")),
                 Content::new(ComponentId(12002), Button::new("Open details")),
                 Content::new(ComponentId(12003), SwitchContent::new("Keep details", true)),
             ],
-        },
+        ),
     )];
     for i in 0..24 {
         b_content.push(Content::new(
@@ -3910,7 +3897,7 @@ fn real_mixed_documents_restore_a_b_a_intent_and_reject_old_callbacks_without_bl
         .component::<ScrollContent>()
         .unwrap();
     assert!(scroll.is_following_latest());
-    assert_eq!(scroll.scroll.offset.y, scroll.scroll.limit().y);
+    assert_eq!(scroll.scroll().offset.y, scroll.scroll().limit().y);
     assert_eq!(fixture.host.focused(), Some(s::COMPOSER));
     let input = fixture.host.focused_text().unwrap().input();
     assert_eq!(

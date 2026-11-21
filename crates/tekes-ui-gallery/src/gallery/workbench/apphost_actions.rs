@@ -2,20 +2,30 @@
 use tekes_ui_controls::{ButtonTextRenderer, composition::*, layout::MeasuredChild};
 use tekes_ui_scene::{Rect, Scene, Size};
 
-pub(super) fn icon_button(state: tekes_ui_controls::ControlState) -> Button {
-    let mut button = Button::new(Content::new(
+pub(super) fn icon_button(disabled: bool) -> Button {
+    Button::new(Content::new(
         ComponentId(122001),
         IconContent::new("tekes-new").expect("canonical plus glyph"),
     ))
-    .with_accessible_name("Create item");
-    button.button.state = state;
-    button
+    .with_accessible_name("Create item")
+    .with_disabled(disabled)
 }
 #[derive(Debug)]
-pub(super) struct IconFixture(Button);
+pub(super) struct IconFixture {
+    button: Button,
+    state: tekes_ui_controls::ControlState,
+    applied: bool,
+}
 impl IconFixture {
     pub(super) fn new(state: tekes_ui_controls::ControlState) -> Self {
-        Self(icon_button(state))
+        let button = icon_button(state.disabled)
+            .with_loading(state.loading)
+            .with_selected(state.selected);
+        Self {
+            button,
+            state,
+            applied: false,
+        }
     }
 }
 impl Component for IconFixture {
@@ -23,17 +33,30 @@ impl Component for IconFixture {
         true
     }
     fn icon_error(&self) -> Option<IconRenderError> {
-        self.0.children()[0]
+        self.button.children()[0]
             .component::<IconContent>()
             .expect("original icon slot")
             .icon_error()
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.0
+        self.button
             .measure(&mut super::apphost_basic::FixtureText(text), available)
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.0.arrange(text, frame, clip);
+        self.button.arrange(text, frame, clip);
+        if !self.applied {
+            self.applied = true;
+            if self.state.hovered {
+                self.button
+                    .event(&ContentEvent::PointerMove(frame.center()));
+            }
+            if self.state.pressed {
+                self.button
+                    .event(&ContentEvent::PointerDown(frame.center()));
+            } else if self.state.focused {
+                self.button.set_focus(true, self.state.focus_visible);
+            }
+        }
     }
     fn paint(
         &mut self,
@@ -43,7 +66,7 @@ impl Component for IconFixture {
         clip: Rect,
         theme: ContentTheme,
     ) {
-        self.0.paint(
+        self.button.paint(
             scene,
             &mut super::apphost_basic::FixtureText(text),
             frame,

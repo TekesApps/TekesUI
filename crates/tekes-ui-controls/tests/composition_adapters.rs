@@ -46,13 +46,7 @@ fn fixed_dialog_slots_are_protected_and_closed_content_is_not_semantically_expos
         ComponentId(1),
         DialogContent::new(
             "Preferences",
-            Content::new(
-                ComponentId(2),
-                TextContent {
-                    text: "Preferences".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
-            ),
+            Content::new(ComponentId(2), TextContent::heading("Preferences")),
             Content::new(ComponentId(3), Button::new("Body action")),
             Content::new(ComponentId(4), Button::new("Close")),
         ),
@@ -134,7 +128,7 @@ impl Component for Marker {
     ) {
         s.push_quad(tekes_ui_scene::Quad::new(
             Rect::new(9., 9., 11., 11.),
-            t.palette.color("primary-text").unwrap(),
+            t.palette().color("primary-text").unwrap(),
         ));
     }
 }
@@ -166,13 +160,7 @@ fn active_modal_paints_after_later_background_siblings() {
         ComponentId(2),
         DialogContent::new(
             "Settings",
-            Content::new(
-                ComponentId(3),
-                TextContent {
-                    text: "Header".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
-            ),
+            Content::new(ComponentId(3), TextContent::heading("Header")),
             Content::new(ComponentId(4), Button::new("Body")),
             Content::new(ComponentId(5), Button::new("Close")),
         ),
@@ -224,26 +212,19 @@ fn active_modal_paints_after_later_background_siblings() {
 }
 #[test]
 fn ignored_menu_wheel_bubbles_to_the_scroll_ancestor() {
-    use tekes_ui_controls::{
-        ScrollArea,
-        extended::{Axis, Stack},
-    };
+    use tekes_ui_controls::ScrollArea;
     let stack = Content::new(
         ComponentId(2),
-        StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(
                     ComponentId(3),
                     MenuContent::new("Options", vec!["One".into(), "Two".into()]),
                 ),
                 Content::new(ComponentId(4), Marker),
             ],
-        },
+        ),
     );
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
@@ -262,7 +243,6 @@ fn ignored_menu_wheel_bubbles_to_the_scroll_ancestor() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     let response = host.event(&ContentEvent::Scroll {
@@ -280,8 +260,7 @@ fn ignored_menu_wheel_bubbles_to_the_scroll_ancestor() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y
             > 0.
     );
@@ -340,13 +319,7 @@ fn dialog_host() -> ContentHost {
                 ComponentId(2),
                 DialogContent::new(
                     "Settings",
-                    Content::new(
-                        ComponentId(3),
-                        TextContent {
-                            text: "Header".into(),
-                            role: proposal::TextRole::UiHeading,
-                        },
-                    ),
+                    Content::new(ComponentId(3), TextContent::heading("Header")),
                     Content::new(ComponentId(4), Button::new("Body")),
                     Content::new(ComponentId(5), Button::new("Close")),
                 ),
@@ -420,7 +393,7 @@ fn dialog_exit_retains_only_fresh_paint_and_restores_focus_once() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     t.now = 2000;

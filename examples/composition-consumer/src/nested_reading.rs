@@ -1,9 +1,5 @@
 //! Issue53 independent declaration: the SDK owns nested reading input/routing.
-use tekes_ui_controls::{
-    ReadingDocumentVersion, ScrollArea, ScrollPolicy,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, ScrollArea, ScrollPolicy, composition::*};
 use tekes_ui_tokens::proposal;
 pub const ROOT: ComponentId = ComponentId(53000);
 pub const PARENT: ComponentId = ComponentId(53001);
@@ -34,27 +30,19 @@ pub fn build() -> Result<(ContentHost, State), CompositionError> {
         .unwrap();
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: Some(PARENT),
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(
                     ComponentId(53010),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Horizontal,
-                            gap: 8.,
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::horizontal(
+                        8.,
+                        vec![
                             Content::new(APPEND, Button::new("Append content")).preserving_focus(),
                             Content::new(LATEST, Button::new("Return to latest"))
                                 .preserving_focus(),
                         ],
-                    },
+                    ),
                 ),
                 Content::new(
                     PARENT,
@@ -62,23 +50,20 @@ pub fn build() -> Result<(ContentHost, State), CompositionError> {
                         ScrollArea::default(),
                         Content::new(
                             BODY,
-                            StackContent {
-                                model: Stack {
-                                    axis: Axis::Vertical,
-                                    gap: 8.,
-                                },
-                                flexible_child: None,
-                                children: vec![
+                            StackContent::vertical(
+                                8.,
+                                vec![
                                     Content::new(INNER, inner),
                                     Content::new(TAIL, TextContent::new("After detail")),
                                 ],
-                            },
+                            ),
                         ),
                     ),
                 ),
                 Content::new(COMPOSER, TextFieldContent::new("Composer", "draft")),
             ],
-        },
+        )
+        .with_flexible_child(PARENT),
     ))?;
     let items = vec![INNER, TAIL];
     let (version, ()) = host

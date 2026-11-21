@@ -147,7 +147,7 @@ fn parent_scroll_does_not_change_body_wrap_and_narrow_resize_remeasures_whole_su
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.
@@ -237,7 +237,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y,
         0.,
@@ -257,7 +257,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.,
@@ -291,7 +291,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
         .y;
     assert!(
@@ -314,7 +314,7 @@ fn focusing_and_navigating_document_reveals_caret_through_parent_not_entire_bloc
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > before,

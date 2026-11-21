@@ -10,11 +10,7 @@ use std::{
     path::PathBuf,
 };
 
-use tekes_ui_controls::{
-    Insets,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{Insets, composition::*};
 use tekes_ui_render::{BoundaryProofLimits, Renderer};
 use tekes_ui_scene::{
     ClipShape, FragmentBudget, FragmentTransform, ImageQuad, Point, Primitive, Rect, Scene,
@@ -659,18 +655,15 @@ fn complete_host_material_case(case: MaterialCase) {
     .expect("the existing public ready bitmap content accepts this renderer lease");
     let stack = Content::new(
         stack_id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.0,
-            },
-            children: vec![
+        StackContent::vertical(
+            8.0,
+            vec![
                 Content::new(button_id, Button::new("圆角操作按钮")).preserving_focus(),
                 Content::new(image_id, image),
                 Content::new(field_id, field),
             ],
-            flexible_child: Some(field_id),
-        },
+        )
+        .with_flexible_child(field_id),
     );
     let mut child_panel = PanelContent::new(stack).unwrap();
     child_panel.set_padding(Some(Insets::default())).unwrap();

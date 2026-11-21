@@ -463,7 +463,7 @@ fn independent_plain_content_has_no_form_pixels_and_keeps_real_selection_in_four
                             .unwrap()
                             .component::<ScrollContent>()
                             .unwrap()
-                            .scroll
+                            .scroll()
                             .offset
                             .y;
                         if phase == "scrolled" {
@@ -565,7 +565,7 @@ fn independent_consumer_compound_button_uses_real_icon_text_and_gpu_in_four_them
                             .unwrap()
                             .component::<Button>()
                             .unwrap()
-                            .activations,
+                            .activations(),
                         1
                     );
                     scene.clear();
@@ -674,7 +674,7 @@ fn independent_list_and_rich_dialog_use_production_views_and_real_gpu() {
                                         .unwrap()
                                         .component::<MenuContent>()
                                         .unwrap();
-                                    assert!(menu.popup.as_ref().unwrap().visible.is_some());
+                                    assert!(menu.popup_layout().unwrap().visible.is_some());
                                 }
                             } else {
                                 let modal = host

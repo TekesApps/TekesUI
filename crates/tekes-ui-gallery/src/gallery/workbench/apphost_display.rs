@@ -4,7 +4,7 @@ use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer,
     collections_view::{CodeBlockView, DiffViewRuntime, DocumentLayout, MarkdownView},
     composition::*,
-    extended::{Axis, CodeBlock, DiffView, Markdown, Stack, StatusBadge},
+    extended::{CodeBlock, DiffView, Markdown, StatusBadge},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -113,7 +113,7 @@ impl Component for ReadingSpecimen {
         clip: Rect,
         theme: ContentTheme,
     ) {
-        self.render(scene, text, frame, clip, theme.palette);
+        self.render(scene, text, frame, clip, theme.palette());
     }
     fn semantics(&self) -> ContentSemantics {
         ContentSemantics::new(
@@ -211,17 +211,13 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
                 ComponentId(96020),
                 PanelContent::new(Content::new(
                     ComponentId(96022),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: 24.,
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::vertical(
+                        24.,
+                        vec![
                             text(96021, "Panel — semantic surface and border"),
                             Content::new(ComponentId(92120), Button::new("Nested real action")),
                         ],
-                    },
+                    ),
                 ))
                 .expect("finite Gallery Panel"),
             ),
@@ -261,8 +257,9 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
         .into_iter()
         .enumerate()
         .map(|(i, (label, value))| {
-            let mut progress = ProgressContent::new("Progress", value).with_max_width(500.);
-            progress.model.indeterminate = i == 3;
+            let progress = ProgressContent::new("Progress", value)
+                .with_max_width(500.)
+                .with_indeterminate(i == 3);
             StackContent::labeled_specimen(
                 ComponentId(96050 + i as u64),
                 ComponentId(96030 + i as u64),
@@ -272,11 +269,11 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
         })
         .collect(),
         "progress" => {
-            let mut advance = Button::new("Advance 10%");
-            advance.button.state.disabled = state.extended.progress.value() >= 1.;
-            let mut progress = ProgressContent::new("Progress", state.extended.progress.value())
-                .with_max_width(500.);
-            progress.model = state.extended.progress;
+            let advance =
+                Button::new("Advance 10%").with_disabled(state.extended.progress.value() >= 1.);
+            let progress = ProgressContent::new("Progress", state.extended.progress.value())
+                .with_max_width(500.)
+                .with_indeterminate(state.extended.progress.indeterminate);
             vec![
                 Content::new(ComponentId(96020), progress),
                 Content::new(ComponentId(92120), advance),
@@ -292,27 +289,27 @@ pub(super) fn children(renderer: &str, state: &StoryState, variants: bool) -> Ve
 }
 pub(super) fn after_action(renderer: &str, state: &StoryState, host: &mut ContentHost) {
     if renderer == "progress" {
-        host.get_mut(ComponentId(96020))
+        let progress = host
+            .get_mut(ComponentId(96020))
             .unwrap()
             .component_mut::<ProgressContent>()
-            .unwrap()
-            .model = state.extended.progress;
+            .unwrap();
+        progress.set_value(state.extended.progress.value());
+        progress.set_indeterminate(state.extended.progress.indeterminate);
         host.get_mut(ComponentId(96021))
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = format!("{:.0}%", state.extended.progress.value() * 100.);
+            .set_text(format!("{:.0}%", state.extended.progress.value() * 100.));
         host.get_mut(ComponentId(92120))
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .button
-            .state
-            .disabled = state.extended.progress.value() >= 1.;
+            .set_disabled(state.extended.progress.value() >= 1.);
     }
     host.get_mut(ComponentId(92003))
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text = state.log.iter().cloned().collect::<Vec<_>>().join("\n");
+        .set_text(state.log.iter().cloned().collect::<Vec<_>>().join("\n"));
 }

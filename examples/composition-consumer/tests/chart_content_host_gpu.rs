@@ -544,7 +544,7 @@ fn render(
     let offset = host
         .get(ROOT)
         .and_then(|n| n.component::<ScrollContent>())
-        .map(|s| s.scroll.offset);
+        .map(|s| s.scroll().offset);
     let focus_result = host.required_focus_result(CHART);
     let row = record_frame(
         out,
@@ -801,7 +801,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     seed_original_selected_slot(&mut host);
     let setup_offset_after = host
@@ -809,7 +809,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(
         setup_offset_after, setup_offset,
@@ -830,7 +830,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     let data_before = host
         .get(CHART)
@@ -878,7 +878,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     if initially_clipped {
         assert!(
@@ -918,7 +918,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(
         offset_after_blur, offset_after,
@@ -986,7 +986,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     seed_original_selected_slot(&mut host);
     let setup_offset_after = host
@@ -994,7 +994,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(
         setup_offset_after, setup_offset,
@@ -1032,7 +1032,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(
         offset_before, setup_offset,
@@ -1067,7 +1067,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert!(
         offset_after.y > offset_before.y,
@@ -1116,7 +1116,7 @@ fn preregistered_four_original_owner_cases() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(
         offset_after_blur, offset_after,

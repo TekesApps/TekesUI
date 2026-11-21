@@ -10,9 +10,9 @@ use crate::{
 /// Unknown progress is explicit and never reports the retained scalar as 0%.
 #[derive(Clone, Debug)]
 pub struct ProgressContent {
-    pub model: Progress,
-    pub name: String,
-    pub description: Option<String>,
+    model: Progress,
+    name: String,
+    description: Option<String>,
     view: ProgressView,
     height: Option<f32>,
     max_width: Option<f32>,
@@ -31,6 +31,41 @@ impl ProgressContent {
             max_width: None,
             indeterminate_label: None,
         }
+    }
+    pub fn value(&self) -> f32 {
+        self.model.value()
+    }
+    pub fn set_value(&mut self, value: f32) -> bool {
+        self.model.set(value)
+    }
+    pub fn is_indeterminate(&self) -> bool {
+        self.model.indeterminate
+    }
+    pub fn with_indeterminate(mut self, indeterminate: bool) -> Self {
+        self.model.indeterminate = indeterminate;
+        self
+    }
+    pub fn set_indeterminate(&mut self, indeterminate: bool) {
+        self.model.indeterminate = indeterminate;
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+    pub fn set_description(&mut self, description: Option<String>) {
+        self.description = description;
+    }
+    pub fn model(&self) -> Progress {
+        self.model
     }
     /// Override the bar height when an enclosing layout needs a non-default height.
     pub fn with_height(mut self, height: f32) -> Self {
@@ -164,7 +199,7 @@ mod accessibility_tests {
         let custom = progress.with_indeterminate_label("Pending");
         assert_eq!(custom.semantics().value.as_deref(), Some("45%"));
         let mut custom_unknown = custom;
-        custom_unknown.model.indeterminate = true;
+        custom_unknown.set_indeterminate(true);
         assert_eq!(custom_unknown.semantics().value.as_deref(), Some("Pending"));
     }
 

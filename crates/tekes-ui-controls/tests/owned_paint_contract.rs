@@ -1,9 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    ButtonTextAlign, ButtonTextRenderer, composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -38,7 +35,7 @@ impl Component for Marker {
         theme: ContentTheme,
     ) {
         self.0.set(self.0.get() + 1);
-        scene.push_quad(Quad::new(f, theme.palette.color("primary-text").unwrap()));
+        scene.push_quad(Quad::new(f, theme.palette().color("primary-text").unwrap()));
     }
     fn focusable(&self) -> bool {
         true
@@ -155,17 +152,13 @@ fn public_focus_capture_reuses_mount_identity_without_a_modal() {
     ] {
         let mut host = ContentHost::new(Content::new(
             ComponentId(10),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(ComponentId(11), Button::new("Caller")),
                     Content::new(ComponentId(12), Button::new("Other")),
                 ],
-            },
+            ),
         ))
         .unwrap();
         render(&mut host);
@@ -193,14 +186,13 @@ fn public_focus_capture_reuses_mount_identity_without_a_modal() {
                 host.remove(ComponentId(11)).unwrap();
             }
             "disabled" | "loading" => {
-                let button = &mut host
+                let button = host
                     .get_mut(ComponentId(11))
                     .unwrap()
                     .component_mut::<Button>()
-                    .unwrap()
-                    .button;
-                button.state.disabled = mode == "disabled";
-                button.state.loading = mode == "loading";
+                    .unwrap();
+                button.set_disabled(mode == "disabled");
+                button.set_loading(mode == "loading");
             }
             _ => {}
         }

@@ -435,8 +435,7 @@ mod tests {
                 .unwrap()
                 .component_mut::<ProgressContent>()
                 .unwrap()
-                .model
-                .indeterminate = unknown;
+                .set_indeterminate(unknown);
             render(&mut host);
             let nodes = snapshot(&host).unwrap();
             let bytes = serde_json::to_vec(&nodes).unwrap();

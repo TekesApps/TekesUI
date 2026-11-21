@@ -1,11 +1,7 @@
 //! Independent public consumer. Host layout composes the intrinsic-height placeholder
 //! with ordinary Text siblings separately from the original scalar model.
 use crate::scroll_updates::{COMPOSER, LATEST, ROOT, SCROLLER, Scenario};
-use tekes_ui_controls::{
-    ReadingDocumentVersion,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, composition::*};
 use tekes_ui_scene::Size;
 use tekes_ui_tokens::Spacing;
 pub const ROW: ComponentId = ComponentId(59000);
@@ -22,18 +18,14 @@ pub fn build() -> Result<(Scenario, ReadingDocumentVersion), CompositionError> {
         ROOT,
         Content::new(
             ROW,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Tight.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Tight.value(),
+                vec![
                     Content::new(LABEL, TextContent::new("Transfer")),
                     Content::new(BAR, progress),
                     Content::new(RESULT, TextContent::new("Awaiting verification")),
                 ],
-            },
+            ),
         ),
     )?;
     scenario
@@ -47,7 +39,7 @@ pub fn publish(host: &mut ContentHost, result: &str) {
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text = result.into();
+        .set_text(result);
 }
 /// Validate external parent input before replacing the accepted allocation.
 pub fn set_allocation(retained: &mut Size, candidate: Size) -> bool {

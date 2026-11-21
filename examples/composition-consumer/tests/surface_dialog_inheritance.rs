@@ -8,7 +8,6 @@ use tekes_ui_controls::{
         Button, Component, ComponentId, Content, ContentHost, ContentTheme, DialogContent,
         StackContent, TextContent,
     },
-    extended::{Axis, Stack},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -72,19 +71,9 @@ fn retained_dialog_inherits_ancestor_surface_and_respects_override_clear() {
             Content::new(ComponentId(91005), Button::new("Close")),
         ),
     );
-    let root = Content::new(
-        ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            children: vec![dialog],
-            flexible_child: None,
-        },
-    )
-    .with_surface("sidebar")
-    .unwrap();
+    let root = Content::new(ROOT, StackContent::vertical(0., vec![dialog]))
+        .with_surface("sidebar")
+        .unwrap();
     let mut host = ContentHost::new(root).unwrap();
     let mut text = coretext::Text::new(1.);
     text.services = true;
@@ -141,20 +130,16 @@ fn default_component_surface_is_resolved_and_unknown_names_fail_at_mount() {
     let observed = Surfaces::default();
     let root = Content::new(
         ComponentId(91010),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            children: vec![Content::new(
+        StackContent::vertical(
+            0.,
+            vec![Content::new(
                 ComponentId(91011),
                 DeclaredSurface {
                     name: "sidebar",
                     observed: observed.clone(),
                 },
             )],
-            flexible_child: None,
-        },
+        ),
     );
     let mut host = ContentHost::new(root).unwrap();
     let mut text = coretext::Text::new(1.);

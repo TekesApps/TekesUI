@@ -400,7 +400,7 @@ fn all_host_states_preserve_composer_marked_binding_focus_and_original_reading_a
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text,
+                .text(),
             result
         );
         assert!(s.host.drain_action_records().is_empty());
