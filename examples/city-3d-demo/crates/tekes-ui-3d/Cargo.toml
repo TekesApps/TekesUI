@@ -14,6 +14,8 @@ tekes-ui-scene3d = { workspace = true, features = ["simulation"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tekes-ui-platform-macos.workspace = true
+tekes-ui-controls.workspace = true
+tekes-ui-macos-bridge.workspace = true
 tekes-ui-render.workspace = true
 tekes-ui-scene.workspace = true
 tekes-ui-tokens.workspace = true

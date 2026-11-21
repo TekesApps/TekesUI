@@ -1,15 +1,14 @@
 //! A neutral native module consumer. Each factory creates process-local state.
-mod text;
 use anyhow::Result;
 use tekes_ui_app_protocol::{InputKind, Request, ToolbarItem};
 use tekes_ui_controls::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonVariant,
     composition::{Component, ContentEvent, TextContent, TextFieldContent},
 };
+use tekes_ui_macos_bridge::coretext_host::CoreTextHost;
 use tekes_ui_module_runtime::{ModuleDefinition, ModuleState, PanelModule};
 use tekes_ui_scene::{GlyphAtlas, Point, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, proposal};
-use text::{Fonts, TextRenderer};
 const CHINESE: &str = "中文长文 · 城市的一天\n\n清晨，街角的面包店打开了门。骑车的人从树荫下经过，河边有人读书，也有人停下来听风。窗户慢慢变窄时，句子自然换行；窗户变宽时，文字重新铺开。\n\n“标点会不会落在不合适的位置？”她问。我们观察逗号、句号、引号与括号（包括这一段说明），也观察连续数字：2026 年 10 月 21 日，上午 09:30。\n\n段落之间留着停顿。短句。长一点的句子则描述远处的山、近处的树，以及每一扇窗里不同的生活。\n\n";
 const ENGLISH: &str = "English prose · A small observatory\n\nAt sunset, the observatory opens its wooden doors. A visitor places a notebook beside the telescope and writes down the first stars. Resizing this column should change the line breaks while preserving the words and paragraph boundaries.\n\nShort sentence. A much longer sentence follows, with punctuation, parentheses (and a nested thought), numbers such as 123,456.78, and words like extraordinary, internationalization, and counterclockwise.\n\nThe next morning, nothing about the document has changed except the space available to read it.\n\n";
 const MIXED: &str = "混排 / Unicode · 开发笔记\n\nTekesUI 的 Text 组件处理中文、English words 与数字 12345。版本 v0.1.0，路径 /projects/notes/readme.md，邮件 hello@example.com。\n\nEmoji：😀 🌍 🚀 👨‍👩‍👧‍👦 👍🏽；组合字符：café / cafe\u{301}；日本語：今日は良い天気です。한국어: 반갑습니다.\n\nRTL: العربية مرحبًا بالعالم — עברית שלום עולם\n\n长连续内容用于观察边界处理：abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ。最后回到普通中文，检查字体回退和基线是否自然。\n\n";
@@ -26,7 +25,7 @@ struct Demo {
     identity: u32,
     button: ButtonModel,
     count: u64,
-    fonts: Fonts,
+    text: CoreTextHost,
     body: TextFieldContent,
     layout_ms: f64,
 }
@@ -37,7 +36,7 @@ impl Demo {
             identity,
             button: ButtonModel::default(),
             count: 0,
-            fonts: Fonts::new(),
+            text: CoreTextHost::new(),
             body: TextFieldContent::read_only_content(
                 "Demo document",
                 &passage,
@@ -99,19 +98,18 @@ impl PanelModule for Demo {
         }
         let (width, height) = (r.width as f32, r.height as f32);
         let palette = Palette::from(Theme::default());
-        scene.push_quad(Quad::new(
-            Rect::new(0., 0., width, height),
-            palette.color("surface-panel").unwrap(),
-        ));
-        let mut text = TextRenderer {
-            fonts: &mut self.fonts,
-            atlas,
-            scale: r.scale,
-        };
+        let panel_ground = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette, "panel", "ground", "default",
+        )
+        .expect("panel ground")
+        .background;
+        scene.push_quad(Quad::new(Rect::new(0., 0., width, height), panel_ground));
+        self.text.scale = r.scale;
+        std::mem::swap(atlas, &mut self.text.atlas);
         let body_rect = Rect::new(24., 120., (width - 48.).max(1.), (height - 144.).max(1.));
         let previous = self.body.surface().paragraph().cloned();
         let started = std::time::Instant::now();
-        self.body.arrange(&mut text, body_rect, body_rect);
+        self.body.arrange(&mut self.text, body_rect, body_rect);
         if previous
             .as_ref()
             .zip(self.body.surface().paragraph())
@@ -120,10 +118,10 @@ impl PanelModule for Demo {
             self.layout_ms = started.elapsed().as_secs_f64() * 1000.;
         }
         self.body
-            .paint(scene, &mut text, body_rect, body_rect, palette.into());
+            .paint(scene, &mut self.text, body_rect, body_rect, palette.into());
         self.button.render(
             scene,
-            &mut text,
+            &mut self.text,
             &format!("计数 {}", self.count),
             Rect::new(24., 16., (width - 48.).clamp(40., 240.), 36.),
             None,
@@ -142,7 +140,14 @@ impl PanelModule for Demo {
             self.layout_ms
         ));
         let status_rect = Rect::new(24., 60., (width - 48.).max(1.), 52.);
-        status.paint(scene, &mut text, status_rect, status_rect, palette.into());
+        status.paint(
+            scene,
+            &mut self.text,
+            status_rect,
+            status_rect,
+            palette.into(),
+        );
+        std::mem::swap(atlas, &mut self.text.atlas);
         Ok(ModuleState {
             revision: self.count,
             toolbar: vec![

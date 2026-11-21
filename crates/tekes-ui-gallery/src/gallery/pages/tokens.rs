@@ -41,8 +41,14 @@ mod tests {
         let mut scene = Scene::new();
         host.render(&mut scene, text, frame, frame, Theme::LIGHT.into())
             .unwrap();
+        let part = host
+            .get(ComponentId(97805))
+            .unwrap()
+            .component::<tekes_ui_controls::composition::SegmentedControlContent>()
+            .unwrap()
+            .part_token(1);
         assert!(
-            host.accessibility_action(ComponentId(97811), None, AccessibilityAction::Press)
+            host.accessibility_action(ComponentId(97805), part, AccessibilityAction::Press)
                 .consumed
         );
     }

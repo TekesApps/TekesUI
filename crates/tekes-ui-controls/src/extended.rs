@@ -596,8 +596,9 @@ pub use feedback_and_paint::{
     Banner, CodeBlock, ComboBox, CommandPalette, DiffKind, DiffLine, DiffView, EmptyState,
     Markdown, MarkdownBlock, NoticeTone, Popover, Progress, SliderGeometry, StatusBadge, Toast,
     Tooltip, link_underline, link_underline_on_surface, progress, progress_on_surface, radio,
-    radio_with_state, separator, separator_at_scale, slider, status_badge, status_badge_on_surface,
-    switch, switch_with_state, switch_with_state_and_thumb_progress,
+    radio_with_state, separator, separator_at_scale, slider, slider_on_surface, status_badge,
+    status_badge_on_surface, switch, switch_on_surface, switch_on_surface_with_thumb_progress,
+    switch_with_state, switch_with_state_and_thumb_progress,
 };
 pub(crate) use feedback_and_paint::{
     ComboSelectionDecision, link_underline_with_content_on_surface, radio_on_surface,

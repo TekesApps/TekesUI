@@ -4,24 +4,29 @@ use crate::OthersTab;
 use tekes_ui_controls::{
     ScrollArea,
     composition::{
-        Button, Content, IconContent, MenuContent, MenuEntry, ScrollContent, StackContent,
-        TabStripContent, TabStripItem, TextContent, ToolbarCommandBinding, ToolbarGroup,
-        ToolbarHost, ToolbarPlacement, ToolbarRegion, ToolbarRegistration,
+        Button, ButtonImagePosition, Content, ContentHost, GridContent, IconContent, MenuContent,
+        MenuEntry, ScrollContent, StackContent, TabStripContent, TabStripItem, TextContent,
+        ToolbarCommandBinding, ToolbarGroup, ToolbarHost, ToolbarPlacement, ToolbarRegion,
+        ToolbarRegistration,
     },
 };
 const OWNER: u64 = u64::MAX - 1;
+pub(super) const CREATION_GRID_OWNER: u64 = u64::MAX - 2;
 const GROUP: ComponentId = ComponentId(999_999);
 pub(super) const SCROLL: ComponentId = ComponentId(999_996);
 pub(super) const STRIP: ComponentId = ComponentId(999_995);
 const ROW: ComponentId = ComponentId(999_994);
 pub(super) const CREATE: ComponentId = ComponentId(999_992);
-const GRID_REGION: ComponentId = ComponentId(u64::MAX - 100);
-const GRID_GROUP: ComponentId = ComponentId(1_100_000);
+const CREATION_GRID_ROOT: ComponentId = ComponentId(1_100_000);
 #[derive(Clone, Debug)]
 pub(super) enum SwitcherAction {
     Tabs,
     Menu,
-    Create(String),
+}
+pub(super) struct CreationGrid {
+    pub(super) host: ContentHost,
+    pub(super) choices: Vec<(ComponentId, String)>,
+    pub(super) frame: Rect,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Item {
@@ -139,26 +144,23 @@ impl Host {
             .max(0.),
         ))
     }
+    pub(super) fn presentation_creation_grid_rect(&self, whole: Rect) -> Option<Rect> {
+        let mut frame = self.presentation_creation_frame()?;
+        frame.size.height = (whole.max_y() - frame.min_y()).max(0.);
+        let pad = tekes_ui_tokens::Spacing::Loose.value();
+        Some(Rect::new(
+            frame.min_x() + pad,
+            frame.min_y() + pad,
+            (frame.size.width - pad * 2.).max(0.),
+            (frame.size.height - pad * 2.).max(0.),
+        ))
+    }
     pub(super) fn presentation_switcher_regions(
         &self,
         frame: Rect,
-        whole: Rect,
+        _whole: Rect,
     ) -> Vec<ToolbarRegion> {
-        let mut regions = vec![ToolbarRegion::new(ComponentId(OWNER), frame)];
-        if let Some(mut frame) = self.presentation_creation_frame() {
-            frame.size.height = (whole.max_y() - frame.min_y()).max(0.);
-            let pad = tekes_ui_tokens::Spacing::Loose.value();
-            frame = Rect::new(
-                frame.min_x() + pad,
-                frame.min_y() + pad,
-                (frame.size.width - pad * 2.).max(0.),
-                (frame.size.height - pad * 2.).max(0.),
-            );
-            let mut region = ToolbarRegion::new(GRID_REGION, frame);
-            region.axis = Axis::Vertical;
-            regions.push(region);
-        }
-        regions
+        vec![ToolbarRegion::new(ComponentId(OWNER), frame)]
     }
     pub(super) fn sync_presentation_switcher(&mut self, whole: Rect) -> Result<()> {
         let Some(frame) = self.presentation_switcher_frame() else {
@@ -303,7 +305,9 @@ impl Host {
             })
             .map_err(|e| anyhow::anyhow!("creation popup viewport: {e:?}"))?;
         }
-        if self.layout.presentation_switcher.grid != grid {
+        if self.layout.presentation_switcher.grid != grid
+            || (!grid.is_empty() && self.layout.presentation_creation_grid.is_none())
+        {
             if !grid.is_empty() {
                 let mut children = Vec::new();
                 let mut bindings = Vec::new();
@@ -319,55 +323,45 @@ impl Host {
                     };
                     let (_, _, image, _) =
                         choices.iter().find(|(id, _, _, _)| id == value).unwrap();
-                    let id = ComponentId(GRID_GROUP.0 + 10 + index as u64 * 10);
-                    let body = Content::new(
-                        ComponentId(id.0 + 1),
-                        ToolbarGroup::new(
-                            ToolbarPlacement::Navigation,
-                            vec![
-                                icon(ComponentId(id.0 + 2), image)?,
-                                Content::new(
-                                    ComponentId(id.0 + 3),
-                                    tekes_ui_controls::composition::TextContent::new(label.clone()),
-                                ),
-                            ],
-                        ),
-                    );
-                    let mut button =
-                        Button::new(body).with_accessible_name(&if value.starts_with("open:") {
+                    let id = ComponentId(CREATION_GRID_ROOT.0 + 10 + index as u64 * 10);
+                    let mut button = Button::icon_label(image, label.clone())
+                        .map_err(|e| anyhow::anyhow!("creation tile icon: {e:?}"))?
+                        .with_accessible_name(if value.starts_with("open:") {
                             label.clone()
                         } else {
                             format!("Create {label}")
                         });
+                    button.image_position = ButtonImagePosition::Above;
                     button.button.state.disabled = *disabled;
                     children.push(Content::new(id, button));
-                    bindings.push(ToolbarCommandBinding {
-                        target: id,
-                        action: None,
-                        command: 0,
-                        source: SwitcherAction::Create(value.clone()),
-                    });
+                    bindings.push((id, value.clone()));
                 }
                 let mut model = tekes_ui_controls::extended::Grid::new(2);
                 model.gap_x = regular;
                 model.gap_y = regular;
-                let grid_content = Content::new(
-                    ComponentId(GRID_GROUP.0 + 1),
-                    tekes_ui_controls::composition::GridContent { model, children },
-                );
-                host.register(ToolbarRegistration {
-                    region: GRID_REGION,
-                    order: 0,
-                    group: Content::new(
-                        GRID_GROUP,
-                        ToolbarGroup::new(ToolbarPlacement::Navigation, vec![grid_content]),
-                    ),
-                    bindings,
-                })
-                .map_err(|e| anyhow::anyhow!("creation grid: {e:?}"))?;
-            } else if host.content_host().get(GRID_GROUP).is_some() {
-                host.remove(GRID_GROUP)
-                    .map_err(|e| anyhow::anyhow!("creation grid remove: {e:?}"))?;
+                let root = Content::new(CREATION_GRID_ROOT, GridContent { model, children })
+                    .with_surface("panel")
+                    .map_err(|e| anyhow::anyhow!("creation grid surface: {e:?}"))?;
+                let mut grid_host = ContentHost::new(root)
+                    .map_err(|e| anyhow::anyhow!("creation grid host: {e:?}"))?;
+                grid_host.set_action_events(true);
+                let grid_frame = self
+                    .presentation_creation_grid_rect(whole)
+                    .unwrap_or_default();
+                self.layout.presentation_creation_grid = Some(CreationGrid {
+                    host: grid_host,
+                    choices: bindings,
+                    frame: grid_frame,
+                });
+            } else {
+                self.layout.presentation_creation_grid = None;
+            }
+        } else if self.layout.presentation_creation_grid.is_some() {
+            let grid_frame = self
+                .presentation_creation_grid_rect(whole)
+                .unwrap_or_default();
+            if let Some(existing) = &mut self.layout.presentation_creation_grid {
+                existing.frame = grid_frame;
             }
         }
         self.layout.presentation_switcher = SwitcherState {

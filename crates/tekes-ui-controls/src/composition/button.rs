@@ -90,6 +90,7 @@ pub struct Button {
     pub leading_content_inset: Option<f32>,
     accessible_name: Option<String>,
     image: Option<ImageId>,
+    icon: Option<IconContent>,
     content: Vec<Content>,
     custom: bool,
     measured: Size,
@@ -112,6 +113,7 @@ impl Button {
             leading_content_inset: None,
             accessible_name: None,
             image: None,
+            icon: None,
             content: Vec::new(),
             custom: false,
             measured: Size::default(),
@@ -164,10 +166,56 @@ impl Button {
             self.variant
         }
     }
+    /// Construct a button displaying a canonical vector glyph alongside a text label,
+    /// without mounting a separate child `ComponentId`.
+    pub fn icon_label(icon_name: &str, label: impl Into<String>) -> Result<Self, IconRenderError> {
+        let mut button = Self::new("");
+        button.set_icon_label(icon_name, label)?;
+        Ok(button)
+    }
+
+    /// Replace this button's presentation with a canonical icon glyph and label.
+    pub fn set_icon_label(
+        &mut self,
+        icon_name: &str,
+        label: impl Into<String>,
+    ) -> Result<(), IconRenderError> {
+        self.image = None;
+        self.content.clear();
+        self.custom = false;
+        if let Some(icon) = &mut self.icon {
+            icon.set_glyph(icon_name)?;
+        } else {
+            self.icon = Some(IconContent::new(icon_name)?);
+        }
+        self.label = label.into();
+        self.measured = Size::default();
+        Ok(())
+    }
+
+    /// Align the painted icon ink to its leading slot edge when paired with a label.
+    pub fn with_icon_ink_leading(mut self, enabled: bool) -> Self {
+        self.set_icon_ink_leading(enabled);
+        self
+    }
+
+    /// Update leading ink alignment on an icon-label button.
+    pub fn set_icon_ink_leading(&mut self, enabled: bool) {
+        if let Some(icon) = &mut self.icon {
+            icon.set_ink_leading(enabled);
+        }
+    }
+
+    /// Borrow the embedded icon content on an icon-label button, if present.
+    pub fn icon(&self) -> Option<&IconContent> {
+        self.icon.as_ref()
+    }
+
     /// Replacing presentation never creates another action or resets its counter.
     pub fn set_contents(&mut self, contents: impl Into<ButtonContents>) {
         self.label.clear();
         self.image = None;
+        self.icon = None;
         self.content.clear();
         self.custom = false;
         match contents.into() {
@@ -317,12 +365,19 @@ impl Button {
         if let Some(content) = self.content.first_mut() {
             return content.measure_intrinsic(text, available).size;
         }
-        let side = if self.image.is_some() {
+        let has_icon = self.image.is_some() || self.icon.is_some();
+        let side = if let Some(icon) = &mut self.icon {
+            let m = icon.measure(
+                text,
+                Size::new(available.width.max(0.), available.height.max(0.)),
+            );
+            m.size.width.max(m.size.height)
+        } else if self.image.is_some() {
             Self::icon_side(text).min(available.width.max(0.))
         } else {
             0.
         };
-        let gap = if self.image.is_some() && !self.label.is_empty() {
+        let gap = if has_icon && !self.label.is_empty() {
             Self::gap(text)
         } else {
             0.
@@ -348,6 +403,65 @@ impl Button {
             Size::new(side.max(label.width), side + gap + label.height)
         } else {
             Size::new(side + gap + label.width, side.max(label.height))
+        }
+    }
+    fn place_icon_and_label(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        body: Rect,
+        side: f32,
+    ) -> (Rect, Rect) {
+        let has_icon = self.image.is_some() || self.icon.is_some();
+        let gap = if has_icon && !self.label.is_empty() {
+            Self::gap(text)
+        } else {
+            0.
+        };
+        let vertical = matches!(
+            self.image_position,
+            ButtonImagePosition::Above | ButtonImagePosition::Below
+        );
+        let label_size = if self.label.is_empty() {
+            Size::default()
+        } else {
+            text.measure(
+                &self.label,
+                proposal::TextRole::UiBody,
+                if vertical {
+                    body.size.width
+                } else {
+                    (body.size.width - side - gap).max(0.)
+                },
+            )
+        };
+        let leading = matches!(
+            self.image_position,
+            ButtonImagePosition::Leading | ButtonImagePosition::Above
+        );
+        let sizes = if leading {
+            [Size::new(side, side), label_size]
+        } else {
+            [label_size, Size::new(side, side)]
+        };
+        let placed = layout_measured_children(
+            body,
+            if vertical {
+                Axis::Vertical
+            } else {
+                Axis::Horizontal
+            },
+            &sizes.map(MeasuredChild::new),
+            gap,
+            proposal::layout::BUTTON_CONTENT,
+            AlignmentOverride {
+                main_axis: Some(MainAxisDistribution::Center),
+                cross_axis: Some(proposal::layout::CrossAxisAlignment::Center),
+            },
+        );
+        if leading {
+            (placed[0].frame, placed[1].frame)
+        } else {
+            (placed[1].frame, placed[0].frame)
         }
     }
     fn body_frame(&self, layout: crate::ButtonLayout) -> Rect {
@@ -495,16 +609,27 @@ impl Component for Button {
         r
     }
 
+    fn requires_icon_services(&self) -> bool {
+        self.icon.is_some()
+    }
+    fn icon_error(&self) -> Option<IconRenderError> {
+        self.icon.as_ref().and_then(Component::icon_error)
+    }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
             self.set_help(None);
+        }
+        if let Some(icon) = &mut self.icon {
+            icon.lifecycle(event);
         }
     }
     fn validate(&self) -> Result<(), CompositionError> {
         if self.content.len() != usize::from(self.custom) {
             return Err(CompositionError::InvalidSlotCount);
         }
-        if (self.image.is_some() || !self.content.is_empty()) && self.name().trim().is_empty() {
+        if (self.image.is_some() || self.icon.is_some() || !self.content.is_empty())
+            && self.name().trim().is_empty()
+        {
             return Err(CompositionError::EmptyAccessibleName);
         }
         Ok(())
@@ -533,6 +658,15 @@ impl Component for Button {
         let body = self.body_frame(layout);
         if let Some(content) = self.content.first_mut() {
             content.arrange(text, body, body.intersection(&clip).unwrap_or_default());
+        } else if self.icon.is_some() {
+            let side = Self::icon_side(text)
+                .min(body.size.width)
+                .min(body.size.height);
+            let (icon_slot, _) = self.place_icon_and_label(text, body, side);
+            let rect = icon_frame(icon_slot, side, text.backing_scale());
+            if let Some(icon) = &mut self.icon {
+                icon.arrange(text, rect, body.intersection(&clip).unwrap_or_default());
+            }
         }
     }
     fn paint(
@@ -559,6 +693,7 @@ impl Component for Button {
         }
         // Plain labels keep their existing production Button rendering and label service.
         if self.image.is_none()
+            && self.icon.is_none()
             && self.content.is_empty()
             && !self.transparent_chrome
             && self.leading_content_inset.is_none()
@@ -609,64 +744,15 @@ impl Component for Button {
             return;
         };
         let body = self.body_frame(layout);
-        let side = if self.image.is_some() {
+        let has_icon = self.image.is_some() || self.icon.is_some();
+        let side = if has_icon {
             Self::icon_side(text)
                 .min(body.size.width)
                 .min(body.size.height)
         } else {
             0.
         };
-        let gap = if self.image.is_some() && !self.label.is_empty() {
-            Self::gap(text)
-        } else {
-            0.
-        };
-        let vertical = matches!(
-            self.image_position,
-            ButtonImagePosition::Above | ButtonImagePosition::Below
-        );
-        let label_size = if self.label.is_empty() {
-            Size::default()
-        } else {
-            text.measure(
-                &self.label,
-                proposal::TextRole::UiBody,
-                if vertical {
-                    body.size.width
-                } else {
-                    (body.size.width - side - gap).max(0.)
-                },
-            )
-        };
-        let leading = matches!(
-            self.image_position,
-            ButtonImagePosition::Leading | ButtonImagePosition::Above
-        );
-        let sizes = if leading {
-            [Size::new(side, side), label_size]
-        } else {
-            [label_size, Size::new(side, side)]
-        };
-        let placed = layout_measured_children(
-            body,
-            if vertical {
-                Axis::Vertical
-            } else {
-                Axis::Horizontal
-            },
-            &sizes.map(MeasuredChild::new),
-            gap,
-            proposal::layout::BUTTON_CONTENT,
-            AlignmentOverride {
-                main_axis: Some(MainAxisDistribution::Center),
-                cross_axis: Some(proposal::layout::CrossAxisAlignment::Center),
-            },
-        );
-        let (icon, label) = if leading {
-            (placed[0].frame, placed[1].frame)
-        } else {
-            (placed[1].frame, placed[0].frame)
-        };
+        let (icon, label) = self.place_icon_and_label(text, body, side);
         scene.push_clip(visible);
         if let Some(image) = self.image {
             scene.push_image(ImageQuad {
@@ -679,6 +765,15 @@ impl Component for Button {
                 },
             });
         }
+        let child_theme = action_child_theme(self, theme);
+        if self.icon.is_some() {
+            let disabled = self.button.state.disabled;
+            let rect = icon_frame(icon, side, text.backing_scale());
+            if let Some(icon_content) = &mut self.icon {
+                icon_content.set_disabled(disabled);
+                icon_content.paint(scene, text, rect, visible, child_theme);
+            }
+        }
         if !self.label.is_empty() {
             text.draw(
                 scene,
@@ -686,7 +781,7 @@ impl Component for Button {
                 proposal::TextRole::UiBody,
                 label,
                 ButtonTextAlign::Center,
-                action_child_theme(self, theme).foreground.unwrap(),
+                child_theme.foreground.unwrap(),
             );
         }
         scene.pop_clip();
@@ -1219,5 +1314,135 @@ mod tests {
                 declared_colors(palette, "canvas")
             );
         }
+    }
+
+    #[test]
+    fn icon_label_buttons_coexist_and_paint_icon_with_button_ink() {
+        use std::cell::Cell;
+        use std::rc::Rc;
+
+        #[derive(Default)]
+        struct IconText {
+            draws: Vec<(String, Rgba)>,
+            tints: Vec<Rgba>,
+            fail_prepare: bool,
+        }
+        impl crate::layout_view::IconRenderer for IconText {
+            fn leading_ink_inset(&mut self, _: &str) -> Result<f32, IconRenderError> {
+                Ok(1.)
+            }
+            fn prepare_icon(
+                &mut self,
+                name: &str,
+                _: f32,
+                _: f32,
+                tint: Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                if self.fail_prepare {
+                    return Err(IconRenderError::Upload);
+                }
+                self.tints.push(tint);
+                let _ = name;
+                Ok(IconImage::new(tekes_ui_scene::ImageId(7), Rc::new(())))
+            }
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {}
+        }
+        impl ButtonTextRenderer for IconText {
+            fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
+                Some(self)
+            }
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                value: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                ink: Rgba,
+            ) {
+                self.draws.push((value.into(), ink));
+            }
+        }
+
+        let mut primary = Button::icon_label("tekes-new", "Create").unwrap();
+        primary.variant = ButtonVariant::Primary;
+        primary.image_position = ButtonImagePosition::Above;
+        let mut back = Button::icon_label("tekes-back", "返回")
+            .unwrap()
+            .with_icon_ink_leading(true);
+        back.button.state.disabled = true;
+
+        assert!(primary.requires_icon_services());
+        assert_eq!(
+            primary.curve_subtree_capability(),
+            CurveSubtreeCapability::Local
+        );
+        assert_eq!(
+            back.curve_subtree_capability(),
+            CurveSubtreeCapability::Local
+        );
+
+        let mut host = ContentHost::new(Content::new(
+            ROOT,
+            StackContent {
+                model: Stack {
+                    axis: Axis::Horizontal,
+                    gap: 8.,
+                },
+                children: vec![
+                    Content::new(ComponentId(83910), primary),
+                    Content::new(ComponentId(83911), back),
+                ],
+                flexible_child: None,
+            },
+        ))
+        .unwrap();
+        let mut text = IconText::default();
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut text,
+            frame(),
+            frame(),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(text.draws.len(), 2);
+        assert_eq!(text.tints.len(), 2);
+        assert_eq!(text.draws[0].1, text.tints[0]);
+        assert_eq!(text.draws[1].1, text.tints[1]);
+
+        text.fail_prepare = true;
+        let err = host
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame(),
+                frame(),
+                tekes_ui_tokens::Theme::LIGHT.into(),
+            )
+            .unwrap_err();
+        assert_eq!(
+            err,
+            CompositionError::IconResource {
+                owner: ComponentId(83910),
+                reason: IconRenderError::Upload,
+            }
+        );
+        let replaced = host
+            .get_mut(ComponentId(83910))
+            .unwrap()
+            .component_mut::<Button>()
+            .unwrap();
+        replaced.set_contents("Plain");
+        assert!(!replaced.requires_icon_services());
+        assert_eq!(replaced.icon_error(), None);
+        let _ = Cell::new(0);
     }
 }

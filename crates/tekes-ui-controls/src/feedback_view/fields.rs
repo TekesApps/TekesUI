@@ -1,6 +1,4 @@
-use super::{
-    button_text_align, clipped, draw_centered_text_with_ink, draw_centered_text_with_rgba,
-};
+use super::{button_text_align, clipped, draw_centered_text_with_rgba};
 use crate::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, Field, NumberField,
     paint,
@@ -293,6 +291,7 @@ pub struct NumberFieldView {
     layout: NumberFieldLayout,
     disabled: bool,
     focused: Option<bool>,
+    surface: Option<&'static str>,
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NumberFieldLayout {
@@ -329,6 +328,48 @@ pub enum NumberFieldEvent {
     Changed,
 }
 impl NumberFieldView {
+    pub fn surface(&self) -> &'static str {
+        self.surface.unwrap_or("canvas")
+    }
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = Some(tekes_ui_tokens::surface_palette::canonical_surface(
+            surface,
+        )?);
+        Ok(())
+    }
+    pub(crate) fn slot_frames(frame: Rect) -> (Rect, Rect, Rect) {
+        let nominal_gap = tekes_ui_tokens::Spacing::Relaxed.value();
+        let button_nominal = 48.;
+        let value_nominal = 198. - button_nominal * 2. - nominal_gap * 2.;
+        let nominal = button_nominal + nominal_gap + value_nominal + nominal_gap + button_nominal;
+        let scale = (frame.size.width.max(0.) / nominal).min(1.);
+        let button_w = button_nominal * scale;
+        let first_gap = nominal_gap * scale;
+        let value_w = value_nominal * scale;
+        let second_gap = nominal_gap * scale;
+        let minus = Rect::new(
+            frame.min_x(),
+            frame.min_y(),
+            button_w,
+            frame.size.height.max(0.),
+        );
+        let value = Rect::new(
+            minus.max_x() + first_gap,
+            frame.min_y(),
+            value_w,
+            frame.size.height.max(0.),
+        );
+        let plus = Rect::new(
+            value.max_x() + second_gap,
+            frame.min_y(),
+            button_w,
+            frame.size.height.max(0.),
+        );
+        (minus, value, plus)
+    }
     fn sync_model(&mut self, model: &NumberField) {
         for (button, increment) in [(&mut self.minus, false), (&mut self.plus, true)] {
             button.state.disabled = self.disabled || !model.can_increment(increment);
@@ -379,34 +420,11 @@ impl NumberFieldView {
         palette: Palette,
         role: proposal::TextRole,
     ) -> NumberFieldLayout {
-        let nominal_gap = tekes_ui_tokens::Spacing::Relaxed.value();
-        let button_nominal = 48.;
-        let value_nominal = 198. - button_nominal * 2. - nominal_gap * 2.;
-        let nominal = button_nominal + nominal_gap + value_nominal + nominal_gap + button_nominal;
-        let scale = (frame.size.width.max(0.) / nominal).min(1.);
-        let button_w = button_nominal * scale;
-        let first_gap = nominal_gap * scale;
-        let value_w = value_nominal * scale;
-        let second_gap = nominal_gap * scale;
-        let minus = Rect::new(
-            frame.min_x(),
-            frame.min_y(),
-            button_w,
-            frame.size.height.max(0.),
-        );
-        let value = Rect::new(
-            minus.max_x() + first_gap,
-            frame.min_y(),
-            value_w,
-            frame.size.height.max(0.),
-        );
-        let plus = Rect::new(
-            value.max_x() + second_gap,
-            frame.min_y(),
-            button_w,
-            frame.size.height.max(0.),
-        );
+        let (minus, value, plus) = Self::slot_frames(frame);
+        let surface = self.surface();
         self.sync_model(model);
+        self.minus.set_surface(surface);
+        self.plus.set_surface(surface);
         self.minus.state.focused = self.focused == Some(false);
         self.plus.state.focused = self.focused == Some(true);
         // The stepper owns these allocated hit slots, including narrow widths.
@@ -439,20 +457,23 @@ impl NumberFieldView {
         );
         let visible = clipped(frame, clip);
         if let Some(v) = visible {
+            let value_ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "content",
+                if self.disabled { "disabled" } else { "rest" },
+            )
+            .expect("NumberField value Surface packet")
+            .text;
             scene.push_clip(v);
-            draw_centered_text_with_ink(
+            draw_centered_text_with_rgba(
                 scene,
                 &mut *text,
                 &model.value().to_string(),
                 proposal::TextRole::UiHeading,
                 value,
-                palette,
                 ButtonTextAlign::Center,
-                if self.disabled {
-                    "disabled-text"
-                } else {
-                    "primary-text"
-                },
+                value_ink,
             );
             scene.pop_clip();
         }

@@ -77,6 +77,11 @@ impl Host {
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().input_overlay_owner().is_some())
+            || self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.input_overlay_owner().is_some())
         {
             return None;
         }
@@ -157,6 +162,9 @@ impl Host {
         self.set_toolbar_focus(None, false);
         if let Some(tabs) = &mut self.layout.presentation_tabs {
             tabs.blur();
+        }
+        if let Some(grid) = &mut self.layout.presentation_creation_grid {
+            grid.host.focus(None, false);
         }
         for (other, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             if other != index {
@@ -250,6 +258,11 @@ impl Host {
         {
             fragments.push(tabs);
         }
+        if modal.is_none()
+            && let Some(grid) = self.presentation_creation_grid_publication()
+        {
+            fragments.push(grid);
+        }
         WindowAccessibilityPublication::prepare(fragments)
     }
     pub(super) fn local_text_state(
@@ -264,6 +277,11 @@ impl Host {
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().focused().is_some())
+            || self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.focused().is_some())
         {
             return None;
         }
@@ -300,6 +318,16 @@ impl Host {
                 .presentation_tabs
                 .as_ref()
                 .is_some_and(|tabs| tabs.content_host().focused().is_some())
+            || self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.focused().is_some())
+            || self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.focused().is_some())
             || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self

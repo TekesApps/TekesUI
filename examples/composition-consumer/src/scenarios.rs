@@ -216,45 +216,6 @@ pub fn build_list() -> (ContentHost, ComponentId) {
     (fixture.host, ids::LIST_SWITCH)
 }
 
-#[derive(Debug)]
-struct DialogScreen {
-    children: Vec<Content>,
-    arranged: bool,
-}
-impl Component for DialogScreen {
-    // Both original child frames translate with this arranged screen. Child
-    // access is accessor-only, as required by the Scroll body's reveal route.
-    fn host_reveal_passthrough(&self) -> bool {
-        self.arranged
-    }
-
-    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        MeasuredChild::new(a)
-    }
-    fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        if let Some(invoker) = self
-            .children
-            .iter_mut()
-            .find(|n| n.id() == ids::DIALOG_INVOKER)
-        {
-            invoker.arrange(t, Rect::new(f.min_x() + 24., f.min_y() + 24., 240., 48.), c);
-        }
-        if let Some(dialog) = self.children.iter_mut().find(|n| n.id() == ids::DIALOG) {
-            dialog.arrange(t, f, c);
-        }
-        self.arranged = true;
-    }
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn semantics(&self) -> ContentSemantics {
-        ContentSemantics::new(ContentRole::Group, "Settings screen")
-    }
-}
-
 pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
     let text_field = TextFieldContent::new("Display name", "Workspace")
         .with_help("Choose a name visible to everyone on the team.");
@@ -293,19 +254,12 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
         ids::DIALOG_BODY,
         ScrollContent::new(ScrollArea::default(), form),
     );
-    let footer = Content::new(
+    let footer = DialogContent::actions_row(
         ids::DIALOG_FOOTER,
-        StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![
-                Content::new(ids::DIALOG_CANCEL, Button::new("Cancel")),
-                Content::new(ids::DIALOG_SAVE, Button::new("Save")),
-            ],
-        },
+        vec![
+            Content::new(ids::DIALOG_CANCEL, Button::new("Cancel")),
+            Content::new(ids::DIALOG_SAVE, Button::new("Save")),
+        ],
     );
     let dialog = Content::new(
         ids::DIALOG,
@@ -326,10 +280,9 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
     let invoker = Content::new(ids::DIALOG_INVOKER, Button::new("Edit workspace"));
     ContentHost::new(Content::new(
         ids::DIALOG_SCREEN,
-        DialogScreen {
-            children: vec![invoker, dialog],
-            arranged: false,
-        },
+        ModalViewportContent::new(vec![invoker, dialog])
+            .with_accessible_name("Settings screen")
+            .with_content_padding(tekes_ui_controls::Insets::new(24., 24., 24., 24.)),
     ))
 }
 

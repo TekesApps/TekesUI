@@ -169,7 +169,7 @@ impl AppHostPatterns {
                                 "Delete workspace",
                                 text(110030, StoryState::dialog_title("danger")),
                                 text(110031, "This fixture does not delete files."),
-                                stack(
+                                DialogContent::actions_row(
                                     ComponentId(110032),
                                     vec![button(70, "Cancel"), button(71, "Delete workspace")],
                                 ),

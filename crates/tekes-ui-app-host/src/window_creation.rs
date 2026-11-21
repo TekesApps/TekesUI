@@ -388,6 +388,48 @@ mod tests {
             })
             .unwrap_or_else(|| panic!("missing original control {name}"))
     }
+    fn grid_tile(host: &Host, name: &str) -> (ComponentId, u64, Rect) {
+        assert!(
+            !host
+                .layout
+                .presentation_tabs
+                .as_ref()
+                .unwrap()
+                .semantics()
+                .iter()
+                .any(|node| node.node.semantics.name == name),
+            "creation grid tile {name} must not be mounted inside ToolbarHost"
+        );
+        let grid = &host
+            .layout
+            .presentation_creation_grid
+            .as_ref()
+            .expect("mounted creation grid ContentHost")
+            .host;
+        let id = grid
+            .semantics()
+            .into_iter()
+            .find(|node| node.semantics.name == name)
+            .unwrap_or_else(|| panic!("missing creation grid tile {name}"))
+            .id;
+        (
+            id,
+            grid.semantic_mount(id).unwrap(),
+            grid.get(id).unwrap().frame(),
+        )
+    }
+    fn click_grid(host: &mut Host, point: Point) {
+        assert!(
+            host.presentation_creation_grid_input(&ContentEvent::PointerDown(point))
+                .unwrap()
+        );
+        refresh(host);
+        assert!(
+            host.presentation_creation_grid_input(&ContentEvent::PointerUp(point))
+                .unwrap()
+        );
+        refresh(host);
+    }
     fn click(host: &mut Host, point: Point, grid: bool) {
         let target = if grid {
             None
@@ -437,16 +479,19 @@ mod tests {
     #[test]
     fn registered_empty_grid_first_press_survives_paint_and_retired_ax_cannot_create_new_instance()
     {
-        use tekes_ui_controls::composition::AccessibilityAction;
+        use tekes_ui_macos_bridge::content_accessibility::{
+            ContentAccessibilityOwner, WindowAccessibilityPublication,
+        };
+        use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityKey};
         let mut host = host(local_factories());
         let scene = refresh(&mut host);
         assert!(
             !scene.primitives().is_empty(),
             "real grid paints original controls"
         );
-        let (old, bounds) = node(&host, "Create Working Notes", true);
+        let (_old_id, old_mount, bounds) = grid_tile(&host, "Create Working Notes");
         assert!(bounds.min_y() >= 48.);
-        click(&mut host, bounds.center(), true);
+        click_grid(&mut host, bounds.center());
         assert_eq!(host.panel_mgr.panels.len(), 2);
         let first = host.layout.presentation.as_ref().unwrap().others_ids()[0].clone();
         assert_eq!(host.layout.order, vec![0, 1]);
@@ -469,13 +514,24 @@ mod tests {
             .unwrap();
         host.close_container(&first).unwrap();
         refresh(&mut host);
+        let pub_fragment = host.presentation_creation_grid_publication().unwrap();
+        let publication = WindowAccessibilityPublication::prepare(vec![pub_fragment]).unwrap();
         assert!(
-            !host
-                .layout
-                .presentation_tabs
-                .as_mut()
-                .unwrap()
-                .accessibility_action(old, AccessibilityAction::Press)
+            !publication
+                .dispatch(
+                    ContentAccessibilityOwner(super::super::window_switcher::CREATION_GRID_OWNER),
+                    &mut host
+                        .layout
+                        .presentation_creation_grid
+                        .as_mut()
+                        .unwrap()
+                        .host,
+                    AccessibilityKey {
+                        component: old_mount,
+                        part: None,
+                    },
+                    AccessibilityAction::Press,
+                )
                 .consumed
         );
         assert!(
@@ -486,8 +542,8 @@ mod tests {
                 .others_ids()
                 .is_empty()
         );
-        let fresh = node(&host, "Create Working Notes", true).1.center();
-        click(&mut host, fresh, true);
+        let fresh = grid_tile(&host, "Create Working Notes").2.center();
+        click_grid(&mut host, fresh);
         assert_eq!(host.panel_mgr.panels.len(), 3);
         assert_ne!(
             host.layout.presentation.as_ref().unwrap().others_ids()[0],
@@ -607,8 +663,8 @@ mod tests {
         host.close_container("inspector").unwrap();
         refresh(&mut host);
         assert!(host.creation_entries().iter().any(|entry| matches!(entry, tekes_ui_controls::composition::MenuEntry::Item { value, .. } if value == "open:inspector")));
-        let point = node(&host, "Open Inspector", true).1.center();
-        click(&mut host, point, true);
+        let point = grid_tile(&host, "Open Inspector").2.center();
+        click_grid(&mut host, point);
         assert_eq!(host.panel_mgr.panels.len(), 2);
         assert_eq!(host.panel_mgr.panels[1].instance, instance);
         host.panel_mgr.panels[1]

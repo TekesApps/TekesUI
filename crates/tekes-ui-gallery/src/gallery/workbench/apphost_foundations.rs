@@ -2,7 +2,7 @@
 use super::{Entry, StoryState};
 use crate::gallery::containers::ComponentState;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, composition::*, extended::Grid, layout::MeasuredChild,
+    ButtonTextAlign, ButtonTextRenderer, composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Alpha, ColorRole, CornerRadius, Rgba, Spacing, Stroke, proposal::TextRole};
@@ -32,7 +32,6 @@ pub(super) const SEMANTIC_COLORS: [&str; 20] = [
 const ROOT: ComponentId = ComponentId(97800);
 const ROWS: ComponentId = ComponentId(97801);
 const BODY: ComponentId = ComponentId(97804);
-const CHOICE: u64 = 97810;
 const SPECIMEN: u64 = 98000;
 const CLEAR: Rgba = Rgba::new(0., 0., 0., 0.);
 #[derive(Debug, Clone, Copy)]
@@ -217,49 +216,23 @@ impl Component for SampleContent {
         Some(values)
     }
 }
-/// Only column choice belongs to this reference page. Original Grid lays out
-/// the actual child nodes; the outer ScrollContent owns offsets and clipping.
-#[derive(Debug)]
-struct SampleGrid(GridContent);
-impl Component for SampleGrid {
-    fn children(&self) -> &[Content] {
-        &self.0.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.0.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.0.model.columns = if available.width >= 600. {
-            4
-        } else if available.width >= 260. {
-            2
-        } else {
-            1
-        };
-        self.0.measure(text, available)
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.0.arrange(text, frame, clip);
-    }
-}
 fn text(id: u64, copy: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(copy))
 }
 fn grid(id: u64, samples: impl IntoIterator<Item = Sample>) -> Content {
     Content::new(
         ComponentId(id),
-        SampleGrid(GridContent {
-            model: Grid {
-                columns: 4,
-                gap_x: Spacing::Relaxed.value(),
-                gap_y: Spacing::Loose.value(),
-            },
-            children: samples
+        ResponsiveGridContent::new(
+            1,
+            Spacing::Relaxed.value(),
+            Spacing::Loose.value(),
+            samples
                 .into_iter()
                 .enumerate()
                 .map(|(n, s)| Content::new(ComponentId(id + 1 + n as u64), SampleContent(s, None)))
                 .collect(),
-        }),
+        )
+        .with_breakpoints(vec![(600., 4), (260., 2)]),
     )
 }
 fn section(group_id: u64, heading_id: u64, heading: &str, content: Content) -> Content {
@@ -319,22 +292,16 @@ impl AppHostFoundations {
         if entry.renderer() == "tokens" {
             children.push(Content::new(
                 ComponentId(97805),
-                StackContent {
-                    model: tekes_ui_controls::extended::Stack {
-                        axis: tekes_ui_controls::extended::Axis::Horizontal,
-                        gap: Spacing::Regular.value(),
+                SegmentedControlContent::from_model(
+                    "Token view",
+                    {
+                        let mut m = tekes_ui_controls::extended::SegmentedControl::new(2);
+                        m.selected = state.selected;
+                        m
                     },
-                    flexible_child: None,
-                    children: ["Semantic colors", "Complete token atlas"]
-                        .into_iter()
-                        .enumerate()
-                        .map(|(n, label)| {
-                            let mut button = Button::new(label);
-                            button.button.state.selected = n == state.selected;
-                            Content::new(ComponentId(CHOICE + n as u64), button)
-                        })
-                        .collect(),
-                },
+                    vec!["Semantic colors".into(), "Complete token atlas".into()],
+                )
+                .unwrap(),
             ));
         }
         children.push(Self::body(entry, state.selected));
@@ -420,20 +387,11 @@ impl AppHostFoundations {
         for record in self.host.drain_action_records() {
             if self.entry.renderer() == "tokens"
                 && record.action.kind == ContentActionKind::Activate
-                && let Some(n @ 0..=1) = record.action.target.0.checked_sub(CHOICE)
-                && self.state.selected != n as usize
+                && record.action.target == ComponentId(97805)
+                && let Some(ContentActionPayload::SegmentSelection(intent)) = &record.payload
+                && self.state.selected != intent.index()
             {
-                self.state.activate(400 + n as usize, "tokens");
-                for index in 0..=1 {
-                    self.host
-                        .get_mut(ComponentId(CHOICE + index))
-                        .unwrap()
-                        .component_mut::<Button>()
-                        .unwrap()
-                        .button
-                        .state
-                        .selected = index == n;
-                }
+                self.state.activate(400 + intent.index(), "tokens");
                 self.host.remove(BODY).expect("foundation body");
                 self.host
                     .insert(ROWS, Self::body(self.entry, self.state.selected))
@@ -475,9 +433,16 @@ mod tests {
                 .label(),
             "warning"
         );
+        let atlas_part = page
+            .host
+            .get(ComponentId(97805))
+            .unwrap()
+            .component::<SegmentedControlContent>()
+            .unwrap()
+            .part_token(1);
         assert!(
             page.host
-                .accessibility_action(ComponentId(CHOICE + 1), None, AccessibilityAction::Press)
+                .accessibility_action(ComponentId(97805), atlas_part, AccessibilityAction::Press)
                 .consumed
         );
         page.after_host_visit();
@@ -504,9 +469,20 @@ mod tests {
         assert!(page.host.get(ComponentId(SPECIMEN + 303)).is_some());
         // Switching back is the same original model action, not a new route or
         // replacement native host. The first semantic specimen is restored.
+        let semantic_part = page
+            .host
+            .get(ComponentId(97805))
+            .unwrap()
+            .component::<SegmentedControlContent>()
+            .unwrap()
+            .part_token(0);
         assert!(
             page.host
-                .accessibility_action(ComponentId(CHOICE), None, AccessibilityAction::Press)
+                .accessibility_action(
+                    ComponentId(97805),
+                    semantic_part,
+                    AccessibilityAction::Press
+                )
                 .consumed
         );
         page.after_host_visit();
@@ -547,9 +523,9 @@ mod tests {
                     .host
                     .get(ComponentId(grid_id))
                     .unwrap()
-                    .component::<SampleGrid>()
+                    .component::<ResponsiveGridContent>()
                     .unwrap();
-                assert_eq!(grid.0.model.columns, 1);
+                assert_eq!(grid.columns(), 1);
                 for pair in grid.children().windows(2) {
                     assert!(pair[1].frame().min_y() >= pair[0].frame().max_y());
                     assert!(pair[0].frame().max_x() <= frame.max_x());

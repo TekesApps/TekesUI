@@ -2,14 +2,8 @@
 //! navigation history; changing a position cannot clone or retarget them.
 use crate::columns::{Column, Container, ContainerOptions};
 use anyhow::{Result, ensure};
-use tekes_ui_controls::{
-    ScrollArea, ScrollPolicy,
-    composition::{
-        Component, ComponentId, Content, ContentEvent, ContentHost, ScrollContent, StackContent,
-    },
-    extended::{Axis, Stack},
-};
-use tekes_ui_scene::{Point, Rect, Size};
+use tekes_ui_controls::{ScrollArea, ScrollPolicy};
+use tekes_ui_scene::{Rect, Size};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OthersTab {
@@ -127,78 +121,35 @@ impl PresentationOptions {
         self
     }
 }
+#[derive(Clone)]
 struct OthersListScroll {
-    host: ContentHost,
+    scroll: ScrollArea,
 }
 impl OthersListScroll {
     fn from_scroll(mut scroll: ScrollArea) -> Self {
         scroll.set_scroll_policy(ScrollPolicy::Disabled, ScrollPolicy::Auto);
         scroll.set_reduced_motion(true);
-        let child = Content::new(
-            ComponentId(2),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: Vec::new(),
-                flexible_child: None,
-            },
-        );
-        let host = ContentHost::new(Content::new(
-            ComponentId(1),
-            ScrollContent::new(scroll, child),
-        ))
-        .expect("Others list ScrollContent host");
-        Self { host }
+        Self { scroll }
     }
     fn new() -> Self {
         Self::from_scroll(ScrollArea::default())
     }
-    fn scroll_content(&self) -> &ScrollContent {
-        self.host
-            .get(ComponentId(1))
-            .and_then(|node| node.component::<ScrollContent>())
-            .expect("Others list ScrollContent")
-    }
-    fn scroll_content_mut(&mut self) -> &mut ScrollContent {
-        self.host
-            .get_mut(ComponentId(1))
-            .and_then(|node| node.component_mut::<ScrollContent>())
-            .expect("Others list ScrollContent")
-    }
     fn sync_bounds(&mut self, viewport_height: f32, total_height: f32) {
-        self.scroll_content_mut().scroll.layout(
+        self.scroll.layout(
             Size::new(1., viewport_height.max(0.)),
             Size::new(1., total_height.max(0.)),
         );
     }
     fn wheel(&mut self, delta: f32, precise: bool, viewport_height: f32, total_height: f32) {
         self.sync_bounds(viewport_height, total_height);
-        let _ = Component::event(
-            self.scroll_content_mut(),
-            &ContentEvent::Scroll {
-                position: Point::default(),
-                delta: Point::new(0., delta),
-                precise,
-                begin: false,
-                end: false,
-                momentum: false,
-                time: 0.,
-            },
-        );
+        let _ = self.scroll.scroll_wheel(0., delta, precise);
     }
     fn scroll_by(&mut self, delta: f32, viewport_height: f32, total_height: f32) {
         self.sync_bounds(viewport_height, total_height);
-        self.scroll_content_mut().scroll.scroll_by(0., delta);
+        self.scroll.scroll_by(0., delta);
     }
     fn offset_y(&self) -> f32 {
-        self.scroll_content().scroll.offset.y
-    }
-}
-impl Clone for OthersListScroll {
-    fn clone(&self) -> Self {
-        Self::from_scroll(self.scroll_content().scroll.clone())
+        self.scroll.offset.y
     }
 }
 impl std::fmt::Debug for OthersListScroll {

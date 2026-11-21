@@ -352,62 +352,6 @@ impl Component for MatrixCheckbox {
     }
 }
 
-/// One shared section-row layout. Its original horizontal ScrollContent owns
-/// overflow/reveal; this parent only derives a finite height from real buttons.
-#[derive(Debug)]
-struct SectionBar {
-    children: Vec<Content>,
-    arranged: bool,
-}
-impl Component for SectionBar {
-    fn host_reveal_passthrough(&self) -> bool {
-        // This parent adds no clip or coordinate transform. Its one arranged
-        // Scroll child translates unchanged with the enclosing page viewport.
-        self.arranged
-    }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        if event == Lifecycle::Unmounted {
-            self.arranged = false;
-        }
-    }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
-        CurveSubtreeCapability::Recursive
-    }
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.arranged = false;
-        let scroll = self.children[0].component_mut::<ScrollContent>().unwrap();
-        let natural = scroll.children_mut().unwrap()[0]
-            .measure_intrinsic(text, Size::new(1e8, available.height))
-            .size;
-        let bleed =
-            -tekes_ui_controls::extended::ControlFrame::new(Rect::new(0., 0., 1., 1.), None)
-                .focus_bounds(text.backing_scale())
-                .min_x();
-        let height = natural.height
-            + 2. * bleed
-            + tekes_ui_tokens::proposal::SCROLLBAR_WIDTH
-            + tekes_ui_tokens::proposal::SCROLLBAR_INSET;
-        scroll.viewport_height = Some(height);
-        self.children[0].measure(text, Size::new(available.width, height))
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.children[0].arrange(text, frame, clip);
-        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
-    }
-}
-
 pub(crate) struct BasicStory {
     state: StoryState,
     entry: &'static Entry,
@@ -1079,15 +1023,7 @@ pub(super) fn section_bar(entry: &Entry, command: u64) -> Content {
     );
     Content::new(
         ComponentId(92006),
-        SectionBar {
-            arranged: false,
-            children: vec![Content::new(
-                ComponentId(92012),
-                ScrollContent::new(tekes_ui_controls::ScrollArea::default(), commands)
-                    .horizontal(true)
-                    .scrollbar(true),
-            )],
-        },
+        ScrollContent::horizontal_strip(commands),
     )
 }
 

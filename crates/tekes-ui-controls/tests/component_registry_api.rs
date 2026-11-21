@@ -1301,6 +1301,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::MarkdownProjection",
     );
+    public_type::<tekes_ui_controls::composition::MaxWidthContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::MaxWidthContent",
+    );
     #[cfg(feature = "bitmap-images")]
     {
         public_type::<tekes_ui_controls::composition::MediaViewerCommand>(
@@ -1356,6 +1360,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::MenuValuesError",
     );
+    public_type::<tekes_ui_controls::composition::ModalViewportContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ModalViewportContent",
+    );
     public_type::<tekes_ui_controls::composition::NumberCommitReason>(
         &mut actual,
         "tekes_ui_controls::composition::NumberCommitReason",
@@ -1369,7 +1377,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_202<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_204<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -1458,6 +1466,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::RequiredFocusSpace>(
         &mut actual,
         "tekes_ui_controls::composition::RequiredFocusSpace",
+    );
+    public_type::<tekes_ui_controls::composition::ResponsiveGridContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ResponsiveGridContent",
     );
     public_type::<tekes_ui_controls::composition::RichBlock>(
         &mut actual,
@@ -1607,6 +1619,14 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::StatusBadgeContent",
     );
+    public_type::<tekes_ui_controls::composition::StepperContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::StepperContent",
+    );
+    public_type::<tekes_ui_controls::composition::SurfaceContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::SurfaceContent",
+    );
     #[cfg(feature = "svg-icons")]
     {
         public_type::<tekes_ui_controls::composition::SvgIconCache>(
@@ -1716,6 +1736,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
     public_type::<tekes_ui_controls::composition::TextViewport>(
         &mut actual,
         "tekes_ui_controls::composition::TextViewport",
+    );
+    public_type::<tekes_ui_controls::composition::ThemeScopeContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::ThemeScopeContent",
     );
     public_type::<tekes_ui_controls::composition::ToastContent>(
         &mut actual,
@@ -2242,7 +2266,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_419<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_425<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

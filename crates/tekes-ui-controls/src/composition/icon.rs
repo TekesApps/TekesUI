@@ -157,6 +157,10 @@ impl IconContent {
     }
 }
 impl Component for IconContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     fn has_stable_hooks(&self) -> bool {
         true
     }

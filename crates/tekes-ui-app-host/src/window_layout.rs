@@ -22,6 +22,7 @@ pub(super) struct WindowLayoutState {
     pub(super) presentation_layout: crate::PresentationLayout,
     pub(super) presentation_tabs:
         Option<tekes_ui_controls::composition::ToolbarHost<window_switcher::SwitcherAction>>,
+    pub(super) presentation_creation_grid: Option<window_switcher::CreationGrid>,
     pub(super) presentation_switcher: window_switcher::SwitcherState,
     pub(super) presentation_scroll_pending: bool,
     pub(super) presentation_icons: tekes_ui_controls::composition::SvgIconCache,
@@ -51,6 +52,7 @@ impl WindowLayoutState {
             presentation: None,
             presentation_layout: crate::PresentationLayout::default(),
             presentation_tabs: None,
+            presentation_creation_grid: None,
             presentation_switcher: window_switcher::SwitcherState::default(),
             presentation_scroll_pending: false,
             presentation_icons: Default::default(),

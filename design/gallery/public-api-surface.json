@@ -1404,6 +1404,12 @@
       "reason": "Bidirectional UTF-16 Live-Preview Markdown projection model between canonical LF source and display text; not an independent component."
     },
     {
+      "api": "tekes_ui_controls::composition::MaxWidthContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Max-width centering composition container that constrains horizontal span while preserving child intrinsic preferred height."
+    },
+    {
       "api": "tekes_ui_controls::composition::MediaViewerCommand",
       "category": "optional-component-support",
       "components": [],
@@ -1481,6 +1487,12 @@
         "tui.menu"
       ],
       "reason": "Atomic validation result for original MenuContent stable-value declaration, no new component or runtime."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ModalViewportContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Modal viewport composition host coordinating invoker content and overlay dialog lifecycle/layout inside a shared container."
     },
     {
       "api": "tekes_ui_controls::composition::NumberCommitReason",
@@ -1676,6 +1688,14 @@
       "category": "composition",
       "components": [],
       "reason": "Host-visible required-focus space contract used by ContentHost and focus/reveal runtime; not a component API."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ResponsiveGridContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.grid"
+      ],
+      "reason": "Responsive auto-column grid composition adapter for the existing Grid family; layout container only, without implying native acceptance."
     },
     {
       "api": "tekes_ui_controls::composition::RichBlock",
@@ -1978,6 +1998,22 @@
       "reason": "Public passive Content adapter for the existing StatusBadge model and View; retains the same registered identity."
     },
     {
+      "api": "tekes_ui_controls::composition::StepperContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.number-field"
+      ],
+      "reason": "Compact button-stepped numeric Content adapter over NumberField for the existing NumberField family."
+    },
+    {
+      "api": "tekes_ui_controls::composition::SurfaceContent",
+      "category": "component-adapter",
+      "components": [
+        "tui.surface"
+      ],
+      "reason": "Owned Content adapter for the existing registered Surface / Panel family (canvas, panel, framed). Added compiler binding proves availability only; no new Gallery identity, maturity, native publication or B2 acceptance."
+    },
+    {
       "api": "tekes_ui_controls::composition::SvgIconCache",
       "category": "component-support",
       "components": [
@@ -2177,6 +2213,12 @@
       "category": "shared-support",
       "components": [],
       "reason": "Viewport constraints on the existing TextFieldContent: legacy Form, Fixed, Fill and bounded intrinsic Grow, excluding Field metadata. Reuses original TextSurface/ReadingController/Stack flexible child; not a new component or layout framework."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ThemeScopeContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Scoped theme/brand-override composition wrapper applying resolved theme/palette context to a child subtree."
     },
     {
       "api": "tekes_ui_controls::composition::ToastContent",

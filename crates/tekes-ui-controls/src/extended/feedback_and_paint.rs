@@ -417,6 +417,22 @@ pub fn switch_with_state(
         if state.selected { 1. } else { 0. },
     );
 }
+pub fn switch_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+    switch_on_surface_with_thumb_progress(
+        scene,
+        rect,
+        palette,
+        state,
+        if state.selected { 1. } else { 0. },
+        surface,
+    )
+}
 /// Thumb presentation progress never changes the model or full-track hit area.
 pub fn switch_with_state_and_thumb_progress(
     scene: &mut Scene,
@@ -425,42 +441,42 @@ pub fn switch_with_state_and_thumb_progress(
     state: ControlState,
     thumb_progress: f32,
 ) {
-    let theme = theme.into();
+    let _ = switch_on_surface_with_thumb_progress(
+        scene,
+        rect,
+        theme.into(),
+        state,
+        thumb_progress,
+        "canvas",
+    );
+}
+/// Paint a toggle track/thumb resolving all channels from the declared Surface packet.
+pub fn switch_on_surface_with_thumb_progress(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    thumb_progress: f32,
+    surface: &str,
+) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
     let checked = state.selected;
-    let role = if state.disabled {
-        "surface-2"
-    } else if checked && state.pressed {
-        "control-checked-pressed"
-    } else if checked && state.hovered {
-        "control-checked-hover"
-    } else if checked {
-        "c-switch-on-ground"
-    } else if state.pressed {
-        "button-pressed"
-    } else if state.hovered {
-        "button-hover"
-    } else {
-        "surface-3"
-    };
-    let track = paint_color(theme, role);
     let radius = rect.size.height.max(0.) * 0.5;
     let stroke = proposal::metric("stroke", "stroke-rule").expect("Design System control stroke");
     let toggle = tekes_ui_tokens::surface_palette::resolve_toggle_surface(
-        theme,
-        "canvas",
+        palette,
+        surface,
         crate::paint::control_surface_state(state),
         tekes_ui_tokens::surface_palette::SurfaceOptions {
             error: state.error,
             read_only: false,
         },
-    )
-    .expect("Switch Surface packet");
+    )?;
     let boundary = toggle
         .track
         .boundary
         .expect("Switch track Surface boundary");
     scene.push_quad(
-        Quad::new(rect, track)
+        Quad::new(rect, toggle.track.background)
             .with_corner_radius(radius)
             .with_border(stroke, boundary),
     );
@@ -473,17 +489,10 @@ pub fn switch_with_state_and_thumb_progress(
         0.
     };
     let x = rect.min_x() + 2. + (rect.size.width - d - 4.).max(0.) * progress;
-    let thumb = if state.disabled {
-        "disabled-text"
-    } else if checked {
-        "c-switch-on-thumb"
-    } else {
-        "surface-0"
-    };
     scene.push_quad(
         Quad::new(
             Rect::new(x, rect.min_y() + 2., d, d),
-            paint_color(theme, thumb),
+            toggle.thumb.background,
         )
         .with_corner_radius(d * 0.5)
         .with_border(
@@ -495,8 +504,9 @@ pub fn switch_with_state_and_thumb_progress(
         ),
     );
     if state.focused && state.focus_visible && !state.disabled {
-        focus_outline(scene, rect, theme);
+        focus_outline(scene, rect, palette);
     }
+    Ok(())
 }
 pub fn radio(
     scene: &mut Scene,
@@ -676,7 +686,18 @@ pub fn slider(
     model: Slider,
     state: ControlState,
 ) -> SliderGeometry {
-    let theme = theme.into();
+    slider_on_surface(scene, rect, theme.into(), model, state, "canvas")
+        .expect("Slider canvas Surface packet")
+}
+/// Paint a Slider resolving all track, fill and thumb channels from the declared Surface packet.
+pub fn slider_on_surface(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    model: Slider,
+    state: ControlState,
+    surface: &str,
+) -> Result<SliderGeometry, tekes_ui_tokens::surface_palette::SurfaceError> {
     let disabled = state.disabled || model.disabled;
     // The visual thumb stays compact while SliderView retains the full row hit target.
     let diameter = proposal::metric("size", "c-slider-thumb-size")
@@ -699,35 +720,9 @@ pub fn slider(
         diameter,
         diameter,
     );
-    let track_role = if disabled { "surface-2" } else { "surface-3" };
-    scene.push_quad(
-        Quad::new(track, paint_color(theme, track_role))
-            .with_corner_radius(track.size.height * 0.5),
-    );
-    let fill_role = if disabled {
-        "disabled-text"
-    } else if state.pressed {
-        "accent-pressed"
-    } else if state.hovered {
-        "accent-hover"
-    } else {
-        "accent"
-    };
-    scene.push_quad(
-        Quad::new(
-            Rect::new(
-                track.min_x(),
-                track.min_y(),
-                (center_x - track.min_x()).max(0.),
-                track.size.height,
-            ),
-            paint_color(theme, fill_role),
-        )
-        .with_corner_radius(track.size.height * 0.5),
-    );
     let range = tekes_ui_tokens::surface_palette::resolve_range_surface(
-        theme,
-        "canvas",
+        palette,
+        surface,
         if disabled {
             "disabled"
         } else if state.pressed {
@@ -737,27 +732,40 @@ pub fn slider(
         } else {
             "rest"
         },
-    )
-    .expect("Slider Surface packet");
+    )?;
     scene.push_quad(
-        Quad::new(
-            thumb,
-            paint_color(theme, if disabled { "surface-2" } else { "surface-0" }),
-        )
-        .with_corner_radius(radius)
-        .with_border(
-            1.,
-            range.thumb.boundary.expect("Slider thumb Surface boundary"),
-        ),
+        Quad::new(track, range.track.background).with_corner_radius(track.size.height * 0.5),
+    );
+    if let Some(marker) = range.track.marker {
+        scene.push_quad(
+            Quad::new(
+                Rect::new(
+                    track.min_x(),
+                    track.min_y(),
+                    (center_x - track.min_x()).max(0.),
+                    track.size.height,
+                ),
+                marker,
+            )
+            .with_corner_radius(track.size.height * 0.5),
+        );
+    }
+    scene.push_quad(
+        Quad::new(thumb, range.thumb.background)
+            .with_corner_radius(radius)
+            .with_border(
+                1.,
+                range.thumb.boundary.expect("Slider thumb Surface boundary"),
+            ),
     );
     if state.focused && state.focus_visible && !state.disabled {
-        focus_outline(scene, thumb, theme);
+        focus_outline(scene, thumb, palette);
     }
-    SliderGeometry {
+    Ok(SliderGeometry {
         track,
         thumb,
         thumb_center_x: center_x,
-    }
+    })
 }
 fn focus_outline(scene: &mut Scene, rect: Rect, theme: Palette) {
     crate::paint::focus_ring(

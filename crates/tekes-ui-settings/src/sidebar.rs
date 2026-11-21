@@ -5,7 +5,7 @@ use tekes_ui_controls::{
     composition::{
         Button, ComponentId, Content, ContentActionPayload, ContentEvent, ContentHost, IconContent,
         KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay,
-        SearchFieldContent, StackContent, TextContent,
+        SearchFieldContent, StackContent,
     },
     extended::{
         Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
@@ -187,7 +187,9 @@ impl SettingsSidebar {
                 ComponentId(1),
                 ListContent::scrollable("Settings", ComponentId(2), groups),
             )
-        };
+        }
+        .with_surface("sidebar")
+        .map_err(|e| SettingsError::Ui(format!("Settings sidebar surface: {e:?}")))?;
         let mut host = ContentHost::new(root)
             .map_err(|e| SettingsError::Ui(format!("Settings sidebar: {e:?}")))?;
         host.set_action_events(true);
@@ -215,9 +217,8 @@ impl SettingsSidebar {
     /// A canonical monochrome Back icon inherits its original Button's state ink.
     /// Repeated declarations retain the same passive content and image lease.
     pub fn set_back_template_icon(&mut self, name: &str) -> Result<()> {
-        let mut icon = IconContent::new(name)
+        let icon = IconContent::new(name)
             .map_err(|error| SettingsError::Ui(format!("Settings Back icon: {error:?}")))?;
-        icon.set_ink_leading(true);
         let name = icon.glyph().name;
         if self.back_template == Some(name) {
             return Ok(());
@@ -227,20 +228,10 @@ impl SettingsSidebar {
             .get_mut(ComponentId(4))
             .and_then(|node| node.component_mut::<Button>())
         {
-            button.set_contents(Content::new(
-                ComponentId(7),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Horizontal,
-                        gap: tekes_ui_tokens::Spacing::Tight.value(),
-                    },
-                    children: vec![
-                        Content::new(ComponentId(8), icon),
-                        Content::new(ComponentId(9), TextContent::new("返回")),
-                    ],
-                    flexible_child: None,
-                },
-            ));
+            button
+                .set_icon_label(name, "返回")
+                .map_err(|error| SettingsError::Ui(format!("Settings Back icon: {error:?}")))?;
+            button.set_icon_ink_leading(true);
             self.back_template = Some(name);
         }
         Ok(())

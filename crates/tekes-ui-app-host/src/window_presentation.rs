@@ -297,7 +297,7 @@ impl Host {
         scene: &mut Scene,
         whole: Rect,
         palette: Palette,
-        renderer: Option<&mut Renderer>,
+        mut renderer: Option<&mut Renderer>,
     ) -> Result<()> {
         let focus = self
             .layout
@@ -379,7 +379,7 @@ impl Host {
         if let (Some(host), Some(_frame)) = (&mut self.layout.presentation_tabs, switcher_frame) {
             host.set_regions(TABS_OWNER, whole, switcher_regions.unwrap())
                 .map_err(|e| anyhow::anyhow!("container tabs region: {e:?}"))?;
-            if let Some(renderer) = renderer {
+            if let Some(renderer) = renderer.as_deref_mut() {
                 with_content_icons(
                     renderer,
                     &mut self.layout.presentation_icons,
@@ -395,6 +395,33 @@ impl Host {
                 #[cfg(not(test))]
                 host.render(scene, &mut self.text, palette)
                     .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
+            }
+        }
+        if let Some(grid) = &mut self.layout.presentation_creation_grid
+            && !grid.frame.is_empty()
+        {
+            let grid_frame = grid.frame;
+            if let Some(renderer) = renderer {
+                with_content_icons(
+                    renderer,
+                    &mut self.layout.presentation_icons,
+                    &mut self.text,
+                    |text| {
+                        grid.host
+                            .render(scene, text, grid_frame, grid_frame, palette)
+                            .map_err(|e| anyhow::anyhow!("creation grid paint: {e:?}"))
+                    },
+                )?;
+            } else {
+                #[cfg(test)]
+                with_test_icons(&mut self.text, |text| {
+                    grid.host
+                        .render(scene, text, grid_frame, grid_frame, palette)
+                })?;
+                #[cfg(not(test))]
+                grid.host
+                    .render(scene, &mut self.text, grid_frame, grid_frame, palette)
+                    .map_err(|e| anyhow::anyhow!("creation grid paint: {e:?}"))?;
             }
         }
         self.trace_presentation_scroll("after-paint");
@@ -443,6 +470,9 @@ impl Host {
         self.cancel_toolbar_input();
         if let Some(header) = &mut self.layout.presentation_tabs {
             header.event(&ContentEvent::Cancel);
+        }
+        if let Some(grid) = &mut self.layout.presentation_creation_grid {
+            grid.host.event(&ContentEvent::Cancel);
         }
         self.layout.drag_split = None;
         self.layout.outer_view.cancel(&mut self.layout.outer);
@@ -766,60 +796,114 @@ impl Host {
         use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
         if let Event::Accessibility { target, action } = event
             && let Some(publication) = w.content_accessibility_publication()
-            && publication.owner(*target)
+        {
+            if publication.owner(*target)
+                == Some(
+                    tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(
+                        super::window_switcher::CREATION_GRID_OWNER,
+                    ),
+                )
+            {
+                let consumed = if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    publication
+                        .dispatch(
+                            tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(
+                                super::window_switcher::CREATION_GRID_OWNER,
+                            ),
+                            &mut grid.host,
+                            *target,
+                            action.clone(),
+                        )
+                        .consumed
+                } else {
+                    false
+                };
+                if consumed {
+                    self.apply_creation_grid_actions()?;
+                }
+                return Ok(consumed);
+            }
+            if publication.owner(*target)
                 == Some(
                     tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner(
                         TABS_OWNER,
                     ),
                 )
-        {
-            let stamped = host.semantics().into_iter().find_map(|node| {
-                let id = node.node.id;
-                std::iter::once((node.target, None))
-                    .chain(
-                        node.parts
-                            .into_iter()
-                            .map(|(target, part)| (target, Some(part.index))),
-                    )
-                    .find_map(|(stamp, part)| {
-                        (tekes_ui_macos_bridge::content_accessibility::content_key(
-                            host.content_host(),
-                            id,
-                            part,
-                        ) == Some(*target))
-                        .then_some(stamp)
-                    })
-            });
-            use tekes_ui_controls::composition::AccessibilityAction as Action;
-            use tekes_ui_platform_macos::AccessibilityAction as Native;
-            let action = match action.clone() {
-                Native::Focus => Action::Focus,
-                Native::Press => Action::Press,
-                Native::ShowMenu => Action::ShowMenu,
-                Native::Increment => Action::Increment,
-                Native::Decrement => Action::Decrement,
-                Native::SetValue(value) => Action::SetValue(value),
-                Native::SetSelection(range) => Action::SetSelection(range),
-                Native::ReplaceSelectedText(text) => Action::ReplaceSelectedText(text),
-                Native::SetExpanded(value) => Action::SetExpanded(value),
-            };
-            let consumed =
-                stamped.is_some_and(|target| host.accessibility_action(target, action).consumed);
-            if consumed {
-                self.apply_tab_selection()?;
+            {
+                let stamped = host.semantics().into_iter().find_map(|node| {
+                    let id = node.node.id;
+                    std::iter::once((node.target, None))
+                        .chain(
+                            node.parts
+                                .into_iter()
+                                .map(|(target, part)| (target, Some(part.index))),
+                        )
+                        .find_map(|(stamp, part)| {
+                            (tekes_ui_macos_bridge::content_accessibility::content_key(
+                                host.content_host(),
+                                id,
+                                part,
+                            ) == Some(*target))
+                            .then_some(stamp)
+                        })
+                });
+                use tekes_ui_controls::composition::AccessibilityAction as Action;
+                use tekes_ui_platform_macos::AccessibilityAction as Native;
+                let action = match action.clone() {
+                    Native::Focus => Action::Focus,
+                    Native::Press => Action::Press,
+                    Native::ShowMenu => Action::ShowMenu,
+                    Native::Increment => Action::Increment,
+                    Native::Decrement => Action::Decrement,
+                    Native::SetValue(value) => Action::SetValue(value),
+                    Native::SetSelection(range) => Action::SetSelection(range),
+                    Native::ReplaceSelectedText(text) => Action::ReplaceSelectedText(text),
+                    Native::SetExpanded(value) => Action::SetExpanded(value),
+                };
+                let consumed = stamped
+                    .is_some_and(|target| host.accessibility_action(target, action).consumed);
+                if consumed {
+                    self.apply_tab_selection()?;
+                }
+                return Ok(consumed);
             }
-            return Ok(consumed);
+        }
+        let in_grid = match event {
+            Event::Mouse(mouse) => {
+                self.layout.pressed.is_none()
+                    && self
+                        .layout
+                        .presentation_creation_grid
+                        .as_ref()
+                        .is_some_and(|grid| {
+                            grid.host.pointer_capture().is_some()
+                                || grid.frame.contains(Point::new(
+                                    mouse.position.x as f32,
+                                    mouse.position.y as f32,
+                                ))
+                        })
+            }
+            Event::Key(_) | Event::TextKey(_) => self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.focused().is_some()),
+            _ => false,
+        };
+        if in_grid {
+            let Some(input) = super::window_toolbar_mount::native_toolbar_event(event) else {
+                return Ok(false);
+            };
+            if let ContentEvent::KeyInput(key) = input {
+                return self.toolbar_key_input(key);
+            }
+            let consumed = self.presentation_creation_grid_input(&input)?;
+            return Ok(consumed || matches!(event, Event::Key(_) | Event::TextKey(_)));
         }
         let in_tabs = match event {
             Event::Mouse(mouse) => {
                 self.layout.pressed.is_none()
                     && (host.content_host().pointer_capture().is_some()
-                        || creation_frame.is_some_and(|frame| {
-                            frame.contains(Point::new(
-                                mouse.position.x as f32,
-                                mouse.position.y as f32,
-                            ))
-                        })
                         || self.layout.presentation_layout.tabs.is_some_and(|frame| {
                             frame.contains(Point::new(
                                 mouse.position.x as f32,
@@ -866,6 +950,9 @@ impl Host {
             .consumed;
         if consumed {
             if host.content_host().focused().is_some() {
+                if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    grid.host.focus(None, false);
+                }
                 self.set_toolbar_focus(None, false);
             }
             self.apply_tab_selection()?;
@@ -875,6 +962,54 @@ impl Host {
             self.trace_presentation_scroll("after-input");
         }
         Ok(consumed)
+    }
+    pub(super) fn presentation_creation_grid_input(
+        &mut self,
+        input: &ContentEvent,
+    ) -> Result<bool> {
+        if self.open_toolbar().is_some() {
+            return Ok(false);
+        }
+        let Some(grid) = &mut self.layout.presentation_creation_grid else {
+            return Ok(false);
+        };
+        let response = grid
+            .host
+            .event_with_text(input, &mut self.text)
+            .map_err(|e| anyhow::anyhow!("creation grid input: {e:?}"))?;
+        if grid.host.focused().is_some() {
+            if let Some(tabs) = &mut self.layout.presentation_tabs {
+                tabs.blur();
+            }
+            self.set_toolbar_focus(None, false);
+        }
+        self.apply_creation_grid_actions()?;
+        Ok(response.consumed)
+    }
+    pub(super) fn apply_creation_grid_actions(&mut self) -> Result<()> {
+        let Some(grid) = &mut self.layout.presentation_creation_grid else {
+            return Ok(());
+        };
+        let activated: Vec<String> = grid
+            .host
+            .drain_actions()
+            .into_iter()
+            .filter_map(|record| {
+                grid.choices
+                    .iter()
+                    .find(|(id, _)| *id == record.target)
+                    .map(|(_, value)| value.clone())
+            })
+            .collect();
+        for value in activated {
+            if self.composition_in_progress() {
+                host_diag!("PRESENTATION_REJECTED composition-in-progress");
+                continue;
+            }
+            self.open_creation_choice(&value)?;
+            self.set_toolbar_focus(None, false);
+        }
+        Ok(())
     }
     pub(super) fn apply_tab_selection(&mut self) -> Result<()> {
         let records = self
@@ -890,9 +1025,6 @@ impl Host {
             }
             use super::window_switcher::SwitcherAction;
             match record.source {
-                SwitcherAction::Create(id) => {
-                    self.open_creation_choice(&id)?;
-                }
                 SwitcherAction::Tabs => {
                     let Some(ContentActionPayload::TabStrip(intent)) = record.payload else {
                         continue;
@@ -945,6 +1077,22 @@ impl Host {
             ContentAccessibilitySnapshot::from_host(
                 self.layout.presentation_tabs.as_ref()?.content_host(),
             )?,
+        ))
+    }
+    pub(super) fn presentation_creation_grid_publication(
+        &self,
+    ) -> Option<(
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilityOwner,
+        tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot,
+    )> {
+        use tekes_ui_macos_bridge::content_accessibility::{
+            ContentAccessibilityOwner, ContentAccessibilitySnapshot,
+        };
+        let grid = self.layout.presentation_creation_grid.as_ref()?;
+        (!grid.frame.is_empty()).then_some(())?;
+        Some((
+            ContentAccessibilityOwner(super::window_switcher::CREATION_GRID_OWNER),
+            ContentAccessibilitySnapshot::from_host(&grid.host)?,
         ))
     }
     fn business_destination(

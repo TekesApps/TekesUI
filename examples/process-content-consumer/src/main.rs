@@ -13,8 +13,6 @@ fn main() -> anyhow::Result<()> {
 mod consumer {
     mod accessibility_consumer;
     mod native_host;
-    mod popup;
-    use popup::Popup;
     mod overlay_consumer;
     mod projection_consumer;
     mod scroll_consumer;
@@ -121,7 +119,7 @@ mod consumer {
                     Content::new(OTHER, TextFieldContent::new("Other", "other")),
                     Content::new(
                         ComponentId(5),
-                        Popup::new(
+                        PopoverContent::new(
                             "Pointer scope",
                             Content::new(ComponentId(6), Button::new("Overlay action")),
                         ),
@@ -266,26 +264,19 @@ mod consumer {
                     Ok(serde_json::Value::Null)
                 }
                 RequestBody::Message { topic, .. } if topic == "open_pointer_scope" => {
-                    let anchor = self.host.get(ComponentId(3)).unwrap().frame();
-                    self.host
-                        .get_mut(ComponentId(5))
-                        .unwrap()
-                        .component_mut::<Popup>()
-                        .unwrap()
-                        .show(anchor);
+                    self.host.show_popover(ComponentId(5), ComponentId(3))?;
                     self.revision += 1;
                     emitter.invalidate_view(self.revision)?;
                     Ok(serde_json::Value::Null)
                 }
                 RequestBody::Message { topic, .. } if topic == "close_pointer_scope" => {
-                    ensure!(
-                        self.host
-                            .get_mut(ComponentId(5))
-                            .unwrap()
-                            .component_mut::<Popup>()
-                            .unwrap()
-                            .close()
-                    );
+                    let session = self
+                        .host
+                        .get(ComponentId(5))
+                        .and_then(|n| n.component::<PopoverContent>())
+                        .and_then(PopoverContent::current_session)
+                        .context("pointer scope not open")?;
+                    ensure!(self.host.close_popover(session));
                     self.revision += 1;
                     emitter.invalidate_view(self.revision)?;
                     Ok(serde_json::Value::Null)

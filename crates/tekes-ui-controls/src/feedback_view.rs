@@ -177,23 +177,6 @@ pub(super) fn draw_centered_text_with_rgba(
     }
     renderer.draw(scene, text, role, rect, align, ink);
 }
-#[allow(clippy::too_many_arguments)]
-pub(super) fn draw_centered_text_with_ink(
-    scene: &mut Scene,
-    renderer: &mut impl ButtonTextRenderer,
-    text: &str,
-    role: proposal::TextRole,
-    rect: Rect,
-    palette: Palette,
-    align: ButtonTextAlign,
-    ink_role: &str,
-) {
-    if text.is_empty() || rect.is_empty() {
-        return;
-    }
-    let ink = palette.color(ink_role).expect("semantic text token");
-    draw_centered_text_with_rgba(scene, renderer, text, role, rect, align, ink);
-}
 pub(super) fn button_text_align(policy: proposal::layout::AlignmentPolicy) -> ButtonTextAlign {
     match policy.text_alignment {
         proposal::layout::TextAlignment::Center => ButtonTextAlign::Center,

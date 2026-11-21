@@ -1288,7 +1288,7 @@ impl Host {
         let whole = Rect::new(0., 0., size.width as f32, size.height as f32);
         let mut scene = Scene::new();
         let mut toolbar_scene = Scene::new();
-        scene.push_quad(Quad::new(whole, palette.color("surface-panel").unwrap()));
+        scene.push_quad(Quad::new(whole, super::surface_ground(palette, "panel")));
         self.layout.outer.min_pane = 160.;
         // Arrange now; paint only after current toolbar hit regions are known.
         let layout = self
@@ -1376,6 +1376,10 @@ impl Host {
             motion: tekes_ui_controls::ButtonTextRenderer::motion_context(&self.text),
             palette,
         };
+        scene.push_quad(Quad::new(
+            frames[1],
+            super::surface_ground(palette, "panel"),
+        ));
         render_local_content(
             local,
             &mut panel.content_icons,
@@ -1400,6 +1404,10 @@ impl Host {
                 ),
             );
             sidebar_content_rect = Some(rect);
+            scene.push_quad(Quad::new(
+                frames[0],
+                super::surface_ground(palette, "sidebar"),
+            ));
             self.panel_mgr.panels[0].bounds = frames[0];
             let panel = &mut self.panel_mgr.panels[0];
             let local = panel.local.as_mut().unwrap();
@@ -1455,7 +1463,7 @@ impl Host {
         renderer.render(
             &scene,
             &mut self.text.atlas,
-            palette.color("surface-panel").unwrap(),
+            super::surface_ground(palette, "panel"),
         )?;
         if self.nav_mgr.navigation_order.is_some() && self.nav_mgr.navigation_ack.is_none() {
             let (tx, rx) = mpsc::sync_channel(1);
@@ -2556,7 +2564,14 @@ mod pinned_header_tests {
         };
         draw(&mut sidebar, &mut text);
         let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
-        let arrow = sidebar.host().get(ComponentId(8)).unwrap().frame();
+        let back_button = sidebar
+            .host()
+            .get(ComponentId(4))
+            .unwrap()
+            .component::<tekes_ui_controls::Button>()
+            .unwrap();
+        let back_icon = back_button.icon().expect("embedded Back template icon");
+        let arrow = back_icon.layout().frame;
         let scroll = sidebar.host().get(ComponentId(1)).unwrap().frame();
         let list = sidebar.host().get(ComponentId(101)).unwrap().frame();
         assert_eq!(
@@ -2568,14 +2583,7 @@ mod pinned_header_tests {
             arrow.min_x(),
             list.min_x() + tekes_ui_tokens::Spacing::Relaxed.value()
         );
-        let artwork = sidebar
-            .host()
-            .get(ComponentId(8))
-            .unwrap()
-            .component::<tekes_ui_controls::composition::IconContent>()
-            .unwrap()
-            .layout()
-            .artboard;
+        let artwork = back_icon.layout().artboard;
         let outline_inset = tekes_ui_controls::layout_view::IconRenderer::leading_ink_inset(
             &mut HeaderIcons,
             "tekes-back",
@@ -2652,7 +2660,16 @@ mod pinned_header_tests {
             "search keeps logical and keyboard focus after Escape"
         );
         let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
-        let arrow = sidebar.host().get(ComponentId(8)).unwrap().frame();
+        let arrow = sidebar
+            .host()
+            .get(ComponentId(4))
+            .unwrap()
+            .component::<tekes_ui_controls::Button>()
+            .unwrap()
+            .icon()
+            .unwrap()
+            .layout()
+            .frame;
         assert_eq!(chip.frame().center().y, back.center().y);
         assert_eq!(
             arrow.min_x(),

@@ -99,6 +99,10 @@ pub use rich_content::{
 };
 pub use rich_document::{RichBlock, RichBlockKind, RichDocument, RichLink};
 mod adapters;
+mod stepper;
+pub use stepper::StepperContent;
+mod surface;
+pub use surface::SurfaceContent;
 mod combobox;
 pub use combobox::{ComboBoxContent, ComboBoxSelection, ComboBoxUpdateError};
 mod chart_content;
@@ -164,7 +168,9 @@ pub use actions::{
     ContentAction, ContentActionKind, ContentActionPayload, ContentActionRecord,
     ContentActionSource, MenuSelection,
 };
-pub use adapters::{DialogContent, ListContent, SliderContent, SwitchContent};
+pub use adapters::{
+    DialogContent, ListContent, ModalViewportContent, SliderContent, SwitchContent,
+};
 pub use content_reading::{
     ContentReadingAnchorUpdate, ContentReadingCheckpoint, ContentReadingCheckpointError,
     ContentReadingPosition, ContentReadingRestoreRequest, ContentReadingResult,
@@ -986,7 +992,10 @@ mod host;
 mod host_ops;
 
 pub(crate) use containers::{FrameTextAdapter, TextAdapter};
-pub use containers::{GridContent, ScrollContent, StackContent, TextContent};
+pub use containers::{
+    GridContent, MaxWidthContent, ResponsiveGridContent, ScrollContent, StackContent, TextContent,
+    ThemeScopeContent,
+};
 pub(crate) use content_node::RequiredFocusEvidence;
 pub use content_node::{
     CompositionError, Content, ContentWheelEvent, ContentWheelPhase, RequiredFocusResult,
