@@ -622,10 +622,7 @@ impl Host {
             .collect::<Vec<_>>();
         self.tree = Some(ContentHost::new(Content::new(
             ComponentId(100),
-            GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children,
-            },
+            GridContent::with_columns(3, 0., children),
         ))?);
         self.tree.as_mut().unwrap().set_focus_wrap(false);
         self.tree.as_mut().unwrap().set_window_active(w.is_active());
@@ -699,10 +696,7 @@ impl Host {
                 .collect::<Result<Vec<_>>>()?;
             self.tree = Some(ContentHost::new(Content::new(
                 ComponentId(100),
-                GridContent {
-                    model: tekes_ui_controls::extended::Grid::new(3),
-                    children,
-                },
+                GridContent::with_columns(3, 0., children),
             ))?);
             self.tree.as_mut().unwrap().set_focus_wrap(false);
             self.tree.as_mut().unwrap().set_action_events(true);
@@ -2222,10 +2216,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         .collect::<Result<Vec<_>>>()?;
     let mut host = ContentHost::new(Content::new(
         ComponentId(100),
-        GridContent {
-            model: tekes_ui_controls::extended::Grid::new(3),
-            children,
-        },
+        GridContent::with_columns(3, 0., children),
     ))?;
     host.set_focus_wrap(false);
     host.set_action_events(true);
@@ -3816,10 +3807,7 @@ pub(super) fn three_surface_roundtrip() -> Result<serde_json::Value> {
     }
     let mut host = ContentHost::new(Content::new(
         ComponentId(500),
-        GridContent {
-            model: tekes_ui_controls::extended::Grid::new(3),
-            children,
-        },
+        GridContent::with_columns(3, 0., children),
     ))?;
     let frame = Rect::new(0., 0., 960., 500.);
     let mut renderer = Renderer::new_headless()?;

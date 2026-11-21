@@ -157,18 +157,14 @@ fn original_motor_uses_json_period_and_reduced_stop_hide_unmount_window_gates() 
     // Removing the actual animated descendant retires its work, not a business ticker.
     let root = Content::new(
         ComponentId(2),
-        tekes_ui_controls::composition::StackContent {
-            model: tekes_ui_controls::extended::Stack {
-                axis: tekes_ui_controls::extended::Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(ComponentId(3), {
+        tekes_ui_controls::composition::StackContent::vertical(
+            0.,
+            vec![Content::new(ComponentId(3), {
                 let mut i = IconContent::new("tekes-back").unwrap();
                 i.set_indeterminate(true);
                 i
             })],
-        },
+        ),
     );
     let mut h = ContentHost::new(root).unwrap();
     draw(&mut h, &mut t, &mut icons).unwrap();

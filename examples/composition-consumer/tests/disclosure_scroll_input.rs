@@ -4,10 +4,7 @@
 mod coretext;
 use std::rc::Rc;
 use tekes_ui_controls::{
-    ButtonTextRenderer, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    ButtonTextRenderer, ScrollArea, composition::*, layout::MeasuredChild,
     layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Rect, Scene, Size};
@@ -243,17 +240,13 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
         Content::new(ComponentId(3), TextContent::new("folder")),
         Content::new(
             BODY,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                flexible_child: None,
-                children: vec![Content::new(
+            StackContent::vertical(
+                0.,
+                vec![Content::new(
                     EDITOR,
                     TextFieldContent::new("Editor", "draft"),
                 )],
-            },
+            ),
         ),
         true,
     );
@@ -272,17 +265,13 @@ fn preserving_scroll_header_keeps_marked_editor_and_sibling_while_confirmation_r
             ScrollArea::default(),
             Content::new(
                 ComponentId(20),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 0.,
-                    },
-                    flexible_child: None,
-                    children: vec![
+                StackContent::vertical(
+                    0.,
+                    vec![
                         Content::new(ROOT, disclosure_control),
                         Content::new(OUTSIDE, TextFieldContent::new("Outside", "outside draft")),
                     ],
-                },
+                ),
             ),
         ),
     ))

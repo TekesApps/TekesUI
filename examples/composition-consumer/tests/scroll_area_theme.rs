@@ -7,7 +7,6 @@ use tekes_ui_controls::{
     composition::{
         Button, ComponentId, Content, ContentHost, ScrollContent, StackContent, TextContent,
     },
-    extended::{Axis, Stack},
 };
 use tekes_ui_scene::{Point, Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
@@ -18,13 +17,9 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
     const HEADING: ComponentId = ComponentId(121_042);
     let body = Content::new(
         ComponentId(121_041),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(HEADING, TextContent::new("Account\nPreferences\nSecurity")),
                 Content::new(ACTION, Button::new("Open detail")),
                 Content::new(
@@ -32,7 +27,7 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
                     TextContent::new("Document row\n".repeat(20)),
                 ),
             ],
-        },
+        ),
     );
     let root = Content::new(SCROLLER, ScrollContent::new(ScrollArea::default(), body))
         .with_surface("panel")
@@ -56,7 +51,6 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
             .scroll_by(0., 36.)
     );
     let offset = host
@@ -64,7 +58,7 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     let mount = host.semantic_mount(ACTION).unwrap();
     let mut original = None;
@@ -85,7 +79,7 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll;
+            .scroll();
         assert_eq!(scroll.offset, offset);
         assert_eq!(scroll.overscroll, Point::default());
         assert!(offset.y > 0. && offset.y < scroll.limit().y);
@@ -127,7 +121,7 @@ fn scroll_area_retained_themes_keep_offset_viewport_clip_and_real_leaf_context()
         let button = action
             .component::<Button>()
             .unwrap()
-            .button
+            .model()
             .layout()
             .unwrap();
         let fill = scene

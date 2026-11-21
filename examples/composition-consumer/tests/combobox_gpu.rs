@@ -3,11 +3,8 @@
 #[path = "support/coretext.rs"]
 mod coretext;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlKey,
-    composition::*,
-    extended::{Axis, ComboBox, Stack},
-    layout::MeasuredChild,
-    layout_view::ComboBoxView,
+    ButtonTextAlign, ButtonTextRenderer, ControlKey, composition::*, extended::ComboBox,
+    layout::MeasuredChild, layout_view::ComboBoxView,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Theme, proposal, surface_palette::resolve_surface};
@@ -25,7 +22,7 @@ impl Component for Background {
         c: Rect,
         theme: ContentTheme,
     ) {
-        let colors = resolve_surface(theme.palette, "panel", "content", "rest").unwrap();
+        let colors = resolve_surface(theme.palette(), "panel", "content", "rest").unwrap();
         s.push_clip(c);
         s.push_quad(Quad::new(f, colors.background));
         t.draw(
@@ -96,20 +93,16 @@ fn original_view_and_public_combobox_pixels() {
                     let mut host = ContentHost::new(
                         Content::new(
                             ComponentId(89),
-                            StackContent {
-                                model: Stack {
-                                    axis: Axis::Vertical,
-                                    gap: 0.,
-                                },
-                                flexible_child: None,
-                                children: vec![
+                            StackContent::vertical(
+                                0.,
+                                vec![
                                     Content::new(
                                         ComponentId(90),
                                         ComboBoxContent::new("Layout", items),
                                     ),
                                     Content::new(ComponentId(91), Background),
                                 ],
-                            },
+                            ),
                         )
                         .with_surface("panel")
                         .unwrap(),

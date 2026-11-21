@@ -2,9 +2,7 @@
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, TextSurfaceHost, TextSurfaceTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_text::{
@@ -263,13 +261,9 @@ fn real_host_outside_dismissal_owns_down_and_up_without_background_delivery() {
     let count = Rc::new(Cell::new(0));
     let mut h = ContentHost::new(Content::new(
         ComponentId(9099),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(COMBO, ComboBoxContent::new("Layout", items())),
                 Content::new(
                     ComponentId(9091),
@@ -278,7 +272,7 @@ fn real_host_outside_dismissal_owns_down_and_up_without_background_delivery() {
                     },
                 ),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -348,17 +342,13 @@ fn passive_background_program_updates_do_not_acquire_scope_or_end_neighbor_marke
     const COMPOSER: ComponentId = ComponentId(9092);
     let mut h = ContentHost::new(Content::new(
         ComponentId(9099),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(COMBO, ComboBoxContent::new("Layout", items())),
                 Content::new(COMPOSER, TextFieldContent::new("Composer", "draft")),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -452,17 +442,13 @@ fn accepted_host_sources_reject_ax_before_effect_and_allow_original_pointer_tran
     const OTHER: ComponentId = ComponentId(9092);
     let mut h = ContentHost::new(Content::new(
         ComponentId(9099),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(COMBO, ComboBoxContent::new("Layout", items())),
                 Content::new(OTHER, TextFieldContent::new("Composer", "draft")),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -516,23 +502,19 @@ fn editor_drag_retains_original_capture_and_popup_wheel_does_not_scroll_reader()
     combo.set_query("").unwrap();
     let stack = Content::new(
         ComponentId(9080),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(COMBO, combo),
                 Content::new(
                     ComponentId(9081),
                     TextContent::new("Reader history\n".repeat(80)),
                 ),
             ],
-        },
+        ),
     );
     let mut scroll = ScrollContent::new(tekes_ui_controls::ScrollArea::default(), stack);
-    scroll.viewport_height = Some(160.);
+    scroll.set_viewport_height(Some(160.));
     let mut h = ContentHost::new(Content::new(ComponentId(9082), scroll)).unwrap();
     h.set_action_events(true);
     render(&mut h, 400., Theme::LIGHT.into());
@@ -557,7 +539,7 @@ fn editor_drag_retains_original_capture_and_popup_wheel_does_not_scroll_reader()
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert!(
         h.event(&ContentEvent::Scroll {
@@ -576,7 +558,7 @@ fn editor_drag_retains_original_capture_and_popup_wheel_does_not_scroll_reader()
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         before
     );

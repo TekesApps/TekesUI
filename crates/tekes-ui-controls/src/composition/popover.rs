@@ -48,10 +48,10 @@ pub struct PopoverClosed {
 /// forward pointer/text/AX events into a second host.
 #[derive(Debug)]
 pub struct PopoverContent {
-    pub name: String,
-    pub initial_focus: Option<ComponentId>,
+    name: String,
+    initial_focus: Option<ComponentId>,
     /// Optional body constraint. The existing shell owns insets/placement/clip.
-    pub max_content_width: Option<f32>,
+    max_content_width: Option<f32>,
     model: Popover,
     view: PopoverView,
     body: Vec<Content>,
@@ -70,6 +70,39 @@ pub struct PopoverContent {
     dismiss_focused: bool,
 }
 impl PopoverContent {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
+    pub fn initial_focus(&self) -> Option<ComponentId> {
+        self.initial_focus
+    }
+    pub fn with_initial_focus(mut self, focus: Option<ComponentId>) -> Self {
+        self.initial_focus = focus;
+        self
+    }
+    pub fn set_initial_focus(&mut self, focus: Option<ComponentId>) {
+        self.initial_focus = focus;
+    }
+    pub fn max_content_width(&self) -> Option<f32> {
+        self.max_content_width
+    }
+    pub fn with_max_content_width(mut self, width: Option<f32>) -> Self {
+        self.max_content_width = width;
+        self
+    }
+    pub fn set_max_content_width(&mut self, width: Option<f32>) {
+        self.max_content_width = width;
+    }
+    pub fn with_placement(mut self, placement: crate::feedback_view::PopoverPlacement) -> Self {
+        self.view.set_placement(placement);
+        self
+    }
+    pub fn set_placement(&mut self, placement: crate::feedback_view::PopoverPlacement) {
+        self.view.set_placement(placement);
+    }
     pub fn new(name: impl Into<String>, body: Content) -> Self {
         Self {
             name: name.into(),

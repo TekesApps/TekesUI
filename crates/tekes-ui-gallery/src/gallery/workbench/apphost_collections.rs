@@ -86,7 +86,7 @@ impl Component for Matrix {
         theme: ContentTheme,
     ) {
         scene.push_clip(clip);
-        self.render(text, scene, frame, clip, theme.palette);
+        self.render(text, scene, frame, clip, theme.palette());
         scene.pop_clip();
     }
 }
@@ -755,8 +755,9 @@ pub(super) fn action(
 fn refresh_log(state: &StoryState, host: &mut ContentHost) {
     // Section navigation can remove the live log before queued records drain.
     if let Some(log) = host.get_mut(ComponentId(92003)) {
-        log.component_mut::<TextContent>().unwrap().text =
-            state.log.iter().cloned().collect::<Vec<_>>().join("\n");
+        log.component_mut::<TextContent>()
+            .unwrap()
+            .set_text(state.log.iter().cloned().collect::<Vec<_>>().join("\n"));
     }
 }
 

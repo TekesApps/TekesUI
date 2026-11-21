@@ -2,11 +2,7 @@
 //! the original text surfaces keep their native editing/reading scroll owner.
 use super::{Entry, apphost_text_pages};
 use crate::gallery::locale::Locale;
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-    layout::Insets,
-};
+use tekes_ui_controls::{composition::*, layout::Insets};
 use tekes_ui_tokens::Spacing;
 const ROOT: ComponentId = ComponentId(99100);
 const COPY: ComponentId = ComponentId(99103);
@@ -32,31 +28,20 @@ impl AppHostDocuments {
         let (live, calibration) = Self::live(entry.renderer(), locale);
         let live_id = live.id();
         let inset = Spacing::Loose.value();
-        let header = StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![
+        let header = StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 super::story_heading(99101, entry.title()),
                 super::apphost_basic::section_bar(entry, COMMAND),
             ],
-            flexible_child: None,
-        }
+        )
         .into_content_with_padding(
             HEADER,
             Insets::new(inset, inset, Spacing::Regular.value(), inset),
         );
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: vec![header, live],
-                flexible_child: Some(live_id),
-            },
+            StackContent::vertical(0., vec![header, live]).with_flexible_child(live_id),
         ))
         .map_err(|error| anyhow::anyhow!("Gallery document composition: {error:?}"))?;
         host.set_action_events(true);
@@ -89,15 +74,9 @@ impl AppHostDocuments {
             let live =
                 apphost_text_pages::content(renderer, locale).expect("supported document renderer");
             let id = live.id();
-            let wrapped = StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: vec![live],
-                flexible_child: Some(id),
-            }
-            .into_content_with_padding(SPECIMEN_WRAP, content_insets);
+            let wrapped = StackContent::vertical(0., vec![live])
+                .with_flexible_child(id)
+                .into_content_with_padding(SPECIMEN_WRAP, content_insets);
             (wrapped, None)
         }
     }
@@ -169,7 +148,7 @@ impl AppHostDocuments {
             .unwrap()
             .component_mut::<StackContent>()
             .unwrap()
-            .flexible_child = Some(id);
+            .set_flexible_child(Some(id));
         self.section = section;
     }
     pub(crate) fn after_host_visit(&mut self) {
@@ -234,8 +213,8 @@ impl AppHostDocuments {
             .and_then(|node| node.component::<ScrollContent>())
             .map_or((0., 0.), |scroll| {
                 (
-                    scroll.scroll.limit().y,
-                    scroll.scroll.viewport_size().height,
+                    scroll.max_offset().y,
+                    scroll.scroll().viewport_size().height,
                 )
             })
     }
@@ -254,8 +233,8 @@ impl AppHostDocuments {
             .get_mut(fallback_id)
             .and_then(|node| node.component_mut::<ScrollContent>())
         {
-            let current = scroll.scroll.offset.y;
-            scroll.scroll.scroll_by(0., offset - current);
+            let current = scroll.offset().y;
+            scroll.scroll_by(0., offset - current);
         }
     }
     #[cfg(feature = "selftest")]

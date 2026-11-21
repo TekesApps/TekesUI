@@ -1211,7 +1211,8 @@ mod label_content_tests {
             ),
         };
         if let Some(button) = node.component_mut::<Button>() {
-            button.button.state = state;
+            button.set_disabled(state.disabled);
+            button.set_loading(state.loading);
         }
         node
     }
@@ -1269,6 +1270,34 @@ mod label_content_tests {
                                     palette,
                                 )
                                 .unwrap();
+                                if state.hovered {
+                                    host.event(
+                                        &tekes_ui_controls::composition::ContentEvent::PointerMove(
+                                            frame.center(),
+                                        ),
+                                    );
+                                }
+                                if state.pressed {
+                                    host.event(
+                                        &tekes_ui_controls::composition::ContentEvent::PointerDown(
+                                            frame.center(),
+                                        ),
+                                    );
+                                } else if state.focused {
+                                    host.focus(Some(ComponentId(1)), state.focus_visible);
+                                }
+                                if state.hovered || state.pressed || state.focused {
+                                    scene = Scene::new();
+                                    text.begin_frame();
+                                    host.render(
+                                        &mut scene,
+                                        &mut text,
+                                        frame,
+                                        Rect::new(0., 0., 240., 100.),
+                                        palette,
+                                    )
+                                    .unwrap();
+                                }
                                 assert_eq!(
                                     host.semantics()[0].semantics.name,
                                     if original { "A\nB" } else { "A…" }

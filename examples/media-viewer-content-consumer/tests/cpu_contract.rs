@@ -1,11 +1,7 @@
 #![cfg(target_os = "macos")]
 //! CPU-only public contract of real Loading/Missing ImageContent. This does not
 //! stand in for Ready/lease/GPU acceptance and creates no Renderer.
-use tekes_ui_controls::{
-    ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ControlKey, composition::*};
 use tekes_ui_scene::{Point, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::Theme;
 #[path = "support/coretext.rs"]
@@ -16,10 +12,9 @@ const IMAGE: ComponentId = ComponentId(20472);
 fn host() -> ContentHost {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            flexible_child: Some(VIEW),
-            children: vec![Content::new(
+        StackContent::vertical(
+            0.,
+            vec![Content::new(
                 VIEW,
                 MediaViewerContent::new(
                     IMAGE,
@@ -32,7 +27,8 @@ fn host() -> ContentHost {
                 )
                 .unwrap(),
             )],
-        },
+        )
+        .with_flexible_child(VIEW),
     ))
     .unwrap()
 }

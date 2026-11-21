@@ -64,7 +64,7 @@ impl Component for LayoutFixture {
                 tekes_ui_controls::extended::separator_at_scale(
                     scene,
                     frame,
-                    theme.palette,
+                    theme.palette(),
                     axis,
                     text.backing_scale(),
                 );
@@ -72,7 +72,7 @@ impl Component for LayoutFixture {
                 tekes_ui_controls::feedback_view::SurfaceView::paint_at_scale(
                     scene,
                     frame.inset(0.5),
-                    theme.palette,
+                    theme.palette(),
                     true,
                     text.backing_scale(),
                 );
@@ -84,7 +84,7 @@ impl Component for LayoutFixture {
                         frame.inset(8.),
                         ButtonTextAlign::default(),
                         theme
-                            .palette
+                            .palette()
                             .color("primary-text")
                             .expect("standard text token"),
                     );

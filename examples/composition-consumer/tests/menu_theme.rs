@@ -103,7 +103,7 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
     for theme in Theme::ALL {
         let palette = Palette::new(theme, 0).unwrap();
         let initial = render(&mut host, &mut text, palette);
-        let popup = menu(&mut host).popup.clone().unwrap();
+        let popup = menu(&mut host).popup_layout().cloned().unwrap();
         assert_eq!(
             popup.active_item, expected_active,
             "Theme change retains active item"
@@ -119,7 +119,7 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
         assert_eq!(surface, palette.color("surface-popover").unwrap());
         surfaces.push(surface);
         // Clear stale hover using the original MenuView input domain, inside its popup gutter.
-        menu(&mut host).menu.pointer_move_at(popup.popup.origin);
+        host.event(&ContentEvent::PointerMove(popup.popup.origin));
         assert!(
             host.event(&ContentEvent::Key {
                 key: ControlKey::Home,
@@ -136,7 +136,7 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                 assert!(response.consumed && !response.activated);
             }
             let scene = render(&mut host, &mut text, palette);
-            let layout = menu(&mut host).popup.clone().unwrap();
+            let layout = menu(&mut host).popup_layout().cloned().unwrap();
             assert_eq!(
                 layout.active_item,
                 if state == "keyboard-focus" { 0 } else { 1 }
@@ -192,7 +192,7 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                 );
             }
             let title = text.draws.iter().find(|(s, _, _)| s == "Options").unwrap();
-            let trigger = menu(&mut host).trigger.button.layout().unwrap().frame;
+            let trigger = menu(&mut host).trigger().model().layout().unwrap().frame;
             let title_fill = scene
                 .primitives()
                 .iter()
@@ -225,7 +225,7 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                     .semantics
                     .disabled
             );
-            assert!(menu(&mut host).menu.is_open());
+            assert!(menu(&mut host).is_open());
             if state == "keyboard-focus"
                 && let Some((directory, renderer)) = capture.as_mut()
             {
@@ -267,14 +267,14 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
                 .event(&ContentEvent::PointerUp(popup.popup.origin))
                 .activated
         );
-        assert!(menu(&mut host).menu.is_open());
+        assert!(menu(&mut host).is_open());
         assert!(host.drain_action_records().is_empty());
         assert!(
             !host
                 .accessibility_action(MENU, Some(2), AccessibilityAction::Press)
                 .activated
         );
-        assert!(menu(&mut host).menu.is_open());
+        assert!(menu(&mut host).is_open());
     }
     assert!(surfaces.windows(2).any(|w| w[0] != w[1]));
     assert!(
@@ -282,5 +282,5 @@ fn menu_retained_theme_changes_keep_real_title_items_checks_and_navigation_reada
             .activated
     );
     assert_eq!(host.drain_action_records().len(), 1);
-    assert_eq!(menu(&mut host).selected, Some(1));
+    assert_eq!(menu(&mut host).selected(), Some(1));
 }

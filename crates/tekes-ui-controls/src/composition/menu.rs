@@ -119,11 +119,11 @@ struct MenuPanel {
 /// Its popup is painted/routed in the host overlay pass, above later siblings.
 #[derive(Debug)]
 pub struct MenuContent {
-    pub trigger: Button,
-    pub menu: MenuView,
-    pub labels: Vec<String>,
-    pub selected: Option<usize>,
-    pub popup: Option<crate::feedback_view::MenuLayout>,
+    pub(crate) trigger: Button,
+    pub(crate) menu: MenuView,
+    pub(crate) labels: Vec<String>,
+    pub(crate) selected: Option<usize>,
+    pub(crate) popup: Option<crate::feedback_view::MenuLayout>,
 }
 #[derive(Debug)]
 pub(crate) struct MenuContentState {
@@ -264,6 +264,115 @@ impl MenuContent {
             selected: None,
             popup: None,
         }
+    }
+    pub fn trigger(&self) -> &Button {
+        &self.trigger
+    }
+    pub fn set_trigger_label(&mut self, label: impl Into<String>) {
+        self.trigger.set_label(label);
+    }
+    pub fn with_trigger_variant(mut self, variant: ButtonVariant) -> Self {
+        self.trigger.set_variant(variant);
+        self
+    }
+    pub fn set_trigger_variant(&mut self, variant: ButtonVariant) {
+        self.trigger.set_variant(variant);
+    }
+    pub fn set_trigger_selection_fill_only(&mut self, fill_only: bool) {
+        self.trigger.set_selection_fill_only(fill_only);
+    }
+    pub fn set_trigger_toolbar_icon_slot(&mut self, icon_slot: bool) {
+        self.trigger.set_toolbar_icon_slot(icon_slot);
+    }
+    pub fn set_trigger_accessible_name(&mut self, name: Option<String>) {
+        self.trigger.set_accessible_name(name);
+    }
+    pub fn set_trigger_help(&mut self, help: Option<String>) {
+        self.trigger.set_help(help);
+    }
+    pub fn set_trigger_pointer_activation_phase(&mut self, phase: ButtonActivationPhase) {
+        self.trigger.set_pointer_activation_phase(phase);
+    }
+    pub fn set_trigger_transparent_chrome(&mut self, transparent: bool) {
+        self.trigger.set_transparent_chrome(transparent);
+    }
+    pub fn set_trigger_content_alignment(
+        &mut self,
+        alignment: proposal::layout::MainAxisDistribution,
+    ) {
+        self.trigger.set_content_alignment(alignment);
+    }
+    pub fn set_trigger_leading_content_inset(&mut self, inset: Option<f32>) {
+        self.trigger.set_leading_content_inset(inset);
+    }
+    pub fn with_trigger_frame_policy(mut self, policy: crate::ButtonFramePolicy) -> Self {
+        self.trigger.set_frame_policy(policy);
+        self
+    }
+    pub fn set_trigger_frame_policy(&mut self, policy: crate::ButtonFramePolicy) {
+        self.trigger.set_frame_policy(policy);
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.trigger.set_disabled(disabled);
+        self.menu.set_disabled(disabled);
+        if disabled {
+            self.reconcile_trigger();
+        }
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.trigger.is_disabled()
+    }
+    pub fn set_loading(&mut self, loading: bool) {
+        self.trigger.set_loading(loading);
+        if loading {
+            self.reconcile_trigger();
+        }
+    }
+    pub fn is_loading(&self) -> bool {
+        self.trigger.is_loading()
+    }
+    pub fn is_open(&self) -> bool {
+        self.menu.is_open()
+    }
+    pub fn open(&mut self) {
+        if self.reconcile_trigger() {
+            self.show_menu();
+        }
+    }
+    pub fn close(&mut self) {
+        self.menu.deactivate();
+        self.close_panels();
+        self.popup = None;
+    }
+    pub fn active_item_index(&self) -> usize {
+        self.menu.menu().items.selected
+    }
+    pub fn labels(&self) -> &[String] {
+        &self.labels
+    }
+    pub fn set_labels(&mut self, labels: Vec<String>) {
+        if self.labels == labels {
+            return;
+        }
+        self.labels = labels;
+        self.reconcile_model();
+        if let Some(selected) = self.selected
+            && selected >= self.labels.len()
+        {
+            self.selected = None;
+        }
+    }
+    pub fn selected(&self) -> Option<usize> {
+        self.selected
+    }
+    pub fn set_selected(&mut self, selected: Option<usize>) {
+        self.selected = selected.filter(|i| *i < self.labels.len());
+    }
+    pub fn popup_layout(&self) -> Option<&crate::feedback_view::MenuLayout> {
+        self.popup.as_ref()
+    }
+    pub fn menu_view(&self) -> &MenuView {
+        &self.menu
     }
     /// Override only the popup allocation in this host's overlay pass.
     /// The trigger retains its original ancestor clip and hit geometry.

@@ -1,7 +1,6 @@
 //! Basic story composition using original models and production Content owners.
 use super::{Entry, StoryState};
 use tekes_ui_controls::composition::*;
-use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::layout::MeasuredChild;
 use tekes_ui_controls::{ButtonModel, ButtonTextRenderer, CheckState, Checkbox, ControlState};
 use tekes_ui_controls::{ButtonSize, ButtonTextAlign, ButtonVariant};
@@ -268,7 +267,7 @@ impl Component for ButtonFixture {
             self.label,
             frame,
             Some(clip),
-            theme.palette,
+            theme.palette(),
             self.variant,
             self.size,
             TextRole::UiBody,
@@ -288,17 +287,7 @@ fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
 fn stack(id: ComponentId, children: Vec<Content>) -> Content {
-    Content::new(
-        id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            children,
-            flexible_child: None,
-        },
-    )
+    Content::new(id, StackContent::vertical(12., children))
 }
 
 /// Passive reference fixture delegates actual measurement, arrangement and
@@ -363,17 +352,13 @@ impl BasicStory {
         let state = StoryState::for_entry(entry);
         let intro = Content::new(
             ComponentId(92014),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     super::story_heading(92004, entry.title()),
                     text(92005, super::story_docs(entry)),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let children = vec![
             intro,
@@ -431,15 +416,16 @@ impl BasicStory {
                 .unwrap()
                 .component_mut::<TextContent>()
                 .unwrap()
-                .text = [
-                "Docs",
-                "Playground",
-                "State matrix",
-                "Behaviors",
-                "Edge cases",
-                "Variants / sizes",
-            ][self.state.section]
-                .into();
+                .set_text(
+                    [
+                        "Docs",
+                        "Playground",
+                        "State matrix",
+                        "Behaviors",
+                        "Edge cases",
+                        "Variants / sizes",
+                    ][self.state.section],
+                );
         } else {
             self.host.remove(BODY).expect("mounted Checkbox section");
             self.host
@@ -667,15 +653,15 @@ impl BasicStory {
                             "Loading: off"
                         }),
                     ));
-                    let mut button = Button::new(if state.loading {
+                    let button = Button::new(if state.loading {
                         "Loading…"
                     } else if state.section == 4 {
                         "A long action label 中日文"
                     } else {
                         "Run action"
-                    });
-                    button.button.state.disabled = state.disabled;
-                    button.button.state.loading = state.loading;
+                    })
+                    .with_disabled(state.disabled)
+                    .with_loading(state.loading);
                     children.push(Content::new(SPECIMEN, button));
                 }
                 children.push(text(
@@ -734,13 +720,14 @@ impl BasicStory {
                     .unwrap()
                     .component_mut::<TextContent>()
                     .unwrap()
-                    .text = self
-                    .state
-                    .log
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join("\n");
+                    .set_text(
+                        self.state
+                            .log
+                            .iter()
+                            .cloned()
+                            .collect::<Vec<_>>()
+                            .join("\n"),
+                    );
                 continue;
             }
             if self.entry.renderer() == "disclosure"
@@ -762,13 +749,14 @@ impl BasicStory {
                             .unwrap()
                             .component_mut::<TextContent>()
                             .unwrap()
-                            .text = self
-                            .state
-                            .log
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .join("\n");
+                            .set_text(
+                                self.state
+                                    .log
+                                    .iter()
+                                    .cloned()
+                                    .collect::<Vec<_>>()
+                                    .join("\n"),
+                            );
                     }
                 }
                 continue;
@@ -777,13 +765,14 @@ impl BasicStory {
                 if let Some(ContentActionPayload::CheckboxState(intent)) = record.payload {
                     self.state.record(format!("change: {:?}", intent.checked()));
                     if let Some(log) = self.host.get_mut(LOG) {
-                        log.component_mut::<TextContent>().unwrap().text = self
-                            .state
-                            .log
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .join("\n");
+                        log.component_mut::<TextContent>().unwrap().set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                     }
                 } else if let Some(ContentActionPayload::BreadcrumbNavigation { index, .. }) =
                     record.payload
@@ -795,13 +784,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 } else if let Some(ContentActionPayload::CommandSelection { index, label }) =
                     record.payload
                 {
@@ -812,13 +802,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 } else if let Some(ContentActionPayload::ToolbarCommand(id)) = record.payload {
                     self.state.activate(id as usize, "toolbar");
                     self.host
@@ -826,13 +817,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 } else if self.entry.renderer() == "icon-button"
                     && record.action.kind == ContentActionKind::Activate
                 {
@@ -842,13 +834,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 } else if self.entry.renderer() == "link"
                     && record.action.kind == ContentActionKind::Activate
                 {
@@ -858,13 +851,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 } else if self.entry.renderer() == "button"
                     && record.action.kind == ContentActionKind::Activate
                 {
@@ -874,13 +868,14 @@ impl BasicStory {
                         .unwrap()
                         .component_mut::<TextContent>()
                         .unwrap()
-                        .text = self
-                        .state
-                        .log
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\n");
+                        .set_text(
+                            self.state
+                                .log
+                                .iter()
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                        );
                 }
             } else if record.action.kind == ContentActionKind::Activate {
                 let Some(command) = record.action.target.0.checked_sub(COMMAND) else {
@@ -921,60 +916,59 @@ impl BasicStory {
                                 .unwrap()
                                 .component_mut::<Button>()
                                 .unwrap();
-                            button.button.cancel();
-                            button.button.state.disabled = self.state.disabled;
-                            button.button.state.loading = self.state.loading;
-                            button.label = if self.state.loading {
+                            button.cancel();
+                            button.set_disabled(self.state.disabled);
+                            button.set_loading(self.state.loading);
+                            button.set_label(if self.state.loading {
                                 "Loading…"
                             } else if self.state.section == 4 {
                                 "A long action label 中日文"
                             } else {
                                 "Run action"
-                            }
-                            .into();
+                            });
                             self.host
                                 .get_mut(ComponentId(COMMAND + 11))
                                 .unwrap()
                                 .component_mut::<Button>()
                                 .unwrap()
-                                .label = if self.state.loading {
-                                "Loading: on"
-                            } else {
-                                "Loading: off"
-                            }
-                            .into();
+                                .set_label(if self.state.loading {
+                                    "Loading: on"
+                                } else {
+                                    "Loading: off"
+                                });
                         }
                         self.host
                             .get_mut(ComponentId(COMMAND + 10))
                             .unwrap()
                             .component_mut::<Button>()
                             .unwrap()
-                            .label =
-                            if if super::apphost_selection::supports(self.entry.renderer()) {
-                                super::apphost_selection::disabled(
-                                    self.entry.renderer(),
-                                    &self.state,
-                                )
-                            } else {
-                                self.state.disabled
-                            } {
-                                "Disabled: on"
-                            } else {
-                                "Disabled: off"
-                            }
-                            .into();
+                            .set_label(
+                                if if super::apphost_selection::supports(self.entry.renderer()) {
+                                    super::apphost_selection::disabled(
+                                        self.entry.renderer(),
+                                        &self.state,
+                                    )
+                                } else {
+                                    self.state.disabled
+                                } {
+                                    "Disabled: on"
+                                } else {
+                                    "Disabled: off"
+                                },
+                            );
                         self.host
                             .get_mut(LOG)
                             .unwrap()
                             .component_mut::<TextContent>()
                             .unwrap()
-                            .text = self
-                            .state
-                            .log
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .join("\n");
+                            .set_text(
+                                self.state
+                                    .log
+                                    .iter()
+                                    .cloned()
+                                    .collect::<Vec<_>>()
+                                    .join("\n"),
+                            );
                     } else {
                         self.replace_section_body(command == 0, previous_section);
                     }
@@ -988,13 +982,9 @@ impl BasicStory {
 pub(super) fn section_bar(entry: &Entry, command: u64) -> Content {
     let commands = Content::new(
         ComponentId(92013),
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: [
+        StackContent::horizontal(
+            8.,
+            [
                 (1, "Docs"),
                 (2, "Playground"),
                 (3, "State matrix"),
@@ -1019,7 +1009,7 @@ pub(super) fn section_bar(entry: &Entry, command: u64) -> Content {
             })
             .map(|(id, label)| Content::new(ComponentId(command + id), Button::new(label)))
             .collect(),
-        },
+        ),
     );
     Content::new(
         ComponentId(92006),

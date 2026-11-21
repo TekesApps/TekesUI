@@ -12,7 +12,7 @@ use tekes_ui_controls::{
         InspectionSnapshot, KeyValueTableContent, ListIntentKind, RichContent, RichDocument,
         ScrollContent, StackContent, TextContent, TextFieldContent,
     },
-    extended::{Axis, KeyedListItem, KeyedListSnapshot, ListDatasetKey, ListItemKey, Stack},
+    extended::{KeyedListItem, KeyedListSnapshot, ListDatasetKey, ListItemKey},
     layout::Insets,
 };
 use tekes_ui_tokens::{Spacing, proposal::TextRole};
@@ -213,14 +213,14 @@ fn document_notice(host: &mut ContentHost, message: &str) {
         .unwrap()
         .component::<TextContent>()
         .unwrap()
-        .text
+        .text()
         != message
     {
         host.get_mut(DOCUMENT_NOTICE)
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = message.into();
+            .set_text(message);
     }
 }
 
@@ -466,10 +466,10 @@ impl PanelContent {
                             .unwrap()
                             .component::<StackContent>()
                             .unwrap()
-                            .children
+                            .children()
                             .iter()
                             .filter_map(|section| section.component::<StackContent>())
-                            .flat_map(|stack| stack.children.iter())
+                            .flat_map(|stack| stack.children().iter())
                             .filter_map(|node| node.component::<KeyValueTableContent>())
                             .flat_map(|table| table.cells().iter().map(|cell| cell.id().0))
                             .max()
@@ -640,18 +640,11 @@ pub(super) fn panel_source(
             TextContent::new(DOCUMENT_HELP),
         ));
     }
-    let header = StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: Spacing::Regular.value(),
-        },
-        children: header_children,
-        flexible_child: None,
-    }
-    .into_content_with_padding(
-        ComponentId(25),
-        Insets::new(inset, inset, Spacing::Regular.value(), inset),
-    );
+    let header = StackContent::vertical(Spacing::Regular.value(), header_children)
+        .into_content_with_padding(
+            ComponentId(25),
+            Insets::new(inset, inset, Spacing::Regular.value(), inset),
+        );
     let body = if inspector {
         Content::new(
             DOCUMENT_SCROLL,
@@ -668,14 +661,7 @@ pub(super) fn panel_source(
     };
     let mut host = ContentHost::new(Content::new(
         ComponentId(20),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            children: vec![header, body],
-            flexible_child: Some(DOCUMENT_SCROLL),
-        },
+        StackContent::vertical(0., vec![header, body]).with_flexible_child(DOCUMENT_SCROLL),
     ))
     .map_err(|error| anyhow::anyhow!("Gallery panel: {error:?}"))?;
     host.set_action_events(true);

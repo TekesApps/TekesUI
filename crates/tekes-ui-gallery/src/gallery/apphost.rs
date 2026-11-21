@@ -20,10 +20,7 @@ use tekes_ui_controls::{
         NumberFieldContent, ScrollContent, SelectContent, SliderContent, StackContent, TextContent,
         TextFieldContent, TextSubmitPolicy,
     },
-    extended::{
-        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Slider,
-        Stack,
-    },
+    extended::{KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Slider},
 };
 use tekes_ui_platform_macos::{Size as WindowSize, WindowConfig};
 use tekes_ui_tokens::{Spacing, Theme, proposal::TextRole};
@@ -299,21 +296,12 @@ fn history_options() -> anyhow::Result<(NavigationOptions, SessionTempDir)> {
     ))
 }
 fn text(id: u64, value: impl Into<String>, role: TextRole) -> Content {
-    let mut text = TextContent::new(value);
-    text.role = role;
-    Content::new(ComponentId(id), text)
+    Content::new(ComponentId(id), TextContent::new(value).with_role(role))
 }
 fn stack(id: u64, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Relaxed.value(),
-            },
-            children,
-            flexible_child: None,
-        },
+        StackContent::vertical(Spacing::Relaxed.value(), children),
     )
 }
 fn scroll(id: u64, child: Content) -> Content {
@@ -381,13 +369,12 @@ fn update_document(host: &mut ContentHost, document: &Document) {
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text
-        .clone_from(&document.title);
+        .set_text(&document.title);
     host.get_mut(ComponentId(2))
         .unwrap()
         .component_mut::<TextContent>()
         .unwrap()
-        .text = summary(document);
+        .set_text(summary(document));
     let value = document.paragraphs.join("\n\n");
     let field = host
         .get_mut(ComponentId(10))
@@ -532,7 +519,7 @@ fn update_inspector(host: &mut ContentHost, document: &Document) {
         .unwrap()
         .component_mut::<SliderContent>()
         .unwrap()
-        .model = Slider::new(document.priority, 0., 100., 1.).unwrap();
+        .set_value(document.priority);
 }
 fn confirm_inspector_disclosures(host: &mut ContentHost, records: &[ContentActionRecord]) -> bool {
     let mut property_change = false;
@@ -573,43 +560,31 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                 text(8002, "Workspace", TextRole::UiHeading),
                 Content::new(
                     ComponentId(8007),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: Spacing::Regular.value(),
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::vertical(
+                        Spacing::Regular.value(),
+                        vec![
                             Content::new(
                                 ComponentId(8008),
-                                StackContent {
-                                    model: Stack {
-                                        axis: Axis::Vertical,
-                                        gap: Spacing::Regular.value(),
-                                    },
-                                    flexible_child: None,
-                                    children: vec![
+                                StackContent::vertical(
+                                    Spacing::Regular.value(),
+                                    vec![
                                         text(8003, "WRITING", TextRole::UiCaption),
                                         Content::new(ComponentId(8004), writing),
                                     ],
-                                },
+                                ),
                             ),
                             Content::new(
                                 ComponentId(8009),
-                                StackContent {
-                                    model: Stack {
-                                        axis: Axis::Vertical,
-                                        gap: Spacing::Regular.value(),
-                                    },
-                                    flexible_child: None,
-                                    children: vec![
+                                StackContent::vertical(
+                                    Spacing::Regular.value(),
+                                    vec![
                                         text(8005, "PROJECT", TextRole::UiCaption),
                                         Content::new(ComponentId(8006), resources),
                                     ],
-                                },
+                                ),
                             ),
                         ],
-                    },
+                    ),
                 ),
             ],
         ),
@@ -702,7 +677,6 @@ fn assemble(theme: Theme, settings: SettingsOwner) -> anyhow::Result<(AppWindow,
                 .unwrap()
                 .component::<SliderContent>()
                 .unwrap()
-                .model
                 .value();
             update_document(&mut inspector_document.borrow_mut(), item);
             let description = summary(item);
@@ -1025,8 +999,10 @@ mod tests {
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap();
-        scroll.scroll.offset.y =
-            (scroll.scroll.document_size().height - scroll.scroll.viewport_size().height).max(0.);
+        let target_y = (scroll.scroll().document_size().height
+            - scroll.scroll().viewport_size().height)
+            .max(0.);
+        scroll.scroll_to(0., target_y);
         host.render(
             &mut Scene::new(),
             &mut text,
@@ -1232,7 +1208,7 @@ mod tests {
                     .unwrap()
                     .component::<TextContent>()
                     .unwrap()
-                    .text,
+                    .text(),
                 DOCUMENT_TITLES[index]
             );
             assert_eq!(

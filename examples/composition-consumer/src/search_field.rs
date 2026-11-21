@@ -1,9 +1,5 @@
 //! Public-only SearchField consumer: host owns effects, query filtering and copy.
-use tekes_ui_controls::{
-    ReadingController,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingController, composition::*};
 pub const ROOT: ComponentId = ComponentId(8800);
 pub const SEARCH: ComponentId = ComponentId(8801);
 pub const OTHER: ComponentId = ComponentId(8802);
@@ -40,18 +36,14 @@ impl SearchFixture {
         history.reading = Some(ReadingController::default());
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(SEARCH, search),
                     Content::new(OTHER, TextFieldContent::new("Other editor", "other draft")),
                     Content::new(HISTORY, history),
                 ],
-            },
+            ),
         ))
         .unwrap();
         host.set_action_events(true);

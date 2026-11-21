@@ -3,9 +3,7 @@
 mod coretext;
 use tekes_ui_composition_consumer::checkbox_content::{CHECKBOX as CHECK, build};
 use tekes_ui_controls::{
-    CheckState, Checkbox, ControlKey, ScrollArea, ScrollRevealOptions,
-    composition::*,
-    extended::{Axis, Stack},
+    CheckState, Checkbox, ControlKey, ScrollArea, ScrollRevealOptions, composition::*,
 };
 use tekes_ui_macos_bridge::content_accessibility::{content_action, content_key};
 use tekes_ui_platform_macos::AccessibilityAction as Native;
@@ -325,17 +323,13 @@ fn original_measure_arrange_and_paint_match_all_states_surfaces_scales_and_clips
 fn unmount_same_id_remount_and_original_constructor_retire_gesture_and_payload() {
     let mut h = ContentHost::new(Content::new(
         ComponentId(10800),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(
+        StackContent::vertical(
+            0.,
+            vec![Content::new(
                 CHECK,
                 CheckboxContent::new("Check", CheckState::Mixed),
             )],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -376,13 +370,9 @@ fn mixed() -> (
 ) {
     let rows = Content::new(
         ITEMS,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: (0..2)
+        StackContent::vertical(
+            0.,
+            (0..2)
                 .map(|i| Content::new(ComponentId(10830 + i), TextContent::new(format!("row {i}"))))
                 .chain([Content::new(
                     CHECK,
@@ -392,23 +382,19 @@ fn mixed() -> (
                     Content::new(ComponentId(10830 + i), TextContent::new(format!("row {i}")))
                 }))
                 .collect(),
-        },
+        ),
     );
     let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-    scroll.viewport_height = Some(170.);
+    scroll.set_viewport_height(Some(170.));
     let mut h = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(SCROLL, scroll),
                 Content::new(EDITOR, TextFieldContent::new("Composer", "kept draft 😀")),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -490,7 +476,7 @@ fn registered_checkbox_requires_original_caller_revision_after_real_exposure_ren
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     check_mut(&mut h).set_checked(CheckState::Checked);
     paint(
@@ -511,7 +497,7 @@ fn registered_checkbox_requires_original_caller_revision_after_real_exposure_ren
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         stable_offset
     );
@@ -529,7 +515,7 @@ fn registered_checkbox_requires_original_caller_revision_after_real_exposure_ren
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
     };
     let offset = scroll(&h);
@@ -670,13 +656,9 @@ fn original_drag_cancel_noop_availability_and_multiple_delivery_values() {
 fn checkbox_modal_scope_open_close_without_paint_retires_old_exposure_and_queue() {
     let mut h = ContentHost::new(Content::new(
         ComponentId(10800),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(CHECK, CheckboxContent::new("Check", CheckState::Mixed)),
                 Content::new(
                     ComponentId(10890),
@@ -688,7 +670,7 @@ fn checkbox_modal_scope_open_close_without_paint_retires_old_exposure_and_queue(
                     ),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -717,17 +699,13 @@ fn empty_duplicate_labels_keep_sibling_identity_and_unrelated_delivered_intent()
     let other = ComponentId(10811);
     let mut h = ContentHost::new(Content::new(
         ComponentId(10800),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(CHECK, CheckboxContent::new("", CheckState::Mixed)),
                 Content::new(other, CheckboxContent::new("", CheckState::Unchecked)),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -757,13 +735,9 @@ fn checkbox_original_popover_scope_retires_background_exposure_without_intermedi
         let popup = ComponentId(10894);
         let mut h = ContentHost::new(Content::new(
             ComponentId(10800),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                0.,
+                vec![
                     Content::new(CHECK, CheckboxContent::new("Anchor", CheckState::Mixed)),
                     Content::new(
                         popup,
@@ -773,7 +747,7 @@ fn checkbox_original_popover_scope_retires_background_exposure_without_intermedi
                         ),
                     ),
                 ],
-            },
+            ),
         ))
         .unwrap();
         let mut t = coretext::Text::new(1.);

@@ -10,7 +10,7 @@ use crate::{
 /// never participates in actions, focus, accessibility or text/scroll ownership.
 #[derive(Clone, Copy, Debug)]
 pub struct SeparatorContent {
-    pub model: Separator,
+    model: Separator,
     view: SeparatorView,
 }
 impl SeparatorContent {
@@ -19,6 +19,12 @@ impl SeparatorContent {
             model: Separator::new(axis),
             view: SeparatorView::default(),
         }
+    }
+    pub fn model(&self) -> Separator {
+        self.model
+    }
+    pub fn axis(&self) -> Axis {
+        self.model.axis
     }
     pub fn layout(&self) -> SeparatorLayout {
         self.view.layout()

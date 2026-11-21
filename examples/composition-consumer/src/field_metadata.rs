@@ -1,8 +1,5 @@
 //! Existing form metadata and editor adapter, without a caller-owned view fork.
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 use tekes_ui_tokens::Spacing;
 
 pub const ROOT: ComponentId = ComponentId(9400);
@@ -28,17 +25,13 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         .with_disabled(true);
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(NORMAL, normal),
                 Content::new(ERROR, error),
                 Content::new(DISABLED, disabled),
             ],
-        },
+        ),
     ))
 }

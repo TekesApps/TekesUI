@@ -30,8 +30,8 @@ fn host(axis: Axis, tree: bool, default: bool) -> ContentHost {
     let root = if tree {
         Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
+            StackContent::new(
+                Stack {
                     axis: if axis == Axis::Horizontal {
                         Axis::Vertical
                     } else {
@@ -39,8 +39,7 @@ fn host(axis: Axis, tree: bool, default: bool) -> ContentHost {
                     },
                     gap: 4.,
                 },
-                flexible_child: None,
-                children: vec![
+                vec![
                     Content::new(
                         ComponentId(2),
                         TextContent::new(if axis == Axis::Horizontal {
@@ -59,7 +58,7 @@ fn host(axis: Axis, tree: bool, default: bool) -> ContentHost {
                         }),
                     ),
                 ],
-            },
+            ),
         )
     } else {
         Content::new(SEP, divider)

@@ -153,7 +153,7 @@ impl Component for Catalogue {
             .and_then(|renderer| {
                 state
                     .catalog
-                    .prepare_host(renderer, theme.palette.theme, scale, &visible)
+                    .prepare_host(renderer, theme.palette().theme, scale, &visible)
             });
         state.error = prepared.err();
         if state.error.is_some() {
@@ -166,7 +166,7 @@ impl Component for Catalogue {
                 clip,
                 type_scale,
             },
-            theme.palette.theme,
+            theme.palette().theme,
             frame,
             scene,
             &state.query,
@@ -196,20 +196,16 @@ impl AppHostIcons {
         }));
         let intro = Content::new(
             ComponentId(98507),
-            StackContent {
-                model: tekes_ui_controls::extended::Stack {
-                    axis: tekes_ui_controls::extended::Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     super::story_heading(98503, entry.title()),
                     Content::new(
                         ComponentId(98504),
                         TextContent::new(super::story_docs(entry)),
                     ),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let mut host = ContentHost::new(Content::new(
             ROOT,
@@ -335,8 +331,8 @@ impl AppHostIcons {
             .and_then(|node| node.component::<ScrollContent>())
             .map_or((0., 0.), |scroll| {
                 (
-                    scroll.scroll.limit().y,
-                    scroll.scroll.viewport_size().height,
+                    scroll.max_offset().y,
+                    scroll.scroll().viewport_size().height,
                 )
             })
     }
@@ -347,8 +343,8 @@ impl AppHostIcons {
             .get_mut(ROOT)
             .and_then(|node| node.component_mut::<ScrollContent>())
         {
-            let current = scroll.scroll.offset.y;
-            scroll.scroll.scroll_by(0., y - current);
+            let current = scroll.offset().y;
+            scroll.scroll_by(0., y - current);
         }
     }
 }
@@ -476,7 +472,6 @@ mod tests {
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
             .scroll_by(0., 1600.);
         let scrolled = draw(&mut page, &mut text, &mut images, 800.).unwrap();
         assert!(
@@ -578,13 +573,13 @@ mod tests {
             page.after_host_visit();
             draw(&mut page, &mut text, &mut images, 800.).unwrap();
             assert!(page.host.get(SEARCH).is_none());
-            let copy = &page
+            let copy = page
                 .host
                 .get(BODY)
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text;
+                .text();
             assert!(copy.contains(if command == 1 {
                 super::super::api_reference(entry())
             } else {

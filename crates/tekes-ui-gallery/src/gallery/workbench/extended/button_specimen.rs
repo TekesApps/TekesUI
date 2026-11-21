@@ -75,7 +75,7 @@ impl Component for PassiveArtworkSlot {
         let mut state = self.paint.borrow_mut();
         *state = if !has_area(frame) || !frame.intersection(&clip).is_some_and(has_area) {
             Some(IconPaintState::Clipped)
-        } else if let Some(tint) = theme.icon_foreground {
+        } else if let Some(tint) = theme.icon_foreground() {
             Some(IconPaintState::Ready(IconPaint { frame, clip, tint }))
         } else {
             Some(IconPaintState::MissingThemeInk)
@@ -173,7 +173,7 @@ impl ButtonSpecimen {
     }
     pub fn layout(&self) -> ButtonComponentLayout {
         self.button()
-            .button
+            .model()
             .layout()
             .map_or(ButtonComponentLayout::default(), |l| {
                 ButtonComponentLayout {
@@ -245,7 +245,7 @@ impl ButtonSpecimen {
         if !has_artwork {
             return Err(ArtworkPaintError::ProviderProducedNoArtwork);
         }
-        if self.button().button.state.disabled {
+        if self.button().is_disabled() {
             let opacity = proposal::metric("opacity", "alpha-wash")
                 .expect("disabled Button image opacity token");
             for primitive in artwork.primitives() {
@@ -435,7 +435,7 @@ mod tests {
         };
         assert_eq!(*tint.borrow(), Some(expected));
 
-        view.button_mut().button.state.disabled = true;
+        view.button_mut().set_disabled(true);
         view.render(
             &mut Scene::new(),
             &mut text,
@@ -550,30 +550,30 @@ mod tests {
 
         for key in [ControlKey::Enter, ControlKey::Space] {
             view.focus(true);
-            let before = view.button().activations;
+            let before = view.button().activations();
             view.key_event(key, true);
             view.key_event(key, false);
-            assert_eq!(view.button().activations, before + 1, "{key:?}");
+            assert_eq!(view.button().activations(), before + 1, "{key:?}");
         }
-        let before_ax = view.button().activations;
+        let before_ax = view.button().activations();
         assert!(view.activate());
-        assert_eq!(view.button().activations, before_ax + 1);
+        assert_eq!(view.button().activations(), before_ax + 1);
 
         let point = view.layout().visible.expect("visible Button").center();
-        let before_pointer = view.button().activations;
+        let before_pointer = view.button().activations();
         assert!(view.pointer_down(point));
         assert!(view.pointer_up(point));
-        assert_eq!(view.button().activations, before_pointer + 1);
+        assert_eq!(view.button().activations(), before_pointer + 1);
         assert!(view.pointer_down(point));
         view.cancel();
         assert!(!view.pointer_up(point));
 
-        view.button_mut().button.state.disabled = true;
+        view.button_mut().set_disabled(true);
         view.render(&mut Scene::new(), &mut text, bounds, Some(bounds), palette);
-        let disabled_count = view.button().activations;
+        let disabled_count = view.button().activations();
         assert!(!view.activate());
         assert!(!view.key_event(ControlKey::Enter, true).changed);
         assert!(!view.pointer_down(point));
-        assert_eq!(view.button().activations, disabled_count);
+        assert_eq!(view.button().activations(), disabled_count);
     }
 }

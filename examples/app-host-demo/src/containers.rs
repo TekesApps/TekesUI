@@ -89,14 +89,7 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
             ComponentId(27100),
             ScrollContent::document(Content::new(
                 ComponentId(27101),
-                StackContent {
-                    model: tekes_ui_controls::extended::Stack {
-                        axis: tekes_ui_controls::extended::Axis::Vertical,
-                        gap: 8.,
-                    },
-                    children,
-                    flexible_child: None,
-                },
+                StackContent::vertical(8., children),
             )),
         )
     } else {
@@ -122,8 +115,8 @@ fn local(id: &str, toolbar: bool) -> Result<LocalContainer> {
     })
     .on_action(move |host, records| {
         if architecture_fixture {
-            let scroll = &host.get(ComponentId(27100)).unwrap()
-                .component::<ScrollContent>().unwrap().scroll;
+            let scroll = host.get(ComponentId(27100)).unwrap()
+                .component::<ScrollContent>().unwrap().scroll();
             eprintln!("DEMO_SCROLL_SNAPSHOT owner={actions_owner} target=27100 offset={:?} overscroll={:?} limit={:?}",
                 scroll.offset, scroll.overscroll, scroll.limit());
         }

@@ -1,9 +1,7 @@
 //! Independent mixed reading document. The application supplies stable IDs and
 //! initial/follow deduplication; all navigation geometry stays in ContentHost.
 use tekes_ui_controls::{
-    ButtonTextRenderer, ReadingDocumentVersion, ScrollArea, ScrollRevealOptions,
-    composition::*,
-    extended::{Axis, Stack},
+    ButtonTextRenderer, ReadingDocumentVersion, ScrollArea, ScrollRevealOptions, composition::*,
     feedback_view::SurfaceView,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -89,20 +87,14 @@ impl Component for Panel {
         theme: ContentTheme,
     ) {
         self.view
-            .render_at_scale(s, f, Some(c), theme.palette, true, t.backing_scale());
+            .render_at_scale(s, f, Some(c), theme.palette(), true, t.backing_scale());
     }
 }
 fn column(id: ComponentId, children: Vec<Content>, flexible: Option<ComponentId>) -> Content {
     Content::new(
         id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: flexible,
-            children,
-        },
+        StackContent::vertical(Spacing::Regular.value(), children)
+            .with_optional_flexible_child(flexible),
     )
 }
 fn text(id: u64, value: impl Into<String>) -> Content {
@@ -132,11 +124,11 @@ impl Fixture {
                 format!("Detail {index:02} · original content follows"),
             ));
         }
-        let mut nested = ScrollContent::new(
+        let nested = ScrollContent::new(
             ScrollArea::default(),
             Content::new(INNER_ITEMS, ListContent::new("Nested document", inner)),
-        );
-        nested.viewport_height = Some(140.);
+        )
+        .with_viewport_height(Some(140.));
         let panel = Content::new(
             PANEL,
             Panel {
@@ -180,7 +172,7 @@ impl Fixture {
             ScrollArea::default(),
             Content::new(ITEMS, ListContent::new("Mixed document", rows)),
         );
-        let mut other = ScrollContent::new(
+        let other = ScrollContent::new(
             ScrollArea::default(),
             column(
                 ComponentId(11400),
@@ -189,20 +181,17 @@ impl Fixture {
                     .collect(),
                 None,
             ),
-        );
-        other.viewport_height = Some(84.);
+        )
+        .with_viewport_height(Some(84.));
         let mut host = ContentHost::new(column(
             ROOT,
             vec![
                 Content::new(
                     ComponentId(11017),
-                    GridContent {
-                        model: tekes_ui_controls::extended::Grid {
-                            columns: 2,
-                            gap_x: Spacing::Regular.value(),
-                            gap_y: Spacing::Regular.value(),
-                        },
-                        children: [
+                    GridContent::with_columns(
+                        2,
+                        Spacing::Regular.value(),
+                        [
                             (NEAREST, "Nearest item"),
                             (CENTERED, "Center item"),
                             (ANIMATED, "Animated jump"),
@@ -211,7 +200,7 @@ impl Fixture {
                         .into_iter()
                         .map(|(id, label)| Content::new(id, Button::new(label)).preserving_focus())
                         .collect(),
-                    },
+                    ),
                 ),
                 Content::new(OWNER, outer),
                 Content::new(OTHER, other),

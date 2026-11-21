@@ -446,7 +446,7 @@ fn main() {
                     let first = self.tree.get(FIRST);
                     let activations = first.and_then(|node| {
                         node.component::<tekes_ui_controls::composition::Button>()
-                            .map(|button| button.activations)
+                            .map(|button| button.activations())
                     });
                     let help = self.tree.help_tooltip();
                     let scroll = self
@@ -455,7 +455,7 @@ fn main() {
                         .and_then(|node| {
                             node.component::<tekes_ui_controls::composition::ScrollContent>()
                         })
-                        .map(|content| content.scroll.offset.y);
+                        .map(|content| content.scroll().offset.y);
                     let visible_rows = nodes
                         .iter()
                         .filter(|node| {
@@ -518,7 +518,7 @@ fn main() {
                         "rendered": rendered,
                         "scroll_events": self.nested_scroll_events,
                         "following": parent_content.is_following_latest(),
-                        "parent_offset": parent_content.scroll.offset.y,
+                        "parent_offset": parent_content.scroll().offset.y,
                         "inner_offset": inner_content.surface().scroll().offset.y,
                         "inner_following": inner_content.reading.as_ref().map(|r| r.is_following_latest()),
                         "inner_visible": detail.visible().is_some(),
@@ -688,7 +688,7 @@ fn main() {
                         .unwrap();
                     snapshot["plain_document"] = serde_json::json!({
                         "version": value.version,
-                        "parent_offset": parent.scroll.offset.y,
+                        "parent_offset": parent.scroll().offset.y,
                         "nested_offset": surface.scroll().offset.y,
                         "wrap_width": surface.width(),
                         "body_height": surface.outer().size.height,
@@ -709,7 +709,7 @@ fn main() {
                         "result": self.tree.scroll_reading_reveal_result().map(|r| serde_json::json!({"owner":r.owner.0,"item":r.item.0,"version":format!("{:?}",r.version),"status":format!("{:?}",r.status),"changed":r.changed,"clamped":r.clamped})),
                         "focus":self.tree.focused().map(|id|id.0),"reduced_motion":self.text.reduced_motion,"type_scale":self.text.type_scale,
                         "composer_baseline":format!("{:?}",self.tree.get(COMPOSER).unwrap().component::<tekes_ui_controls::composition::TextFieldContent>().unwrap().surface().input().external_baseline()),
-                        "scrolls":([OWNER,INNER,OTHER].into_iter().map(|id| {let scroll=&self.tree.get(id).unwrap().component::<tekes_ui_controls::composition::ScrollContent>().unwrap().scroll;serde_json::json!({"id":id.0,"x":scroll.offset.x,"y":scroll.offset.y,"limit_y":scroll.limit().y})}).collect::<Vec<_>>())
+                        "scrolls":([OWNER,INNER,OTHER].into_iter().map(|id| {let scroll=&self.tree.get(id).unwrap().component::<tekes_ui_controls::composition::ScrollContent>().unwrap().scroll();serde_json::json!({"id":id.0,"x":scroll.offset.x,"y":scroll.offset.y,"limit_y":scroll.limit().y})}).collect::<Vec<_>>())
                     });
                 }
                 if self.mode == "layout" {
@@ -749,7 +749,7 @@ fn main() {
                         "focus": self.tree.focused().map(|id| id.0),
                         "composer_text": input.text(), "composer_selection": input.selection(),
                         "composer_marked": input.marked(), "type_scale": self.text.type_scale,
-                        "button_actions": ([f::ACTION, f::CUSTOM].map(|id| self.tree.get(id).unwrap().component::<Button>().unwrap().activations)),
+                        "button_actions": ([f::ACTION, f::CUSTOM].map(|id| self.tree.get(id).unwrap().component::<Button>().unwrap().activations())),
                         "names": self.tree.semantics().iter().map(|n| (n.id.0, n.semantics.name.clone())).collect::<Vec<_>>(),
                     });
                 }
@@ -760,7 +760,7 @@ fn main() {
                         "buttons": ([9902,9903].into_iter().map(|id| {
                             let node=self.tree.get(ComponentId(id)).unwrap();
                             let button=node.component::<Button>().unwrap();
-                            serde_json::json!({"id":id,"activations":button.activations,"hovered":button.button.state.hovered,"pressed":button.button.state.pressed,"focused":button.button.state.focused,"focus_visible":button.button.state.focus_visible,"disabled":button.button.state.disabled,"loading":button.button.state.loading})
+                            serde_json::json!({"id":id,"activations":button.activations(),"hovered":button.is_hovered(),"pressed":button.is_pressed(),"focused":button.is_focused(),"focus_visible":button.focus_visible(),"disabled":button.is_disabled(),"loading":button.is_loading()})
                         }).collect::<Vec<_>>())
                     });
                 }
@@ -1166,7 +1166,7 @@ fn main() {
                     self.tree
                         .get(id)
                         .and_then(|c| c.component::<tekes_ui_controls::composition::Button>())
-                        .map_or(0, |b| b.activations)
+                        .map_or(0, |b| b.activations())
                 };
                 let invoker = count(ids::DIALOG_INVOKER);
                 let cancel = count(ids::DIALOG_CANCEL);
@@ -1325,7 +1325,7 @@ fn main() {
                         .component::<TextFieldContent>()
                         .unwrap();
                     (
-                        parent.scroll.offset.y,
+                        parent.scroll().offset.y,
                         inner.surface().scroll().offset.y,
                         parent.is_following_latest(),
                         inner
@@ -1368,7 +1368,7 @@ fn main() {
                     "nested-reading-after-scroll event={} parent_offset={}->{} inner_offset={}->{} following={}->{} inner_following={}->{}",
                     self.nested_scroll_events,
                     parent_before,
-                    parent.scroll.offset.y,
+                    parent.scroll().offset.y,
                     inner_before,
                     inner.surface().scroll().offset.y,
                     following_before,
@@ -1705,8 +1705,8 @@ fn main() {
                             for id in [9902, 9903] {
                                 let node = self.tree.get_mut(ComponentId(id)).unwrap();
                                 if let Some(button) = node.component_mut::<Button>() {
-                                    button.button.state.disabled = code == 21;
-                                    button.button.state.loading = code == 23;
+                                    button.set_disabled(code == 21);
+                                    button.set_loading(code == 23);
                                 }
                             }
                         }

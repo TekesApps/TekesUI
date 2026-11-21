@@ -1,11 +1,6 @@
 //! CPU012 public consumer regression: original six oracles, plus SDK edge contracts.
 //! CPU icon service only; no pixel/native acceptance.
-use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, composition::*, layout::MeasuredChild};
 use tekes_ui_scene::{Rect, Scene, Size};
 #[path = "support/disclosure_reveal_text.rs"]
 mod disclosure_host;
@@ -60,14 +55,10 @@ impl Component for Proxy {
 fn body() -> Content {
     Content::new(
         ComponentId(4),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(ComponentId(5), Button::new("original leaf"))],
-        },
+        StackContent::vertical(
+            0.,
+            vec![Content::new(ComponentId(5), Button::new("original leaf"))],
+        ),
     )
 }
 #[test]
@@ -133,17 +124,13 @@ impl Component for FixedHeight {
 fn offscreen_body() -> Content {
     Content::new(
         ComponentId(4),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(ComponentId(6), FixedHeight(900.)),
                 Content::new(LEAF, Button::new("original offscreen leaf")),
             ],
-        },
+        ),
     )
 }
 fn scroll_host(content: Content) -> ContentHost {
@@ -169,7 +156,7 @@ fn offscreen_disclosure(expanded: bool) -> ContentHost {
 }
 fn dump_original_geometry(stage: &str, host: &ContentHost) {
     let scroll = host.get(SCROLL).unwrap();
-    let model = &scroll.component::<ScrollContent>().unwrap().scroll;
+    let model = &scroll.component::<ScrollContent>().unwrap().scroll();
     eprintln!(
         "AC5_STAGE {stage} scroll_id={:?} scroll_mount={} viewport_frame={:?} viewport_size={:?} actual_offset={:?}",
         scroll.id(),
@@ -204,7 +191,7 @@ fn assert_nonzero_original_scroll_reveal(stage: &str, host: &mut ContentHost) {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y,
         0.
@@ -241,7 +228,7 @@ fn assert_nonzero_original_scroll_reveal(stage: &str, host: &mut ContentHost) {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.,
@@ -271,17 +258,13 @@ fn matched_offscreen_hosts() -> (ContentHost, ContentHost) {
     // control. Neither fixture moves or replaces the offscreen target.
     let mut stack = scroll_host(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: body.min_y() - header.max_y(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            body.min_y() - header.max_y(),
+            vec![
                 Content::new(ComponentId(2), FixedHeight(header.size.height)),
                 offscreen_body(),
             ],
-        },
+        ),
     ));
     render(&mut stack);
     assert_eq!(
@@ -325,7 +308,7 @@ fn the_same_scroll_rejects_the_closed_offscreen_disclosure_body() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y,
         0.
@@ -353,13 +336,9 @@ fn direct_sdk_control_reveals_the_same_original_body_without_a_proxy() {
 fn trigger_reveal_keeps_the_ancestor_clip_instead_of_the_body_strip() {
     let mut host = scroll_host(Content::new(
         ComponentId(20),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(ComponentId(21), FixedHeight(900.)),
                 Content::new(
                     ComponentId(1),
@@ -371,7 +350,7 @@ fn trigger_reveal_keeps_the_ancestor_clip_instead_of_the_body_strip() {
                     ),
                 ),
             ],
-        },
+        ),
     ));
     render(&mut host);
     let header = host.get(ComponentId(2)).unwrap();
@@ -588,16 +567,12 @@ fn only_the_latest_arrange_and_settled_motion_grant_translation() {
 #[test]
 fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
     let mut inner = ScrollContent::new(tekes_ui_controls::ScrollArea::default(), offscreen_body());
-    inner.viewport_height = Some(100.);
+    inner.set_viewport_height(Some(100.));
     let mut host = scroll_host(Content::new(
         ComponentId(20),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(ComponentId(21), FixedHeight(900.)),
                 Content::new(
                     ComponentId(1),
@@ -609,7 +584,7 @@ fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
                     ),
                 ),
             ],
-        },
+        ),
     ));
     render(&mut host);
     let header = host.get(ComponentId(2)).unwrap().frame();
@@ -634,33 +609,25 @@ fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
     // Same original nested Scroll geometry, with only the section replaced by
     // an ordinary Stack. Preserve the real 900pt spacers and target/mount oracles.
     let mut inner = ScrollContent::new(tekes_ui_controls::ScrollArea::default(), offscreen_body());
-    inner.viewport_height = Some(100.);
+    inner.set_viewport_height(Some(100.));
     let mut stack = scroll_host(Content::new(
         ComponentId(20),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(ComponentId(21), FixedHeight(900.)),
                 Content::new(
                     ComponentId(1),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: inner_frame.min_y() - header.max_y(),
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::vertical(
+                        inner_frame.min_y() - header.max_y(),
+                        vec![
                             Content::new(ComponentId(2), FixedHeight(header.size.height)),
                             Content::new(ComponentId(11), inner),
                         ],
-                    },
+                    ),
                 ),
             ],
-        },
+        ),
     ));
     render(&mut stack);
     assert_eq!(stack.get(LEAF).unwrap().frame(), initial_leaf);
@@ -699,7 +666,7 @@ fn nested_original_scrolls_keep_body_clips_and_original_mounts_at_landing() {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset
                 .y;
             assert!(offset > 0., "{stage}: {id:?} must actually scroll");

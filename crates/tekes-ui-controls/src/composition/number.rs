@@ -122,12 +122,37 @@ pub struct NumberFieldContent {
     editor_captured: bool,
     focused: bool,
     changes: VecDeque<NumberValueChange>,
-    pub description: Option<String>,
+    description: Option<String>,
     /// Accessible names and hover hints for the two actions.
-    pub decrement_label: String,
-    pub increment_label: String,
+    decrement_label: String,
+    increment_label: String,
 }
 impl NumberFieldContent {
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+    pub fn set_description(&mut self, description: Option<String>) {
+        self.description = description;
+    }
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+    pub fn with_step_labels(
+        mut self,
+        decrement_label: impl Into<String>,
+        increment_label: impl Into<String>,
+    ) -> Self {
+        self.decrement_label = decrement_label.into();
+        self.increment_label = increment_label.into();
+        self
+    }
+    pub fn decrement_label(&self) -> &str {
+        &self.decrement_label
+    }
+    pub fn increment_label(&self) -> &str {
+        &self.increment_label
+    }
     /// Rejects invalid configuration and out-of-range initial values; never clamps input.
     pub fn new(
         name: impl Into<String>,

@@ -606,7 +606,6 @@ fn mixed_reading_prepend_expand_and_reflow_use_existing_stable_item_transaction(
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap()
-        .scroll
         .scroll_by(0., 80.);
     paint(&mut host, 300., 1., Theme::LIGHT);
     let checkpoint = host

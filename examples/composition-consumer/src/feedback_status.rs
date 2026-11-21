@@ -2,10 +2,7 @@
 //! Reuses existing passive controls; this is a consumer fixture, not a Kit protocol.
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextRenderer,
-    composition::*,
-    extended::{Progress, StatusBadge},
-    layout::MeasuredChild,
+    ButtonTextRenderer, composition::*, extended::StatusBadge, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::Spacing;
@@ -95,9 +92,9 @@ impl Feedback {
                 false,
             )
             .expect("valid Feedback outcome badge");
-        self.progress_label.text = state.progress_label();
-        self.progress.model = Progress::new(state.value.unwrap_or(0.));
-        self.progress.model.indeterminate = state.value.is_none();
+        self.progress_label.set_text(state.progress_label());
+        self.progress.set_value(state.value.unwrap_or(0.));
+        self.progress.set_indeterminate(state.value.is_none());
     }
 }
 impl Component for Feedback {

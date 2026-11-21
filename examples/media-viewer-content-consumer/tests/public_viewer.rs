@@ -393,7 +393,6 @@ fn original_button_key_has_one_command_and_focus_stays_in_original_host() {
 #[test]
 #[ignore = "requires an allocated real Renderer/GPU window"]
 fn close_reopen_rejects_old_request_and_restores_fit_without_consumer_state() {
-    use tekes_ui_controls::extended::{Axis, Stack};
     let mut gpu = Renderer::new_headless().expect("real GPU required");
     let image = ImageContent::ready(
         gpu.register_bitmap_image(&[255, 0, 0, 255], 1, 1).unwrap(),
@@ -404,14 +403,14 @@ fn close_reopen_rejects_old_request_and_restores_fit_without_consumer_state() {
     let root = ComponentId(20450);
     let mut host = ContentHost::new(Content::new(
         root,
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            flexible_child: Some(VIEW),
-            children: vec![Content::new(
+        StackContent::vertical(
+            0.,
+            vec![Content::new(
                 VIEW,
                 MediaViewerContent::new(IMAGE, image, "Viewer").unwrap(),
             )],
-        },
+        )
+        .with_flexible_child(VIEW),
     ))
     .unwrap();
     let frame = Rect::new(0., 0., 100., 100.);
@@ -459,7 +458,7 @@ fn disabled_buttons_project_same_command_owner_and_never_activate() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     assert_eq!(fixture::Actions::default().dispatch(&mut host), (0, 0));
@@ -586,8 +585,8 @@ fn ready_status_keeps_layout_and_new_drag_across_window_reactivation() {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
-                .clone(),
+                .text()
+                .to_owned(),
             host.get(VIEW).unwrap().frame(),
             host.get(VIEW)
                 .unwrap()
@@ -686,9 +685,7 @@ fn first_zoom_button_after_reactivation_uses_published_availability() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .disabled,
+            .is_disabled(),
         "first reactivated publication must enable Zoom in before another input"
     );
     let viewport = host.get(VIEW).unwrap().frame();
@@ -720,7 +717,7 @@ fn first_zoom_button_after_reactivation_uses_published_availability() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1
     );
     assert_eq!(host.get(VIEW).unwrap().frame(), viewport);

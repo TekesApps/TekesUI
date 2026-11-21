@@ -7,9 +7,7 @@ use tekes_ui_controls::{
         KeyedSelectableListContent, ListContent, ListDisplayUpdate, ListIntentKind, ListRowDisplay,
         SearchFieldContent, StackContent,
     },
-    extended::{
-        Axis, KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey, Stack,
-    },
+    extended::{KeyedListItem, KeyedListSnapshot, ListBudget, ListDatasetKey, ListItemKey},
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
@@ -69,6 +67,8 @@ pub struct SettingsSidebar {
     back_button: Option<Content>,
     query: String,
 }
+const BACK_BUTTON: ComponentId = ComponentId(4);
+
 impl SettingsSidebar {
     pub fn new(schema: &Schema) -> Result<Self> {
         Self::build(schema, false)
@@ -147,8 +147,9 @@ impl SettingsSidebar {
             let mut back_button = Button::new("〈 返回")
                 .with_accessible_name("返回主窗口")
                 .with_help("返回主窗口");
-            back_button.content_alignment =
-                tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start;
+            back_button.set_content_alignment(
+                tekes_ui_tokens::proposal::layout::MainAxisDistribution::Start,
+            );
             let mut search_button = Button::new(Content::new(
                 ComponentId(11),
                 IconContent::new("tekes-search").map_err(|error| {
@@ -158,17 +159,14 @@ impl SettingsSidebar {
             .with_accessible_name("搜索设置")
             .with_help("搜索设置");
             search_button.set_toolbar_icon_slot(true);
-            let header = StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: tekes_ui_tokens::Spacing::Regular.value(),
-                },
-                children: vec![
-                    Content::new(ComponentId(4), back_button),
+            let header = StackContent::horizontal(
+                tekes_ui_tokens::Spacing::Regular.value(),
+                vec![
+                    Content::new(BACK_BUTTON, back_button),
                     Content::new(ComponentId(10), search_button),
                 ],
-                flexible_child: Some(ComponentId(4)),
-            }
+            )
+            .with_flexible_child(BACK_BUTTON)
             .into_content_with_distribution(
                 ComponentId(5),
                 tekes_ui_tokens::proposal::layout::MainAxisDistribution::SpaceBetween,
@@ -208,7 +206,7 @@ impl SettingsSidebar {
         self.back_template = None;
         if let Some(button) = self
             .host
-            .get_mut(ComponentId(4))
+            .get_mut(BACK_BUTTON)
             .and_then(|n| n.component_mut::<Button>())
         {
             button.set_contents(image);
@@ -225,7 +223,7 @@ impl SettingsSidebar {
         }
         if let Some(button) = self
             .host
-            .get_mut(ComponentId(4))
+            .get_mut(BACK_BUTTON)
             .and_then(|node| node.component_mut::<Button>())
         {
             button
@@ -239,7 +237,7 @@ impl SettingsSidebar {
     fn open_search(&mut self) -> Result<()> {
         self.back_button = Some(
             self.host
-                .remove(ComponentId(4))
+                .remove(BACK_BUTTON)
                 .map_err(|error| SettingsError::Ui(format!("Settings search: {error:?}")))?,
         );
         let editor = SearchFieldContent::new("搜索设置", "");
@@ -260,7 +258,7 @@ impl SettingsSidebar {
         header
             .component_mut::<StackContent>()
             .unwrap()
-            .flexible_child = Some(ComponentId(6));
+            .set_flexible_child(Some(ComponentId(6)));
         self.host.focus(Some(ComponentId(6)), true);
         Ok(())
     }
@@ -286,7 +284,7 @@ impl SettingsSidebar {
         header
             .component_mut::<StackContent>()
             .unwrap()
-            .flexible_child = Some(ComponentId(4));
+            .set_flexible_child(Some(BACK_BUTTON));
         // A result/form click already owns focus; only keyboard cancellation
         // from the editor returns focus to the restored search button.
         if return_focus {
@@ -334,6 +332,35 @@ impl SettingsSidebar {
     }
     pub fn host(&self) -> &ContentHost {
         &self.host
+    }
+    pub fn has_back_button(&self) -> bool {
+        self.host.get(BACK_BUTTON).is_some()
+    }
+    pub fn back_button(&self) -> Option<&Button> {
+        self.host
+            .get(BACK_BUTTON)
+            .and_then(Content::component::<Button>)
+    }
+    pub fn back_button_frame(&self) -> Option<Rect> {
+        self.host.get(BACK_BUTTON).map(Content::frame)
+    }
+    pub fn back_button_mount(&self) -> Option<u64> {
+        self.host.semantic_mount(BACK_BUTTON)
+    }
+    pub fn is_back_point(&self, point: tekes_ui_scene::Point) -> bool {
+        self.host
+            .get(BACK_BUTTON)
+            .and_then(Content::visible)
+            .is_some_and(|visible| visible.contains(point))
+    }
+    pub fn is_back_focused(&self) -> bool {
+        self.host.focused() == Some(BACK_BUTTON)
+    }
+    pub fn is_back_semantic_mount(&self, mount: u64) -> bool {
+        self.host.semantic_mount(BACK_BUTTON) == Some(mount) && self.host.get(BACK_BUTTON).is_some()
+    }
+    pub fn focus_back(&mut self, visible: bool) -> bool {
+        self.host.focus(Some(BACK_BUTTON), visible)
     }
     pub fn focus(&mut self, id: Option<ComponentId>, visible: bool) -> bool {
         self.host.focus(id, visible)
@@ -394,7 +421,7 @@ impl SettingsSidebar {
     }
     pub fn take_selection(&mut self) -> Option<String> {
         let actions = self.host.drain_action_records();
-        self.back_requested |= actions.iter().any(|a| a.action.target == ComponentId(4));
+        self.back_requested |= actions.iter().any(|a| a.action.target == BACK_BUTTON);
         if actions.iter().any(|a| a.action.target == ComponentId(10)) {
             // Both nodes and their parent are owned by this fixed declaration.
             self.open_search().expect("declared Settings search slots");

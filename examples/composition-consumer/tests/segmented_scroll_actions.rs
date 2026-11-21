@@ -1,11 +1,7 @@
 #![cfg(target_os = "macos")]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    ControlKey, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ControlKey, ScrollArea, composition::*};
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Theme;
 const ID: ComponentId = ComponentId(110);
@@ -39,21 +35,17 @@ fn host() -> (ContentHost, coretext::Text) {
             ),
         ),
     );
-    scroll.viewport_height = Some(100.);
+    scroll.set_viewport_height(Some(100.));
     let mut h = ContentHost::new(Content::new(
         ComponentId(11000),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(EDITOR, TextFieldContent::new("Composer", "draft 原文")),
                 Content::new(SCROLL, scroll),
                 Content::new(AFTER, Button::new("After")),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);

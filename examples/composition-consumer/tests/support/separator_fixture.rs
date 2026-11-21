@@ -11,8 +11,8 @@ pub const LAST: ComponentId = ComponentId(54003);
 pub fn build(axis: Axis) -> Result<ContentHost, CompositionError> {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
+        StackContent::new(
+            Stack {
                 axis: if axis == Axis::Horizontal {
                     Axis::Vertical
                 } else {
@@ -20,12 +20,11 @@ pub fn build(axis: Axis) -> Result<ContentHost, CompositionError> {
                 },
                 gap: 4.,
             },
-            flexible_child: None,
-            children: vec![
+            vec![
                 Content::new(FIRST, TextContent::new("Input 中文")),
                 Content::new(DIVIDER, SeparatorContent::new(axis)),
                 Content::new(LAST, TextContent::new("Output 中文")),
             ],
-        },
+        ),
     ))
 }

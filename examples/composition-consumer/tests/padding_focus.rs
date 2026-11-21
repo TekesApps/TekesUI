@@ -142,9 +142,7 @@ fn actual_button_wins_including_disabled_unhandled_bounds() {
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     click(&mut h, p);
     assert_eq!(h.focused(), None);
     assert!(h.drain_actions().is_empty());
@@ -471,14 +469,13 @@ fn padding_intent_rejects_real_actions_and_non_down_pointer_phases() {
         None
     );
     for state in 0..3 {
-        let b = &mut h
+        let b = h
             .get_mut(ACTION)
             .unwrap()
             .component_mut::<Button>()
-            .unwrap()
-            .button;
-        b.state.disabled = state == 1;
-        b.state.loading = state == 2;
+            .unwrap();
+        b.set_disabled(state == 1);
+        b.set_loading(state == 2);
         let event = ContentEvent::PointerDown(h.get(ACTION).unwrap().frame().center());
         assert_eq!(
             h.padding_focus_target(&event),
@@ -625,8 +622,7 @@ fn padding_intent_yields_to_real_menu_and_modal_scope() {
         .unwrap()
         .component_mut::<MenuContent>()
         .unwrap()
-        .menu
-        .show(0);
+        .open();
     paint(&mut h);
     assert_eq!(h.padding_focus_target(&event), None);
     h.event(&event);

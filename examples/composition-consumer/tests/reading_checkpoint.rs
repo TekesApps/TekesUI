@@ -290,7 +290,7 @@ fn following_and_history_restore_without_implicit_follow_on_append() {
         paint(&mut r, 420., 1.);
         let following = matches!(c.position, ContentReadingPosition::FollowingLatest);
         assert_eq!(r.scroll().is_following_latest(), following);
-        let before = r.scroll().scroll.offset.y;
+        let before = r.scroll().scroll().offset.y;
         let extra = ComponentId(9000);
         let mut ids: Vec<_> = r.keys.iter().map(|(_, id)| *id).collect();
         ids.push(extra);
@@ -309,9 +309,9 @@ fn following_and_history_restore_without_implicit_follow_on_append() {
         paint(&mut r, 420., 1.);
         assert_eq!(r.scroll().is_following_latest(), following);
         if following {
-            assert!(r.scroll().scroll.offset.y > before);
+            assert!(r.scroll().scroll().offset.y > before);
         } else {
-            assert!((r.scroll().scroll.offset.y - before).abs() <= 1.0);
+            assert!((r.scroll().scroll().offset.y - before).abs() <= 1.0);
         }
         r.host
             .get_mut(r.owner)
@@ -416,9 +416,9 @@ fn user_scroll_after_install_before_layout_cancels_pending_checkpoint() {
     paint(&mut r, 420., 1.);
     r.restore(&r.request(), &c).unwrap();
     wheel(&mut r, 80.);
-    let offset = r.scroll().scroll.offset.y;
+    let offset = r.scroll().scroll().offset.y;
     paint(&mut r, 420., 1.);
-    assert!((r.scroll().scroll.offset.y - offset).abs() <= 1.0);
+    assert!((r.scroll().scroll().offset.y - offset).abs() <= 1.0);
     assert!(r.scroll().reading_result().unwrap().user_input_won);
     assert_ne!(history(&r.capture().unwrap()).0, history(&c).0);
 }
@@ -615,10 +615,10 @@ fn fresh_downward_input_cancels_imported_follow_before_first_restore_layout() {
     paint(&mut r, 420., 1.);
     r.restore(&r.request(), &c).unwrap();
     wheel(&mut r, 80.0);
-    let offset = r.scroll().scroll.offset.y;
+    let offset = r.scroll().scroll().offset.y;
     paint(&mut r, 420., 1.);
     assert!(!r.scroll().is_following_latest());
-    assert!((r.scroll().scroll.offset.y - offset).abs() <= 1.0);
+    assert!((r.scroll().scroll().offset.y - offset).abs() <= 1.0);
     assert!(r.scroll().reading_result().unwrap().user_input_won);
 }
 

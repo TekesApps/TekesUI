@@ -2,11 +2,7 @@
 //! StoryState constructs and owns the component host; only its outer layout and
 //! Gallery control transport change. No legacy paint/input/native tree runs.
 use super::{Entry, StoryState};
-use tekes_ui_controls::{
-    CheckState,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{CheckState, composition::*};
 use tekes_ui_tokens::Spacing;
 
 const ROOT: ComponentId = ComponentId(91000);
@@ -73,14 +69,7 @@ fn root(mut specimen: Content) -> Content {
         ),
         Content::new(
             ComponentId(91005),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                children: controls,
-                flexible_child: None,
-            },
+            StackContent::vertical(Spacing::Regular.value(), controls),
         ),
         specimen,
         text(STATUS.0, ""),
@@ -108,17 +97,7 @@ fn root(mut specimen: Content) -> Content {
             vec![
                 super::story_heading(91008, entry.title()),
                 super::apphost_basic::section_bar(entry, CONTROL),
-                Content::new(
-                    BODY,
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: 16.,
-                        },
-                        flexible_child: None,
-                        children,
-                    },
-                ),
+                Content::new(BODY, StackContent::vertical(16., children)),
             ],
         )),
     )
@@ -250,7 +229,7 @@ impl AppHostStory {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
+                .text()
                 != value
             {
                 self.host_mut()
@@ -258,7 +237,7 @@ impl AppHostStory {
                     .unwrap()
                     .component_mut::<TextContent>()
                     .unwrap()
-                    .text = value;
+                    .set_text(value);
             }
         }
     }

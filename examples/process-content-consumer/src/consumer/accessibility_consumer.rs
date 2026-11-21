@@ -64,7 +64,7 @@ impl ProcessModule for SemanticModule {
     fn handle(&mut self, r: RequestBody, e: &ComponentEmitter) -> Result<serde_json::Value> {
         if matches!(&r,RequestBody::Message{topic,..} if topic=="inspect-primary") {
             return Ok(
-                serde_json::json!({"activations":self.0.host.get(ComponentId(7)).unwrap().component::<Button>().unwrap().activations}),
+                serde_json::json!({"activations":self.0.host.get(ComponentId(7)).unwrap().component::<Button>().unwrap().activations()}),
             );
         }
         if matches!(&r,RequestBody::Message{topic,..} if topic=="oversized_semantics") {

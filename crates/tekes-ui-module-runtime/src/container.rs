@@ -3059,7 +3059,7 @@ impl Component for ProcessContainer {
                 context.surface.as_str(),
             )
         } else {
-            (theme.palette, theme.surface())
+            (theme.palette(), theme.surface())
         };
         tekes_ui_controls::feedback_view::SurfaceView::paint_panel_on_surface_at_scale(
             scene, frame, palette, surface, self.scale,

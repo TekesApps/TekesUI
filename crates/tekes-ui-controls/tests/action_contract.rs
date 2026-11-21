@@ -42,16 +42,16 @@ fn latest_icon_model_availability_blocks_pointer_release_without_a_render() {
                 .event(&ContentEvent::PointerDown(frame.center()))
                 .consumed
         );
-        model.button.state.loading = loading;
-        model.button.state.disabled = !loading;
+        model.set_loading(loading);
+        model.set_disabled(!loading);
         assert!(
             !model
                 .event(&ContentEvent::PointerUp(frame.center()))
                 .activated,
             "latest disabled/loading must prevent activation before another paint"
         );
-        assert_eq!(model.button.state.loading, loading);
-        assert_eq!(model.button.state.disabled, !loading);
+        assert_eq!(model.is_loading(), loading);
+        assert_eq!(model.is_disabled(), !loading);
     }
 }
 #[test]
@@ -295,8 +295,8 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                                     model.measure(&mut text, Size::new(f32::MAX, f32::MAX)).size;
                                 let frame = Rect::new(12., 12., natural.width, natural.height);
                                 let p = frame.center();
-                                model.button.state.disabled = has("disabled");
-                                model.button.state.loading = has("loading");
+                                model.set_disabled(has("disabled"));
+                                model.set_loading(has("loading"));
                                 model.arrange(&mut text, frame, frame);
                                 model.paint(
                                     &mut Scene::new(),
@@ -305,7 +305,7 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                                     frame,
                                     palette.into(),
                                 );
-                                let baseline = model.button.layout().unwrap();
+                                let baseline = model.model().layout().unwrap();
                                 if has("hover") {
                                     model.event(&ContentEvent::PointerMove(p));
                                 }
@@ -316,17 +316,17 @@ fn action_family_required_states_use_real_public_events_and_token_painters() {
                                     model.set_focus(true, true);
                                 }
                                 model.paint(&mut scene, &mut text, frame, frame, palette.into());
-                                let layout = model.button.layout().unwrap();
+                                let layout = model.model().layout().unwrap();
                                 assert_eq!(layout.frame, baseline.frame);
                                 assert_eq!(model.accessible_name(), "Create item");
                                 if has("pressed") {
-                                    assert!(model.button.state.pressed);
+                                    assert!(model.is_pressed());
                                 }
                                 if has("hover") {
-                                    assert!(model.button.state.hovered);
+                                    assert!(model.is_hovered());
                                 }
                                 if has("focus") {
-                                    assert!(model.button.state.focus_visible);
+                                    assert!(model.focus_visible());
                                 }
                                 if has("disabled") || has("loading") {
                                     assert!(!model.event(&ContentEvent::PointerDown(p)).consumed);
@@ -704,7 +704,7 @@ fn icon_natural_sizes_are_token_owned_and_explicit_frames_remain_supported() {
                 frame,
                 Palette::from(Theme::LIGHT).into(),
             );
-            assert_eq!(model.button.layout().unwrap().frame, frame);
+            assert_eq!(model.model().layout().unwrap().frame, frame);
             let icon = scene
                 .primitives()
                 .iter()

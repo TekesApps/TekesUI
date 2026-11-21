@@ -1,5 +1,5 @@
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlState,
+    ButtonTextAlign, ButtonTextRenderer,
     composition::{Button, Component, ComponentId, Content, ContentHost, TextContent},
 };
 use tekes_ui_scene::{Rect, Scene, Size};
@@ -27,48 +27,47 @@ impl ButtonTextRenderer for Text {
 
 #[test]
 fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
-    let states = [
-        ControlState::default(),
-        ControlState {
-            hovered: true,
-            ..Default::default()
-        },
-        ControlState {
-            focused: true,
-            pressed: true,
-            ..Default::default()
-        },
-        ControlState {
-            focused: true,
-            focus_visible: true,
-            ..Default::default()
-        },
-        ControlState {
-            disabled: true,
-            ..Default::default()
-        },
-        ControlState {
-            loading: true,
-            ..Default::default()
-        },
-    ];
+    use tekes_ui_controls::composition::ContentEvent;
     for theme in Theme::ALL {
         for brand in 0..3 {
             for width in [120., 400.] {
-                for state in states {
-                    let mut button = Button::new("Apply");
-                    button.button.state = state;
+                for state in [
+                    "rest",
+                    "hovered",
+                    "pressed",
+                    "focus_visible",
+                    "disabled",
+                    "loading",
+                ] {
+                    let button = match state {
+                        "disabled" => Button::new("Apply").with_disabled(true),
+                        "loading" => Button::new("Apply").with_loading(true),
+                        _ => Button::new("Apply"),
+                    };
                     let mut host = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
                     let mut text = Text::default();
                     let frame = Rect::new(10., 20., width, 60.);
-                    host.render(
-                        &mut Scene::new(),
-                        &mut text,
-                        frame,
-                        frame,
-                        Palette::new(theme, brand).expect("registered Gallery brand"),
-                    )
-                    .unwrap();
+                    let palette = Palette::new(theme, brand).expect("registered Gallery brand");
+                    host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                        .unwrap();
+                    match state {
+                        "hovered" => {
+                            host.event(&ContentEvent::PointerMove(frame.center()));
+                        }
+                        "pressed" => {
+                            host.event(&ContentEvent::PointerMove(frame.center()));
+                            host.event(&ContentEvent::PointerDown(frame.center()));
+                        }
+                        "focus_visible" => {
+                            assert!(host.focus(Some(ComponentId(1)), true));
+                        }
+                        _ => {}
+                    }
+                    if matches!(state, "hovered" | "pressed" | "focus_visible") {
+                        text = Text::default();
+                        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                            .unwrap();
+                    }
                     assert_eq!(text.0.len(), 1);
                     let (_, content, align) = text.0[0];
                     assert_eq!(align, ButtonTextAlign::default());
@@ -82,7 +81,7 @@ fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
                             .unwrap()
                             .component::<Button>()
                             .unwrap()
-                            .activations,
+                            .activations(),
                         0
                     );
                 }
@@ -94,10 +93,7 @@ fn ordinary_composed_button_uses_design_default_in_every_existing_state() {
 #[test]
 fn body_text_keeps_its_independent_leading_alignment() {
     let mut text = Text::default();
-    let mut body = TextContent {
-        text: "Description".into(),
-        role: proposal::TextRole::UiBody,
-    };
+    let mut body = TextContent::new("Description");
     body.paint(
         &mut Scene::new(),
         &mut text,
@@ -183,22 +179,27 @@ fn public_button_rendered_text_and_background_meet_declared_contrast() {
                 ButtonVariant::Panel,
             ] {
                 for (hovered, pressed) in [(false, false), (true, false), (true, true)] {
-                    let mut button = Button::new("Apply");
-                    button.variant = variant;
-                    button.button.state.hovered = hovered;
-                    button.button.state.pressed = pressed;
+                    use tekes_ui_controls::composition::ContentEvent;
+                    let button = Button::new("Apply").with_variant(variant);
                     let mut host = ContentHost::new(Content::new(ComponentId(1), button)).unwrap();
                     let mut scene = Scene::new();
                     let mut text = Text::default();
                     let frame = Rect::new(10., 20., 120., 60.);
-                    host.render(
-                        &mut scene,
-                        &mut text,
-                        frame,
-                        frame,
-                        Palette::new(theme, brand).unwrap(),
-                    )
-                    .unwrap();
+                    let palette = Palette::new(theme, brand).unwrap();
+                    host.render(&mut scene, &mut text, frame, frame, palette)
+                        .unwrap();
+                    if hovered {
+                        host.event(&ContentEvent::PointerMove(frame.center()));
+                    }
+                    if pressed {
+                        host.event(&ContentEvent::PointerDown(frame.center()));
+                    }
+                    if hovered || pressed {
+                        scene = Scene::new();
+                        text = Text::default();
+                        host.render(&mut scene, &mut text, frame, frame, palette)
+                            .unwrap();
+                    }
                     assert_eq!(text.1.len(), 1);
                     let fill = scene
                         .primitives()

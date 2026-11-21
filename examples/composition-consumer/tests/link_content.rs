@@ -72,8 +72,8 @@ fn loading_and_disabled_revoke_held_action_without_requiring_a_paint() {
             .unwrap()
             .component_mut::<LinkContent>()
             .unwrap();
-        c.model.button.state.disabled = !loading;
-        c.model.button.state.loading = loading;
+        c.set_disabled(!loading);
+        c.set_loading(loading);
         h.event(&ContentEvent::PointerUp(p));
         h.accessibility_action(ComponentId(1), None, AccessibilityAction::Press);
         assert!(h.drain_actions().is_empty());
@@ -135,7 +135,7 @@ fn real_declared_auxiliary_link_preserves_composer_marked_text_and_focus() {
             .unwrap()
             .component::<LinkContent>()
             .unwrap()
-            .model
+            .model()
             .button
             .state
             .focused
@@ -149,7 +149,7 @@ fn real_declared_auxiliary_link_preserves_composer_marked_text_and_focus() {
             .unwrap()
             .component::<LinkContent>()
             .unwrap()
-            .model
+            .model()
             .button
             .state
             .focused
@@ -199,12 +199,12 @@ fn natural_link_size_keeps_underline_below_the_shaped_text_line_at_each_type_sca
         h.render(&mut scene, &mut text, f, f, Theme::LIGHT.into())
             .unwrap();
         let frame = h.get(LINK).unwrap().frame();
-        let label = &h
+        let label = h
             .get(LINK)
             .unwrap()
             .component::<LinkContent>()
             .unwrap()
-            .label;
+            .label();
         let inset = proposal::metric("spacing", "space-regular").unwrap();
         let shaped = text.measure(
             label,
@@ -308,9 +308,9 @@ fn wrapped_label_line_box_is_contained_by_its_own_rounded_ground() {
                 .unwrap()
                 .component_mut::<LinkContent>()
                 .unwrap()
-                .label =
-                "gyp glyph JPEG typography gyp glyph JPEG typography gyp glyph JPEG typography"
-                    .into();
+                .set_label(
+                    "gyp glyph JPEG typography gyp glyph JPEG typography gyp glyph JPEG typography",
+                );
             let mut text = coretext::Text::new(scale);
             text.services = true;
             let viewport = Rect::new(0., 0., width, 560.);
@@ -326,9 +326,9 @@ fn wrapped_label_line_box_is_contained_by_its_own_rounded_ground() {
             .unwrap();
             let link = h.get(LINK).unwrap().component::<LinkContent>().unwrap();
             let frame = h.get(LINK).unwrap().frame();
-            assert_eq!(link.view.layout().frame, frame);
-            let slot = link.view.layout().content;
-            let size = text.measure(&link.label, proposal::TextRole::UiBody, slot.size.width);
+            assert_eq!(link.view().layout().frame, frame);
+            let slot = link.view().layout().content;
+            let size = text.measure(link.label(), proposal::TextRole::UiBody, slot.size.width);
             let bounds = Rect::new(
                 slot.min_x(),
                 slot.center().y - size.height * 0.5,

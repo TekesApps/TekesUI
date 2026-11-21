@@ -1,11 +1,7 @@
 //! Pattern transport: original StoryState owns validation, persistence and delivery.
 //! The receiving ContentHost owns every mounted input, list and modal.
 use super::{Entry, Phase, StoryInput, StoryState};
-use tekes_ui_controls::{
-    CheckState,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{CheckState, composition::*};
 const ROOT: ComponentId = ComponentId(110000);
 const ROWS: ComponentId = ComponentId(110001);
 const BODY: ComponentId = ComponentId(110002);
@@ -19,17 +15,7 @@ fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
 fn stack(id: ComponentId, children: Vec<Content>) -> Content {
-    Content::new(
-        id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            children,
-            flexible_child: None,
-        },
-    )
+    Content::new(id, StackContent::vertical(12., children))
 }
 fn button(command: u64, label: &str) -> Content {
     Content::new(ComponentId(COMMAND + command), Button::new(label))
@@ -336,7 +322,7 @@ impl AppHostPatterns {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
+                .text()
                 != value
             {
                 self.host_mut()
@@ -344,7 +330,7 @@ impl AppHostPatterns {
                     .unwrap()
                     .component_mut::<TextContent>()
                     .unwrap()
-                    .text = value;
+                    .set_text(value);
             }
         }
         let disabled = self.state.disabled;
@@ -374,9 +360,9 @@ impl AppHostPatterns {
                     "Save settings"
                 }
             } else {
-                &button.label
+                button.label()
             };
-            if button.button.state.disabled != disabled || button.label != label {
+            if button.is_disabled() != disabled || button.label() != label {
                 let label = label.to_owned();
                 let button = self
                     .host_mut()
@@ -384,8 +370,8 @@ impl AppHostPatterns {
                     .unwrap()
                     .component_mut::<Button>()
                     .unwrap();
-                button.button.state.disabled = disabled;
-                button.label = label;
+                button.set_disabled(disabled);
+                button.set_label(label);
             }
         }
     }
@@ -710,7 +696,7 @@ mod tests {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text,
+                .text(),
             "Studio notes.md\nResearch notes.txt"
         );
         edit(&mut page, &mut text, "not-found");
@@ -720,7 +706,7 @@ mod tests {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
+                .text()
                 .starts_with("No results.")
         );
         press(&mut page, &mut text, 22);
@@ -731,7 +717,7 @@ mod tests {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
+                .text()
                 .contains("项目计划.md")
         );
         assert_eq!(page.state.log.back().unwrap(), "filter: cleared");

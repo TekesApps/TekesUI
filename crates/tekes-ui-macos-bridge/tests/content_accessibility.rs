@@ -202,7 +202,6 @@ fn soft_wrap_and_offscreen_lines_keep_the_original_shaper_ranges() {
 
 #[test]
 fn scrolled_inspector_key_value_table_projects_consistently_without_quadratic_work() {
-    use tekes_ui_controls::extended::{Axis, Stack};
     let essay = "Morning light crossed the curtain and left a slowly moving edge on the floor. \
          The staircase, the small table, and every shelf held notes tucked between pages.\n"
         .repeat(36);
@@ -235,17 +234,13 @@ fn scrolled_inspector_key_value_table_projects_consistently_without_quadratic_wo
             tekes_ui_controls::ScrollArea::default(),
             Content::new(
                 ComponentId(2),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 8.,
-                    },
-                    flexible_child: None,
-                    children: vec![Content::new(
+                StackContent::vertical(
+                    8.,
+                    vec![Content::new(
                         ComponentId(3),
                         KeyValueTableContent::new(table_rows),
                     )],
-                },
+                ),
             ),
         )
         .scrollbar(true),

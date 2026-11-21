@@ -427,7 +427,7 @@ impl Component for MotionContent {
         let mut bridge = HostText::new(text, cache, clip);
         *layout = Some(Layout::for_state(frame, preview, &mut bridge));
         motion::build_content(
-            theme.palette.theme,
+            theme.palette().theme,
             &mut bridge,
             frame,
             clip,
@@ -859,8 +859,8 @@ impl AppHostMotion {
             .and_then(|node| node.component::<ScrollContent>())
             .map_or((0., 0.), |scroll| {
                 (
-                    scroll.scroll.limit().y,
-                    scroll.scroll.viewport_size().height,
+                    scroll.max_offset().y,
+                    scroll.scroll().viewport_size().height,
                 )
             })
     }

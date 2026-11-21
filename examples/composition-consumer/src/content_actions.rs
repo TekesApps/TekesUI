@@ -1,5 +1,4 @@
 //! Independent caller consuming actions from the original controls, never counters.
-use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::{TextSurface, composition::*};
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(9300);
@@ -24,19 +23,15 @@ impl ActionFixture {
         editor.submit_policy = TextSubmitPolicy::CommandEnter;
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Regular.value(),
+                vec![
                     Content::new(FIRST, Button::new("动作 A")),
                     Content::new(SECOND, Button::new("动作 B")),
                     Content::new(EDITOR, editor),
                     Content::new(STATUS, TextContent::new("尚无动作")),
                 ],
-            },
+            ),
         ))
         .unwrap();
         host.set_action_events(true);
@@ -55,7 +50,7 @@ impl ActionFixture {
                 .unwrap()
                 .component_mut::<TextContent>()
                 .unwrap()
-                .text = label;
+                .set_text(label);
             self.delivered.extend(actions);
         }
     }

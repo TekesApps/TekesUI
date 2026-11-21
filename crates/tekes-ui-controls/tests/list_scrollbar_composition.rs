@@ -32,7 +32,7 @@ fn rows() -> Vec<Content> {
                     (0..5)
                         .map(|row| {
                             let mut button = Button::new(format!("Item {group}/{row}"));
-                            button.button.frame_policy = ButtonFramePolicy::Exact;
+                            button.set_frame_policy(ButtonFramePolicy::Exact);
                             Content::new(ComponentId(100 + group * 5 + row), button)
                         })
                         .collect(),
@@ -133,7 +133,7 @@ fn grouped_list_uses_one_original_scroller_and_thumb_capture_never_activates_ite
             Point::new(bar.center().x, 125.),
             PointerPhase::Drag,
         ));
-        assert!(scroll(&host).scroll.offset.y > 0.);
+        assert!(scroll(&host).offset().y > 0.);
         render(&mut host, frame, palette);
         host.event(&pointer(Point::new(400., 180.), PointerPhase::Up));
         assert!(host.pointer_capture().is_none());
@@ -148,7 +148,7 @@ fn hidden_scrollbar_preserves_wheel_and_checked_focus_reveal() {
     let frame = Rect::new(0., 0., 240., 140.);
     let scene = render(&mut host, frame, Theme::LIGHT.into());
     assert!(thumb(&scene, Theme::LIGHT.into()).is_none());
-    assert!(scroll(&host).scroll.limit().y > 0.);
+    assert!(scroll(&host).max_offset().y > 0.);
     let first = host.get(ComponentId(100)).unwrap().frame();
     let old_track = Point::new(
         frame.max_x() - proposal::SCROLLBAR_INSET - proposal::SCROLLBAR_WIDTH * 0.5,
@@ -183,7 +183,7 @@ fn hidden_scrollbar_preserves_wheel_and_checked_focus_reveal() {
         time: 1.,
     };
     assert!(host.event(&wheel).changed);
-    assert!(scroll(&host).scroll.offset.y > 0.);
+    assert!(scroll(&host).offset().y > 0.);
     render(&mut host, frame, Theme::LIGHT.into());
     assert!(host.focus(Some(ComponentId(109)), true));
     assert_eq!(host.focused(), Some(ComponentId(109)));
@@ -193,7 +193,7 @@ fn hidden_scrollbar_preserves_wheel_and_checked_focus_reveal() {
         last.visible()
             .is_some_and(|visible| visible.size.height > 0.)
     );
-    assert!(scroll(&host).scroll.offset.y > 35.);
+    assert!(scroll(&host).offset().y > 35.);
 }
 
 #[test]
@@ -209,10 +209,10 @@ fn track_paging_and_cancel_keep_items_unactivated_and_fitting_lists_have_no_hit(
         host.event(&pointer(page, PointerPhase::Down))
             .capture_pointer
     );
-    assert!(scroll(&host).scroll.offset.y > 0.);
+    assert!(scroll(&host).offset().y > 0.);
     host.event(&ContentEvent::Cancel);
     assert!(host.pointer_capture().is_none());
-    assert!(scroll(&host).scroll.dragging_axis().is_none());
+    assert!(scroll(&host).scroll().dragging_axis().is_none());
     assert!(host.drain_actions().is_empty());
 
     let mut fitting = ContentHost::new(Content::new(
@@ -231,7 +231,7 @@ fn track_paging_and_cancel_keep_items_unactivated_and_fitting_lists_have_no_hit(
             .event(&pointer(page, PointerPhase::Down))
             .capture_pointer
     );
-    assert_eq!(scroll(&fitting).scroll.offset, Point::default());
+    assert_eq!(scroll(&fitting).offset(), Point::default());
 }
 
 #[test]
@@ -262,10 +262,10 @@ fn admitted_thumb_navigation_stops_original_reading_follow_and_wins_reflow() {
         Point::new(bar.center().x, 10.),
         PointerPhase::Drag,
     ));
-    let selected_offset = scroll(&host).scroll.offset.y;
-    assert!(selected_offset < scroll(&host).scroll.limit().y);
+    let selected_offset = scroll(&host).offset().y;
+    assert!(selected_offset < scroll(&host).max_offset().y);
     render(&mut host, frame, Theme::LIGHT.into());
-    assert!((scroll(&host).scroll.offset.y - selected_offset).abs() < 0.01);
+    assert!((scroll(&host).offset().y - selected_offset).abs() < 0.01);
     assert!(scroll(&host).reading_result().unwrap().user_input_won);
     host.event(&pointer(Point::new(400., 180.), PointerPhase::Up));
     assert!(host.pointer_capture().is_none());
@@ -306,7 +306,8 @@ fn pane_padding(explicit: Option<f32>) {
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap();
-    view.scroll.scroll_by(0., view.scroll.limit().y);
+    let limit = view.max_offset().y;
+    view.scroll_by(0., limit);
     render(&mut host, frame, Theme::LIGHT.into());
     let last = host.get(ComponentId(109)).unwrap().frame();
     let items = host.get(ITEMS).unwrap().frame();
@@ -436,13 +437,13 @@ fn search_clear_host_exit_preserves_query_focus_capture_and_actions() {
     ] {
         let mut host = ContentHost::new(Content::new(
             ComponentId(900),
-            GridContent {
-                model: Grid::new(2),
-                children: vec![
+            GridContent::new(
+                Grid::new(2),
+                vec![
                     Content::new(SEARCH, SearchFieldContent::new("Find", "query")),
                     Content::new(OTHER, Button::new("Other")),
                 ],
-            },
+            ),
         ))
         .unwrap();
         host.set_action_events(true);
@@ -613,13 +614,13 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
     const EDITOR: ComponentId = ComponentId(500);
     let mut host = ContentHost::new(Content::new(
         ComponentId(900),
-        GridContent {
-            model: Grid::new(2),
-            children: vec![
+        GridContent::new(
+            Grid::new(2),
+            vec![
                 Content::new(SCROLL, ListContent::scrollable("Navigation", ITEMS, rows())),
                 Content::new(EDITOR, TextFieldContent::new("Draft", "original draft")),
             ],
-        },
+        ),
     ))
     .unwrap();
     let frame = Rect::new(0., 0., 500., 140.);
@@ -654,7 +655,7 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
         &mut text,
     )
     .unwrap();
-    assert!(scroll(&host).scroll.offset.y > 0.);
+    assert!(scroll(&host).offset().y > 0.);
     host.event_with_text(
         &pointer(Point::new(600., 160.), PointerPhase::Up),
         &mut text,
@@ -668,43 +669,33 @@ fn scrollbar_drag_preserves_real_sibling_editor_marked_input_and_focus() {
 #[cfg(target_os = "macos")]
 #[test]
 fn padded_stack_header_keeps_natural_height_and_stays_fixed_while_list_scrolls() {
-    use tekes_ui_controls::{
-        extended::{Axis, Stack},
-        layout::Insets,
-    };
+    use tekes_ui_controls::layout::Insets;
     let mut text = native_text::EditorText;
     const HEADER: ComponentId = ComponentId(800);
     const FIELD: ComponentId = ComponentId(801);
     let padding = tekes_ui_tokens::Spacing::Loose.value();
-    let header = StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 0.,
-        },
-        children: vec![Content::new(FIELD, SearchFieldContent::new("Find", ""))],
-        flexible_child: None,
-    }
+    let header = StackContent::vertical(
+        0.,
+        vec![Content::new(FIELD, SearchFieldContent::new("Find", ""))],
+    )
     .into_content_with_padding(HEADER, Insets::new(padding, padding, 0., padding));
     let mut root = Content::new(
         ComponentId(900),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 header,
                 Content::new(SCROLL, ListContent::scrollable("Items", ITEMS, rows())),
             ],
-            flexible_child: Some(SCROLL),
-        },
+        )
+        .with_flexible_child(SCROLL),
     );
     let mut natural_field = SearchFieldContent::new("Find", "");
     let field_height = natural_field
         .measure(&mut text, Size::new(300. - 2. * padding, 300.))
         .size
         .height;
-    let header_height = root.component_mut::<StackContent>().unwrap().children[0]
+    let header_height = root.component_mut::<StackContent>().unwrap().children_mut()[0]
         .measure(&mut text, Size::new(300., 300.))
         .size
         .height;
@@ -733,7 +724,8 @@ fn padded_stack_header_keeps_natural_height_and_stays_fixed_while_list_scrolls()
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap();
-        view.scroll.scroll_by(0., view.scroll.limit().y);
+        let limit = view.max_offset().y;
+        view.scroll_by(0., limit);
         host.render(
             &mut Scene::new(),
             &mut text,
@@ -745,7 +737,7 @@ fn padded_stack_header_keeps_natural_height_and_stays_fixed_while_list_scrolls()
         assert_eq!(host.get(FIELD).unwrap().frame(), field);
         assert_eq!(host.get(FIELD).unwrap().mount_identity(), mount);
         assert_eq!(host.focused(), Some(FIELD));
-        assert!(scroll(&host).scroll.offset.y > 0.);
+        assert!(scroll(&host).offset().y > 0.);
         assert_eq!(host.get(FIELD).unwrap().visible(), Some(field));
     }
 }
@@ -948,11 +940,11 @@ fn grouped_list_sections_keep_equal_top_and_bottom_header_spacing_and_secondary_
             .component::<SelectableListContent>()
             .unwrap();
         assert_eq!(
-            header_1.component::<TextContent>().unwrap().role,
+            header_1.component::<TextContent>().unwrap().role(),
             proposal::TextRole::UiCaption
         );
         assert_eq!(
-            header_2.component::<TextContent>().unwrap().role,
+            header_2.component::<TextContent>().unwrap().role(),
             proposal::TextRole::UiCaption
         );
         let items_1 = list_1.semantic_parts();

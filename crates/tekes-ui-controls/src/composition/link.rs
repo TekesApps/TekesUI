@@ -6,9 +6,9 @@ use crate::{extended::Link, layout_view::LinkView};
 /// Use `Content::preserving_focus` for auxiliary actions beside an editor.
 #[derive(Debug)]
 pub struct LinkContent {
-    pub model: Link,
-    pub view: LinkView,
-    pub label: String,
+    model: Link,
+    view: LinkView,
+    label: String,
 }
 impl LinkContent {
     pub fn new(label: impl Into<String>) -> Self {
@@ -17,6 +17,46 @@ impl LinkContent {
             view: LinkView::default(),
             label: label.into(),
         }
+    }
+    pub fn with_disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.model.button.state.disabled = disabled;
+        if disabled {
+            self.view.routed_cancel();
+            self.view.blur();
+        }
+    }
+    pub fn with_loading(mut self, loading: bool) -> Self {
+        self.set_loading(loading);
+        self
+    }
+    pub fn set_loading(&mut self, loading: bool) {
+        self.model.button.state.loading = loading;
+        if loading {
+            self.view.routed_cancel();
+            self.view.blur();
+        }
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.model.button.state.disabled
+    }
+    pub fn is_loading(&self) -> bool {
+        self.model.button.state.loading
+    }
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+    pub fn set_label(&mut self, label: impl Into<String>) {
+        self.label = label.into();
+    }
+    pub fn model(&self) -> &Link {
+        &self.model
+    }
+    pub fn view(&self) -> &LinkView {
+        &self.view
     }
 }
 impl Component for LinkContent {

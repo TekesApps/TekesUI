@@ -525,12 +525,7 @@ pub(crate) fn dispatch_with_semantics(
 #[cfg(test)]
 mod scroll_tests {
     use super::*;
-    use tekes_ui_controls::{
-        ButtonTextAlign, ScrollArea,
-        composition::*,
-        extended::{Axis, Stack},
-        layout::MeasuredChild,
-    };
+    use tekes_ui_controls::{ButtonTextAlign, ScrollArea, composition::*, layout::MeasuredChild};
     use tekes_ui_scene::{Scene, Size};
     use tekes_ui_tokens::{Rgba, Theme, proposal};
     struct Text;
@@ -588,14 +583,7 @@ mod scroll_tests {
         let ids: Vec<_> = (3..43).map(ComponentId).collect();
         let body = Content::new(
             ComponentId(2),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                flexible_child: None,
-                children: ids.iter().map(|id| Content::new(*id, Row)).collect(),
-            },
+            StackContent::vertical(0., ids.iter().map(|id| Content::new(*id, Row)).collect()),
         );
         let mut host = ContentHost::new(Content::new(
             ComponentId(1),
@@ -615,8 +603,7 @@ mod scroll_tests {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset;
+            .offset();
         let focus = host.focus_epoch();
         let input = request(&host, wheel());
         let reply = dispatch(&mut host, &mut Text, input).unwrap();
@@ -626,7 +613,7 @@ mod scroll_tests {
             .component::<ScrollContent>()
             .unwrap();
         assert!(reply.consumed && reply.changed && !reply.bubbles);
-        assert_eq!(scroll.scroll.offset.y, before.y - 12.);
+        assert_eq!(scroll.offset().y, before.y - 12.);
         assert!(!scroll.is_following_latest());
         assert_eq!(host.focus_epoch(), focus);
         assert_eq!(host.focused(), None);
@@ -636,7 +623,7 @@ mod scroll_tests {
                 .reading_scroll_source
                 .is_some_and(|target| target.id == 1)
         );
-        let before = scroll.scroll.offset;
+        let before = scroll.offset();
         let mut query = request(&host, wheel());
         query.input = wire::Input::Snapshot;
         assert!(
@@ -658,8 +645,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset,
+                .offset(),
             before
         );
         let mut stale = request(&host, wheel());
@@ -670,8 +656,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset,
+                .offset(),
             before
         );
     }
@@ -788,7 +773,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<tekes_ui_controls::Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             0
         );
         let mut release = request;
@@ -805,7 +790,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<tekes_ui_controls::Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             1
         );
         assert!(!released.pointer_focus_requested);
@@ -871,7 +856,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<tekes_ui_controls::Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             0
         );
         let released = dispatch(&mut host, &mut Text, release).unwrap();
@@ -881,7 +866,7 @@ mod scroll_tests {
                 .unwrap()
                 .component::<tekes_ui_controls::Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             1
         );
     }

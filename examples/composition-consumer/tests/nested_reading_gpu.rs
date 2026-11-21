@@ -72,7 +72,7 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                         .unwrap()
                         .component::<ScrollContent>()
                         .unwrap()
-                        .scroll
+                        .scroll()
                         .offset;
                     let mut images = vec![];
                     for phase in ["before", "after"] {
@@ -122,7 +122,7 @@ fn original_nested_detail_survives_append_on_actual_gpu_across_themes_and_scale(
                             .unwrap()
                             .component::<ScrollContent>()
                             .unwrap()
-                            .scroll
+                            .scroll()
                             .offset,
                         outer
                     );
@@ -219,7 +219,7 @@ fn original_scrollbar_position_survives_release_and_append_in_real_gpu_frames() 
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset;
             let mut images = vec![];
             for phase in ["before", "after"] {
@@ -257,7 +257,7 @@ fn original_scrollbar_position_survives_release_and_append_in_real_gpu_frames() 
                     .unwrap()
                     .component::<ScrollContent>()
                     .unwrap()
-                    .scroll
+                    .scroll()
                     .offset,
                 parent_offset
             );

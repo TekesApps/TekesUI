@@ -4,13 +4,10 @@
 use std::path::Path;
 use tekes_ui_composition_consumer::context_menu::{A, B, DRAFT, MENU_A, MENU_B, ROOT, Sidebar};
 use tekes_ui_controls::{
-    ButtonTextRenderer, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    ButtonTextRenderer, ScrollArea, composition::*, extended::Axis, layout::MeasuredChild,
 };
 use tekes_ui_platform_macos::{self as p, selftest::Action};
-use tekes_ui_scene::{Point, Rect, Size};
+use tekes_ui_scene::{Rect, Size};
 const SCROLL: ComponentId = ComponentId(24410);
 const ROWS: ComponentId = ComponentId(24411);
 const SPACE: ComponentId = ComponentId(24412);
@@ -42,17 +39,10 @@ impl Review {
         let b = sidebar.host.remove(B).unwrap();
         let rows = Content::new(
             ROWS,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![a, b, Content::new(SPACE, Space)],
-            },
+            StackContent::vertical(8., vec![a, b, Content::new(SPACE, Space)]),
         );
         let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-        scroll.viewport_height = Some(90.);
+        scroll.set_viewport_height(Some(90.));
         sidebar
             .host
             .insert(ROOT, Content::new(SCROLL, scroll))
@@ -243,8 +233,7 @@ impl Review {
                     .unwrap()
                     .component_mut::<ScrollContent>()
                     .unwrap()
-                    .scroll
-                    .offset = Point::default();
+                    .scroll_to(0., 0.);
             }
             44010 => {
                 sidebar
@@ -253,7 +242,7 @@ impl Review {
                     .unwrap()
                     .component_mut::<ScrollContent>()
                     .unwrap()
-                    .viewport_height = Some(8.);
+                    .set_viewport_height(Some(8.));
             }
             44012 => {
                 sidebar
@@ -262,7 +251,7 @@ impl Review {
                     .unwrap()
                     .component_mut::<ScrollContent>()
                     .unwrap()
-                    .viewport_height = Some(90.);
+                    .set_viewport_height(Some(90.));
             }
             44013 => {
                 self.retired = Some(sidebar.host.remove(B).unwrap());
@@ -288,8 +277,7 @@ impl Review {
                     .unwrap()
                     .component_mut::<StackContent>()
                     .unwrap()
-                    .model
-                    .axis = Axis::Horizontal;
+                    .set_axis(Axis::Horizontal);
             }
             _ => {}
         }
@@ -308,7 +296,6 @@ impl Review {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap()
-                .menu
                 .is_open()
         };
         let count = sidebar.commands.len();
@@ -372,7 +359,7 @@ impl Review {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset
                 .y
                 <= 0.
@@ -419,7 +406,7 @@ impl Review {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap();
-            if let Some(layout) = &menu.popup {
+            if let Some(layout) = menu.popup_layout() {
                 let frame = layout.popup;
                 if frame.min_x() < viewport.min_x()
                     || frame.max_x() > viewport.max_x()

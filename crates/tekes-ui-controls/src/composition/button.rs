@@ -77,17 +77,17 @@ pub enum ButtonActivationPhase {
 /// Registered image resources remain host-owned; regular geometry comes from DS.
 #[derive(Debug)]
 pub struct Button {
-    pub button: ButtonModel,
+    pub(crate) button: ButtonModel,
     /// Visible text; a separate accessible name never replaces this source.
-    pub label: String,
-    pub variant: ButtonVariant,
-    pub activations: usize,
-    pub pointer_activation_phase: ButtonActivationPhase,
-    pub image_position: ButtonImagePosition,
-    pub content_alignment: MainAxisDistribution,
+    pub(crate) label: String,
+    pub(crate) variant: ButtonVariant,
+    pub(crate) activations: usize,
+    pub(crate) pointer_activation_phase: ButtonActivationPhase,
+    pub(crate) image_position: ButtonImagePosition,
+    pub(crate) content_alignment: MainAxisDistribution,
     /// Optional leading content inset; the original action frame and hit size
     /// remain unchanged. None uses the standard Button inset.
-    pub leading_content_inset: Option<f32>,
+    pub(crate) leading_content_inset: Option<f32>,
     accessible_name: Option<String>,
     image: Option<ImageId>,
     icon: Option<IconContent>,
@@ -340,6 +340,149 @@ impl Button {
     }
     pub fn accessible_name(&self) -> &str {
         self.name()
+    }
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+    pub fn set_label(&mut self, label: impl Into<String>) {
+        if self.custom {
+            self.set_contents(label.into());
+        } else {
+            self.label = label.into();
+            self.measured = Size::default();
+        }
+    }
+    pub fn variant(&self) -> ButtonVariant {
+        self.variant
+    }
+    pub fn with_variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+    pub fn set_variant(&mut self, variant: ButtonVariant) {
+        self.variant = variant;
+    }
+    pub fn activations(&self) -> usize {
+        self.activations
+    }
+    pub fn model(&self) -> &ButtonModel {
+        &self.button
+    }
+    pub fn state(&self) -> crate::ControlState {
+        self.button.state
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.button.state.disabled
+    }
+    pub fn with_disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.button.state.disabled = disabled;
+        if disabled {
+            self.button.blur();
+        }
+    }
+    pub fn is_loading(&self) -> bool {
+        self.button.state.loading
+    }
+    pub fn with_loading(mut self, loading: bool) -> Self {
+        self.set_loading(loading);
+        self
+    }
+    pub fn set_loading(&mut self, loading: bool) {
+        self.button.state.loading = loading;
+        if loading {
+            self.button.blur();
+        }
+    }
+    pub fn is_selected(&self) -> bool {
+        self.button.state.selected
+    }
+    pub fn with_selected(mut self, selected: bool) -> Self {
+        self.button.state.selected = selected;
+        self
+    }
+    pub fn set_selected(&mut self, selected: bool) {
+        self.button.state.selected = selected;
+    }
+    pub fn is_hovered(&self) -> bool {
+        self.button.state.hovered
+    }
+    pub fn is_pressed(&self) -> bool {
+        self.button.state.pressed
+    }
+    pub fn is_focused(&self) -> bool {
+        self.button.state.focused
+    }
+    pub fn focus_visible(&self) -> bool {
+        self.button.state.focus_visible
+    }
+    pub fn cancel(&mut self) {
+        self.button.cancel();
+    }
+    pub fn pointer_activation_phase(&self) -> ButtonActivationPhase {
+        self.pointer_activation_phase
+    }
+    pub fn with_pointer_activation_phase(mut self, phase: ButtonActivationPhase) -> Self {
+        self.pointer_activation_phase = phase;
+        self
+    }
+    pub fn set_pointer_activation_phase(&mut self, phase: ButtonActivationPhase) {
+        self.pointer_activation_phase = phase;
+    }
+    pub fn image_position(&self) -> ButtonImagePosition {
+        self.image_position
+    }
+    pub fn with_image_position(mut self, position: ButtonImagePosition) -> Self {
+        self.set_image_position(position);
+        self
+    }
+    pub fn set_image_position(&mut self, position: ButtonImagePosition) {
+        self.image_position = position;
+        self.measured = Size::default();
+    }
+    pub fn content_alignment(&self) -> MainAxisDistribution {
+        self.content_alignment
+    }
+    pub fn with_content_alignment(mut self, alignment: MainAxisDistribution) -> Self {
+        self.content_alignment = alignment;
+        self
+    }
+    pub fn set_content_alignment(&mut self, alignment: MainAxisDistribution) {
+        self.content_alignment = alignment;
+    }
+    pub fn leading_content_inset(&self) -> Option<f32> {
+        self.leading_content_inset
+    }
+    pub fn with_leading_content_inset(mut self, inset: Option<f32>) -> Self {
+        self.set_leading_content_inset(inset);
+        self
+    }
+    pub fn set_leading_content_inset(&mut self, inset: Option<f32>) {
+        self.leading_content_inset = inset;
+        self.measured = Size::default();
+    }
+    pub fn frame_policy(&self) -> crate::ButtonFramePolicy {
+        self.button.frame_policy
+    }
+    pub fn with_frame_policy(mut self, policy: crate::ButtonFramePolicy) -> Self {
+        self.button.frame_policy = policy;
+        self
+    }
+    pub fn set_frame_policy(&mut self, policy: crate::ButtonFramePolicy) {
+        self.button.frame_policy = policy;
+    }
+    pub fn chrome_height(&self) -> Option<f32> {
+        self.button.chrome_height
+    }
+    pub fn with_chrome_height(mut self, height: Option<f32>) -> Self {
+        self.button.chrome_height = height;
+        self
+    }
+    pub fn set_chrome_height(&mut self, height: Option<f32>) {
+        self.button.chrome_height = height;
     }
     fn name(&self) -> &str {
         self.accessible_name.as_deref().unwrap_or(&self.label)
@@ -1444,5 +1587,80 @@ mod tests {
         assert!(!replaced.requires_icon_services());
         assert_eq!(replaced.icon_error(), None);
         let _ = Cell::new(0);
+    }
+
+    #[test]
+    fn controlled_button_setters_cancel_interaction_and_invalidate_measured_cache() {
+        let mut host = host(false, ButtonVariant::Primary);
+        let mut text = Text::default();
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            frame(),
+            frame(),
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let center = host.get(ACTION).unwrap().frame().center();
+        assert!(host.event(&ContentEvent::PointerMove(center)).changed);
+        assert!(host.event(&ContentEvent::PointerDown(center)).consumed);
+        {
+            let button = host
+                .get_mut(ACTION)
+                .unwrap()
+                .component_mut::<Button>()
+                .unwrap();
+            assert!(button.is_hovered() && button.is_pressed());
+            button.set_disabled(true);
+            assert!(button.is_disabled());
+            assert!(!button.is_hovered() && !button.is_pressed());
+            button.set_disabled(false);
+        }
+
+        assert!(host.event(&ContentEvent::PointerMove(center)).changed);
+        {
+            let button = host
+                .get_mut(ACTION)
+                .unwrap()
+                .component_mut::<Button>()
+                .unwrap();
+            assert!(button.is_hovered());
+            button.set_loading(true);
+            assert!(button.is_loading());
+            assert!(!button.is_hovered() && !button.is_pressed());
+        }
+
+        struct LabelText;
+        impl ButtonTextRenderer for LabelText {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut label_text = LabelText;
+        let mut resizable = Button::new("Ok");
+        let short = resizable
+            .measure(&mut label_text, Size::new(500., 80.))
+            .size
+            .width;
+        resizable.set_label("Longer confirmation label");
+        assert_eq!(resizable.measured, Size::default());
+        let long = resizable
+            .measure(&mut label_text, Size::new(500., 80.))
+            .size
+            .width;
+        assert!(long > short);
     }
 }

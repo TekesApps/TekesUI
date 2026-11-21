@@ -4,7 +4,7 @@ use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
     ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey, TextSurface,
     composition::*,
-    extended::{Axis, ComboBox, CommandPalette, Stack},
+    extended::{ComboBox, CommandPalette},
     layout::MeasuredChild,
     layout_view::CommandPaletteView,
 };
@@ -199,7 +199,7 @@ impl Component for Commands {
             LABEL,
             Rect::new(f.min_x(), f.min_y(), f.size.width, h),
             Some(c),
-            theme.palette,
+            theme.palette(),
             proposal::TextRole::UiBody,
         );
         if self.open() {
@@ -237,7 +237,7 @@ impl Component for Commands {
             self.editor.surface().outer(),
             c,
             Some(c),
-            theme.palette,
+            theme.palette(),
             proposal::TextRole::UiBody,
             false,
         );
@@ -512,17 +512,13 @@ pub fn fixture_content(
     }
     Content::new(
         root,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(feedback, Feedback::new(status)),
                 Content::new(command, commands),
             ],
-            flexible_child: None,
-        },
+        ),
     )
 }
 impl Scenario {

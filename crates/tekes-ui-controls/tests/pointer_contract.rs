@@ -123,7 +123,7 @@ fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     assert_eq!(host.focused(), None);
@@ -140,7 +140,7 @@ fn ordinary_button_accepts_primary_metadata_and_legacy_but_ignores_secondary() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         2
     );
 }
@@ -393,13 +393,7 @@ fn opt_in_cannot_bubble_through_modal_boundary() {
         ComponentId(1),
         DialogContent::new(
             "Dialog",
-            Content::new(
-                ComponentId(2),
-                TextContent {
-                    text: "Title".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
-            ),
+            Content::new(ComponentId(2), TextContent::heading("Title")),
             Content::new(ComponentId(3), Button::new("Action")).bubbling_handled_events(true),
             Content::new(ComponentId(4), Button::new("Close")),
         ),

@@ -164,11 +164,7 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
 mod tests {
     use super::*;
     use std::rc::Rc;
-    use tekes_ui_controls::{
-        composition::*,
-        extended::{Axis, Stack},
-        layout_view::IconRenderer,
-    };
+    use tekes_ui_controls::{composition::*, layout_view::IconRenderer};
     use tekes_ui_scene::GlyphAtlas;
     use tekes_ui_text::{
         ShapeOptions, Shaper, TextStyle,
@@ -482,13 +478,10 @@ mod tests {
         text.paragraph_diagnostic = Some(ParagraphLayoutDiagnostic::default());
         text.begin_frame(std::time::Duration::ZERO, false);
         let mut host = ContentHost::new(Content::new(ComponentId(1), ScrollContent::new(
-            tekes_ui_controls::ScrollArea::default(), Content::new(ComponentId(2), StackContent {
-                model: Stack { axis: Axis::Vertical, gap: 8. }, flexible_child: None,
-                children: vec![
-                    Content::new(ComponentId(3), TextContent::new("A long document paragraph wraps across many lines while the reader makes the window narrower. 中文と日本語も同じ本文に表示します。")),
-                    Content::new(ComponentId(4), TextContent::new("Another paragraph remains below the first.")),
-                ],
-            })))).unwrap();
+            tekes_ui_controls::ScrollArea::default(), Content::new(ComponentId(2), StackContent::vertical(8., vec![
+                Content::new(ComponentId(3), TextContent::new("A long document paragraph wraps across many lines while the reader makes the window narrower. 中文と日本語も同じ本文に表示します。")),
+                Content::new(ComponentId(4), TextContent::new("Another paragraph remains below the first.")),
+            ]))))).unwrap();
         let frame = Rect::new(10., 20., 180., 160.);
         let mut first = Scene::new();
         host.render(&mut first, &mut text, frame, frame, Theme::LIGHT.into())
@@ -715,17 +708,13 @@ mod tests {
         );
         let mut host = ContentHost::new(Content::new(
             ComponentId(1),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(ComponentId(2), TextContent::new(source)),
                     Content::new(ComponentId(3), TextContent::new("Next paragraph")),
                 ],
-                flexible_child: None,
-            },
+            ),
         ))
         .unwrap();
         let frame = Rect::new(0., 0., 180., 400.);
@@ -792,14 +781,7 @@ mod tests {
         );
         let mut host = ContentHost::new(Content::new(
             ComponentId(7200),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 12.,
-                },
-                children: vec![disclosure, toolbar],
-                flexible_child: None,
-            },
+            StackContent::vertical(12., vec![disclosure, toolbar]),
         ))
         .unwrap();
         let mut text = Text::new();

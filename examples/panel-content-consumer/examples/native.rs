@@ -127,8 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "is_composing": self.tree.is_composing(),
                 "editor_internal_scroll_offset": editor.map(|field| format!("{:?}", field.surface().scroll().offset)),
                 "scroll_mount": self.tree.semantic_mount(panel_fixture::SCROLL),
-                "scroll_offset": scroll.map(|owner| format!("{:?}", owner.scroll.offset)),
-                "scroll_limit": scroll.map(|owner| format!("{:?}", owner.scroll.limit())),
+                "scroll_offset": scroll.map(|owner| format!("{:?}", owner.offset())),
+                "scroll_limit": scroll.map(|owner| format!("{:?}", owner.scroll().limit())),
                 "scroll_following_latest": scroll.map(ScrollContent::is_following_latest),
                 "scroll_reading_result": reading.map(|result| format!("{:?}", result)),
                 "reading_scroll_source": self.tree.reading_scroll_source().map(|(id, mount)| (id.0, mount)),
@@ -174,7 +174,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .tree
                         .get(panel_fixture::SCROLL)
                         .and_then(|node| node.component::<ScrollContent>())
-                        .map(|owner| owner.scroll.offset.y)
+                        .map(|owner| owner.offset().y)
                         .unwrap_or_default();
                     assert!(self.scroll_events > 0, "native wheel reached Event::Scroll");
                     assert!(

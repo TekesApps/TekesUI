@@ -54,7 +54,6 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
 }
 
 use ContentWheelPhase as Phase;
-use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::{ScrollArea, ScrollPolicy, TextSurface, layout::MeasuredChild};
 use tekes_ui_scene::Point;
 const ROOT: ComponentId = ComponentId(1);
@@ -74,14 +73,7 @@ impl Component for Tail {
     }
 }
 fn stack(children: Vec<Content>) -> StackContent {
-    StackContent {
-        model: Stack {
-            axis: Axis::Vertical,
-            gap: 0.,
-        },
-        children,
-        flexible_child: None,
-    }
+    StackContent::vertical(0., children)
 }
 fn field() -> TextFieldContent {
     let value = "A line of editable text.\n".repeat(80);
@@ -123,8 +115,7 @@ fn parent_offset(host: &ContentHost) -> f32 {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
-        .offset
+        .offset()
         .y
 }
 fn position(host: &ContentHost) -> Point {

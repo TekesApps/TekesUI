@@ -329,7 +329,8 @@ impl super::Host {
                 None
             };
             let node = header.get(SCROLL).unwrap();
-            let scroll = &node.component::<ScrollContent>().unwrap().scroll;
+            let scroll_owner = node.component::<ScrollContent>().unwrap();
+            let scroll = scroll_owner.scroll();
             let limit = scroll.document_size().width - scroll.viewport_size().width;
             ensure!(
                 limit > 6.,
@@ -345,7 +346,7 @@ impl super::Host {
                 scroll.viewport_size().width,
                 scroll.document_size().width
             );
-            let before = scroll.offset.x;
+            let before = scroll_owner.offset().x;
             let delta = if before + 3. < limit { 1. } else { -1. };
             let point = node.frame().center();
             let title = self.layout.presentation_switcher.items[0].key;
@@ -384,8 +385,7 @@ impl super::Host {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset
+                .offset()
                 .x;
             ensure!(
                 (offset - before - delta as f32 * 3.).abs() < 0.001,

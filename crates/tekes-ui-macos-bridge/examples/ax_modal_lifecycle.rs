@@ -139,8 +139,7 @@ mod native {
                                 .unwrap()
                                 .component::<SwitchContent>()
                                 .unwrap()
-                                .model
-                                .checked
+                                .is_checked()
                         );
                         let view = self.publish(window);
                         assert_eq!(value(&named(&view, "Modal choice").unwrap()), 1);

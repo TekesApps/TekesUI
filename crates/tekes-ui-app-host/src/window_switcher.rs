@@ -73,10 +73,10 @@ impl Host {
             .map(TabStripContent::selected);
         eprintln!(
             "OTHERS_SCROLL_STATE stage={stage} offset={:?} visual={:?} viewport={:?} document={:?} frame={:?} selected={selected:?} capture={} overlay={}",
-            scroll.scroll.offset,
-            scroll.scroll.visual_offset(),
-            scroll.scroll.viewport_size(),
-            scroll.scroll.document_size(),
+            scroll.offset(),
+            scroll.scroll().visual_offset(),
+            scroll.scroll().viewport_size(),
+            scroll.scroll().document_size(),
             node.frame(),
             host.content_host().pointer_capture().is_some(),
             host.content_host().input_overlay_owner().is_some()
@@ -253,9 +253,9 @@ impl Host {
                     )
                     .map_err(|e| anyhow::anyhow!("creation trigger: {e:?}"))?;
                 menu.set_popup_viewport(Some(whole));
-                menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
-                menu.trigger.set_selection_fill_only(true);
-                menu.trigger.set_toolbar_icon_slot(true);
+                menu.set_trigger_variant(tekes_ui_controls::ButtonVariant::Toolbar);
+                menu.set_trigger_selection_fill_only(true);
+                menu.set_trigger_toolbar_icon_slot(true);
                 menu.set_entries(creation.clone())
                     .map_err(|e| anyhow::anyhow!("creation menu: {e:?}"))?;
                 children.push(Content::new(CREATE, menu));
@@ -268,11 +268,7 @@ impl Host {
             }
             let row = Content::new(
                 ROW,
-                StackContent {
-                    model: tekes_ui_controls::extended::Stack::new(Axis::Horizontal),
-                    children,
-                    flexible_child: Some(SCROLL),
-                },
+                StackContent::horizontal(0., children).with_flexible_child(SCROLL),
             );
             host.register(ToolbarRegistration {
                 region: ComponentId(OWNER),
@@ -331,15 +327,15 @@ impl Host {
                         } else {
                             format!("Create {label}")
                         });
-                    button.image_position = ButtonImagePosition::Above;
-                    button.button.state.disabled = *disabled;
+                    button.set_image_position(ButtonImagePosition::Above);
+                    button.set_disabled(*disabled);
                     children.push(Content::new(id, button));
                     bindings.push((id, value.clone()));
                 }
                 let mut model = tekes_ui_controls::extended::Grid::new(2);
                 model.gap_x = regular;
                 model.gap_y = regular;
-                let root = Content::new(CREATION_GRID_ROOT, GridContent { model, children })
+                let root = Content::new(CREATION_GRID_ROOT, GridContent::new(model, children))
                     .with_surface("panel")
                     .map_err(|e| anyhow::anyhow!("creation grid surface: {e:?}"))?;
                 let mut grid_host = ContentHost::new(root)
@@ -553,7 +549,7 @@ mod tests {
                         .unwrap()
                         .component::<TextContent>()
                         .unwrap()
-                        .text,
+                        .text(),
                     "Original 0"
                 );
             });
@@ -622,8 +618,7 @@ mod tests {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset
+                .offset()
                 .x
         };
         let initial = scroll_offset(&host);
@@ -724,8 +719,7 @@ mod tests {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset
+                .offset()
                 .x
         };
         let before = offset(&host);
@@ -815,7 +809,7 @@ mod tests {
             .get(SCROLL)
             .unwrap();
         let viewport = node.frame();
-        let offset = node.component::<ScrollContent>().unwrap().scroll.offset.x;
+        let offset = node.component::<ScrollContent>().unwrap().offset().x;
         assert!(offset > 0.);
         assert!(
             host.presentation_tab_input(&ContentEvent::Scroll {
@@ -948,8 +942,8 @@ mod tests {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap();
-        assert!(scroll.scroll.document_size().width > scroll.scroll.viewport_size().width);
-        assert!(scroll.scroll.offset.x > 0.);
+        assert!(scroll.scroll().document_size().width > scroll.scroll().viewport_size().width);
+        assert!(scroll.offset().x > 0.);
         assert!(target(&host, "second").1.size.width > 0.);
         host.close_container("first").unwrap();
         paint(&mut host, 120.);

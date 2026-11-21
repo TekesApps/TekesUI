@@ -25,8 +25,8 @@ impl Component for Tick {
         theme: ContentTheme,
     ) {
         let ink = theme
-            .foreground
-            .unwrap_or_else(|| theme.palette.color("primary-text").unwrap());
+            .foreground()
+            .unwrap_or_else(|| theme.palette().color("primary-text").unwrap());
         scene.push_quad(Quad::new(
             Rect::new(frame.min_x() + 8., frame.center().y - 1., 24., 2.),
             ink,
@@ -72,11 +72,11 @@ pub fn build() -> ContentHost {
         (PRESS, "Press row", ButtonActivationPhase::Press),
         (DISABLED, "Disabled row", ButtonActivationPhase::Press),
     ] {
-        let mut action =
-            Button::new(Content::new(ComponentId(id.0 + 100), Tick)).with_accessible_name(name);
-        action.button.frame_policy = ButtonFramePolicy::Exact;
-        action.pointer_activation_phase = phase;
-        action.button.state.disabled = id == DISABLED;
+        let mut action = Button::new(Content::new(ComponentId(id.0 + 100), Tick))
+            .with_accessible_name(name)
+            .with_frame_policy(ButtonFramePolicy::Exact)
+            .with_pointer_activation_phase(phase);
+        action.set_disabled(id == DISABLED);
         children.push(Content::new(id, action));
     }
     children.push(Content::new(NORMAL, Button::new("Ordinary action")));

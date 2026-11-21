@@ -3,9 +3,7 @@
 use std::collections::BTreeMap;
 use tekes_ui_controls::{
     DraftJournal, DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult,
-    TextEditBaseline, TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
+    TextEditBaseline, TextSurface, composition::*,
 };
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(9100);
@@ -59,14 +57,7 @@ impl ControlledEditorFixture {
         ];
         let host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: None,
-                children,
-            },
+            StackContent::vertical(Spacing::Regular.value(), children),
         ))
         .unwrap();
         let mut result = Self {
@@ -133,7 +124,7 @@ impl ControlledEditorFixture {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = text;
+            .set_text(text);
     }
     pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {
         let before = self.editor().text().to_owned();
@@ -161,7 +152,7 @@ impl ControlledEditorFixture {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations
+                .activations()
         });
         let old = self.counts;
         self.counts = counts;

@@ -2,9 +2,7 @@
 //! Uses the existing direct viewport path; configurable TextField slots are #20.
 use tekes_ui_controls::{
     ButtonTextRenderer, ReadingController, ReadingUpdate, ReadingUpdateError, TextRangeMapping,
-    TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
+    TextSurface, composition::*,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Spacing};
@@ -38,34 +36,26 @@ impl ReadingFixture {
             .unwrap();
         let controls = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Regular.value(),
+                vec![
                     Content::new(
                         ComponentId(8605),
-                        StackContent {
-                            model: Stack {
-                                axis: Axis::Vertical,
-                                gap: Spacing::Regular.value(),
-                            },
-                            flexible_child: None,
-                            children: vec![
+                        StackContent::vertical(
+                            Spacing::Regular.value(),
+                            vec![
                                 Content::new(EARLIER, Button::new("加载更早")),
                                 Content::new(APPEND, Button::new("追加一段")),
                                 Content::new(LATEST, Button::new("回到最新")).preserving_focus(),
                             ],
-                        },
+                        ),
                     ),
                     Content::new(
                         EDITOR,
                         TextFieldContent::new("草稿", "Keep this draft 中文😀"),
                     ),
                 ],
-            },
+            ),
         ))
         .unwrap();
         Self {
@@ -124,7 +114,7 @@ impl ReadingFixture {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations
+                .activations()
         });
         let old = self.counts;
         self.counts = counts;

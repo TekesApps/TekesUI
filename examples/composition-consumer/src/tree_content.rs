@@ -2,7 +2,7 @@
 //! Text + Icon row, original Host input and controlled atomic snapshot updates.
 use tekes_ui_controls::{
     composition::*,
-    extended::{Axis, KeyedTreeNode, Stack, TreeDatasetKey, TreeNodeKey},
+    extended::{KeyedTreeNode, TreeDatasetKey, TreeNodeKey},
 };
 pub const TREE: ComponentId = ComponentId(10);
 pub const COMPOSER: ComponentId = ComponentId(20);
@@ -31,30 +31,19 @@ pub fn build() -> Result<ContentHost, TreeContentError> {
     let mut nodes = snapshot(false);
     nodes[0].display = TreeDisplayUpdate::Replace(Content::new(
         ComponentId(200),
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 6.,
-            },
-            flexible_child: Some(ComponentId(202)),
-            children: vec![
-                Content::new(
-                    ComponentId(201),
-                    IconContent::new("tekes-settings").expect("canonical icon"),
-                ),
-                Content::new(ComponentId(202), TextContent::new("Public passive row")),
-            ],
-        },
+        IconTextContent::icon_label(
+            ComponentId(201),
+            "tekes-settings",
+            ComponentId(202),
+            "Public passive row",
+        )
+        .expect("canonical icon"),
     ));
     ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), TextContent::new("Before tree")),
                 Content::new(
                     TREE,
@@ -63,7 +52,7 @@ pub fn build() -> Result<ContentHost, TreeContentError> {
                 Content::new(COMPOSER, TextFieldContent::new("Composer", "draft😀")),
                 Content::new(ComponentId(3), TextContent::new("After tree")),
             ],
-        },
+        ),
     ))
     .map_err(Into::into)
 }

@@ -59,8 +59,8 @@ fn horizontal_tab_strip_uses_real_document_wheel_clip_and_selected_reveal() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap();
-    assert!(scroll.scroll.document_size().width > 300.);
-    assert_eq!(scroll.scroll.offset.x, 0.);
+    assert!(scroll.scroll().document_size().width > 300.);
+    assert_eq!(scroll.offset().x, 0.);
     let first = host.get(ComponentId(10)).unwrap().frame();
     let long = host.get(ComponentId(11)).unwrap().frame();
     assert!(long.size.width > first.size.width);
@@ -83,8 +83,7 @@ fn horizontal_tab_strip_uses_real_document_wheel_clip_and_selected_reveal() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .x
             > 0.
     );
@@ -114,8 +113,7 @@ fn horizontal_tab_strip_uses_real_document_wheel_clip_and_selected_reveal() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y,
         0.
     );
@@ -151,8 +149,8 @@ fn horizontal_false_restores_vertical_document_and_wheel_policy() {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap();
-    assert!(scroll.scroll.offset.y > 0.);
-    assert_eq!(scroll.scroll.offset.x, 0.);
+    assert!(scroll.offset().y > 0.);
+    assert_eq!(scroll.offset().x, 0.);
 }
 
 #[test]
@@ -226,12 +224,12 @@ fn wheel_line_units_convert_once_on_both_axes_while_precise_points_stay_unchange
                 .consumed
             );
             render(&mut host);
-            let scroll = &host
+            let scroll = host
                 .get(ComponentId(1))
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll;
+                .scroll();
             let offset = if horizontal {
                 scroll.offset.x
             } else {
@@ -334,12 +332,9 @@ fn toolbar_tabs_share_outer_spacing_and_reveal_first_and_last_backgrounds() {
                     ToolbarPlacement::Navigation,
                     vec![Content::new(
                         ComponentId(103),
-                        StackContent {
-                            model: tekes_ui_controls::extended::Stack::new(
-                                tekes_ui_controls::extended::Axis::Horizontal,
-                            ),
-                            flexible_child: Some(ComponentId(104)),
-                            children: vec![
+                        StackContent::horizontal(
+                            0.,
+                            vec![
                                 Content::new(
                                     ComponentId(104),
                                     ScrollContent::new(
@@ -350,7 +345,8 @@ fn toolbar_tabs_share_outer_spacing_and_reveal_first_and_last_backgrounds() {
                                 ),
                                 Content::new(ComponentId(106), Button::new("+")),
                             ],
-                        },
+                        )
+                        .with_flexible_child(ComponentId(104)),
                     )],
                 ),
             ),
@@ -531,7 +527,7 @@ fn toolbar_tabs_share_outer_spacing_and_reveal_first_and_last_backgrounds() {
         viewport
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .document_size()
             .height
             - child.size.height,

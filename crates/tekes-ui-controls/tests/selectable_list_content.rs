@@ -340,8 +340,7 @@ fn caller_wrapper_reveal_is_original_and_hidden_deleted_anchor_never_redirects()
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y
             > 0.
     );

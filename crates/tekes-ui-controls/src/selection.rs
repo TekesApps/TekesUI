@@ -134,6 +134,13 @@ impl SliderView {
             self.blur();
         }
     }
+    pub(crate) fn is_window_active(&self) -> bool {
+        self.window_active
+    }
+    pub(crate) fn clear_layout(&mut self) {
+        self.layout = SliderLayout::default();
+        self.blur();
+    }
     /// Semantic value update on the current visible mount. `None` rejects the
     /// request; `Some(false)` consumes a valid request already at its value.
     /// A valid semantic update supersedes an in-flight pointer gesture.

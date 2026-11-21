@@ -7,7 +7,6 @@ use tekes_ui_controls::{
         Component, ComponentId, Content, ContentActionRecord, ContentEvent, ContentHost,
         ContentResponse, Lifecycle, PointerEvent, StackContent,
     },
-    extended::{Axis, Stack},
 };
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Palette;
@@ -568,17 +567,7 @@ impl V2ProcessContainerContent {
         custom_options: Option<crate::ProcessComponentOptions>,
     ) -> Self {
         // Defer spawning the OS worker until `Panel::start` runs on visibility.
-        let placeholder = Content::new(
-            ComponentId(1),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: Vec::new(),
-                flexible_child: None,
-            },
-        );
+        let placeholder = Content::new(ComponentId(1), StackContent::vertical(0., Vec::new()));
         let mut host = ContentHost::new(placeholder).expect("V2 placeholder host");
         host.set_action_events(true);
         Self {

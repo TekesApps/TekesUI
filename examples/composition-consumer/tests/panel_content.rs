@@ -2,8 +2,7 @@
 use std::rc::Rc;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, Insets, TextSurfaceHost, TextSurfaceTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
+    composition::*, extended::Axis,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_text::{
@@ -166,9 +165,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .hovered
+            .is_hovered()
     );
     let r = h.event(&ContentEvent::PointerUp(Point::new(0.5, 0.5)));
     assert!(r.consumed);
@@ -179,7 +176,7 @@ fn original_route_gap_capture_identity_and_atomic_fragment() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     assert_eq!(h.semantic_mount(CHILD), Some(mount));
@@ -209,17 +206,7 @@ fn unknown_child_refused_before_lifecycle_or_layout_and_insert_preserves_origina
         Err(CompositionError::UnsupportedCurveChild(CHILD))
     ));
     assert_eq!(count.get(), 0);
-    let children = Content::new(
-        CHILD,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![],
-        },
-    );
+    let children = Content::new(CHILD, StackContent::vertical(0., vec![]));
     let mut h = ContentHost::new(Content::new(ROOT, panel(children, false))).unwrap();
     assert_eq!(
         h.insert(CHILD, Content::new(FIELD, Opaque(count.clone()))),
@@ -298,19 +285,15 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
     let target = ComponentId(8149);
     let rows = Content::new(
         rows_id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: (0..30)
+        StackContent::vertical(
+            0.,
+            (0..30)
                 .map(|i| Content::new(ComponentId(8122 + i), TextContent::new(format!("line {i}"))))
                 .collect(),
-        },
+        ),
     );
     let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-    scroll.viewport_height = Some(100.);
+    scroll.set_viewport_height(Some(100.));
     let mut h = ContentHost::new(Content::new(
         ROOT,
         panel(Content::new(scroll_id, scroll), true),
@@ -342,7 +325,7 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     assert_eq!(before, Point::default());
     let outcome = h.commit_host_reveal(plan).unwrap();
@@ -356,7 +339,7 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
         .unwrap();
     assert_eq!(current.reading_document_version(), Some(&version));
     assert_eq!(h.semantic_mount(target), Some(mount));
-    assert!(current.scroll.offset.y > 0.);
+    assert!(current.scroll().offset.y > 0.);
     let stale = h
         .plan_host_reveal(
             target,
@@ -373,7 +356,7 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     let _ = h.get_mut(scroll_id);
     assert_eq!(h.commit_host_reveal(stale), Err(HostRevealError::StalePlan));
@@ -382,7 +365,7 @@ fn original_reading_reveal_consumes_curve_plan_and_stale_plan_cannot_change_user
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         before
     );
@@ -393,17 +376,7 @@ fn curve_input_budget_refuses_before_host_mount_or_layout() {
     let children = (0..HostRevealBudget::default().max_path_nodes)
         .map(|i| Content::new(ComponentId(8200 + i as u64), TextContent::new("bounded")))
         .collect();
-    let tree = Content::new(
-        ComponentId(8190),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children,
-        },
-    );
+    let tree = Content::new(ComponentId(8190), StackContent::vertical(0., children));
     assert!(matches!(
         PanelContent::new(tree),
         Err(CompositionError::CurveGeometry(
@@ -432,34 +405,26 @@ fn one_original_tree_keeps_composer_and_reading_owners_through_streaming_and_rev
     composer.viewport = TextViewport::Fixed(40.);
     let rows = Content::new(
         document,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: (8260..8280)
+        StackContent::vertical(
+            0.,
+            (8260..8280)
                 .map(|id| Content::new(ComponentId(id), TextContent::new(format!("row {id}"))))
                 .collect(),
-        },
+        ),
     );
     let mut reading = ScrollContent::new(ScrollArea::default(), rows);
-    reading.viewport_height = Some(64.);
+    reading.set_viewport_height(Some(64.));
     let body = Content::new(
         stack,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(text, TextContent::new("original text")),
                 Content::new(button, Button::new("original action")),
                 Content::new(editor, composer),
                 Content::new(scroll, reading),
             ],
-        },
+        ),
     );
     let mut host = ContentHost::new(Content::new(root, PanelContent::new(body).unwrap())).unwrap();
     host.set_action_events(true);

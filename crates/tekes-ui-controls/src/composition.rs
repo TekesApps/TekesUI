@@ -20,8 +20,10 @@ pub use media_viewer::{
 };
 mod icon;
 pub use icon::{IconContent, IconImage, IconRenderError, WithIconRenderer};
+mod icon_text;
 #[cfg(feature = "svg-icons")]
 pub use icon::{SvgIconCache, SvgIconRenderer};
+pub use icon_text::IconTextContent;
 mod disclosure;
 pub use disclosure::{DisclosureContent, DisclosureIntent};
 mod actions;
@@ -444,13 +446,34 @@ pub struct SemanticNode {
 /// No colors are authored here: both values resolve from the JSON palette.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ContentTheme {
-    pub palette: Palette,
-    pub foreground: Option<Rgba>,
-    pub icon_foreground: Option<Rgba>,
+    pub(crate) palette: Palette,
+    pub(crate) foreground: Option<Rgba>,
+    pub(crate) icon_foreground: Option<Rgba>,
     surface: &'static str,
     surface_declared: bool,
 }
 impl ContentTheme {
+    pub fn palette(self) -> Palette {
+        self.palette
+    }
+    pub fn foreground(self) -> Option<Rgba> {
+        self.foreground
+    }
+    pub fn icon_foreground(self) -> Option<Rgba> {
+        self.icon_foreground
+    }
+    pub fn with_palette(mut self, palette: Palette) -> Self {
+        self.palette = palette;
+        self
+    }
+    pub fn with_foreground(mut self, foreground: Option<Rgba>) -> Self {
+        self.foreground = foreground;
+        self
+    }
+    pub fn with_icon_foreground(mut self, icon_foreground: Option<Rgba>) -> Self {
+        self.icon_foreground = icon_foreground;
+        self
+    }
     pub fn surface(self) -> &'static str {
         self.surface
     }

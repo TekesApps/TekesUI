@@ -67,17 +67,38 @@ pub fn displays(s: &KeyedTableSnapshot) -> TableDisplays {
 /// component may still use ordinary Host, or materialize its tree before opt-in.
 #[derive(Debug)]
 pub struct ConsumerDecoration {
-    pub body: StackContent,
+    pub body: IconTextContent,
 }
 impl Component for ConsumerDecoration {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.body.host_reveal_passthrough()
+    }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        self.body.curve_subtree_capability()
+    }
     fn has_stable_hooks(&self) -> bool {
         true
     }
+    fn supports_prepared_lifecycle(&self) -> bool {
+        self.body.supports_prepared_lifecycle()
+    }
+    fn ignores_pointer_actions(&self) -> bool {
+        self.body.ignores_pointer_actions()
+    }
+    fn fixed_slots(&self) -> bool {
+        self.body.fixed_slots()
+    }
+    fn validate(&self) -> Result<(), CompositionError> {
+        self.body.validate()
+    }
     fn children(&self) -> &[Content] {
-        &self.body.children
+        self.body.children()
     }
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.body.children)
+        self.body.children_mut()
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        self.body.lifecycle(event);
     }
     fn measure(
         &mut self,
@@ -85,6 +106,13 @@ impl Component for ConsumerDecoration {
         a: tekes_ui_scene::Size,
     ) -> tekes_ui_controls::layout::MeasuredChild {
         self.body.measure(t, a)
+    }
+    fn measure_intrinsic(
+        &mut self,
+        t: &mut dyn tekes_ui_controls::ButtonTextRenderer,
+        a: tekes_ui_scene::Size,
+    ) -> tekes_ui_controls::layout::MeasuredChild {
+        self.body.measure_intrinsic(t, a)
     }
     fn arrange(
         &mut self,
@@ -105,23 +133,13 @@ pub fn build() -> Result<ContentHost, TableContentError> {
     d.rows[0].cells[0].display = TableDisplayUpdate::Replace(Content::new(
         ComponentId(200),
         ConsumerDecoration {
-            body: StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: 6.,
-                },
-                flexible_child: Some(ComponentId(202)),
-                children: vec![
-                    Content::new(
-                        ComponentId(201),
-                        IconContent::new("tekes-settings").unwrap(),
-                    ),
-                    Content::new(
-                        ComponentId(202),
-                        TextContent::new("Text with Icon\nmore text"),
-                    ),
-                ],
-            },
+            body: IconTextContent::icon_label(
+                ComponentId(201),
+                "tekes-settings",
+                ComponentId(202),
+                "Text with Icon\nmore text",
+            )
+            .unwrap(),
         },
     ));
     d.rows[0].cells[1].accessory =
@@ -137,13 +155,9 @@ pub fn build() -> Result<ContentHost, TableContentError> {
     )?;
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), TextContent::new("Before table")),
                 Content::new(
                     READER,
@@ -152,7 +166,7 @@ pub fn build() -> Result<ContentHost, TableContentError> {
                 Content::new(COMPOSER, TextFieldContent::new("Composer", "draft😀")),
                 Content::new(ComponentId(3), TextContent::new("After table")),
             ],
-        },
+        ),
     ))?;
     host.set_scroll_reading_document(
         READER,

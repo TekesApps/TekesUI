@@ -464,10 +464,7 @@ pub(crate) fn content_action_raw(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tekes_ui_controls::{
-        composition::{Button, Content, StackContent, TextFieldContent},
-        extended::{Axis, Stack},
-    };
+    use tekes_ui_controls::composition::{Button, Content, StackContent, TextFieldContent};
 
     const ROOT: ComponentId = ComponentId(1);
     const CHILD: ComponentId = ComponentId(2);
@@ -475,14 +472,7 @@ mod tests {
     fn button_host() -> ContentHost {
         ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: vec![Content::new(CHILD, Button::new("Run"))],
-                flexible_child: None,
-            },
+            StackContent::vertical(0., vec![Content::new(CHILD, Button::new("Run"))]),
         ))
         .unwrap()
     }
@@ -503,7 +493,7 @@ mod tests {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             1
         );
     }
@@ -526,7 +516,7 @@ mod tests {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             0
         );
     }
@@ -1148,7 +1138,6 @@ mod context_menu_bridge_tests {
             Button, Content, ContentActionPayload, ContentActionSource, ContentEvent, MenuContent,
             MenuEntry, StackContent,
         },
-        extended::{Axis, Stack},
     };
     use tekes_ui_scene::{Rect as SceneRect, Scene, Size as SceneSize};
     use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -1175,13 +1164,9 @@ mod context_menu_bridge_tests {
     fn fixture() -> ContentHost {
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(A, Button::new("A")),
                     Content::new(B, Button::new("B")),
                     Content::new(
@@ -1190,7 +1175,7 @@ mod context_menu_bridge_tests {
                             .unwrap(),
                     ),
                 ],
-            },
+            ),
         ))
         .unwrap();
         host.set_action_events(true);
@@ -1263,9 +1248,7 @@ mod context_menu_bridge_tests {
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .button
-            .state
-            .disabled = true;
+            .set_disabled(true);
         assert!(
             !content_nodes(&host)
                 .iter()
@@ -1278,9 +1261,7 @@ mod context_menu_bridge_tests {
             .unwrap()
             .component_mut::<Button>()
             .unwrap()
-            .button
-            .state
-            .disabled = false;
+            .set_disabled(false);
         let row = host.remove(B).unwrap();
         host.insert(ROOT, row).unwrap();
         render(&mut host);

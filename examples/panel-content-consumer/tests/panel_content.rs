@@ -1,9 +1,5 @@
 //! Independent public consumer: original ContentHost owns all child measurement/layout.
-use tekes_ui_controls::{
-    Insets, TextSurfacePresentation,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{Insets, TextSurfacePresentation, composition::*};
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::Theme;
 #[path = "support/coretext.rs"]
@@ -27,16 +23,7 @@ fn render(host: &mut ContentHost, text: &mut Text, width: f32, height: f32, them
 fn stack(children: Vec<Content>, flexible_child: Option<ComponentId>) -> Content {
     Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            children,
-            // TextViewport::Fill must be measured against the space remaining after
-            // fixed siblings so the later original ScrollContent stays visible.
-            flexible_child,
-        },
+        StackContent::vertical(8., children).with_optional_flexible_child(flexible_child),
     )
 }
 
@@ -105,11 +92,11 @@ fn layout_diagnostic(host: &ContentHost, ids: &[ComponentId]) -> String {
                 });
                 let scroll = node.component::<ScrollContent>().map(|owner| {
                     (
-                        owner.viewport_height,
-                        owner.scroll.viewport_size(),
-                        owner.scroll.document_size(),
-                        owner.scroll.limit(),
-                        owner.scroll.offset,
+                        owner.viewport_height(),
+                        owner.scroll().viewport_size(),
+                        owner.scroll().document_size(),
+                        owner.scroll().limit(),
+                        owner.offset(),
                     )
                 });
                 let hit = snapshot
@@ -196,10 +183,10 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
     );
 
     // Use the original ScrollContent node's arranged visible frame for event targeting.
-    assert_eq!(reader(&host).viewport_height, Some(68.));
-    assert!(reader(&host).scroll.viewport_size().height > 0.);
+    assert_eq!(reader(&host).viewport_height(), Some(68.));
+    assert!(reader(&host).scroll().viewport_size().height > 0.);
     assert!(
-        reader(&host).scroll.limit().y > 0.,
+        reader(&host).scroll().limit().y > 0.,
         "original rows must overflow the measured ScrollContent viewport"
     );
     assert!(!reader(&host).is_following_latest());
@@ -226,7 +213,7 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
     assert!(
         wheel.consumed && wheel.changed,
         "original ScrollContent accepts a real user-history move: response={wheel:?}, viewport={original_viewport:?}, point={wheel_position:?}, limit={:?}, reader_source={:?}",
-        reader(&host).scroll.limit(),
+        reader(&host).scroll().limit(),
         host.reading_scroll_source()
     );
     assert_eq!(
@@ -234,14 +221,14 @@ fn original_panel_stack_preserves_real_editor_geometry_actions_and_reading_inten
         Some((SCROLL, scroll_mount)),
         "event must hit the original mounted ScrollContent through ContentHost routing"
     );
-    assert!(reader(&host).scroll.offset.y > 0.);
+    assert!(reader(&host).offset().y > 0.);
     render(&mut host, &mut text, 360., 360., Theme::LIGHT);
     let history_result = reader(&host)
         .reading_result()
         .expect("completed original reading layout")
         .clone();
     let history_anchor = preserved_anchor(&history_result);
-    assert!(reader(&host).scroll.offset.y > 0.);
+    assert!(reader(&host).offset().y > 0.);
     assert!(history_result.user_input_won);
     assert!(!history_result.clamped);
     assert!(row_ids.contains(&history_anchor));
@@ -570,17 +557,13 @@ fn zero_inset_self_framed_field_and_real_split_panes_keep_one_host_and_owner() {
     );
     let outer_stack = Content::new(
         ComponentId(8243),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 6.,
-            },
-            children: vec![
+        StackContent::vertical(
+            6.,
+            vec![
                 inner_editor_panel,
                 Content::new(ComponentId(8244), TextContent::new("nested panel sibling")),
             ],
-            flexible_child: None,
-        },
+        ),
     );
     let trailing = Content::new(ComponentId(8240), panel(outer_stack, false));
     let split = SplitViewContent::try_new(SplitViewConstruction {

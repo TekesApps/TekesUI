@@ -191,7 +191,7 @@ impl Component for SplitToolbar {
                 divider.size.width,
                 (divider.max_y() - start).max(0.),
             ),
-            theme.palette,
+            theme.palette(),
             text.backing_scale(),
         );
     }

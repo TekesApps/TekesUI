@@ -2,7 +2,7 @@ use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer,
     composition::*,
-    extended::{Axis, KeyedTreeNode, Stack, TreeDatasetKey as D, TreeNodeKey as K},
+    extended::{KeyedTreeNode, TreeDatasetKey as D, TreeNodeKey as K},
     layout::MeasuredChild,
     layout_view::IconRenderer,
 };
@@ -304,17 +304,13 @@ fn keep_moves_original_content_and_failure_preserves_mount_selection_capture_que
 fn whole_host_duplicate_and_direct_mounted_id_changes_are_atomic() {
     let root = Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(10), tree()),
                 Content::new(ComponentId(90), TextContent::new("neighbor")),
             ],
-        },
+        ),
     );
     let mut h = ContentHost::new(root).unwrap();
     paint(&mut h);
@@ -400,20 +396,16 @@ mod coretext;
 fn neighbor_real_preedit_blocks_all_tree_ax_transfer_and_background_update_preserves_binding() {
     let root = Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(10), tree()),
                 Content::new(
                     ComponentId(20),
                     TextFieldContent::new("Composer", "draft😀"),
                 ),
             ],
-        },
+        ),
     );
     let mut text = coretext::Text::new(1.);
     text.services = true;
@@ -486,14 +478,7 @@ fn original_host_observation_reaches_new_inactive_subtrees_and_ignores_repeat() 
     let log = Rc::new(std::cell::RefCell::new(Vec::new()));
     let mut h = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![],
-        },
+        StackContent::vertical(0., vec![]),
     ))
     .unwrap();
     h.set_window_active(false);
@@ -609,14 +594,10 @@ fn all_target_ids_and_nested_capabilities_validate_before_any_mutation() {
     let mut a = n(1, None);
     a.display = TreeDisplayUpdate::Replace(Content::new(
         ComponentId(1010),
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(ComponentId(1011), Button::new("nested"))],
-        },
+        StackContent::horizontal(
+            0.,
+            vec![Content::new(ComponentId(1011), Button::new("nested"))],
+        ),
     ));
     assert!(matches!(
         h.replace_tree_nodes(ComponentId(10), D(1), vec![a]),
@@ -716,14 +697,7 @@ fn intent_from_different_root_instance_never_authorizes_matching_numbers() {
 fn same_tree_instance_remount_revokes_exposure_and_pending_original_mount() {
     let root = Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(ComponentId(10), tree())],
-        },
+        StackContent::vertical(0., vec![Content::new(ComponentId(10), tree())]),
     );
     let mut h = ContentHost::new(root).unwrap();
     h.set_action_events(true);

@@ -1,10 +1,5 @@
 //! Public SDK PopoverContent with original form controls, never a second host.
-use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, ControlKey, composition::*, layout::MeasuredChild};
 use tekes_ui_scene::{Rect, Size};
 pub const ROOT: ComponentId = ComponentId(9100);
 pub const CALLER: ComponentId = ComponentId(9101);
@@ -49,13 +44,9 @@ impl Scenario {
     pub fn new() -> Result<Self, CompositionError> {
         let body = Content::new(
             BODY,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(
                         CAPTION,
                         TextContent::caption("Consumer-owned preferences · 自定义内容"),
@@ -67,24 +58,20 @@ impl Scenario {
                     Content::new(SWITCH, SwitchContent::new("Keep local settings", false)),
                     Content::new(
                         ACTIONS,
-                        StackContent {
-                            model: Stack {
-                                axis: Axis::Horizontal,
-                                gap: 8.,
-                            },
-                            flexible_child: None,
-                            children: vec![
+                        StackContent::horizontal(
+                            8.,
+                            vec![
                                 Content::new(CANCEL, Button::new("Cancel")),
                                 Content::new(SAVE, Button::new("Save")),
                             ],
-                        },
+                        ),
                     ),
                 ],
-            },
+            ),
         );
-        let mut card = PopoverContent::new("Preferences popover", body);
-        card.initial_focus = Some(EDITOR);
-        card.max_content_width = Some(340.); // Existing form preference; SDK owns shell geometry.
+        let card = PopoverContent::new("Preferences popover", body)
+            .with_initial_focus(Some(EDITOR))
+            .with_max_content_width(Some(340.)); // Existing form preference; SDK owns shell geometry.
         let mut host = ContentHost::new(Content::new(
             ROOT,
             Screen(vec![

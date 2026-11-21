@@ -596,10 +596,10 @@ impl Component for Gate {
         self.active
     }
     fn children(&self) -> &[Content] {
-        &self.stack.children
+        self.stack.children()
     }
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.stack.children)
+        Some(self.stack.children_mut())
     }
     fn measure(
         &mut self,
@@ -614,23 +614,18 @@ impl Component for Gate {
 }
 #[test]
 fn actual_inactive_ancestor_hidden_restore_and_invalid_surface_do_not_revive_authority() {
-    use tekes_ui_controls::extended::{Axis, Stack};
     let gate = ComponentId(700);
     let mut h = ContentHost::new(Content::new(
         gate,
         Gate {
             active: true,
-            stack: StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                children: vec![Content::new(
+            stack: StackContent::vertical(
+                0.,
+                vec![Content::new(
                     RADIO,
                     RadioGroupContent::new("Choice", labels()),
                 )],
-                flexible_child: None,
-            },
+            ),
         },
     ))
     .unwrap();

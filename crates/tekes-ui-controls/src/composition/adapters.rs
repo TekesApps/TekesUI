@@ -10,8 +10,8 @@ use tekes_ui_tokens::Spacing;
 /// Children keep their own actions; adding an input never implicitly selects a row.
 #[derive(Debug)]
 pub struct ListContent {
-    pub name: String,
-    pub rows: StackContent,
+    name: String,
+    rows: StackContent,
 }
 impl ListContent {
     /// One original scrolling owner around this List's grouped Items and Model.
@@ -44,6 +44,27 @@ impl ListContent {
             },
         }
     }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
+    pub fn gap(&self) -> f32 {
+        Self::SECTION_GAP
+    }
+    pub fn items(&self) -> &[Content] {
+        &self.rows.children
+    }
+    pub fn items_mut(&mut self) -> &mut Vec<Content> {
+        &mut self.rows.children
+    }
+    pub fn replace_items(&mut self, children: Vec<Content>) {
+        self.rows.children = children;
+    }
+    pub fn push_item(&mut self, child: Content) {
+        self.rows.children.push(child);
+    }
 }
 impl Component for ListContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
@@ -71,9 +92,9 @@ impl Component for ListContent {
 
 #[derive(Debug)]
 pub struct SwitchContent {
-    pub model: Switch,
-    pub view: SwitchView,
-    pub label: String,
+    pub(crate) model: Switch,
+    pub(crate) view: SwitchView,
+    pub(crate) label: String,
 }
 impl SwitchContent {
     pub fn new(label: impl Into<String>, checked: bool) -> Self {
@@ -85,6 +106,44 @@ impl SwitchContent {
             view: SwitchView::default(),
             label: label.into(),
         }
+    }
+    pub fn with_disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    pub fn is_checked(&self) -> bool {
+        self.model.checked
+    }
+    pub fn set_checked(&mut self, checked: bool) {
+        self.model.checked = checked;
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.model.disabled
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.model.disabled = disabled;
+        if disabled {
+            self.view.cancel();
+            self.view.blur();
+        }
+    }
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+    pub fn set_label(&mut self, label: impl Into<String>) {
+        self.label = label.into();
+    }
+    pub fn error(&self) -> bool {
+        self.view.error()
+    }
+    pub fn set_error(&mut self, error: bool) {
+        self.view.set_error(error);
+    }
+    pub fn model(&self) -> Switch {
+        self.model
+    }
+    pub fn view(&self) -> &SwitchView {
+        &self.view
     }
 }
 impl Component for SwitchContent {
@@ -215,7 +274,7 @@ impl Component for SwitchContent {
 pub struct DialogContent {
     pub(super) model: Dialog,
     presence: crate::control_motion::OverlayPresence,
-    pub name: String,
+    name: String,
     slots: Vec<Content>,
     viewport: Rect,
     modal: Rect,
@@ -246,6 +305,28 @@ impl DialogContent {
             modal: Rect::default(),
             max_width: None,
         }
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
+    pub fn body(&self) -> &Content {
+        &self.slots[1]
+    }
+    pub fn body_mut(&mut self) -> &mut Content {
+        &mut self.slots[1]
+    }
+    /// Replace the center body slot while keeping the three-slot `[header, body, footer]` invariant intact.
+    pub fn set_body(&mut self, body: Content) -> Content {
+        std::mem::replace(&mut self.slots[1], body)
+    }
+    /// Transform and replace the center body slot safely while preserving all three Dialog slots.
+    pub fn replace_body_with(&mut self, replace: impl FnOnce(Content) -> Content) {
+        let placeholder = Content::new(ComponentId(0), TextContent::new(""));
+        let previous = std::mem::replace(&mut self.slots[1], placeholder);
+        self.slots[1] = replace(previous);
     }
     pub fn with_max_width(mut self, max_width: Option<f32>) -> Self {
         self.max_width = max_width;
@@ -432,9 +513,10 @@ impl Component for DialogContent {
 /// callers compose visible labels/captions with the existing content containers.
 #[derive(Debug)]
 pub struct SliderContent {
-    pub model: crate::extended::Slider,
-    pub view: crate::layout_view::SliderView,
-    pub name: String,
+    pub(crate) model: crate::extended::Slider,
+    pub(crate) view: crate::layout_view::SliderView,
+    pub(crate) name: String,
+    runnable: bool,
 }
 impl SliderContent {
     pub fn new(name: impl Into<String>, model: crate::extended::Slider) -> Self {
@@ -442,7 +524,40 @@ impl SliderContent {
             model,
             view: crate::layout_view::SliderView::new(),
             name: name.into(),
+            runnable: false,
         }
+    }
+    pub fn with_disabled(mut self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    pub fn value(&self) -> f64 {
+        self.model.value()
+    }
+    pub fn set_value(&mut self, value: f64) -> bool {
+        self.model.set(value)
+    }
+    pub fn is_disabled(&self) -> bool {
+        self.model.disabled
+    }
+    pub fn set_disabled(&mut self, disabled: bool) {
+        self.model.disabled = disabled;
+        if disabled {
+            self.view.cancel();
+            self.view.blur();
+        }
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
+    pub fn model(&self) -> crate::extended::Slider {
+        self.model
+    }
+    pub fn view(&self) -> &crate::layout_view::SliderView {
+        &self.view
     }
 }
 impl Component for SliderContent {
@@ -473,6 +588,23 @@ impl Component for SliderContent {
     ) {
         let _ = self.view.set_surface(theme.surface());
         self.view.render(s, self.model, f, Some(c), theme.palette);
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.runnable = false;
+            self.view.clear_layout();
+        }
+    }
+    fn window_active_changed(&mut self, active: bool) {
+        self.view.set_window_active(active);
+    }
+    fn presentation_runnable_changed(&mut self, runnable: bool) {
+        if runnable {
+            self.runnable = true;
+        } else if self.runnable && self.view.is_window_active() {
+            self.runnable = false;
+            self.view.clear_layout();
+        }
     }
     fn focusable(&self) -> bool {
         !self.model.disabled
@@ -569,6 +701,65 @@ impl Component for SliderContent {
     }
 }
 
+#[derive(Debug)]
+struct ListSectionContent {
+    rows: StackContent,
+    arranged: bool,
+}
+impl Component for ListSectionContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+    fn ignores_pointer_actions(&self) -> bool {
+        true
+    }
+    fn fixed_slots(&self) -> bool {
+        true
+    }
+    fn validate(&self) -> Result<(), CompositionError> {
+        if self.rows.children.len() != 2 {
+            Err(CompositionError::InvalidSlotCount)
+        } else {
+            Ok(())
+        }
+    }
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.arranged = false;
+        }
+    }
+    fn children(&self) -> &[Content] {
+        &self.rows.children
+    }
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.rows.children)
+    }
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged = false;
+        self.rows.measure(text, available)
+    }
+    fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        self.rows.measure_intrinsic(text, available)
+    }
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.rows.arrange(text, frame, clip);
+        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
+    }
+}
+
 impl ListContent {
     /// Canonical vertical gap above and below every list section header.
     pub const SECTION_GAP: f32 = Spacing::Regular.value();
@@ -582,20 +773,22 @@ impl ListContent {
         title: impl Into<String>,
         items: Content,
     ) -> Content {
-        let mut heading = TextContent::new(title);
-        heading.role = proposal::TextRole::UiCaption;
+        let heading = TextContent::caption(title);
         Content::new(
             group_id,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Self::SECTION_GAP,
+            ListSectionContent {
+                rows: StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: Self::SECTION_GAP,
+                    },
+                    flexible_child: None,
+                    children: vec![
+                        Content::new(header_id, heading).with_secondary_foreground(),
+                        items,
+                    ],
                 },
-                flexible_child: None,
-                children: vec![
-                    Content::new(header_id, heading).with_secondary_foreground(),
-                    items,
-                ],
+                arranged: false,
             },
         )
     }

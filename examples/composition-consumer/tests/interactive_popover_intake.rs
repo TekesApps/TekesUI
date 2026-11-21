@@ -86,7 +86,7 @@ impl Component for Popup {
             Size::new(360., 220.),
             clip,
             Some(clip),
-            theme.palette,
+            theme.palette(),
             proposal::TextRole::UiBody,
             "Original popup child",
             |scene, text, _| {
@@ -359,7 +359,7 @@ fn close_restores_original_mount_and_immediately_retires_popup_ax() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             0
         );
     }
@@ -518,8 +518,8 @@ fn handler_capture(open: bool, scoped: bool) -> (ContentHost, ComponentId) {
     let id = ComponentId(51101);
     let mut body = Button::new("Original body");
     let mut overlay = Button::new("Original overlay");
-    body.button.frame_policy = tekes_ui_controls::ButtonFramePolicy::Exact;
-    overlay.button.frame_policy = tekes_ui_controls::ButtonFramePolicy::Exact;
+    body.set_frame_policy(tekes_ui_controls::ButtonFramePolicy::Exact);
+    overlay.set_frame_policy(tekes_ui_controls::ButtonFramePolicy::Exact);
     let mut popup = Popover::default();
     if open {
         popup.show(1);
@@ -564,7 +564,10 @@ fn generic_overlay_capture_releases_to_its_acquiring_handler_once() {
         assert!(host.event(&ContentEvent::PointerUp(point)).activated);
         let owner = host.get(id).unwrap().component::<HandlerCapture>().unwrap();
         assert_eq!((owner.body_ups, owner.overlay_ups), (0, 1));
-        assert_eq!((owner.body.activations, owner.overlay.activations), (0, 1));
+        assert_eq!(
+            (owner.body.activations(), owner.overlay.activations()),
+            (0, 1)
+        );
         assert!(!owner.popup.open);
         assert!(host.pointer_capture().is_none());
         assert_eq!(host.drain_actions().len(), 1);
@@ -589,7 +592,10 @@ fn scoped_body_capture_keeps_its_handler_when_same_owner_opens_overlay() {
     assert!(host.event(&ContentEvent::PointerUp(point)).activated);
     let owner = host.get(id).unwrap().component::<HandlerCapture>().unwrap();
     assert_eq!((owner.body_ups, owner.overlay_ups), (1, 0));
-    assert_eq!((owner.body.activations, owner.overlay.activations), (1, 0));
+    assert_eq!(
+        (owner.body.activations(), owner.overlay.activations()),
+        (1, 0)
+    );
     assert!(owner.popup.open);
     assert!(host.pointer_capture().is_none());
     assert_eq!(host.drain_actions().len(), 1);

@@ -113,7 +113,7 @@ fn offset(f: &Fixture, id: ComponentId) -> Point {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
 }
 fn mark_composer(f: &mut Fixture) -> tekes_ui_controls::TextEditBaseline {
@@ -160,7 +160,7 @@ fn declared_nested_item_reveal_preserves_original_composer_and_only_moves_target
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
 }
@@ -511,24 +511,16 @@ fn layout_changes_interrupt_both_ancestors_and_do_not_take_composer_focus() {
 fn an_older_item_command_cannot_cancel_a_new_direct_navigation_on_the_same_scroll() {
     let (mut f, mut t) = setup();
     f.navigate(TARGET, Default::default(), &mut t).unwrap();
-    let outer = &mut f
+    let plan = f
         .host
-        .get_mut(OWNER)
-        .unwrap()
-        .component_mut::<ScrollContent>()
-        .unwrap()
-        .scroll;
-    // Even replacing the public scroll value must not reuse the old motion ID.
-    let viewport = outer.viewport_size();
-    let document = outer.document_size();
-    *outer = tekes_ui_controls::ScrollArea::default();
-    outer.layout(viewport, document);
-    outer
-        .reveal_with(
-            Rect::new(20., document.height - 60., 20., 20.),
+        .plan_host_reveal(
+            LAST,
             ScrollRevealOptions::default(),
+            &[],
+            HostRevealBudget::default(),
         )
         .unwrap();
+    f.host.commit_host_reveal(plan).unwrap();
     t.now = std::time::Duration::from_millis(20);
     paint(&mut f, &mut t);
     assert_eq!(
@@ -541,7 +533,7 @@ fn an_older_item_command_cannot_cancel_a_new_direct_navigation_on_the_same_scrol
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .needs_animation()
     );
     let first = offset(&f, OWNER).y;
@@ -716,8 +708,7 @@ fn target_position_change_with_identical_document_extent_interrupts_old_coordina
             .unwrap()
             .component::<ListContent>()
             .unwrap()
-            .rows
-            .children
+            .items()
             .iter()
             .map(Content::id)
             .collect::<Vec<_>>();
@@ -750,7 +741,7 @@ fn target_position_change_with_identical_document_extent_interrupts_old_coordina
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .document_size();
         assert_eq!(
             f.navigate(
@@ -779,7 +770,7 @@ fn target_position_change_with_identical_document_extent_interrupts_old_coordina
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .document_size(),
             original_extent
         );
@@ -930,7 +921,12 @@ fn start_reports_unavoidable_head_and_tail_clamp_instead_of_faking_alignment() {
     let owner = f.host.get(OWNER).unwrap();
     assert_eq!(
         offset(&f, OWNER).y,
-        owner.component::<ScrollContent>().unwrap().scroll.limit().y
+        owner
+            .component::<ScrollContent>()
+            .unwrap()
+            .scroll()
+            .limit()
+            .y
     );
     assert!(f.host.get(LAST).unwrap().visible().is_some());
     assert!(!f.navigate(LAST, start_options(), &mut t).unwrap().changed);

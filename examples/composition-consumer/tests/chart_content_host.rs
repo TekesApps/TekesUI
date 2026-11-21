@@ -137,7 +137,7 @@ fn original_interior_clip_uses_host_scroll_reveal_and_renders_visible_witness() 
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
         .y;
     assert!(host.focus(Some(CHART), true));
@@ -146,7 +146,7 @@ fn original_interior_clip_uses_host_scroll_reveal_and_renders_visible_witness() 
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
         .y;
     assert!(after_offset > before_offset);

@@ -996,8 +996,7 @@ fn one_native_vertical_chain_does_not_repeat_and_replacement_cancels_button_fall
         .unwrap()
         .component_mut::<ListContent>()
         .unwrap()
-        .rows
-        .children[0] = Content::new(button, Button::new("replacement"));
+        .items_mut()[0] = Content::new(button, Button::new("replacement"));
     h.focus(Some(button), true);
     let r = h.event(&ContentEvent::TextKeyEnd {
         id: 1,
