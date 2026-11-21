@@ -25,6 +25,34 @@ pub(crate) enum Source {
         pid: Option<u32>,
         generation: u64,
     },
+    PanelOverflow {
+        instance: u64,
+        index: usize,
+        module: String,
+        pid: Option<u32>,
+        generation: u64,
+    },
+}
+impl Source {
+    pub(crate) fn panel_index(&self) -> Option<usize> {
+        match self {
+            Self::Panel { index, .. } | Self::PanelOverflow { index, .. } => Some(*index),
+            _ => None,
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct MenuDeclaration {
+    pub id: u64,
+    pub title: String,
+    pub accessible_name: Option<String>,
+    pub icon: Option<String>,
+    pub icon_position: ButtonImagePosition,
+    pub icon_slot: bool,
+    pub tooltip: Option<String>,
+    pub enabled: bool,
+    pub selected: bool,
+    pub entries: Vec<MenuEntry>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Contents {
@@ -34,15 +62,96 @@ pub(crate) enum Contents {
         ToolbarGroupOverflow,
         Vec<(u64, String)>,
     ),
+    SelectedTemplateCommands {
+        buttons: Vec<ToolbarButtonDeclaration>,
+        overflow: ToolbarGroupOverflow,
+        templates: Vec<(u64, String)>,
+        selected: Vec<u64>,
+    },
+    Menu(MenuDeclaration),
     Title(String),
 }
 impl Contents {
     pub(super) fn templates(&self) -> &[(u64, String)] {
         match self {
             Self::TemplateCommands(_, _, icons) => icons,
+            Self::SelectedTemplateCommands { templates, .. } => templates,
             _ => &[],
         }
     }
+}
+fn validate_menu_entries(entries: &[MenuEntry]) -> Result<()> {
+    let mut values = std::collections::BTreeSet::new();
+    for entry in entries {
+        match entry {
+            MenuEntry::Item { value, label, .. } => {
+                anyhow::ensure!(
+                    !value.trim().is_empty(),
+                    "menu entry value must not be empty"
+                );
+                anyhow::ensure!(
+                    values.insert(value.as_str()),
+                    "menu sibling values must be unique"
+                );
+                anyhow::ensure!(
+                    !label.trim().is_empty(),
+                    "menu entry label must not be empty"
+                );
+            }
+            MenuEntry::Submenu {
+                value,
+                label,
+                entries,
+                ..
+            } => {
+                anyhow::ensure!(
+                    !value.trim().is_empty(),
+                    "menu entry value must not be empty"
+                );
+                anyhow::ensure!(
+                    values.insert(value.as_str()),
+                    "menu sibling values must be unique"
+                );
+                anyhow::ensure!(
+                    !label.trim().is_empty(),
+                    "menu entry label must not be empty"
+                );
+                validate_menu_entries(entries)?;
+            }
+            MenuEntry::Separator => {}
+        }
+    }
+    Ok(())
+}
+pub(crate) fn apply_menu_declaration(
+    menu: &mut MenuContent,
+    decl: &MenuDeclaration,
+    viewport: Rect,
+) {
+    menu.set_popup_viewport(Some(viewport));
+    menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
+    menu.trigger.set_selection_fill_only(true);
+    menu.trigger.set_toolbar_icon_slot(decl.icon_slot);
+    menu.trigger.image_position = decl.icon_position;
+    if let Some(icon) = &decl.icon {
+        menu.trigger
+            .set_icon_label(icon, decl.title.clone())
+            .expect("menu icon validated before sync");
+    } else {
+        menu.trigger.set_contents(decl.title.clone());
+    }
+    menu.trigger
+        .set_accessible_name(decl.accessible_name.clone());
+    menu.trigger.set_help(decl.tooltip.clone());
+    menu.trigger.button.state.disabled = !decl.enabled;
+    menu.trigger.button.state.selected = decl.selected;
+    menu.set_entries(decl.entries.clone())
+        .expect("menu entries validated before sync");
+}
+pub(crate) fn build_menu_content(decl: &MenuDeclaration, viewport: Rect) -> MenuContent {
+    let mut menu = MenuContent::new(decl.title.clone(), Vec::new());
+    apply_menu_declaration(&mut menu, decl, viewport);
+    menu
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Declaration {
@@ -57,6 +166,7 @@ pub(crate) struct MountedToolbar {
     pub(crate) icons: SvgIconCache,
     pub host: ToolbarHost<Source>,
     pub window: u64,
+    viewport: Rect,
     declarations: Vec<Declaration>,
 }
 impl MountedToolbar {
@@ -68,6 +178,7 @@ impl MountedToolbar {
             host: ToolbarHost::new(ComponentId(90000), window, Rect::default())
                 .expect("toolbar root"),
             window,
+            viewport: Rect::default(),
             declarations: vec![],
         }
     }
@@ -104,7 +215,14 @@ impl MountedToolbar {
             for (_, name) in declaration.contents.templates() {
                 tekes_ui_icons::Glyph::named(name).context("unknown toolkit template icon")?;
             }
+            if let Contents::Menu(menu) = &declaration.contents {
+                if let Some(name) = &menu.icon {
+                    tekes_ui_icons::Glyph::named(name).context("unknown toolkit menu icon")?;
+                }
+                validate_menu_entries(&menu.entries)?;
+            }
         }
+        let viewport_changed = self.viewport != viewport;
         self.host
             .set_regions(self.window, viewport, regions)
             .map_err(|e| anyhow::anyhow!("toolbar regions: {e:?}"))?;
@@ -119,6 +237,14 @@ impl MountedToolbar {
         }
         for d in &declarations {
             if self.declarations.iter().any(|old| old == d) {
+                if viewport_changed && matches!(d.contents, Contents::Menu(_)) {
+                    let target = ComponentId(d.id.0 + 1);
+                    self.host
+                        .update_component::<MenuContent>(d.id, target, |menu| {
+                            menu.set_popup_viewport(Some(viewport));
+                        })
+                        .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                }
                 continue;
             }
             if let Some(old) = self.declarations.iter().find(|old| old.id == d.id)
@@ -128,9 +254,14 @@ impl MountedToolbar {
                 let target = ComponentId(d.id.0 + 1);
                 let compatible = match (&old.contents, &d.contents) {
                     (
-                        Contents::Commands(a, _) | Contents::TemplateCommands(a, _, _),
-                        Contents::Commands(b, _) | Contents::TemplateCommands(b, _, _),
+                        Contents::Commands(a, _)
+                        | Contents::TemplateCommands(a, _, _)
+                        | Contents::SelectedTemplateCommands { buttons: a, .. },
+                        Contents::Commands(b, _)
+                        | Contents::TemplateCommands(b, _, _)
+                        | Contents::SelectedTemplateCommands { buttons: b, .. },
                     ) => a.iter().map(|b| b.id).eq(b.iter().map(|b| b.id)),
+                    (Contents::Menu(a), Contents::Menu(b)) => a.id == b.id,
                     (Contents::Title(_), Contents::Title(_)) => true,
                     _ => false,
                 };
@@ -146,7 +277,16 @@ impl MountedToolbar {
                     if old.contents != d.contents {
                         let result = match &d.contents {
                             Contents::Commands(buttons, overflow)
-                            | Contents::TemplateCommands(buttons, overflow, _) => {
+                            | Contents::TemplateCommands(buttons, overflow, _)
+                            | Contents::SelectedTemplateCommands {
+                                buttons, overflow, ..
+                            } => {
+                                let selected = match &d.contents {
+                                    Contents::SelectedTemplateCommands { selected, .. } => {
+                                        selected.as_slice()
+                                    }
+                                    _ => &[],
+                                };
                                 self.host
                                     .update_component::<tekes_ui_controls::ToolbarControl>(
                                         d.id,
@@ -168,6 +308,7 @@ impl MountedToolbar {
                                                     })
                                                     .collect(),
                                             );
+                                            control.set_selected_ids(selected);
                                             for b in buttons {
                                                 control.set_action_icon(b.id, b.icon);
                                                 control.set_action_help(b.id, b.hint.clone());
@@ -180,6 +321,12 @@ impl MountedToolbar {
                                         },
                                     )
                             }
+                            Contents::Menu(decl) => {
+                                self.host
+                                    .update_component::<MenuContent>(d.id, target, |menu| {
+                                        apply_menu_declaration(menu, decl, viewport)
+                                    })
+                            }
                             Contents::Title(title) => {
                                 self.host
                                     .update_component::<TextContent>(d.id, target, |label| {
@@ -188,6 +335,12 @@ impl MountedToolbar {
                             }
                         };
                         result.map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
+                    } else if viewport_changed && matches!(d.contents, Contents::Menu(_)) {
+                        self.host
+                            .update_component::<MenuContent>(d.id, target, |menu| {
+                                menu.set_popup_viewport(Some(viewport));
+                            })
+                            .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
                     }
                     continue;
                 }
@@ -195,17 +348,38 @@ impl MountedToolbar {
             let target = ComponentId(d.id.0 + 1);
             let (mut child, bindings) = match &d.contents {
                 Contents::Commands(buttons, overflow)
-                | Contents::TemplateCommands(buttons, overflow, _) => (
-                    toolbar_commands(target, buttons.clone(), *overflow),
-                    buttons
-                        .iter()
-                        .map(|b| ToolbarCommandBinding {
-                            target,
-                            action: Some(b.id),
-                            command: b.id,
-                            source: d.source.clone(),
-                        })
-                        .collect(),
+                | Contents::TemplateCommands(buttons, overflow, _)
+                | Contents::SelectedTemplateCommands {
+                    buttons, overflow, ..
+                } => {
+                    let mut content = toolbar_commands(target, buttons.clone(), *overflow);
+                    if let Contents::SelectedTemplateCommands { selected, .. } = &d.contents
+                        && let Some(control) =
+                            content.component_mut::<tekes_ui_controls::ToolbarControl>()
+                    {
+                        control.set_selected_ids(selected);
+                    }
+                    (
+                        content,
+                        buttons
+                            .iter()
+                            .map(|b| ToolbarCommandBinding {
+                                target,
+                                action: Some(b.id),
+                                command: b.id,
+                                source: d.source.clone(),
+                            })
+                            .collect(),
+                    )
+                }
+                Contents::Menu(decl) => (
+                    Content::new(target, build_menu_content(decl, viewport)),
+                    vec![ToolbarCommandBinding {
+                        target,
+                        action: None,
+                        command: decl.id,
+                        source: d.source.clone(),
+                    }],
                 ),
                 Contents::Title(title) => (
                     Content::new(target, TextContent::label(title.clone())),
@@ -228,6 +402,7 @@ impl MountedToolbar {
                 })
                 .map_err(|e| anyhow::anyhow!("toolbar registration: {e:?}"))?;
         }
+        self.viewport = viewport;
         self.declarations = declarations;
         Ok(())
     }
@@ -251,11 +426,12 @@ impl MountedToolbar {
     }
     pub fn modal(&self) -> bool {
         // ContentHost projects only its original input scope. A scoped root
-        // differs from our window root; no expanded disclosure or group polling.
+        // differs from our window root, and MenuContent opens via input_overlay_owner.
         self.host
             .semantics()
             .first()
             .is_some_and(|n| n.node.id != ComponentId(90000))
+            || self.host.content_host().input_overlay_owner().is_some()
     }
 }
 
@@ -501,6 +677,438 @@ mod tests {
         assert!(!toolbar.host.event_bubbled());
         assert!(!toolbar.modal());
         assert!(toolbar.host.drain_commands().is_empty());
+    }
+
+    fn menu_declaration(
+        id: u64,
+        title: &str,
+        tooltip: &str,
+        enabled: bool,
+        selected: bool,
+        entries: Vec<MenuEntry>,
+    ) -> MenuDeclaration {
+        MenuDeclaration {
+            id,
+            title: title.into(),
+            accessible_name: None,
+            icon: None,
+            icon_position: ButtonImagePosition::Leading,
+            icon_slot: false,
+            tooltip: Some(tooltip.into()),
+            enabled,
+            selected,
+            entries,
+        }
+    }
+
+    fn menu_declarations(
+        model_title: &str,
+        effort_title: &str,
+        effort_enabled: bool,
+        effort_selected: bool,
+        model_entries: Vec<MenuEntry>,
+    ) -> Vec<Declaration> {
+        vec![
+            Declaration {
+                id: ComponentId(100),
+                region: ComponentId(10),
+                placement: ToolbarPlacement::Navigation,
+                order: 0,
+                contents: Contents::Menu(menu_declaration(
+                    11,
+                    model_title,
+                    "Model",
+                    true,
+                    false,
+                    model_entries,
+                )),
+                source: Source::Panel {
+                    instance: 7,
+                    index: 0,
+                    module: "session".into(),
+                    pid: None,
+                    generation: 0,
+                },
+            },
+            Declaration {
+                id: ComponentId(200),
+                region: ComponentId(20),
+                placement: ToolbarPlacement::PrimaryAction,
+                order: 1,
+                contents: Contents::Menu(menu_declaration(
+                    12,
+                    effort_title,
+                    "Effort",
+                    effort_enabled,
+                    effort_selected,
+                    vec![
+                        MenuEntry::Item {
+                            value: "low".into(),
+                            label: "Low".into(),
+                            checked: Some(false),
+                            disabled: false,
+                        },
+                        MenuEntry::Item {
+                            value: "high".into(),
+                            label: "High".into(),
+                            checked: Some(true),
+                            disabled: false,
+                        },
+                    ],
+                )),
+                source: Source::Panel {
+                    instance: 7,
+                    index: 0,
+                    module: "session".into(),
+                    pid: None,
+                    generation: 0,
+                },
+            },
+        ]
+    }
+
+    fn render_theme(toolbar: &mut MountedToolbar, text: &mut Text, theme: tekes_ui_tokens::Theme) {
+        toolbar
+            .host
+            .render(&mut Scene::new(), text, theme.into())
+            .unwrap();
+    }
+
+    fn menu_trigger(
+        toolbar: &MountedToolbar,
+        target_id: ComponentId,
+    ) -> (ToolbarAccessibilityTarget, Rect) {
+        toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .find(|n| n.node.id == target_id)
+            .map(|n| (n.target, n.node.frame))
+            .expect("menu trigger semantic node")
+    }
+
+    fn menu_item(
+        toolbar: &MountedToolbar,
+        menu_id: ComponentId,
+        label: &str,
+    ) -> (
+        ToolbarAccessibilityTarget,
+        tekes_ui_controls::composition::SemanticPart,
+    ) {
+        toolbar
+            .host
+            .semantics()
+            .into_iter()
+            .find(|n| n.node.id == menu_id)
+            .and_then(|n| n.parts.into_iter().find(|(_, p)| p.semantics.name == label))
+            .expect(label)
+    }
+
+    #[test]
+    fn menu_in_place_updates_preserve_identity_and_unaffected_open_menu_across_themes() {
+        let mut toolbar = MountedToolbar::new();
+        let mut text = Text::new();
+        let rect = Rect::new(0., 0., 640., 260.);
+        let initial_models = vec![
+            MenuEntry::Item {
+                value: "gpt-5".into(),
+                label: "GPT-5".into(),
+                checked: Some(true),
+                disabled: false,
+            },
+            MenuEntry::Item {
+                value: "sonnet".into(),
+                label: "Claude Sonnet".into(),
+                checked: Some(false),
+                disabled: false,
+            },
+        ];
+        sync(
+            &mut toolbar,
+            &mut text,
+            rect,
+            menu_declarations(
+                "Model: GPT-5",
+                "Effort: High",
+                true,
+                true,
+                initial_models.clone(),
+            ),
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::DARK);
+
+        let mount_1 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(101))
+            .unwrap()
+            .mount_identity();
+        let mount_2 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(201))
+            .unwrap()
+            .mount_identity();
+
+        // Open menu 1 via pointer click.
+        let (_, trigger_frame) = menu_trigger(&toolbar, ComponentId(101));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(trigger_frame.center()));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerUp(trigger_frame.center()));
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert!(toolbar.modal());
+
+        // Updating sibling menu 2 refreshes in place without rebuilding or closing menu 1.
+        sync(
+            &mut toolbar,
+            &mut text,
+            rect,
+            menu_declarations(
+                "Model: GPT-5",
+                "Effort: Low",
+                false,
+                false,
+                initial_models.clone(),
+            ),
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::DARK);
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .mount_identity(),
+            mount_1
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(201))
+                .unwrap()
+                .mount_identity(),
+            mount_2
+        );
+        assert!(toolbar.modal());
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(201))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .trigger
+                .label,
+            "Effort: Low"
+        );
+
+        // Updating menu 1's own declaration preserves mount identity and safely
+        // cancels/closes the affected popup per ToolbarHost/MenuContent contract.
+        sync(
+            &mut toolbar,
+            &mut text,
+            rect,
+            menu_declarations(
+                "Model: Default",
+                "Effort: Low",
+                false,
+                false,
+                initial_models,
+            ),
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .mount_identity(),
+            mount_1
+        );
+        assert!(!toolbar.modal());
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .trigger
+                .label,
+            "Model: Default"
+        );
+
+        // Re-open menu 1, then change its entries -> safely closes popup while keeping mount identity.
+        let (_, reopen_frame) = menu_trigger(&toolbar, ComponentId(101));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(reopen_frame.center()));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerUp(reopen_frame.center()));
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert!(toolbar.modal());
+        let updated_models = vec![MenuEntry::Item {
+            value: "o3".into(),
+            label: "o3".into(),
+            checked: Some(true),
+            disabled: false,
+        }];
+        sync(
+            &mut toolbar,
+            &mut text,
+            rect,
+            menu_declarations("Model: o3", "Effort: Low", false, false, updated_models),
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::DARK);
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .mount_identity(),
+            mount_1
+        );
+        assert!(!toolbar.modal());
+    }
+
+    #[test]
+    fn menu_modal_dismissal_deactivation_and_locked_disabled_items_contract() {
+        let mut toolbar = MountedToolbar::new();
+        let mut text = Text::new();
+        let rect = Rect::new(0., 0., 640., 300.);
+        let entries = vec![
+            MenuEntry::Item {
+                value: "codex".into(),
+                label: "Codex CLI".into(),
+                checked: Some(true),
+                disabled: true,
+            },
+            MenuEntry::Separator,
+            MenuEntry::Item {
+                value: "claude".into(),
+                label: "Claude Code".into(),
+                checked: Some(false),
+                disabled: false,
+            },
+            MenuEntry::Submenu {
+                value: "more".into(),
+                label: "Custom".into(),
+                disabled: false,
+                entries: vec![MenuEntry::Item {
+                    value: "local".into(),
+                    label: "Local Runner".into(),
+                    checked: None,
+                    disabled: false,
+                }],
+            },
+        ];
+        sync(
+            &mut toolbar,
+            &mut text,
+            rect,
+            menu_declarations("Harness: Codex", "Effort: Medium", true, false, entries),
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+
+        let (trigger_ax, trigger_frame) = menu_trigger(&toolbar, ComponentId(101));
+        assert!(
+            toolbar
+                .host
+                .accessibility_action(trigger_ax, AccessibilityAction::Press)
+                .consumed
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert!(toolbar.modal());
+
+        // Disabled item carries disabled/checked semantics and rejects pointer & AX clicks.
+        let (disabled_ax, disabled_part) = menu_item(&toolbar, ComponentId(101), "Codex CLI");
+        assert!(disabled_part.semantics.disabled);
+        assert!(disabled_part.semantics.selected);
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(disabled_part.frame.center()));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerUp(disabled_part.frame.center()));
+        assert!(toolbar.host.drain_commands().is_empty());
+        assert!(
+            !toolbar
+                .host
+                .accessibility_action(disabled_ax, AccessibilityAction::Press)
+                .consumed
+        );
+        assert!(toolbar.host.drain_commands().is_empty());
+
+        // Clicking outside closes the popup without bubbling or invoking commands.
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(Point::new(15., 260.)));
+        assert!(!toolbar.host.event_bubbled());
+        assert!(!toolbar.modal());
+        assert!(toolbar.host.drain_commands().is_empty());
+
+        // Re-open and deactivate window -> popup safely closes.
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(trigger_frame.center()));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerUp(trigger_frame.center()));
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::DARK);
+        assert!(toolbar.modal());
+        toolbar.host.set_window_active(false);
+        assert!(!toolbar.modal());
+
+        // Re-activate, open submenu, and select leaf item -> MenuSelection value path is delivered.
+        toolbar.host.set_window_active(true);
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        let (trigger_ax, _) = menu_trigger(&toolbar, ComponentId(101));
+        assert!(
+            toolbar
+                .host
+                .accessibility_action(trigger_ax, AccessibilityAction::Press)
+                .consumed
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        let (sub_ax, _) = menu_item(&toolbar, ComponentId(101), "Custom");
+        assert!(
+            toolbar
+                .host
+                .accessibility_action(sub_ax, AccessibilityAction::Press)
+                .consumed
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        let (leaf_ax, _) = menu_item(&toolbar, ComponentId(101), "Local Runner");
+        assert!(
+            toolbar
+                .host
+                .accessibility_action(leaf_ax, AccessibilityAction::Press)
+                .consumed
+        );
+        render_theme(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert!(!toolbar.modal());
+
+        let invocations = toolbar.host.drain_commands();
+        assert_eq!(invocations.len(), 1);
+        assert_eq!(invocations[0].command, 11);
+        match invocations[0].payload.as_ref() {
+            Some(ContentActionPayload::MenuSelection(selection)) => {
+                assert_eq!(
+                    selection.value_path(),
+                    Some(["more".into(), "local".into()].as_slice())
+                );
+            }
+            other => panic!("expected MenuSelection payload, got {other:?}"),
+        }
     }
 }
 

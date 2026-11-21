@@ -72,6 +72,19 @@ pub trait ContainerContent {
     ) -> Result<Option<crate::WindowOpenRequest>> {
         Ok(None)
     }
+    /// Publish the container's current local toolbar items after `prepare_for_render`
+    /// and before window toolbar synchronization. Return `None` (default) to retain
+    /// static declarations registered on `LocalContainer`. Return `Some(items)` to
+    /// dynamically update buttons and dropdown menus in place.
+    fn toolbar_items(&mut self) -> Option<Vec<crate::LocalToolbarItem>> {
+        None
+    }
+    /// Handle an activated button or dropdown menu selection from this container's
+    /// toolbar. Return `Ok(true)` when handled directly; return `Ok(false)` (default)
+    /// to delegate to `LocalContainer::on_toolbar_action` or `LocalContainer::on_command`.
+    fn on_toolbar_action(&mut self, _action: &crate::LocalToolbarAction) -> Result<bool> {
+        Ok(false)
+    }
 }
 impl ContainerContent for ContentHost {
     fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
@@ -79,6 +92,9 @@ impl ContainerContent for ContentHost {
     }
 }
 type CommandHandler = Box<dyn FnMut(&mut ContentHost, u64) -> Result<()>>;
+type ToolbarActionHandler =
+    Box<dyn FnMut(&mut ContentHost, crate::LocalToolbarAction) -> Result<()>>;
+type ToolbarProvider = Box<dyn FnMut(&mut ContentHost) -> Vec<crate::LocalToolbarItem>>;
 type ActionHandler = Box<dyn FnMut(&mut ContentHost, Vec<ContentActionRecord>)>;
 pub struct LocalContainer {
     id: String,
@@ -86,7 +102,10 @@ pub struct LocalContainer {
     active: bool,
     action: Option<ActionHandler>,
     command: Option<CommandHandler>,
+    toolbar_action: Option<ToolbarActionHandler>,
+    toolbar_provider: Option<ToolbarProvider>,
     pub(crate) toolbar: Vec<tekes_ui_app_protocol::ToolbarItem>,
+    pub(crate) toolbar_items: Vec<crate::LocalToolbarItem>,
     pub(crate) frame: Rect,
     pub(crate) options: ContainerOptions,
 }
@@ -96,6 +115,7 @@ impl std::fmt::Debug for LocalContainer {
             .field("id", &self.id)
             .field("active", &self.active)
             .field("toolbar", &self.toolbar)
+            .field("toolbar_items", &self.toolbar_items)
             .field("frame", &self.frame)
             .field("options", &self.options)
             .finish_non_exhaustive()
@@ -115,7 +135,10 @@ impl LocalContainer {
             active: true,
             action: None,
             command: None,
+            toolbar_action: None,
+            toolbar_provider: None,
             toolbar: vec![],
+            toolbar_items: vec![],
             frame: Rect::default(),
             options: ContainerOptions::default(),
         }
@@ -189,7 +212,28 @@ impl LocalContainer {
     }
     /// Declare shared toolbar actions; the original ToolbarControl owns input.
     pub fn toolbar(mut self, items: Vec<tekes_ui_app_protocol::ToolbarItem>) -> Self {
+        self.toolbar_items.clear();
         self.toolbar = items;
+        self
+    }
+    /// Declare rich local toolbar buttons and dropdown menus (`MenuContent`).
+    pub fn toolbar_items(mut self, items: Vec<crate::LocalToolbarItem>) -> Self {
+        self.toolbar = items
+            .iter()
+            .filter_map(|item| match item {
+                crate::LocalToolbarItem::Button(button) => Some(button.to_protocol_item()),
+                crate::LocalToolbarItem::Menu(_) => None,
+            })
+            .collect();
+        self.toolbar_items = items;
+        self
+    }
+    /// Provide dynamic toolbar items evaluated on each toolbar synchronization pass.
+    pub fn dynamic_toolbar(
+        mut self,
+        provider: impl FnMut(&mut ContentHost) -> Vec<crate::LocalToolbarItem> + 'static,
+    ) -> Self {
+        self.toolbar_provider = Some(Box::new(provider));
         self
     }
     pub fn on_command(
@@ -198,6 +242,47 @@ impl LocalContainer {
     ) -> Self {
         self.command = Some(Box::new(handler));
         self
+    }
+    /// Handle activated buttons and menu selections delivered from this container's toolbar.
+    pub fn on_toolbar_action(
+        mut self,
+        handler: impl FnMut(&mut ContentHost, crate::LocalToolbarAction) -> Result<()> + 'static,
+    ) -> Self {
+        self.toolbar_action = Some(Box::new(handler));
+        self
+    }
+    pub(crate) fn poll_toolbar_items(&mut self) -> Option<Vec<crate::LocalToolbarItem>> {
+        if let Some(items) = self.source.toolbar_items() {
+            return Some(items);
+        }
+        let provider = self.toolbar_provider.as_mut()?;
+        let mut items = Vec::new();
+        self.source.with_host(&mut |host| {
+            host.set_window_active(self.active);
+            items = provider(host);
+        });
+        Some(items)
+    }
+    pub(crate) fn toolbar_action(&mut self, action: crate::LocalToolbarAction) -> Result<()> {
+        if self.source.on_toolbar_action(&action)? {
+            return Ok(());
+        }
+        if let Some(callback) = self.toolbar_action.as_mut() {
+            let mut result = Ok(());
+            let mut pending = Some(action);
+            self.source.with_host(&mut |host| {
+                host.set_window_active(self.active);
+                result = callback(host, pending.take().expect("toolbar action called once"));
+            });
+            return result;
+        }
+        if action.menu_selection().is_none() && self.command.is_some() {
+            return self.command(action.id);
+        }
+        Err(anyhow::anyhow!(
+            "column {} has no toolbar action binding",
+            self.id
+        ))
     }
     pub(crate) fn take_navigation_request(&mut self) -> Option<crate::navigation::Entry> {
         self.source.take_navigation_request()
@@ -768,22 +853,32 @@ pub(crate) fn validate(columns: &[Column]) -> Result<()> {
         "legacy horizontal AppWindow requires one to three columns"
     );
     for column in columns {
-        if let Column::ProcessContainer(process) = column {
-            anyhow::ensure!(
-                process.options.search_entry.is_none(),
-                "search entry requires local ContentHost"
-            );
+        match column {
+            Column::Container(local) => {
+                crate::local_toolbar::validate_unique_ids(&local.id, &local.toolbar_items)?;
+            }
+            Column::ProcessContainer(process) => {
+                anyhow::ensure!(
+                    process.options.search_entry.is_none(),
+                    "search entry requires local ContentHost"
+                );
+            }
         }
     }
     validate_ids(columns.iter().map(|c| (c.id(), c.options())))
 }
 pub(crate) fn validate_containers(containers: &[Container]) -> Result<()> {
     for container in containers {
-        if let Container::Process(process) = container {
-            anyhow::ensure!(
-                process.options.search_entry.is_none(),
-                "search entry requires local ContentHost"
-            );
+        match container {
+            Container::Local(local) => {
+                crate::local_toolbar::validate_unique_ids(&local.id, &local.toolbar_items)?;
+            }
+            Container::Process(process) => {
+                anyhow::ensure!(
+                    process.options.search_entry.is_none(),
+                    "search entry requires local ContentHost"
+                );
+            }
         }
     }
     validate_ids(containers.iter().map(|c| (c.id(), c.container_options())))

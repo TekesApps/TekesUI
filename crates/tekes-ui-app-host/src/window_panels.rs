@@ -45,6 +45,9 @@ pub(super) struct Panel {
     pub(super) geometry: window_container_geometry::ContainerGeometry,
     pub(super) content_padding: f32,
     pub(super) toolbar: Vec<ToolbarItem>,
+    pub(super) local_toolbar: Vec<crate::LocalToolbarItem>,
+    pub(super) local_toolbar_slots: std::collections::BTreeMap<u64, u64>,
+    pub(super) local_toolbar_next_slot: u64,
     pub(super) seq: u64,
     pub(super) failed: Option<String>,
     pub(super) pid: Option<u32>,
@@ -92,6 +95,9 @@ impl Panel {
             geometry: Default::default(),
             content_padding: 0.,
             toolbar: Vec::new(),
+            local_toolbar: Vec::new(),
+            local_toolbar_slots: Default::default(),
+            local_toolbar_next_slot: 0,
             seq: 0,
             failed: None,
             pid: None,
@@ -111,6 +117,8 @@ impl Panel {
         match column {
             crate::Column::Container(container) => {
                 panel.toolbar = container.toolbar.clone();
+                panel.local_toolbar = container.toolbar_items.clone();
+                panel.ensure_local_toolbar_slots();
                 panel.local = Some(container);
                 panel.needs_launch = false;
                 panel.connection = None;
@@ -135,6 +143,8 @@ impl Panel {
                     )
                     .options(container.options);
                     panel.toolbar = local.toolbar.clone();
+                    panel.local_toolbar = local.toolbar_items.clone();
+                    panel.ensure_local_toolbar_slots();
                     panel.local = Some(local);
                     panel.needs_launch = false;
                     panel.connection = None;
@@ -220,6 +230,8 @@ impl Panel {
         }
         self.local = None;
         self.toolbar.clear();
+        self.local_toolbar.clear();
+        self.local_toolbar_slots.clear();
         // Unregister before dropping ViewImage so GPU retirement waits only after no
         // Scene draw can reference the old ImageId.
         if let Some(image) = self.image.take() {
@@ -258,6 +270,97 @@ impl Panel {
             return Ok(());
         }
         self.enqueue(InputKind::Command, 0., 0., Some(id))
+    }
+
+    pub(super) fn ensure_local_toolbar_slots(&mut self) {
+        for item in &self.local_toolbar {
+            let id = item.id();
+            if !self.local_toolbar_slots.contains_key(&id) {
+                self.local_toolbar_slots
+                    .insert(id, self.local_toolbar_next_slot);
+                self.local_toolbar_next_slot = self
+                    .local_toolbar_next_slot
+                    .checked_add(1)
+                    .expect("local toolbar slot exhausted");
+            }
+        }
+    }
+
+    pub(super) fn slot_for_local_item(&self, id: u64) -> Option<u64> {
+        self.local_toolbar_slots.get(&id).copied()
+    }
+
+    pub(super) fn has_toolbar_items(&self) -> bool {
+        !self.toolbar.is_empty() || !self.local_toolbar.is_empty()
+    }
+
+    pub(super) fn sync_local_toolbar(&mut self) -> Result<()> {
+        if self.retired {
+            return Ok(());
+        }
+        if let Some(local) = &mut self.local
+            && let Some(items) = local.poll_toolbar_items()
+        {
+            crate::local_toolbar::validate_unique_ids(&self.module_id, &items)?;
+            if self.local_toolbar != items {
+                self.toolbar = items
+                    .iter()
+                    .filter_map(|item| match item {
+                        crate::LocalToolbarItem::Button(button) => Some(button.to_protocol_item()),
+                        crate::LocalToolbarItem::Menu(_) => None,
+                    })
+                    .collect();
+                self.local_toolbar = items;
+            }
+        }
+        self.ensure_local_toolbar_slots();
+        Ok(())
+    }
+
+    pub(super) fn toolbar_action(&mut self, action: crate::LocalToolbarAction) -> Result<()> {
+        if self.retired || self.failed.is_some() {
+            return Ok(());
+        }
+        if self.local.is_some() {
+            match self
+                .local_toolbar
+                .iter()
+                .find(|item| item.id() == action.id)
+            {
+                Some(crate::LocalToolbarItem::Button(button)) => {
+                    if !button.enabled
+                        || (button.geometry_dependent && self.frame_viewport != self.viewport)
+                    {
+                        return Ok(());
+                    }
+                    let id = action.id;
+                    self.local.as_mut().unwrap().toolbar_action(action)?;
+                    self.seq += 1;
+                    if let Some(trace) = &mut self.acceptance_commands {
+                        trace.push((id, self.seq));
+                    }
+                    return Ok(());
+                }
+                Some(crate::LocalToolbarItem::Menu(menu)) => {
+                    if !menu.enabled {
+                        return Ok(());
+                    }
+                    let Some(selection) = action.menu_selection() else {
+                        return Ok(());
+                    };
+                    if let Some(path) = selection.value_path()
+                        && !crate::local_toolbar::entry_enabled(&menu.entries, path)
+                    {
+                        return Ok(());
+                    }
+                    self.local.as_mut().unwrap().toolbar_action(action)?;
+                    self.seq += 1;
+                    return Ok(());
+                }
+                None => return self.command(action.id),
+            }
+        }
+        self.command(action.id)
     }
 
     pub(super) fn enqueue(

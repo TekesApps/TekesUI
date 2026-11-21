@@ -2,12 +2,14 @@
 //! its original ContentHost/process and its independently owned Toolbar.
 use super::*;
 use crate::{
-    OthersTab,
-    window_toolbar::{Contents, Declaration, Source},
+    OthersTab, PresentationState,
+    window_toolbar::{Contents, Declaration, MenuDeclaration, Source, build_menu_content},
 };
+use std::collections::BTreeMap;
 use tekes_ui_controls::composition::{
-    ContentActionPayload, ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement,
-    ToolbarRegion, ToolbarWindowEdge,
+    ButtonImagePosition, Component, ContentActionPayload, MenuEntry, TextContent,
+    ToolbarButtonDeclaration, ToolbarGroupOverflow, ToolbarPlacement, ToolbarRegion,
+    ToolbarWindowEdge,
 };
 use tekes_ui_platform_macos::{CommandId, Menu, MenuCommand, MenuItem};
 const COMMAND_BASE: u32 = 0x4300_0000;
@@ -18,7 +20,7 @@ const WINDOW_NAV_BUSINESS: ComponentId = ComponentId(u64::MAX - 19);
 const WINDOW_OTHERS_BUSINESS: ComponentId = ComponentId(u64::MAX - 20);
 const TABS_OWNER: u64 = u64::MAX - 1;
 #[cfg(test)]
-use tekes_ui_controls::composition::{Content, TextContent, ToolbarHost};
+use tekes_ui_controls::composition::{Content, ToolbarHost};
 #[cfg(test)]
 fn test_band() -> window_toolbar_mount::ToolbarBand {
     window_toolbar_mount::ToolbarBand {
@@ -116,6 +118,589 @@ fn reserve_window_edges(region: &mut ToolbarRegion, edges: [Rect; 2]) {
     }
     region.native_safe_area.left = (left - frame.min_x()).max(0.);
     region.native_safe_area.right = (frame.max_x() - right).max(0.);
+}
+fn toolbar_spacing(text: &mut Text, token: &str) -> f32 {
+    use tekes_ui_controls::ButtonTextRenderer;
+    use tekes_ui_tokens::proposal;
+    let scale = ButtonTextRenderer::resolved_font_size(text, proposal::TextRole::UiBody)
+        / proposal::TOOLBAR_REFERENCE_TITLE_SIZE;
+    let scale = if scale.is_finite() && scale > 0. {
+        scale
+    } else {
+        1.
+    };
+    proposal::metric("spacing", token).unwrap_or(tekes_ui_tokens::Spacing::Regular.value()) * scale
+}
+fn non_empty_menu_label(label: &str, fallback: &str) -> String {
+    if label.trim().is_empty() {
+        fallback.to_owned()
+    } else {
+        label.to_owned()
+    }
+}
+fn local_menu_declaration(
+    menu: &crate::LocalToolbarMenu,
+    enabled: bool,
+    include_icons: bool,
+) -> MenuDeclaration {
+    let fallback = menu.tooltip.as_deref().unwrap_or("Menu");
+    let (title, accessible_name, icon, icon_position, icon_slot) = if include_icons {
+        if let Some(icon) = &menu.icon {
+            let icon_slot = menu.title.trim().is_empty();
+            let accessible_name =
+                icon_slot.then(|| menu.tooltip.clone().unwrap_or_else(|| "Menu".to_owned()));
+            (
+                menu.title.clone(),
+                accessible_name,
+                Some(icon.clone()),
+                ButtonImagePosition::Leading,
+                icon_slot,
+            )
+        } else if menu.dropdown_indicator {
+            (
+                non_empty_menu_label(&menu.title, fallback),
+                None,
+                Some("tekes-expand".to_owned()),
+                ButtonImagePosition::Trailing,
+                false,
+            )
+        } else {
+            (
+                non_empty_menu_label(&menu.title, fallback),
+                None,
+                None,
+                ButtonImagePosition::Leading,
+                false,
+            )
+        }
+    } else {
+        (
+            non_empty_menu_label(&menu.title, fallback),
+            None,
+            None,
+            ButtonImagePosition::Leading,
+            false,
+        )
+    };
+    MenuDeclaration {
+        id: menu.id,
+        title,
+        accessible_name,
+        icon,
+        icon_position,
+        icon_slot,
+        tooltip: menu.tooltip.clone(),
+        enabled,
+        selected: menu.selected,
+        entries: menu.entries.clone(),
+    }
+}
+fn overflow_menu_declaration(
+    id: u64,
+    items: &[(crate::LocalToolbarItem, bool, String)],
+    include_icons: bool,
+) -> MenuDeclaration {
+    let entries = items
+        .iter()
+        .map(|(item, enabled, title)| match item {
+            crate::LocalToolbarItem::Button(button) => MenuEntry::Item {
+                value: format!("cmd:{}", button.id),
+                label: non_empty_menu_label(title, button.tooltip.as_deref().unwrap_or("Action")),
+                checked: button.selected.then_some(true),
+                disabled: !*enabled,
+            },
+            crate::LocalToolbarItem::Menu(menu) if menu.entries.is_empty() => MenuEntry::Item {
+                value: format!("noop:{}", menu.id),
+                label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
+                checked: menu.selected.then_some(true),
+                disabled: true,
+            },
+            crate::LocalToolbarItem::Menu(menu) => MenuEntry::Submenu {
+                value: format!("menu:{}", menu.id),
+                label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
+                disabled: !*enabled,
+                entries: menu.entries.clone(),
+            },
+        })
+        .collect();
+    MenuDeclaration {
+        id,
+        title: if include_icons {
+            String::new()
+        } else {
+            "More".to_owned()
+        },
+        accessible_name: Some("More actions".to_owned()),
+        icon: include_icons.then(|| "tekes-more".to_owned()),
+        icon_position: ButtonImagePosition::Leading,
+        icon_slot: include_icons,
+        tooltip: Some("More actions".to_owned()),
+        enabled: true,
+        selected: false,
+        entries,
+    }
+}
+type LocalButtonPart = (ToolbarButtonDeclaration, Option<(u64, String)>, Option<u64>);
+fn local_button_contents(
+    buttons: Vec<LocalButtonPart>,
+    overflow: ToolbarGroupOverflow,
+) -> Contents {
+    let mut decls = Vec::with_capacity(buttons.len());
+    let mut templates = Vec::new();
+    let mut selected = Vec::new();
+    for (decl, icon, selected_id) in buttons {
+        decls.push(decl);
+        if let Some(template) = icon {
+            templates.push(template);
+        }
+        if let Some(id) = selected_id {
+            selected.push(id);
+        }
+    }
+    if selected.is_empty() {
+        Contents::TemplateCommands(decls, overflow, templates)
+    } else {
+        Contents::SelectedTemplateCommands {
+            buttons: decls,
+            overflow,
+            templates,
+            selected,
+        }
+    }
+}
+fn measure_menu_width(text: &mut Text, decl: &MenuDeclaration) -> f32 {
+    let mut menu = build_menu_content(decl, Rect::default());
+    Component::measure(&mut menu, text, tekes_ui_scene::Size::new(100_000., 64.))
+        .size
+        .width
+}
+fn measure_contents_width(text: &mut Text, contents: &Contents) -> f32 {
+    match contents {
+        Contents::Menu(decl) => measure_menu_width(text, decl),
+        Contents::Title(title) => {
+            let mut label = TextContent::label(title.clone());
+            Component::measure(&mut label, text, tekes_ui_scene::Size::new(100_000., 64.))
+                .size
+                .width
+        }
+        Contents::Commands(buttons, overflow)
+        | Contents::TemplateCommands(buttons, overflow, _)
+        | Contents::SelectedTemplateCommands {
+            buttons, overflow, ..
+        } => {
+            let mut content = tekes_ui_controls::composition::toolbar_commands(
+                ComponentId(1),
+                buttons.clone(),
+                *overflow,
+            );
+            if let Some(control) = content.component_mut::<ToolbarControl>() {
+                for (id, name) in contents.templates() {
+                    let _ = control.set_action_template_icon(*id, Some(name));
+                }
+                if let Contents::SelectedTemplateCommands { selected, .. } = contents {
+                    control.set_selected_ids(selected);
+                }
+            }
+            content
+                .measure(text, tekes_ui_scene::Size::new(100_000., 64.))
+                .size
+                .width
+        }
+    }
+}
+fn occupied_region_width(
+    text: &mut Text,
+    existing: &[&Declaration],
+    new_placement: ToolbarPlacement,
+) -> f32 {
+    let gap = toolbar_spacing(text, "space-regular");
+    let tight = toolbar_spacing(text, "space-tight");
+    let mut sec0 = Vec::new();
+    let mut sec1 = Vec::new();
+    let mut sec2 = Vec::new();
+    for decl in existing {
+        let width = measure_contents_width(text, &decl.contents);
+        match decl.placement {
+            ToolbarPlacement::Navigation => sec0.push(width),
+            ToolbarPlacement::PrimaryAction | ToolbarPlacement::SecondaryAction => sec2.push(width),
+            _ => sec1.push(width),
+        }
+    }
+    let w0: f32 = sec0.iter().sum::<f32>() + tight * sec0.len().saturating_sub(1) as f32;
+    let w1: f32 = sec1.iter().sum::<f32>() + gap * sec1.len().saturating_sub(1) as f32;
+    let w2: f32 = sec2.iter().sum::<f32>() + gap * sec2.len().saturating_sub(1) as f32;
+    let has_sec0 = !sec0.is_empty() || matches!(new_placement, ToolbarPlacement::Navigation);
+    let has_sec2 = !sec2.is_empty()
+        || matches!(
+            new_placement,
+            ToolbarPlacement::PrimaryAction | ToolbarPlacement::SecondaryAction
+        );
+    let has_sec1 = !sec1.is_empty() || (!has_sec0 && !has_sec2);
+    let sections = usize::from(has_sec0) + usize::from(has_sec1) + usize::from(has_sec2);
+    let inter_sections = gap * sections.saturating_sub(1) as f32;
+    let existing_intra = match new_placement {
+        ToolbarPlacement::Navigation if !sec0.is_empty() => tight,
+        ToolbarPlacement::PrimaryAction | ToolbarPlacement::SecondaryAction if !sec2.is_empty() => {
+            gap
+        }
+        _ if !sec1.is_empty()
+            && !matches!(
+                new_placement,
+                ToolbarPlacement::Navigation
+                    | ToolbarPlacement::PrimaryAction
+                    | ToolbarPlacement::SecondaryAction
+            ) =>
+        {
+            gap
+        }
+        _ => 0.,
+    };
+    2. * gap + w0 + w1 + w2 + inter_sections + existing_intra
+}
+fn fitting_prefix_count(item_widths: &[f32], overflow_width: f32, budget: f32, gap: f32) -> usize {
+    let count = item_widths.len();
+    let total: f32 = item_widths.iter().sum::<f32>() + gap * count.saturating_sub(1) as f32;
+    if total <= budget {
+        return count;
+    }
+    for k in (0..count).rev() {
+        let prefix: f32 =
+            item_widths[..k].iter().sum::<f32>() + if k > 0 { gap * k as f32 } else { 0. };
+        if prefix + overflow_width <= budget {
+            return k;
+        }
+    }
+    0
+}
+fn horizontal_region_budgets(regions: &[Vec<ToolbarRegion>]) -> BTreeMap<ComponentId, f32> {
+    let mut budgets = BTreeMap::new();
+    for region in regions.iter().flatten() {
+        if region.axis == Axis::Horizontal && region.available.size.width > 0. {
+            let usable = (region.available.size.width
+                - region.native_safe_area.left
+                - region.native_safe_area.right)
+                .max(0.);
+            budgets.insert(region.id, usable);
+        }
+    }
+    budgets
+}
+fn presentation_window_business_region(
+    state: &PresentationState,
+    panel: &window_panels::Panel,
+) -> ComponentId {
+    let id = panel.module_id.as_str();
+    if state.nav_bar_id() == Some(id) {
+        WINDOW_NAV_BUSINESS
+    } else if state.focus_id() == id && !state.others_expanded() {
+        WINDOW_BUSINESS
+    } else {
+        WINDOW_OTHERS_BUSINESS
+    }
+}
+fn presentation_business_destination(
+    state: &PresentationState,
+    panels: &[window_panels::Panel],
+    owner: usize,
+    retained: Option<usize>,
+    focus: usize,
+) -> (usize, ComponentId) {
+    let target = retained.unwrap_or(owner);
+    match panels[target].options.toolbar_host {
+        crate::ContainerToolbarHost::Window => (
+            focus,
+            presentation_window_business_region(state, &panels[target]),
+        ),
+        crate::ContainerToolbarHost::Container { .. } => {
+            (target, ComponentId(91000 + target as u64))
+        }
+    }
+}
+fn build_navigation_toolbar_declaration(
+    state: &PresentationState,
+    panels: &[window_panels::Panel],
+    index: usize,
+    focus: usize,
+    source: crate::toolbar_source::ComponentSource,
+    buttons: Vec<ToolbarButtonDeclaration>,
+    templates: Vec<(u64, String)>,
+) -> (usize, Declaration) {
+    let (presenter, destination) =
+        presentation_business_destination(state, panels, index, None, focus);
+    (
+        presenter,
+        Declaration {
+            id: ComponentId(92100),
+            region: destination,
+            // Others content navigation owns leading; fixed history commands
+            // share this partition's trailing business space instead.
+            placement: if destination == WINDOW_OTHERS_BUSINESS {
+                ToolbarPlacement::PrimaryAction
+            } else {
+                ToolbarPlacement::Navigation
+            },
+            order: 10,
+            contents: Contents::TemplateCommands(
+                buttons,
+                ToolbarGroupOverflow::Together,
+                templates,
+            ),
+            source: Source::Navigation(source),
+        },
+    )
+}
+struct LocalBucketEntry {
+    item: crate::LocalToolbarItem,
+    enabled: bool,
+    title: String,
+    hint: String,
+    icon: Option<String>,
+    selected: bool,
+}
+impl LocalBucketEntry {
+    fn from_panel_item(
+        panel: &window_panels::Panel,
+        item: &crate::LocalToolbarItem,
+        state: Option<&PresentationState>,
+        visible: bool,
+        open: bool,
+        include_icons: bool,
+    ) -> Self {
+        let is_switch = panel.options.focus_switch_command == Some(item.id());
+        let switch_target = is_switch
+            .then(|| state.and_then(|s| s.focus_switch_target(&panel.module_id)))
+            .flatten();
+        let enabled = open
+            && (!is_switch || switch_target.is_some())
+            && panel.failed.is_none()
+            && item.enabled()
+            && match item {
+                crate::LocalToolbarItem::Button(button) => {
+                    !button.geometry_dependent
+                        || (visible && panel.frame_viewport == panel.viewport)
+                }
+                crate::LocalToolbarItem::Menu(_) => true,
+            };
+        let (title, hint, icon, selected) = match item {
+            crate::LocalToolbarItem::Button(button) => {
+                let title = if is_switch {
+                    if state.is_some_and(|s| panel.module_id == s.focus_id()) {
+                        "Switch to Others".to_owned()
+                    } else {
+                        "Switch to Focus".to_owned()
+                    }
+                } else {
+                    button.title.clone()
+                };
+                let hint = if is_switch {
+                    switch_target.map_or_else(
+                        || "Select an ordinary container Tab to exchange".to_owned(),
+                        |id| format!("Exchange with {id}"),
+                    )
+                } else {
+                    button.tooltip.clone().unwrap_or_else(|| title.clone())
+                };
+                let icon = if !include_icons {
+                    None
+                } else if button.icon.is_some() {
+                    button.icon.clone()
+                } else if is_switch {
+                    Some("tekes-swap-horizontal".to_owned())
+                } else {
+                    None
+                };
+                (title, hint, icon, button.selected)
+            }
+            crate::LocalToolbarItem::Menu(menu) => (
+                menu.title.clone(),
+                menu.tooltip.clone().unwrap_or_else(|| menu.title.clone()),
+                menu.icon.clone().filter(|_| include_icons),
+                menu.selected,
+            ),
+        };
+        Self {
+            item: item.clone(),
+            enabled,
+            title,
+            hint,
+            icon,
+            selected,
+        }
+    }
+    fn to_single_contents(&self, include_icons: bool) -> Contents {
+        match &self.item {
+            crate::LocalToolbarItem::Button(button) => local_button_contents(
+                vec![(
+                    ToolbarButtonDeclaration {
+                        id: button.id,
+                        icon: None,
+                        text: self.title.clone(),
+                        hint: Some(self.hint.clone()),
+                        enabled: self.enabled,
+                    },
+                    self.icon.clone().map(|name| (button.id, name)),
+                    self.selected.then_some(button.id),
+                )],
+                ToolbarGroupOverflow::Together,
+            ),
+            crate::LocalToolbarItem::Menu(menu) => {
+                Contents::Menu(local_menu_declaration(menu, self.enabled, include_icons))
+            }
+        }
+    }
+    fn to_overflow_tuple(&self) -> (crate::LocalToolbarItem, bool, String) {
+        (self.item.clone(), self.enabled, self.title.clone())
+    }
+}
+#[allow(clippy::too_many_arguments)]
+fn emit_local_bucket_declarations(
+    panel: &window_panels::Panel,
+    index: usize,
+    entries: &[LocalBucketEntry],
+    region: ComponentId,
+    primary_placement: ToolbarPlacement,
+    secondary: bool,
+    button_only_id: ComponentId,
+    button_only_order: i32,
+    overflow_role: u64,
+    include_icons: bool,
+    budget: Option<(&mut Text, f32)>,
+    out: &mut Vec<Declaration>,
+) {
+    if entries.is_empty() {
+        return;
+    }
+    let source_panel = || Source::Panel {
+        instance: panel.instance,
+        index,
+        module: panel.module_id.clone(),
+        pid: panel.pid,
+        generation: panel.toolbar_generation,
+    };
+    let has_menu = entries
+        .iter()
+        .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+    if !has_menu {
+        let parts = entries
+            .iter()
+            .filter_map(|entry| match &entry.item {
+                crate::LocalToolbarItem::Button(button) => Some((
+                    ToolbarButtonDeclaration {
+                        id: button.id,
+                        icon: None,
+                        text: entry.title.clone(),
+                        hint: Some(entry.hint.clone()),
+                        enabled: entry.enabled,
+                    },
+                    entry.icon.clone().map(|name| (button.id, name)),
+                    entry.selected.then_some(button.id),
+                )),
+                crate::LocalToolbarItem::Menu(_) => None,
+            })
+            .collect();
+        out.push(Declaration {
+            id: button_only_id,
+            region,
+            placement: if secondary {
+                ToolbarPlacement::SecondaryAction
+            } else {
+                primary_placement
+            },
+            order: button_only_order,
+            contents: local_button_contents(
+                parts,
+                if secondary {
+                    ToolbarGroupOverflow::Menu
+                } else {
+                    ToolbarGroupOverflow::Split
+                },
+            ),
+            source: source_panel(),
+        });
+        return;
+    }
+    let base = 100_000_000u64 + (panel.instance & 0xFFFF_FFFF) * 1_000_000;
+    let overflow_entries: Vec<_> = entries
+        .iter()
+        .map(LocalBucketEntry::to_overflow_tuple)
+        .collect();
+    if secondary {
+        out.push(Declaration {
+            id: ComponentId(base + overflow_role * 10 + 8_000_000),
+            region,
+            placement: ToolbarPlacement::SecondaryAction,
+            order: 50 + index as i32,
+            contents: Contents::Menu(overflow_menu_declaration(
+                0,
+                &overflow_entries,
+                include_icons,
+            )),
+            source: Source::PanelOverflow {
+                instance: panel.instance,
+                index,
+                module: panel.module_id.clone(),
+                pid: panel.pid,
+                generation: panel.toolbar_generation,
+            },
+        });
+        return;
+    }
+    let item_contents: Vec<_> = entries
+        .iter()
+        .map(|entry| entry.to_single_contents(include_icons))
+        .collect();
+    let k = if let Some((text, available)) = budget {
+        let gap = toolbar_spacing(
+            text,
+            if matches!(primary_placement, ToolbarPlacement::Navigation) {
+                "space-tight"
+            } else {
+                "space-regular"
+            },
+        );
+        let item_widths: Vec<_> = item_contents
+            .iter()
+            .map(|contents| measure_contents_width(text, contents))
+            .collect();
+        let overflow_decl = overflow_menu_declaration(0, &overflow_entries, include_icons);
+        let overflow_width = measure_menu_width(text, &overflow_decl);
+        fitting_prefix_count(&item_widths, overflow_width, available, gap)
+    } else {
+        item_contents.len()
+    };
+    for (idx, (entry, contents)) in entries.iter().zip(item_contents).take(k).enumerate() {
+        let slot_idx = panel
+            .slot_for_local_item(entry.item.id())
+            .unwrap_or(idx as u64);
+        out.push(Declaration {
+            id: ComponentId(base + 100 + slot_idx * 10),
+            region,
+            placement: primary_placement,
+            order: -10_000 + (index as i32) * 256 + (idx as i32),
+            contents,
+            source: source_panel(),
+        });
+    }
+    if k < entries.len() {
+        out.push(Declaration {
+            id: ComponentId(base + overflow_role * 10),
+            region,
+            placement: primary_placement,
+            order: -10_000 + (index as i32) * 256 + 250,
+            contents: Contents::Menu(overflow_menu_declaration(
+                0,
+                &overflow_entries[k..],
+                include_icons,
+            )),
+            source: Source::PanelOverflow {
+                instance: panel.instance,
+                index,
+                module: panel.module_id.clone(),
+                pid: panel.pid,
+                generation: panel.toolbar_generation,
+            },
+        });
+    }
 }
 impl Host {
     pub(super) fn presentation_menu(&self) -> Menu {
@@ -1095,29 +1680,186 @@ impl Host {
             ContentAccessibilitySnapshot::from_host(&grid.host)?,
         ))
     }
+    #[cfg(test)]
     fn business_destination(
         &self,
         owner: usize,
         retained: Option<usize>,
         focus: usize,
     ) -> (usize, ComponentId) {
-        let target = retained.unwrap_or(owner);
-        match self.panel_mgr.panels[target].options.toolbar_host {
-            crate::ContainerToolbarHost::Window => (focus, self.window_business_region(target)),
-            crate::ContainerToolbarHost::Container { .. } => {
-                (target, ComponentId(91000 + target as u64))
+        let state = self.layout.presentation.as_ref().unwrap();
+        presentation_business_destination(state, &self.panel_mgr.panels, owner, retained, focus)
+    }
+    pub(super) fn sync_local_toolbars(&mut self) -> Result<()> {
+        for panel in &mut self.panel_mgr.panels {
+            panel.sync_local_toolbar()?;
+        }
+        Ok(())
+    }
+    pub(super) fn legacy_local_panel_contents(
+        &self,
+        index: usize,
+        include_icons: bool,
+    ) -> Vec<Contents> {
+        let panel = &self.panel_mgr.panels[index];
+        let mut out = Vec::new();
+        for secondary in [false, true] {
+            let entries: Vec<_> = panel
+                .local_toolbar
+                .iter()
+                .filter(|item| panel.options.secondary_commands.contains(&item.id()) == secondary)
+                .map(|item| {
+                    LocalBucketEntry::from_panel_item(panel, item, None, true, true, include_icons)
+                })
+                .collect();
+            if entries.is_empty() {
+                continue;
+            }
+            let has_menu = entries
+                .iter()
+                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            if !has_menu {
+                let parts = entries
+                    .iter()
+                    .filter_map(|entry| match &entry.item {
+                        crate::LocalToolbarItem::Button(button) => Some((
+                            ToolbarButtonDeclaration {
+                                id: button.id,
+                                icon: None,
+                                text: entry.title.clone(),
+                                hint: Some(entry.hint.clone()),
+                                enabled: entry.enabled,
+                            },
+                            entry.icon.clone().map(|name| (button.id, name)),
+                            entry.selected.then_some(button.id),
+                        )),
+                        crate::LocalToolbarItem::Menu(_) => None,
+                    })
+                    .collect();
+                out.push(local_button_contents(
+                    parts,
+                    if secondary {
+                        ToolbarGroupOverflow::Menu
+                    } else {
+                        ToolbarGroupOverflow::Split
+                    },
+                ));
+            } else if secondary {
+                let overflow_entries: Vec<_> = entries
+                    .iter()
+                    .map(LocalBucketEntry::to_overflow_tuple)
+                    .collect();
+                out.push(Contents::Menu(overflow_menu_declaration(
+                    0,
+                    &overflow_entries,
+                    include_icons,
+                )));
+            } else {
+                for entry in &entries {
+                    out.push(entry.to_single_contents(include_icons));
+                }
             }
         }
+        out
     }
-    fn window_business_region(&self, target: usize) -> ComponentId {
-        let state = self.layout.presentation.as_ref().unwrap();
-        let id = self.panel_mgr.panels[target].module_id.as_str();
-        if state.nav_bar_id() == Some(id) {
-            WINDOW_NAV_BUSINESS
-        } else if state.focus_id() == id && !state.others_expanded() {
-            WINDOW_BUSINESS
-        } else {
-            WINDOW_OTHERS_BUSINESS
+    pub(super) fn emit_legacy_local_panel_declarations(
+        &mut self,
+        index: usize,
+        slot: usize,
+        open: bool,
+        include_icons: bool,
+        budget: Option<f32>,
+        declarations: &mut Vec<Declaration>,
+    ) {
+        let motion_busy = self.layout.sidebar_motion.needs_frame();
+        let is_window_host = matches!(
+            self.panel_mgr.panels[index].options.toolbar_host,
+            crate::ContainerToolbarHost::Window
+        );
+        let is_vertical = matches!(
+            self.panel_mgr.panels[index].options.toolbar_host,
+            crate::ContainerToolbarHost::Container {
+                position: crate::ContainerToolbarPosition::Leading
+                    | crate::ContainerToolbarPosition::Trailing
+            }
+        );
+        for secondary in [false, true] {
+            let entries: Vec<_> = {
+                let panel = &self.panel_mgr.panels[index];
+                panel
+                    .local_toolbar
+                    .iter()
+                    .filter(|item| {
+                        panel.options.secondary_commands.contains(&item.id()) == secondary
+                    })
+                    .map(|item| {
+                        LocalBucketEntry::from_panel_item(
+                            panel,
+                            item,
+                            None,
+                            true,
+                            open && !motion_busy,
+                            include_icons,
+                        )
+                    })
+                    .collect()
+            };
+            if entries.is_empty() {
+                continue;
+            }
+            let has_menu = entries
+                .iter()
+                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let budget_ctx = if !secondary && !is_vertical && has_menu {
+                budget.map(|usable_w| {
+                    let used = {
+                        let matching: Vec<&Declaration> = declarations
+                            .iter()
+                            .filter(|decl| match &decl.source {
+                                Source::Panel { index: owner, .. }
+                                | Source::PanelOverflow { index: owner, .. } => {
+                                    *owner == index
+                                        || (is_window_host
+                                            && matches!(
+                                                self.panel_mgr.panels[*owner].options.toolbar_host,
+                                                crate::ContainerToolbarHost::Window
+                                            ))
+                                }
+                                _ => false,
+                            })
+                            .collect();
+                        if matching.is_empty() {
+                            2. * toolbar_spacing(&mut self.text, "space-regular")
+                        } else {
+                            occupied_region_width(
+                                &mut self.text,
+                                &matching,
+                                ToolbarPlacement::PrimaryAction,
+                            )
+                        }
+                    };
+                    (usable_w - used).max(0.)
+                })
+            } else {
+                None
+            };
+            let panel = &self.panel_mgr.panels[index];
+            let button_only_id =
+                ComponentId(92400 + index as u64 * 10 + if secondary { 8_000_000 } else { 0 });
+            emit_local_bucket_declarations(
+                panel,
+                index,
+                &entries,
+                ComponentId(91000 + slot as u64),
+                ToolbarPlacement::PrimaryAction,
+                secondary,
+                button_only_id,
+                10,
+                if is_window_host { 0 } else { 3 },
+                include_icons,
+                budget_ctx.map(|avail| (&mut self.text, avail)),
+                declarations,
+            );
         }
     }
     fn window_partition_frame(
@@ -1180,12 +1922,91 @@ impl Host {
         }
         Some(frame)
     }
+    fn compute_others_tabs_reserve(
+        &mut self,
+        focus: usize,
+        whole: Rect,
+        band: &window_toolbar_mount::ToolbarBand,
+        include_icons: bool,
+    ) -> f32 {
+        let declarations = Self::build_presentation_declarations(
+            &self.panel_mgr.panels,
+            &self.layout,
+            &self.nav_mgr,
+            include_icons,
+            None,
+        );
+        let others_decls: Vec<_> = declarations[focus]
+            .iter()
+            .filter(|decl| decl.region == WINDOW_OTHERS_BUSINESS)
+            .collect();
+        if others_decls.is_empty() {
+            return 0.;
+        }
+        let frame = self.window_partition_frame(WINDOW_OTHERS_BUSINESS, whole, band);
+        if frame.size.width <= 0. {
+            return 0.;
+        }
+        let mut region = ToolbarRegion::new(WINDOW_OTHERS_BUSINESS, frame);
+        region.native_safe_area.left =
+            (band.native_leading - frame.min_x()).clamp(0., frame.size.width);
+        reserve_window_edges(&mut region, self.layout.presentation_chrome_edges);
+        let usable_others_w = (region.available.size.width
+            - region.native_safe_area.left
+            - region.native_safe_area.right)
+            .max(0.);
+        if usable_others_w <= 0. {
+            return 0.;
+        }
+        let gap = toolbar_spacing(&mut self.text, "space-regular");
+        let tight = toolbar_spacing(&mut self.text, "space-tight");
+        let (mut c0, mut c2) = (0usize, 0usize);
+        let mut sum = 0.0f32;
+        for decl in &others_decls {
+            sum += measure_contents_width(&mut self.text, &decl.contents);
+            if matches!(decl.placement, ToolbarPlacement::Navigation) {
+                c0 += 1;
+            } else {
+                c2 += 1;
+            }
+        }
+        let business_w = 2. * gap
+            + sum
+            + tight * c0.saturating_sub(1) as f32
+            + gap * c2.saturating_sub(1) as f32
+            + if c0 > 0 && c2 > 0 { gap } else { 0. };
+        let empty_overflow = overflow_menu_declaration(0, &[], include_icons);
+        let overflow_trigger_w = measure_menu_width(&mut self.text, &empty_overflow);
+        let min_business_w = (2. * gap + overflow_trigger_w).min(business_w);
+        let (full_tabs_w, min_tabs_w) = self.measure_switcher_widths();
+        if full_tabs_w <= 0. {
+            return 0.;
+        }
+        if full_tabs_w + business_w <= usable_others_w {
+            full_tabs_w
+        } else {
+            let max_tabs = (usable_others_w - min_business_w).max(0.);
+            let target_tabs = full_tabs_w.min(min_tabs_w.max(usable_others_w * 0.45));
+            target_tabs.min(max_tabs)
+        }
+    }
+    #[cfg(test)]
     fn container_toolbar_regions(
         &self,
         index: usize,
         focus: usize,
         whole: Rect,
         band: &window_toolbar_mount::ToolbarBand,
+    ) -> Vec<ToolbarRegion> {
+        self.container_toolbar_regions_with_reserve(index, focus, whole, band, 0.)
+    }
+    fn container_toolbar_regions_with_reserve(
+        &self,
+        index: usize,
+        focus: usize,
+        whole: Rect,
+        band: &window_toolbar_mount::ToolbarBand,
+        others_tabs_reserve: f32,
     ) -> Vec<ToolbarRegion> {
         let panel = &self.panel_mgr.panels[index];
         let mut regions = Vec::new();
@@ -1213,6 +2034,12 @@ impl Host {
                 region.native_safe_area.left =
                     (band.native_leading - frame.min_x()).clamp(0., frame.size.width);
                 reserve_window_edges(&mut region, self.layout.presentation_chrome_edges);
+                if id == WINDOW_OTHERS_BUSINESS && others_tabs_reserve > 0. {
+                    let max_left = (frame.size.width - region.native_safe_area.right)
+                        .max(region.native_safe_area.left);
+                    region.native_safe_area.left =
+                        (region.native_safe_area.left + others_tabs_reserve).min(max_left);
+                }
                 regions.push(region);
             }
             for (id, edge, column) in [
@@ -1232,6 +2059,7 @@ impl Host {
         }
         regions
     }
+    #[cfg(test)]
     fn navigation_toolbar_declaration(
         &self,
         index: usize,
@@ -1240,27 +2068,15 @@ impl Host {
         buttons: Vec<ToolbarButtonDeclaration>,
         templates: Vec<(u64, String)>,
     ) -> (usize, Declaration) {
-        let (presenter, destination) = self.business_destination(index, None, focus);
-        (
-            presenter,
-            Declaration {
-                id: ComponentId(92100),
-                region: destination,
-                // Others content navigation owns leading; fixed history commands
-                // share this partition's trailing business space instead.
-                placement: if destination == WINDOW_OTHERS_BUSINESS {
-                    ToolbarPlacement::PrimaryAction
-                } else {
-                    ToolbarPlacement::Navigation
-                },
-                order: 10,
-                contents: Contents::TemplateCommands(
-                    buttons,
-                    ToolbarGroupOverflow::Together,
-                    templates,
-                ),
-                source: Source::Navigation(source),
-            },
+        let state = self.layout.presentation.as_ref().unwrap();
+        build_navigation_toolbar_declaration(
+            state,
+            &self.panel_mgr.panels,
+            index,
+            focus,
+            source,
+            buttons,
+            templates,
         )
     }
     #[cfg(test)]
@@ -1273,26 +2089,36 @@ impl Host {
         &self,
         include_icons: bool,
     ) -> Vec<Vec<Declaration>> {
-        let input_open = self
-            .nav_mgr
+        Self::build_presentation_declarations(
+            &self.panel_mgr.panels,
+            &self.layout,
+            &self.nav_mgr,
+            include_icons,
+            None,
+        )
+    }
+    fn build_presentation_declarations(
+        panels: &[window_panels::Panel],
+        layout: &window_layout::WindowLayoutState,
+        nav_mgr: &NavigationCoordinator,
+        include_icons: bool,
+        mut budget_ctx: Option<(&mut Text, &BTreeMap<ComponentId, f32>)>,
+    ) -> Vec<Vec<Declaration>> {
+        let input_open = nav_mgr
             .navigation
             .as_ref()
             .is_none_or(|nav| nav.host.input_open && !nav.busy && nav.error.is_none());
-        let mut declarations = vec![Vec::new(); self.panel_mgr.panels.len()];
-        let focus = self
-            .panel_mgr
-            .panels
+        let state = layout.presentation.as_ref().unwrap();
+        let mut declarations = vec![Vec::new(); panels.len()];
+        let focus = panels
             .iter()
-            .position(|panel| {
-                panel.module_id == self.layout.presentation.as_ref().unwrap().focus_id()
-            })
+            .position(|panel| panel.module_id == state.focus_id())
             .unwrap();
-        for (index, panel) in self.panel_mgr.panels.iter().enumerate() {
+        let mut local_menu_panels = Vec::new();
+        for (index, panel) in panels.iter().enumerate() {
             let visible = panel.bounds.size.width > 0. && panel.bounds.size.height > 0.;
-            let in_others = self.layout.presentation.as_ref().is_some_and(|state| {
-                state.others_ids().contains(&panel.module_id)
-                    || (state.others_expanded() && state.focus_id() == panel.module_id)
-            });
+            let in_others = state.others_ids().contains(&panel.module_id)
+                || (state.others_expanded() && state.focus_id() == panel.module_id);
             if visible
                 && !in_others
                 && matches!(
@@ -1301,7 +2127,8 @@ impl Host {
                 )
                 && let Some(title) = &panel.options.title
             {
-                let (presenter, region) = self.business_destination(index, None, focus);
+                let (presenter, region) =
+                    presentation_business_destination(state, panels, index, None, focus);
                 declarations[presenter].push(Declaration {
                     id: ComponentId(2_000_000 + index as u64 * 10),
                     region,
@@ -1311,16 +2138,14 @@ impl Host {
                     source: Source::Title,
                 });
             }
+            if panel.local.is_some() && !panel.local_toolbar.is_empty() {
+                local_menu_panels.push(index);
+                continue;
+            }
             type TargetCommands = (Vec<ToolbarButtonDeclaration>, bool, Vec<(u64, String)>);
-            let mut targets: std::collections::BTreeMap<(usize, u64, bool), TargetCommands> =
-                std::collections::BTreeMap::new();
+            let mut targets: BTreeMap<(usize, u64, bool), TargetCommands> = BTreeMap::new();
             for action in &panel.toolbar {
-                if self
-                    .layout
-                    .presentation
-                    .as_ref()
-                    .unwrap()
-                    .workspace_switch_enabled()
+                if state.workspace_switch_enabled()
                     && panel.options.focus_switch_command == Some(action.id)
                 {
                     continue;
@@ -1335,21 +2160,25 @@ impl Host {
                         .iter()
                         .find(|retained| retained.command == action.id)
                         .and_then(|retained| {
-                            self.panel_mgr.panels.iter().position(|target| {
+                            panels.iter().position(|target| {
                                 target.module_id == retained.target
                                     && target.bounds.size.width > 0.
                                     && target.bounds.size.height > 0.
-                                    && (!target.toolbar.is_empty()
+                                    && (target.has_toolbar_items()
                                         || target.options.title.is_some())
                             })
                         })
                 };
                 if let Some(target) = target {
                     let retained_target = !visible;
-                    let (target, region) =
-                        self.business_destination(index, (!visible).then_some(target), focus);
+                    let (target, region) = presentation_business_destination(
+                        state,
+                        panels,
+                        index,
+                        (!visible).then_some(target),
+                        focus,
+                    );
                     let switch = panel.options.focus_switch_command == Some(action.id);
-                    let state = self.layout.presentation.as_ref().unwrap();
                     let switch_target = switch
                         .then(|| state.focus_switch_target(&panel.module_id))
                         .flatten();
@@ -1442,24 +2271,12 @@ impl Host {
                 });
             }
         }
-        let state = self.layout.presentation.as_ref().unwrap();
-        let focus = self
-            .panel_mgr
-            .panels
-            .iter()
-            .position(|panel| panel.module_id == state.focus_id())
-            .unwrap();
         if state.workspace_switch_enabled() {
             let other = state
                 .others_visible()
                 .then(|| state.focus_switch_target(state.focus_id()))
                 .flatten()
-                .and_then(|id| {
-                    self.panel_mgr
-                        .panels
-                        .iter()
-                        .find(|panel| panel.module_id == id)
-                });
+                .and_then(|id| panels.iter().find(|panel| panel.module_id == id));
             declarations[focus].push(Declaration {
                 id: ComponentId(92040),
                 region: if state.others_expanded() {
@@ -1480,7 +2297,7 @@ impl Host {
                     ToolbarGroupOverflow::Menu,
                 ),
                 source: Source::WorkspaceSwitch {
-                    focus: self.panel_mgr.panels[focus].instance,
+                    focus: panels[focus].instance,
                     other: other.map(|panel| panel.instance),
                 },
             });
@@ -1572,21 +2389,12 @@ impl Host {
                 });
             }
         }
-        if let Some(nav) = &self.nav_mgr.navigation
+        if let Some(nav) = &nav_mgr.navigation
             && let Some(source) = nav.toolbar_source()
-            && let Some(id) = self
-                .layout
-                .presentation
-                .as_ref()
-                .unwrap()
-                .navigation_toolbar_presenter_id()
-            && let Some(index) = self
-                .panel_mgr
-                .panels
-                .iter()
-                .position(|panel| panel.module_id == id)
-            && self.panel_mgr.panels[index].bounds.size.width > 0.
-            && self.panel_mgr.panels[index].bounds.size.height > 0.
+            && let Some(id) = state.navigation_toolbar_presenter_id()
+            && let Some(index) = panels.iter().position(|panel| panel.module_id == id)
+            && panels[index].bounds.size.width > 0.
+            && panels[index].bounds.size.height > 0.
         {
             let mut buttons = Vec::new();
             let mut templates = Vec::new();
@@ -1608,9 +2416,148 @@ impl Host {
                         && action.command.enabled,
                 });
             }
-            let (presenter, declaration) =
-                self.navigation_toolbar_declaration(index, focus, source, buttons, templates);
+            let (presenter, declaration) = build_navigation_toolbar_declaration(
+                state, panels, index, focus, source, buttons, templates,
+            );
             declarations[presenter].push(declaration);
+        }
+        // Emit rich local container toolbar buckets after all window siblings so
+        // budget accounting observes Title, Navigation, and WorkspaceSwitch widths.
+        let mut local_buckets: Vec<(usize, usize, u64, bool, bool, Vec<LocalBucketEntry>)> =
+            Vec::new();
+        for index in local_menu_panels {
+            let panel = &panels[index];
+            let visible = panel.bounds.size.width > 0. && panel.bounds.size.height > 0.;
+            let mut grouped: BTreeMap<(usize, u64, bool), (bool, Vec<LocalBucketEntry>)> =
+                BTreeMap::new();
+            for item in &panel.local_toolbar {
+                if state.workspace_switch_enabled()
+                    && panel.options.focus_switch_command == Some(item.id())
+                {
+                    continue;
+                }
+                let secondary = panel.options.secondary_commands.contains(&item.id());
+                let target = if visible {
+                    Some(index)
+                } else {
+                    panel
+                        .options
+                        .retained_buttons
+                        .iter()
+                        .find(|retained| retained.command == item.id())
+                        .and_then(|retained| {
+                            panels.iter().position(|target| {
+                                target.module_id == retained.target
+                                    && target.bounds.size.width > 0.
+                                    && target.bounds.size.height > 0.
+                                    && (target.has_toolbar_items()
+                                        || target.options.title.is_some())
+                            })
+                        })
+                };
+                if let Some(target) = target {
+                    let retained_target = !visible;
+                    let (target_presenter, region) = presentation_business_destination(
+                        state,
+                        panels,
+                        index,
+                        retained_target.then_some(target),
+                        focus,
+                    );
+                    let entry = LocalBucketEntry::from_panel_item(
+                        panel,
+                        item,
+                        Some(state),
+                        visible,
+                        input_open,
+                        include_icons,
+                    );
+                    let bucket = grouped
+                        .entry((target_presenter, region.0, secondary))
+                        .or_default();
+                    bucket.0 |= retained_target;
+                    bucket.1.push(entry);
+                }
+            }
+            for ((target_presenter, region, secondary), (retained_target, entries)) in grouped {
+                local_buckets.push((
+                    index,
+                    target_presenter,
+                    region,
+                    secondary,
+                    retained_target,
+                    entries,
+                ));
+            }
+        }
+        local_buckets.sort_by_key(|(index, _, _, secondary, _, entries)| {
+            let has_menu = entries
+                .iter()
+                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            (!*secondary, has_menu, *index)
+        });
+        for (index, target_presenter, region, secondary, retained_target, entries) in local_buckets
+        {
+            let panel = &panels[index];
+            let window_region = [
+                WINDOW_BUSINESS.0,
+                WINDOW_NAV_BUSINESS.0,
+                WINDOW_OTHERS_BUSINESS.0,
+            ]
+            .contains(&region);
+            let primary_placement = if window_region {
+                ToolbarPlacement::PrimaryAction
+            } else {
+                ToolbarPlacement::Navigation
+            };
+            let base_id = if retained_target && window_region {
+                let role = u64::MAX - 18 - region;
+                ComponentId(4_000_000 + index as u64 * 40 + role * 10)
+            } else {
+                ComponentId(92400 + index as u64 * 10)
+            };
+            let button_only_id = if secondary {
+                ComponentId(base_id.0 + 8_000_000)
+            } else {
+                base_id
+            };
+            let overflow_role = if window_region {
+                u64::MAX - 18 - region
+            } else {
+                3 + u64::from(retained_target)
+            };
+            let has_menu = entries
+                .iter()
+                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let budget = if !secondary && has_menu {
+                match &mut budget_ctx {
+                    Some((text, budgets)) => budgets.get(&ComponentId(region)).map(|&usable_w| {
+                        let existing: Vec<&Declaration> = declarations[target_presenter]
+                            .iter()
+                            .filter(|decl| decl.region == ComponentId(region))
+                            .collect();
+                        let used = occupied_region_width(text, &existing, primary_placement);
+                        (&mut **text, (usable_w - used).max(0.))
+                    }),
+                    None => None,
+                }
+            } else {
+                None
+            };
+            emit_local_bucket_declarations(
+                panel,
+                index,
+                &entries,
+                ComponentId(region),
+                primary_placement,
+                secondary,
+                button_only_id,
+                index as i32,
+                overflow_role,
+                include_icons,
+                budget,
+                &mut declarations[target_presenter],
+            );
         }
         declarations
     }
@@ -1678,8 +2625,9 @@ impl Host {
         band: window_toolbar_mount::ToolbarBand,
         native_height: f32,
         include_icons: bool,
-        renderer: Option<&mut Renderer>,
+        mut renderer: Option<&mut Renderer>,
     ) -> Result<()> {
+        self.sync_local_toolbars()?;
         let boundary = self
             .layout
             .container_window_boundary
@@ -1697,7 +2645,6 @@ impl Host {
                 )?;
             }
         }
-        let mut declarations = self.presentation_toolbar_declarations_with_icons(include_icons);
         let focus = self
             .panel_mgr
             .panels
@@ -1706,6 +2653,27 @@ impl Host {
                 panel.module_id == self.layout.presentation.as_ref().unwrap().focus_id()
             })
             .unwrap();
+        let others_tabs_reserve =
+            self.compute_others_tabs_reserve(focus, whole, &band, include_icons);
+        let regions: Vec<_> = (0..self.panel_mgr.panels.len())
+            .map(|index| {
+                self.container_toolbar_regions_with_reserve(
+                    index,
+                    focus,
+                    whole,
+                    &band,
+                    others_tabs_reserve,
+                )
+            })
+            .collect();
+        let budgets = horizontal_region_budgets(&regions);
+        let mut declarations = Self::build_presentation_declarations(
+            &self.panel_mgr.panels,
+            &self.layout,
+            &self.nav_mgr,
+            include_icons,
+            Some((&mut self.text, &budgets)),
+        );
         for (index, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             let keep: Vec<_> = declarations[index]
                 .iter()
@@ -1715,9 +2683,6 @@ impl Host {
         }
         let list_members: Vec<_> = (0..self.panel_mgr.panels.len())
             .map(|index| self.is_list_member(index))
-            .collect();
-        let regions: Vec<_> = (0..self.panel_mgr.panels.len())
-            .map(|index| self.container_toolbar_regions(index, focus, whole, &band))
             .collect();
         for (index, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
             panel.mounted_toolbar.sync(
@@ -1733,25 +2698,15 @@ impl Host {
         }
         // Window edge allocation is measured by its original host. The business
         // region then reserves those actual groups, never a second estimate.
+        let previous_edges = self.layout.presentation_chrome_edges;
         let palette = self.palette();
-        let toolbar = &mut self.panel_mgr.panels[focus].mounted_toolbar;
-        let mut measure = Scene::new();
-        if let Some(renderer) = renderer {
-            with_content_icons(renderer, &mut toolbar.icons, &mut self.text, |text| {
-                toolbar
-                    .host
-                    .render(&mut measure, text, palette)
-                    .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))
-            })?;
-        } else {
-            #[cfg(test)]
-            render_test_tabs(&mut toolbar.host, &mut measure, &mut self.text, palette)?;
-            #[cfg(not(test))]
-            toolbar
-                .host
-                .render(&mut measure, &mut self.text, palette)
-                .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))?;
-        }
+        measure_presentation_toolbar_host(
+            &mut self.panel_mgr.panels[focus].mounted_toolbar,
+            &mut self.text,
+            palette,
+            renderer.as_deref_mut(),
+        )?;
+        let toolbar = &self.panel_mgr.panels[focus].mounted_toolbar;
         self.layout.presentation_chrome_edges = [WINDOW_LEADING, WINDOW_TRAILING].map(|id| {
             toolbar
                 .host
@@ -1761,14 +2716,88 @@ impl Host {
         });
         // A second identical sync is an original-host no-op; changed safe areas
         // retire stale geometry before any pointer release can be delivered.
-        let regions = self.container_toolbar_regions(focus, focus, whole, &band);
-        let toolbar = &mut self.panel_mgr.panels[focus].mounted_toolbar;
-        toolbar
-            .host
-            .set_regions(toolbar.window, whole, regions)
-            .map_err(|error| anyhow::anyhow!("window toolbar reservation: {error:?}"))?;
+        if self.layout.presentation_chrome_edges != previous_edges {
+            let others_tabs_reserve =
+                self.compute_others_tabs_reserve(focus, whole, &band, include_icons);
+            let regions: Vec<_> = (0..self.panel_mgr.panels.len())
+                .map(|index| {
+                    self.container_toolbar_regions_with_reserve(
+                        index,
+                        focus,
+                        whole,
+                        &band,
+                        others_tabs_reserve,
+                    )
+                })
+                .collect();
+            let budgets = horizontal_region_budgets(&regions);
+            let mut updated_declarations = Self::build_presentation_declarations(
+                &self.panel_mgr.panels,
+                &self.layout,
+                &self.nav_mgr,
+                include_icons,
+                Some((&mut self.text, &budgets)),
+            );
+            let focus_declarations = std::mem::take(&mut updated_declarations[focus]);
+            let keep: Vec<_> = focus_declarations
+                .iter()
+                .map(|declaration| declaration.id)
+                .collect();
+            let panel = &mut self.panel_mgr.panels[focus];
+            panel.mounted_toolbar.retain_groups(&keep)?;
+            panel.mounted_toolbar.sync(
+                if list_members[focus] {
+                    panel.clip
+                } else {
+                    whole
+                },
+                regions[focus].clone(),
+                focus_declarations,
+            )?;
+            panel.mounted_toolbar.host.set_window_active(active);
+            measure_presentation_toolbar_host(
+                &mut panel.mounted_toolbar,
+                &mut self.text,
+                palette,
+                renderer,
+            )?;
+        } else {
+            let toolbar = &mut self.panel_mgr.panels[focus].mounted_toolbar;
+            toolbar
+                .host
+                .set_regions(toolbar.window, whole, regions[focus].clone())
+                .map_err(|error| anyhow::anyhow!("window toolbar reservation: {error:?}"))?;
+        }
         let _ = native_height;
         Ok(())
+    }
+}
+fn measure_presentation_toolbar_host(
+    toolbar: &mut crate::window_toolbar::MountedToolbar,
+    text: &mut Text,
+    palette: Palette,
+    renderer: Option<&mut Renderer>,
+) -> Result<()> {
+    let mut measure = Scene::new();
+    if let Some(renderer) = renderer {
+        with_content_icons(renderer, &mut toolbar.icons, text, |text| {
+            toolbar
+                .host
+                .render(&mut measure, text, palette)
+                .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))
+        })
+    } else {
+        #[cfg(test)]
+        {
+            render_test_tabs(&mut toolbar.host, &mut measure, text, palette)
+        }
+        #[cfg(not(test))]
+        {
+            toolbar
+                .host
+                .render(&mut measure, text, palette)
+                .map_err(|error| anyhow::anyhow!("window toolbar measure: {error:?}"))
+        }
     }
 }
 
@@ -4632,5 +5661,787 @@ mod input_regressions {
                 )));
                 assert!(snap.text.contains("let x = 1;") && snap.text.contains("let x = 2;"));
             });
+    }
+
+    mod local_window_toolbar_tests {
+        use super::*;
+        use crate::{
+            Container, LocalContainer, LocalToolbarAction, LocalToolbarButton, LocalToolbarItem,
+            LocalToolbarMenu, OthersOptions, PresentationOptions, columns::ContainerContent,
+        };
+        use std::{
+            cell::{Cell, RefCell},
+            rc::Rc,
+        };
+        use tekes_ui_controls::composition::{
+            ContentHost, ContentRole, MenuContent, MenuEntry, TextFieldContent,
+        };
+        use tekes_ui_platform_macos::{AccessibilityAction, AccessibilityKey, AccessibilityNode};
+
+        #[derive(Clone, Debug)]
+        struct SessionVm {
+            harness: String,
+            harness_locked: bool,
+            approval: String,
+            model: String,
+            effort: String,
+            pending_model_from_render: Option<String>,
+            button_enabled: bool,
+            actions: Vec<LocalToolbarAction>,
+        }
+
+        impl Default for SessionVm {
+            fn default() -> Self {
+                Self {
+                    harness: "codex".into(),
+                    harness_locked: false,
+                    approval: "workspace".into(),
+                    model: "gpt-5".into(),
+                    effort: "medium".into(),
+                    pending_model_from_render: None,
+                    button_enabled: true,
+                    actions: Vec::new(),
+                }
+            }
+        }
+
+        struct SessionContent {
+            host: ContentHost,
+            vm: Rc<RefCell<SessionVm>>,
+        }
+
+        impl SessionContent {
+            fn new(vm: Rc<RefCell<SessionVm>>) -> Self {
+                let field = TextFieldContent::new("Prompt", "draft prompt");
+                let mut host = ContentHost::new(Content::new(ComponentId(1), field)).unwrap();
+                let _ = host.focus(Some(ComponentId(1)), true);
+                Self { host, vm }
+            }
+
+            fn build_items(vm: &SessionVm) -> Vec<LocalToolbarItem> {
+                let harness_label = match vm.harness.as_str() {
+                    "claude" => "Claude",
+                    _ => "Codex",
+                };
+                let harness_entries = vec![
+                    MenuEntry::Item {
+                        value: "codex".into(),
+                        label: "Codex".into(),
+                        checked: Some(vm.harness == "codex"),
+                        disabled: vm.harness_locked,
+                    },
+                    MenuEntry::Item {
+                        value: "claude".into(),
+                        label: "Claude".into(),
+                        checked: Some(vm.harness == "claude"),
+                        disabled: vm.harness_locked,
+                    },
+                ];
+                let approval_label = match vm.approval.as_str() {
+                    "read-only" => "Read-only",
+                    "full" => "Full Auto",
+                    _ => "Workspace",
+                };
+                let approval_entries = vec![
+                    MenuEntry::Item {
+                        value: "read-only".into(),
+                        label: "Read-only".into(),
+                        checked: Some(vm.approval == "read-only"),
+                        disabled: false,
+                    },
+                    MenuEntry::Item {
+                        value: "workspace".into(),
+                        label: "Workspace".into(),
+                        checked: Some(vm.approval == "workspace"),
+                        disabled: false,
+                    },
+                    MenuEntry::Separator,
+                    MenuEntry::Submenu {
+                        value: "elevated".into(),
+                        label: "Elevated".into(),
+                        disabled: false,
+                        entries: vec![MenuEntry::Item {
+                            value: "full".into(),
+                            label: "Full Auto".into(),
+                            checked: Some(vm.approval == "full"),
+                            disabled: false,
+                        }],
+                    },
+                ];
+                let model_label = match vm.model.as_str() {
+                    "o3" => "o3",
+                    "sonnet" => "Sonnet",
+                    _ => "GPT-5",
+                };
+                let effort_label = match vm.effort.as_str() {
+                    "low" => "Low",
+                    "high" => "High",
+                    _ => "Medium",
+                };
+                vec![
+                    LocalToolbarItem::Menu(
+                        LocalToolbarMenu::new(
+                            1,
+                            format!("Harness: {harness_label}"),
+                            harness_entries,
+                        )
+                        .tooltip("Harness")
+                        .dropdown_indicator(!vm.harness_locked),
+                    ),
+                    LocalToolbarItem::Menu(
+                        LocalToolbarMenu::new(
+                            2,
+                            format!("Approval: {approval_label}"),
+                            approval_entries,
+                        )
+                        .tooltip("Approval"),
+                    ),
+                    LocalToolbarItem::Menu(
+                        LocalToolbarMenu::new(
+                            3,
+                            format!("Model: {model_label}"),
+                            vec![
+                                MenuEntry::Item {
+                                    value: "gpt-5".into(),
+                                    label: "GPT-5".into(),
+                                    checked: Some(vm.model == "gpt-5"),
+                                    disabled: false,
+                                },
+                                MenuEntry::Item {
+                                    value: "sonnet".into(),
+                                    label: "Sonnet".into(),
+                                    checked: Some(vm.model == "sonnet"),
+                                    disabled: false,
+                                },
+                                MenuEntry::Item {
+                                    value: "o3".into(),
+                                    label: "o3".into(),
+                                    checked: Some(vm.model == "o3"),
+                                    disabled: false,
+                                },
+                            ],
+                        )
+                        .tooltip("Model"),
+                    ),
+                    LocalToolbarItem::Menu(
+                        LocalToolbarMenu::new(
+                            4,
+                            format!("Effort: {effort_label}"),
+                            vec![
+                                MenuEntry::Item {
+                                    value: "low".into(),
+                                    label: "Low".into(),
+                                    checked: Some(vm.effort == "low"),
+                                    disabled: false,
+                                },
+                                MenuEntry::Item {
+                                    value: "medium".into(),
+                                    label: "Medium".into(),
+                                    checked: Some(vm.effort == "medium"),
+                                    disabled: false,
+                                },
+                                MenuEntry::Item {
+                                    value: "high".into(),
+                                    label: "High".into(),
+                                    checked: Some(vm.effort == "high"),
+                                    disabled: false,
+                                },
+                            ],
+                        )
+                        .tooltip("Effort")
+                        .selected(vm.effort == "high"),
+                    ),
+                    LocalToolbarItem::Button(
+                        LocalToolbarButton::new(5, "Run")
+                            .tooltip("Run session")
+                            .enabled(vm.button_enabled)
+                            .selected(vm.effort == "high"),
+                    ),
+                ]
+            }
+        }
+
+        impl ContainerContent for SessionContent {
+            fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+                visit(&mut self.host);
+            }
+
+            fn prepare_for_render(&mut self) {
+                let mut vm = self.vm.borrow_mut();
+                if let Some(next_model) = vm.pending_model_from_render.take() {
+                    vm.model = next_model;
+                }
+            }
+
+            fn toolbar_items(&mut self) -> Option<Vec<LocalToolbarItem>> {
+                Some(Self::build_items(&self.vm.borrow()))
+            }
+
+            fn on_toolbar_action(&mut self, action: &LocalToolbarAction) -> Result<bool> {
+                let mut vm = self.vm.borrow_mut();
+                vm.actions.push(action.clone());
+                match (action.id, action.menu_value()) {
+                    (1, Some(v)) if !vm.harness_locked => vm.harness = v.to_owned(),
+                    (2, Some(v)) => vm.approval = v.to_owned(),
+                    (3, Some(v)) => vm.model = v.to_owned(),
+                    (4, Some(v)) => vm.effort = v.to_owned(),
+                    _ => {}
+                }
+                Ok(true)
+            }
+        }
+
+        fn render_presentation_cycle(host: &mut Host, whole: Rect, theme: Theme) {
+            host.theme = theme;
+            let band = test_band();
+            let boundary = band.y + band.height;
+            host.layout.container_window_boundary = Some(boundary);
+            let frames = host
+                .presentation_frames_with_safe_area(whole, boundary, band, 0., 0.)
+                .unwrap();
+            let palette = host.palette();
+            for (index, frame) in frames.into_iter().enumerate() {
+                if frame.size.width > 0. {
+                    let clip = host.panel_mgr.panels[index].clip;
+                    let content = host.panel_mgr.panels[index].content_frame();
+                    if let Some(local) = &mut host.panel_mgr.panels[index].local {
+                        local
+                            .render(&mut Scene::new(), &mut host.text, content, clip, palette)
+                            .unwrap();
+                    }
+                }
+            }
+            host.sync_container_toolbars_with_icons(true, whole, test_band(), 0., true)
+                .unwrap();
+            for panel in &mut host.panel_mgr.panels {
+                render_test_tabs_layers(
+                    &mut panel.mounted_toolbar.host,
+                    &mut Scene::new(),
+                    &mut Scene::new(),
+                    &mut host.text,
+                    palette,
+                )
+                .unwrap();
+            }
+            host.sync_presentation_switcher(whole).unwrap();
+            if let Some(tabs) = &mut host.layout.presentation_tabs {
+                render_test_tabs_layers(
+                    tabs,
+                    &mut Scene::new(),
+                    &mut Scene::new(),
+                    &mut host.text,
+                    palette,
+                )
+                .unwrap();
+            }
+        }
+
+        fn focus_index(host: &Host) -> usize {
+            let focus_id = host.layout.presentation.as_ref().unwrap().focus_id();
+            host.panel_mgr
+                .panels
+                .iter()
+                .position(|p| p.module_id == focus_id)
+                .unwrap()
+        }
+
+        fn find_trigger_frame_and_id(
+            host: &Host,
+            prefix: &str,
+        ) -> Option<(ComponentId, Rect, bool)> {
+            let focus = focus_index(host);
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .find_map(|n| {
+                    (n.node.semantics.role == ContentRole::MenuButton
+                        && n.node.semantics.name.starts_with(prefix))
+                    .then_some((n.node.id, n.node.frame, n.node.semantics.disabled))
+                })
+        }
+
+        fn find_ax_part(
+            host: &mut Host,
+            label_prefix: &str,
+        ) -> Option<(AccessibilityKey, AccessibilityNode)> {
+            host.toolbar_accessibility_nodes(true)
+                .into_iter()
+                .find(|node| node.label.starts_with(label_prefix))
+                .map(|node| (node.key, node))
+        }
+
+        fn rects_overlap(a: Rect, b: Rect) -> bool {
+            a.size.width > 0.
+                && a.size.height > 0.
+                && b.size.width > 0.
+                && b.size.height > 0.
+                && a.min_x() + 0.5 < b.max_x()
+                && a.max_x() > b.min_x() + 0.5
+                && a.min_y() + 0.5 < b.max_y()
+                && a.max_y() > b.min_y() + 0.5
+        }
+
+        #[test]
+        fn container_content_dynamic_refresh_and_legacy_command_compatibility() {
+            let vm = Rc::new(RefCell::new(SessionVm::default()));
+            let legacy_calls = Rc::new(Cell::new(0u32));
+            let legacy_ref = legacy_calls.clone();
+            let dyn_provider_title = Rc::new(RefCell::new(String::from("Provider: v1")));
+            let dyn_read = dyn_provider_title.clone();
+            let dyn_clicks = Rc::new(Cell::new(0u32));
+            let dyn_clicks_ref = dyn_clicks.clone();
+
+            let members: Vec<Container> = vec![
+                LocalContainer::from_source("session", SessionContent::new(vm.clone()))
+                    .title("Session")
+                    .into(),
+                LocalContainer::new(
+                    "legacy",
+                    Content::new(ComponentId(1), TextContent::new("Legacy")),
+                )
+                .unwrap()
+                .toolbar(vec![ToolbarItem {
+                    id: 77,
+                    title: "Legacy Ping".into(),
+                    enabled: true,
+                    geometry_dependent: false,
+                }])
+                .on_command(move |_, id| {
+                    if id == 77 {
+                        legacy_ref.set(legacy_ref.get() + 1);
+                    }
+                    Ok(())
+                })
+                .into(),
+                LocalContainer::new("dyn", Content::new(ComponentId(1), TextContent::new("Dyn")))
+                    .unwrap()
+                    .dynamic_toolbar(move |_| {
+                        vec![LocalToolbarItem::button(88, dyn_read.borrow().clone())]
+                    })
+                    .on_toolbar_action(move |_, action| {
+                        if action.id == 88 {
+                            dyn_clicks_ref.set(dyn_clicks_ref.get() + 1);
+                        }
+                        Ok(())
+                    })
+                    .into(),
+            ];
+            let options = PresentationOptions::new("session")
+                .others(OthersOptions::new(vec!["legacy".into(), "dyn".into()]));
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+
+            let whole = Rect::new(0., 0., 1280., 720.);
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+
+            // Capture original mount identities of Session's Model menu & Run button.
+            let (model_id, _, _) = find_trigger_frame_and_id(&host, "Model: GPT-5").unwrap();
+            let mount_before = host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(model_id)
+                .unwrap()
+                .mount_identity();
+            let (run_key, run_node) = find_ax_part(&mut host, "Run").unwrap();
+            assert!(run_node.enabled);
+            assert!(!run_node.selected);
+
+            // Mutate VM inside prepare_for_render path + disable Run + set Effort=high.
+            {
+                let mut state = vm.borrow_mut();
+                state.pending_model_from_render = Some("sonnet".into());
+                state.effort = "high".into();
+                state.button_enabled = false;
+            }
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+
+            let (updated_model_id, _, _) =
+                find_trigger_frame_and_id(&host, "Model: Sonnet").expect("updated model trigger");
+            assert_eq!(updated_model_id, model_id);
+            let mount_after = host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(updated_model_id)
+                .unwrap()
+                .mount_identity();
+            assert_eq!(
+                mount_after, mount_before,
+                "dynamic update must preserve MenuContent mount identity"
+            );
+            let effort_menu = host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(find_trigger_frame_and_id(&host, "Effort: High").unwrap().0)
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap();
+            assert!(effort_menu.trigger.button.state.selected);
+            let (_, updated_run) = find_ax_part(&mut host, "Run").unwrap();
+            assert!(!updated_run.enabled);
+            assert!(updated_run.selected);
+            let _ = run_key;
+
+            // Backward compatibility: switch Others tab to legacy container and trigger command 77.
+            host.layout
+                .presentation
+                .as_mut()
+                .unwrap()
+                .select_tab(OthersTab::Container("legacy".into()))
+                .unwrap();
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let (legacy_key, _) = find_ax_part(&mut host, "Legacy Ping").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, legacy_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(legacy_calls.get(), 1);
+
+            // Switch to dynamic_toolbar closure container, mutate label, and invoke button 88.
+            host.layout
+                .presentation
+                .as_mut()
+                .unwrap()
+                .select_tab(OthersTab::Container("dyn".into()))
+                .unwrap();
+            *dyn_provider_title.borrow_mut() = "Provider: v2".into();
+            render_presentation_cycle(&mut host, whole, Theme::DARK);
+            let (dyn_key, _) = find_ax_part(&mut host, "Provider: v2").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, dyn_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(dyn_clicks.get(), 1);
+        }
+
+        #[test]
+        fn session_menus_deliver_actions_to_owner_enforce_locked_state_and_dismiss_on_blur() {
+            let vm = Rc::new(RefCell::new(SessionVm::default()));
+            let members: Vec<Container> = vec![
+                LocalContainer::from_source("session", SessionContent::new(vm.clone()))
+                    .title("Session")
+                    .into(),
+                LocalContainer::new(
+                    "other",
+                    Content::new(ComponentId(1), TextContent::new("Other")),
+                )
+                .unwrap()
+                .title("Other")
+                .into(),
+            ];
+            let options = PresentationOptions::new("session")
+                .others(OthersOptions::new(vec!["other".into()]));
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+
+            let whole = Rect::new(0., 0., 1280., 760.);
+            for theme in Theme::ALL {
+                render_presentation_cycle(&mut host, whole, theme);
+            }
+
+            // 1. Open Model menu via pointer click and select "o3".
+            let (model_cid, model_frame, _) =
+                find_trigger_frame_and_id(&host, "Model: GPT-5").unwrap();
+            let focus = focus_index(&host);
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(model_frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(model_frame.center()));
+            render_presentation_cycle(&mut host, whole, Theme::DARK);
+            assert!(host.panel_mgr.panels[focus].mounted_toolbar.modal());
+
+            let (o3_key, o3_node) = find_ax_part(&mut host, "o3").unwrap();
+            assert!(o3_node.enabled);
+            assert!(
+                host.toolbar_accessibility_action(true, o3_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert!(!host.panel_mgr.panels[focus].mounted_toolbar.modal());
+            assert_eq!(vm.borrow().model, "o3");
+            assert_eq!(vm.borrow().actions.last().unwrap().id, 3);
+            assert_eq!(vm.borrow().actions.last().unwrap().menu_value(), Some("o3"));
+            assert!(find_trigger_frame_and_id(&host, "Model: o3").is_some());
+            let _ = model_cid;
+
+            // 2. Open Approval submenu ("Elevated" -> "Full Auto") and verify full value path.
+            let (_, approval_frame, _) =
+                find_trigger_frame_and_id(&host, "Approval: Workspace").unwrap();
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(approval_frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(approval_frame.center()));
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let (elevated_key, _) = find_ax_part(&mut host, "Elevated").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, elevated_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let (full_key, _) = find_ax_part(&mut host, "Full Auto").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, full_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert_eq!(vm.borrow().approval, "full");
+            assert_eq!(
+                vm.borrow().actions.last().unwrap().menu_value_path(),
+                Some(["elevated".into(), "full".into()].as_slice())
+            );
+
+            // 3. Lock Harness after session start: trigger remains clear/enabled (no chevron),
+            //    inner items are disabled with checked=Some(true), and clicks reject safely.
+            vm.borrow_mut().harness_locked = true;
+            render_presentation_cycle(&mut host, whole, Theme::DARK);
+            let (harness_cid, harness_frame, harness_disabled) =
+                find_trigger_frame_and_id(&host, "Harness: Codex").unwrap();
+            assert!(
+                !harness_disabled,
+                "locked identity trigger should remain readable without disabled dimming"
+            );
+            let action_count_before = vm.borrow().actions.len();
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(harness_frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(harness_frame.center()));
+            render_presentation_cycle(&mut host, whole, Theme::DARK);
+            assert!(host.panel_mgr.panels[focus].mounted_toolbar.modal());
+
+            let (codex_key, codex_ax) = find_ax_part(&mut host, "Codex").unwrap();
+            assert!(!codex_ax.enabled);
+            assert!(codex_ax.selected);
+            let claude_part = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .find(|n| n.node.id == harness_cid)
+                .unwrap()
+                .parts
+                .into_iter()
+                .find(|(_, p)| p.semantics.name == "Claude")
+                .unwrap()
+                .1;
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(claude_part.frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(claude_part.frame.center()));
+            host.drain_toolbar_commands().unwrap();
+            assert!(
+                !host
+                    .toolbar_accessibility_action(true, codex_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(vm.borrow().actions.len(), action_count_before);
+
+            // 4. Outside click dismisses popup; re-open & deactivate window closes all panels.
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(Point::new(20., 300.)));
+            assert!(!host.panel_mgr.panels[focus].mounted_toolbar.modal());
+
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(harness_frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(harness_frame.center()));
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert!(host.panel_mgr.panels[focus].mounted_toolbar.modal());
+            for panel in &mut host.panel_mgr.panels {
+                panel.mounted_toolbar.host.set_window_active(false);
+            }
+            assert!(!host.panel_mgr.panels[focus].mounted_toolbar.modal());
+        }
+
+        #[test]
+        fn focus_others_swap_navbar_titleless_and_narrow_overflow_preserve_tabs_and_body_state() {
+            let vm = Rc::new(RefCell::new(SessionVm::default()));
+            let members: Vec<Container> = vec![
+                // NavBar without .title(...) should emit no redundant Source::Title.
+                LocalContainer::new(
+                    "nav",
+                    Content::new(ComponentId(1), TextContent::new("Workspace Brand")),
+                )
+                .unwrap()
+                .into(),
+                LocalContainer::from_source("session", SessionContent::new(vm.clone()))
+                    .title("Session")
+                    .into(),
+                LocalContainer::new(
+                    "inspector",
+                    Content::new(ComponentId(1), TextContent::new("Inspector")),
+                )
+                .unwrap()
+                .title("Inspector")
+                .into(),
+            ];
+            let options = PresentationOptions::new("session")
+                .nav_bar("nav")
+                .others(OthersOptions::new(vec!["inspector".into()]))
+                .workspace_switch(true);
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+
+            let wide = Rect::new(0., 0., 1280., 760.);
+            render_presentation_cycle(&mut host, wide, Theme::LIGHT);
+
+            // Titleless NavBar emits zero Source::Title declarations.
+            let decls = host.presentation_toolbar_declarations_with_icons(true);
+            assert!(
+                decls[focus_index(&host)].iter().any(|d| matches!(
+                    (&d.source, d.region),
+                    (Source::Title, r) if r == WINDOW_BUSINESS
+                )),
+                "Focus container with .title(\"Session\") keeps its title"
+            );
+            assert!(
+                !decls[focus_index(&host)].iter().any(|d| matches!(
+                    (&d.source, d.region),
+                    (Source::Title, r) if r == WINDOW_NAV_BUSINESS
+                )),
+                "Titleless NavBar must not emit redundant window title"
+            );
+
+            // Verify body TextFieldContent mount identity, active focus & text, then swap Focus -> Others.
+            let mut body_mount_before = None;
+            host.panel_mgr.panels[1]
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |ch| {
+                    body_mount_before = Some(ch.get(ComponentId(1)).unwrap().mount_identity());
+                    assert_eq!(ch.focused(), Some(ComponentId(1)));
+                    assert_eq!(ch.focused_text().unwrap().text(), "draft prompt");
+                });
+
+            assert!(host.switch_container_focus(1).unwrap());
+            render_presentation_cycle(&mut host, wide, Theme::DARK);
+
+            // Body ContentHost mount identity & active input state survived Focus <-> Others swap.
+            host.panel_mgr.panels[1]
+                .local
+                .as_mut()
+                .unwrap()
+                .with_host(&mut |ch| {
+                    assert_eq!(
+                        Some(ch.get(ComponentId(1)).unwrap().mount_identity()),
+                        body_mount_before
+                    );
+                    assert_eq!(ch.focused(), Some(ComponentId(1)));
+                    assert_eq!(ch.focused_text().unwrap().text(), "draft prompt");
+                });
+
+            // Now in Others at narrow window width: tabs remain unobstructed and trailing items overflow.
+            let narrow_others = Rect::new(0., 0., 760., 760.);
+            render_presentation_cycle(&mut host, narrow_others, Theme::LIGHT);
+
+            let tabs_frame = host
+                .presentation_switcher_frame()
+                .expect("Others tabs frame");
+            assert!(
+                tabs_frame.size.width >= 40.,
+                "Others tabs bar must retain space at narrow width, got {:?}",
+                tabs_frame
+            );
+            let focus = focus_index(&host);
+            for occupied in host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .occupied_frames()
+            {
+                assert!(
+                    !rects_overlap(occupied, tabs_frame),
+                    "Toolbar item {:?} must not overlap Others switcher tabs {:?}",
+                    occupied,
+                    tabs_frame
+                );
+            }
+            assert!(
+                host.panel_mgr.panels[focus].mounted_toolbar.sources().any(
+                    |s| matches!(s, Source::PanelOverflow { module, .. } if module == "session")
+                ),
+                "Narrow Others lane must fold overflowed session menus into Source::PanelOverflow"
+            );
+
+            // Activate an overflowed submenu inside "More actions" -> selects Effort: High cleanly.
+            let (_, more_frame, _) = find_trigger_frame_and_id(&host, "More").unwrap();
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(more_frame.center()));
+            host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(more_frame.center()));
+            render_presentation_cycle(&mut host, narrow_others, Theme::LIGHT);
+
+            let (effort_sub_key, _) = find_ax_part(&mut host, "Effort").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, effort_sub_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, narrow_others, Theme::LIGHT);
+            let (high_key, _) = find_ax_part(&mut host, "High").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, high_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, narrow_others, Theme::LIGHT);
+            assert_eq!(vm.borrow().effort, "high");
+            assert_eq!(vm.borrow().actions.last().unwrap().id, 4);
+            assert_eq!(
+                vm.borrow().actions.last().unwrap().menu_value_path(),
+                Some(["high".into()].as_slice())
+            );
+
+            // Swap session back to Focus and verify narrow Focus overflow as well.
+            assert!(host.switch_container_focus(1).unwrap());
+            let narrow_focus = Rect::new(0., 0., 680., 760.);
+            render_presentation_cycle(&mut host, narrow_focus, Theme::DARK);
+            let focus = focus_index(&host);
+            assert!(
+                host.panel_mgr.panels[focus].mounted_toolbar.sources().any(
+                    |s| matches!(s, Source::PanelOverflow { module, .. } if module == "session")
+                ),
+                "Narrow Focus lane must overflow trailing session menus"
+            );
+            let focus_panel_frames: Vec<_> = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .occupied_frames();
+            for i in 0..focus_panel_frames.len() {
+                for j in (i + 1)..focus_panel_frames.len() {
+                    assert!(
+                        !rects_overlap(focus_panel_frames[i], focus_panel_frames[j]),
+                        "Toolbar items {:?} and {:?} must not overlap",
+                        focus_panel_frames[i],
+                        focus_panel_frames[j]
+                    );
+                }
+            }
+        }
     }
 }

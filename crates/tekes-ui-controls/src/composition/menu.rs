@@ -1399,6 +1399,15 @@ impl Component for MenuContent {
     fn focus_decoration_above_siblings(&self) -> bool {
         self.trigger.focus_decoration_above_siblings()
     }
+    fn help(&self) -> Option<(&str, u64)> {
+        self.trigger.help()
+    }
+    fn requires_icon_services(&self) -> bool {
+        self.trigger.requires_icon_services()
+    }
+    fn icon_error(&self) -> Option<IconRenderError> {
+        self.trigger.icon_error()
+    }
     fn action_payload(&self, kind: ContentActionKind) -> Option<ContentActionPayload> {
         (kind == ContentActionKind::Activate)
             .then(|| {
@@ -1419,6 +1428,7 @@ impl Component for MenuContent {
     }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
+            self.trigger.lifecycle(event);
             self.menu.deactivate();
             self.menu.clear_presentation();
             self.popup = None;
@@ -1543,6 +1553,8 @@ impl Component for MenuContent {
                 layout.content
             };
             content.arrange(t, body, body.intersection(&clip).unwrap_or_default());
+        } else {
+            self.trigger.arrange(t, frame, clip);
         }
     }
     fn paint(

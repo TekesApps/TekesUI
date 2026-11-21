@@ -1968,16 +1968,15 @@ impl Host {
                 }
                 w.set_menu_bar(&self.menu_bar())
                     .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
-                host_diag!(
-                    "TOOLBAR_WINDOW_ACTIVE window={} active=true",
-                    self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
-                        .mounted_toolbar
-                        .window
-                );
-                self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
-                    .mounted_toolbar
-                    .host
-                    .set_window_active(true);
+                if let Some(panel) = self.panel_mgr.panels.get(self.toolbar_mgr.toolbar_index) {
+                    host_diag!(
+                        "TOOLBAR_WINDOW_ACTIVE window={} active=true",
+                        panel.mounted_toolbar.window
+                    );
+                }
+                for panel in &mut self.panel_mgr.panels {
+                    panel.mounted_toolbar.host.set_window_active(true);
+                }
                 self.layout
                     .outer_view
                     .set_window_active(true, &mut self.layout.outer);
@@ -1993,17 +1992,16 @@ impl Host {
                 if let Some(grid) = &mut self.layout.presentation_creation_grid {
                     grid.host.set_window_active(false);
                 }
-                host_diag!(
-                    "TOOLBAR_WINDOW_ACTIVE window={} active=false",
-                    self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
-                        .mounted_toolbar
-                        .window
-                );
+                if let Some(panel) = self.panel_mgr.panels.get(self.toolbar_mgr.toolbar_index) {
+                    host_diag!(
+                        "TOOLBAR_WINDOW_ACTIVE window={} active=false",
+                        panel.mounted_toolbar.window
+                    );
+                }
                 self.remember_toolbar_focus(None);
-                self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
-                    .mounted_toolbar
-                    .host
-                    .set_window_active(false);
+                for panel in &mut self.panel_mgr.panels {
+                    panel.mounted_toolbar.host.set_window_active(false);
+                }
                 self.layout.sidebar_motion.sample(
                     self.layout.motion_epoch.elapsed(),
                     self.layout.reduced_motion,

@@ -167,24 +167,30 @@ impl Host {
         } else if matches!(
             self.panel_mgr.panels[index].options.toolbar_host,
             Host::Container { .. }
-        ) && !self.panel_mgr.panels[index].toolbar.is_empty()
+        ) && self.panel_mgr.panels[index].has_toolbar_items()
         {
-            vec![Contents::Commands(
-                self.panel_mgr.panels[index]
-                    .toolbar
-                    .iter()
-                    .map(
-                        |action| tekes_ui_controls::composition::ToolbarButtonDeclaration {
-                            id: action.id,
-                            icon: None,
-                            text: action.title.clone(),
-                            hint: Some(action.title.clone()),
-                            enabled: action.enabled,
-                        },
-                    )
-                    .collect(),
-                tekes_ui_controls::composition::ToolbarGroupOverflow::Split,
-            )]
+            if self.panel_mgr.panels[index].local.is_some()
+                && !self.panel_mgr.panels[index].local_toolbar.is_empty()
+            {
+                self.legacy_local_panel_contents(index, include_icons)
+            } else {
+                vec![Contents::Commands(
+                    self.panel_mgr.panels[index]
+                        .toolbar
+                        .iter()
+                        .map(
+                            |action| tekes_ui_controls::composition::ToolbarButtonDeclaration {
+                                id: action.id,
+                                icon: None,
+                                text: action.title.clone(),
+                                hint: Some(action.title.clone()),
+                                enabled: action.enabled,
+                            },
+                        )
+                        .collect(),
+                    tekes_ui_controls::composition::ToolbarGroupOverflow::Split,
+                )]
+            }
         } else {
             Vec::new()
         };
@@ -202,7 +208,10 @@ impl Host {
             let templates = contents.templates().to_vec();
             let mut content = match contents {
                 Contents::Commands(buttons, overflow)
-                | Contents::TemplateCommands(buttons, overflow, _) => {
+                | Contents::TemplateCommands(buttons, overflow, _)
+                | Contents::SelectedTemplateCommands {
+                    buttons, overflow, ..
+                } => {
                     let mut content = tekes_ui_controls::composition::toolbar_commands(
                         ComponentId(1),
                         buttons,
@@ -217,6 +226,10 @@ impl Host {
                     }
                     content
                 }
+                Contents::Menu(decl) => Content::new(
+                    ComponentId(1),
+                    crate::window_toolbar::build_menu_content(&decl, Rect::default()),
+                ),
                 Contents::Title(title) => Content::new(
                     ComponentId(1),
                     tekes_ui_controls::composition::TextContent::label(title),

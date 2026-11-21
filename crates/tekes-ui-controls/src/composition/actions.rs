@@ -94,6 +94,23 @@ impl MenuSelection {
     pub fn value_path(&self) -> Option<&[String]> {
         self.value_path.as_deref()
     }
+    /// Return a copy of this selection with a matching leading value segment removed.
+    /// Returns `None` when this selection has no explicit `value_path` or its first
+    /// segment differs from `prefix`.
+    pub fn strip_value_prefix(&self, prefix: &str) -> Option<Self> {
+        let path = self.value_path.as_deref()?;
+        let (first, rest) = path.split_first()?;
+        if first != prefix {
+            return None;
+        }
+        Some(Self {
+            index: self.index,
+            label: self.label.clone(),
+            model_revision: self.model_revision,
+            value_path: Some(rest.to_vec()),
+            context_request: self.context_request,
+        })
+    }
 }
 /// Rich view of the same once-only queue used by `drain_actions`.
 #[derive(Clone, Debug, PartialEq, Eq)]

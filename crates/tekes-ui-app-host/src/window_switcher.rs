@@ -113,6 +113,63 @@ impl Host {
             })
             .collect()
     }
+    pub(super) fn measure_switcher_widths(&mut self) -> (f32, f32) {
+        if self
+            .layout
+            .presentation
+            .as_ref()
+            .is_none_or(|state| !state.others_visible())
+        {
+            return (0., 0.);
+        }
+        let visible = self.switcher_items();
+        let has_create = !self.creation_entries().is_empty();
+        if visible.is_empty() && !has_create {
+            return (0., 0.);
+        }
+        let selected = visible.iter().position(|item| item.selected).unwrap_or(0);
+        let items = visible
+            .iter()
+            .map(|item| TabStripItem {
+                label: Content::new(item.key, TextContent::new(&item.title)),
+                name: item.title.clone(),
+                closable: item.closable,
+            })
+            .collect();
+        let mut strip = TabStripContent::new(items, selected);
+        strip.set_toolbar_presentation(true);
+        let full_tabs_w = if visible.is_empty() {
+            0.
+        } else {
+            tekes_ui_controls::composition::Component::measure(
+                &mut strip,
+                &mut self.text,
+                tekes_ui_scene::Size::new(100_000., 64.),
+            )
+            .size
+            .width
+        };
+        let selected_tab_w = if visible.is_empty() {
+            0.
+        } else {
+            strip.selected_rect().size.width
+        };
+        let create_w = if has_create {
+            let mut button = Button::new("");
+            button.variant = tekes_ui_controls::ButtonVariant::Toolbar;
+            button.set_toolbar_icon_slot(true);
+            tekes_ui_controls::composition::Component::measure(
+                &mut button,
+                &mut self.text,
+                tekes_ui_scene::Size::new(1000., 64.),
+            )
+            .size
+            .width
+        } else {
+            0.
+        };
+        (full_tabs_w + create_w, selected_tab_w + create_w)
+    }
     pub(super) fn presentation_creation_frame(&self) -> Option<Rect> {
         let state = self.layout.presentation.as_ref()?;
         if !state.others_visible()

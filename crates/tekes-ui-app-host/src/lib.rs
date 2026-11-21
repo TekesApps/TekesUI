@@ -18,6 +18,8 @@ mod container_factory;
 #[cfg(target_os = "macos")]
 pub use container_factory::{ContainerFactory, ContainerMultiplicity};
 #[cfg(target_os = "macos")]
+mod local_toolbar;
+#[cfg(target_os = "macos")]
 mod navigation_window;
 #[cfg(target_os = "macos")]
 mod presentation;
@@ -36,6 +38,10 @@ pub use columns::{
     Column, Container, ContainerContent, ContainerOptions, ContainerPresentation,
     ContainerRenderContext, ContainerToolbarHost, ContainerToolbarPosition, LocalContainer,
     ProcessContainer, RetainedButton,
+};
+#[cfg(target_os = "macos")]
+pub use local_toolbar::{
+    LocalToolbarAction, LocalToolbarButton, LocalToolbarItem, LocalToolbarMenu,
 };
 #[cfg(target_os = "macos")]
 pub use presentation::{

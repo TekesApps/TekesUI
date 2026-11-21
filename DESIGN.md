@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.5` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.6` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 本地容器动态 Window Toolbar 与原生下拉菜单（`v0.4.6`）
+
+- **每帧/按需工具栏同步**：`ContainerContent::{toolbar_items, on_toolbar_action}` 与 `LocalContainer::{toolbar_items, dynamic_toolbar, on_toolbar_action}` 支持在 `prepare_for_render` 之后向 `MountedToolbar` 原地增量同步 `LocalToolbarItem`（按钮与原生菜单），同时保持现有 `LocalContainer::toolbar` + `on_command` 完全兼容；未变更组保持 `mount_identity()` 与未受影响菜单弹出层不被重建或打断。
+- **单一事实来源原生下拉菜单**：`LocalToolbarMenu` 直接通过 `MountedToolbar` 挂载 `tekes-ui-controls::composition::MenuContent` / `MenuEntry`（支持 `checked` / `disabled` / `Separator` / `Submenu`、`dropdown_indicator(false)` 锁定身份可读触发器、Light/Dark 主题、overlay 模态与失活收敛），并将受校验的 `LocalToolbarAction`（含 `MenuSelection` 路径）安全回传给所属 `LocalContainer`。
+- **`Focus ↔ Others` 与窄栏溢出**：同一容器在 `Focus`（`WINDOW_BUSINESS`）与 `Others`（`WINDOW_OTHERS_BUSINESS`）之间互换时保留主体 `ContentHost` 挂载身份与输入态，协调 `Others` Tab 栏（`presentation_switcher_frame`）安全空间，并在窄宽时将溢出项收敛到 `"More actions"`（`Source::PanelOverflow`）子菜单而不遮挡 Tab 栏。
 
 ### 共享表面路由、容器组合与演示收敛（`v0.4.5` / #379, #371）
 
