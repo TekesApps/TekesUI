@@ -238,6 +238,9 @@ impl Content {
         if let Some(button) = self.component_mut::<Button>() {
             button.set_toolbar_presentation(true);
         }
+        if let Some(menu) = self.component_mut::<MenuContent>() {
+            menu.trigger.set_toolbar_presentation(true);
+        }
         if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() {
             toolbar.set_embedded(true);
         }
@@ -268,6 +271,9 @@ impl Content {
         }
         if let Some(button) = self.component_mut::<Button>() {
             button.set_toolbar_presentation(false);
+        }
+        if let Some(menu) = self.component_mut::<MenuContent>() {
+            menu.trigger.set_toolbar_presentation(false);
         }
         if let Some(toolbar) = self.component_mut::<crate::ToolbarControl>() {
             toolbar.set_embedded(false);

@@ -10,7 +10,7 @@
       "$ref": "./baseline/manifest.json"
     },
     "design_baseline_name": "v0.3.0-proposal1 integration over approved Gallery foundation",
-    "release_tag": "v0.4.6",
+    "release_tag": "v0.4.7",
     "change_policy": "Package definitions take precedence where present; existing definitions survive only where absent. The earlier a8 baseline remains historical evidence. Integration is not a release or blanket native-component acceptance.",
     "proposal": {
       "$ref": "./integration.json"
@@ -300,7 +300,7 @@
     },
     "legacy_modes_policy": "The top-level themes array is retained as the legacy appearance/contrast mode list, not four independent concrete Themes.",
     "semantic_policy": "Theme inputs use existing neutral/base and semantic roles plus BrandConfig. Shared compiler owns derived state colors and constraints. Consumers inherit explicit Surface identities and complete semantic results, never infer Surface from RGB or author state color tables.",
-    "delivery_status": "theme-and-surface-packets-active; resolve_surface* bindings and calm contrast tokens are active across tekes-ui-controls and tekes-ui-gallery as of v0.4.6, while full visual and native acceptance remain tracked in #55/#56/#12",
+    "delivery_status": "theme-and-surface-packets-active; resolve_surface* bindings and calm contrast tokens are active across tekes-ui-controls and tekes-ui-gallery as of v0.4.7, while full visual and native acceptance remain tracked in #55/#56/#12",
     "theme_input_contract": {
       "contract_version": "1.0.0",
       "definition_schema_version": "2.0.0",

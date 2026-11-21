@@ -868,6 +868,7 @@ pub trait Component: Debug + Any {
             || matches!(
                 self.semantics().role,
                 ContentRole::Button
+                    | ContentRole::MenuButton
                     | ContentRole::Link
                     | ContentRole::TextInput
                     | ContentRole::Checkbox

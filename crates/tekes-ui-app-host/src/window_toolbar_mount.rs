@@ -53,6 +53,8 @@ impl Host {
                 w.titlebar_safe_area().0 as f32,
             );
         }
+        self.sync_local_toolbars()?;
+        let include_icons = self.renderer.is_some();
         let ToolbarBand {
             y,
             height: row,
@@ -192,11 +194,32 @@ impl Host {
                 );
             }
         }
-        for (slot, &index) in self.layout.order.iter().enumerate() {
-            let p = &self.panel_mgr.panels[index];
-            if frames[slot].size.width <= 0. || p.toolbar.is_empty() {
+        for (slot, frame) in frames.iter().enumerate().take(self.layout.order.len()) {
+            let index = self.layout.order[slot];
+            if frame.size.width <= 0. || !self.panel_mgr.panels[index].has_toolbar_items() {
                 continue;
             }
+            if self.panel_mgr.panels[index].local.is_some()
+                && !self.panel_mgr.panels[index].local_toolbar.is_empty()
+            {
+                let budget = match self.panel_mgr.panels[index].options.toolbar_host {
+                    crate::ContainerToolbarHost::Window => Some((whole.size.width - safe).max(0.)),
+                    crate::ContainerToolbarHost::Container { .. } => self.panel_mgr.panels[index]
+                        .geometry
+                        .toolbar
+                        .map(|frame| frame.size.width),
+                };
+                self.emit_legacy_local_panel_declarations(
+                    index,
+                    slot,
+                    open,
+                    include_icons,
+                    budget,
+                    &mut declarations,
+                );
+                continue;
+            }
+            let p = &self.panel_mgr.panels[index];
             for secondary in [false, true] {
                 let buttons: Vec<_> = p
                     .toolbar
@@ -217,16 +240,18 @@ impl Host {
                 if buttons.is_empty() {
                     continue;
                 }
-                add(
-                    92400 + index as u64 * 10 + if secondary { 8_000_000 } else { 0 },
-                    ComponentId(91000 + slot as u64),
-                    if secondary {
+                declarations.push(Declaration {
+                    id: ComponentId(
+                        92400 + index as u64 * 10 + if secondary { 8_000_000 } else { 0 },
+                    ),
+                    region: ComponentId(91000 + slot as u64),
+                    placement: if secondary {
                         Placement::SecondaryAction
                     } else {
                         Placement::PrimaryAction
                     },
-                    10,
-                    Contents::Commands(
+                    order: 10,
+                    contents: Contents::Commands(
                         buttons,
                         if secondary {
                             Overflow::Menu
@@ -234,14 +259,14 @@ impl Host {
                             Overflow::Split
                         },
                     ),
-                    Source::Panel {
+                    source: Source::Panel {
                         instance: p.instance,
                         index,
                         module: p.module_id.clone(),
                         pid: p.pid,
                         generation: p.toolbar_generation,
                     },
-                );
+                });
             }
         }
         self.remember_toolbar_focus(None);
@@ -257,7 +282,9 @@ impl Host {
         let mut owned = vec![Vec::new(); self.panel_mgr.panels.len()];
         for mut declaration in declarations {
             let (owner, region) = match &declaration.source {
-                Source::Panel { index, .. } if visible(*index) => {
+                Source::Panel { index, .. } | Source::PanelOverflow { index, .. }
+                    if visible(*index) =>
+                {
                     match self.panel_mgr.panels[*index].options.toolbar_host {
                         crate::ContainerToolbarHost::Window => (center, ComponentId(u64::MAX - 18)),
                         crate::ContainerToolbarHost::Container { .. } => {
@@ -265,7 +292,7 @@ impl Host {
                         }
                     }
                 }
-                Source::Panel { .. } => continue,
+                Source::Panel { .. } | Source::PanelOverflow { .. } => continue,
                 _ => (center, ComponentId(u64::MAX - 18)),
             };
             declaration.region = region;
@@ -380,11 +407,95 @@ impl Host {
                     {
                         if self.layout.presentation.is_some()
                             && p.options.focus_switch_command == Some(invocation.command)
+                            && !matches!(
+                                invocation.payload,
+                                Some(
+                                    tekes_ui_controls::composition::ContentActionPayload::MenuSelection(
+                                        _
+                                    )
+                                )
+                            )
                         {
                             self.switch_container_focus(index)
                                 .map(|changed| exchanged = changed)
                         } else {
-                            self.panel_mgr.panels[index].command(invocation.command)
+                            self.panel_mgr.panels[index].toolbar_action(crate::LocalToolbarAction {
+                                id: invocation.command,
+                                source: invocation.input,
+                                payload: invocation.payload,
+                            })
+                        }
+                    } else {
+                        Ok(())
+                    }
+                }
+                Source::PanelOverflow {
+                    instance,
+                    index,
+                    module,
+                    pid,
+                    generation,
+                } => {
+                    if self
+                        .nav_mgr
+                        .navigation
+                        .as_ref()
+                        .is_some_and(|nav| !nav.host.input_open || nav.busy || nav.error.is_some())
+                    {
+                        Ok(())
+                    } else if let Some(p) = self.panel_mgr.panels.get(index)
+                        && p.instance == instance
+                        && p.module_id == module
+                        && p.pid == pid
+                        && p.toolbar_generation == generation
+                    {
+                        if let Some(
+                            tekes_ui_controls::composition::ContentActionPayload::MenuSelection(
+                                selection,
+                            ),
+                        ) = invocation.payload
+                            && let Some(tag) = selection
+                                .value_path()
+                                .and_then(|path| path.first())
+                                .map(String::as_str)
+                        {
+                            if let Some(raw) = tag.strip_prefix("cmd:")
+                                && let Ok(id) = raw.parse::<u64>()
+                            {
+                                if self.layout.presentation.is_some()
+                                    && p.options.focus_switch_command == Some(id)
+                                {
+                                    self.switch_container_focus(index)
+                                        .map(|changed| exchanged = changed)
+                                } else {
+                                    self.panel_mgr.panels[index].toolbar_action(
+                                        crate::LocalToolbarAction {
+                                            id,
+                                            source: invocation.input,
+                                            payload: Some(
+                                                tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(id),
+                                            ),
+                                        },
+                                    )
+                                }
+                            } else if let Some(raw) = tag.strip_prefix("menu:")
+                                && let Ok(id) = raw.parse::<u64>()
+                                && let Some(stripped) = selection.strip_value_prefix(tag)
+                            {
+                                self.panel_mgr.panels[index].toolbar_action(
+                                    crate::LocalToolbarAction {
+                                        id,
+                                        source: invocation.input,
+                                        payload: Some(
+                                            tekes_ui_controls::composition::ContentActionPayload::MenuSelection(stripped),
+                                        ),
+                                    },
+                                )
+                            } else {
+                                Ok(())
+                            }
+                        } else {
+                            Ok(())
                         }
                     } else {
                         Ok(())
@@ -737,7 +848,9 @@ impl Host {
                             owner: *index,
                             presenter,
                         }),
-                        Source::Expand { .. } | Source::WorkspaceSwitch { .. } => {
+                        Source::PanelOverflow { .. }
+                        | Source::Expand { .. }
+                        | Source::WorkspaceSwitch { .. } => {
                             Some(ToolbarTarget::Contribution { presenter, group })
                         }
                         Source::Navigation(_) => Some(ToolbarTarget::Navigation),
@@ -785,10 +898,16 @@ impl Host {
         );
         for (presenter, panel) in self.panel_mgr.panels.iter().enumerate() {
             for (group, source) in panel.mounted_toolbar.contributions() {
-                if let Source::Panel { index, .. } = source
-                    && group != Self::toolbar_group(ToolbarTarget::Panel(*index))
-                {
-                    groups.push(ToolbarTarget::Contribution { presenter, group });
+                match source {
+                    Source::Panel { index, .. }
+                        if group != Self::toolbar_group(ToolbarTarget::Panel(*index)) =>
+                    {
+                        groups.push(ToolbarTarget::Contribution { presenter, group });
+                    }
+                    Source::PanelOverflow { .. } => {
+                        groups.push(ToolbarTarget::Contribution { presenter, group });
+                    }
+                    _ => {}
                 }
             }
         }
@@ -850,13 +969,11 @@ impl Host {
     }
     fn original_panel_binding(&self, target: ToolbarTarget) -> Option<(usize, usize)> {
         let presenter = self.toolbar_container(target)?;
-        let Source::Panel { index, .. } = self.panel_mgr.panels[presenter]
+        let index = self.panel_mgr.panels[presenter]
             .mounted_toolbar
             .source(Self::toolbar_group(target))?
-        else {
-            return None;
-        };
-        Some((*index, presenter))
+            .panel_index()?;
+        Some((index, presenter))
     }
     fn toolbar_control_visible(&self, target: ToolbarTarget) -> bool {
         self.toolbar_container(target)
@@ -1000,7 +1117,11 @@ impl Host {
                             .is_some_and(|n| {
                                 n.component::<ToolbarControl>().is_some_and(
                                     tekes_ui_controls::composition::Component::focusable,
-                                )
+                                ) || n
+                                    .component::<tekes_ui_controls::composition::MenuContent>()
+                                    .is_some_and(
+                                        tekes_ui_controls::composition::Component::focusable,
+                                    )
                             })
                     })
             })
@@ -1450,6 +1571,7 @@ impl Host {
                 .host
                 .content_host()
                 .get(Self::toolbar_control(owner))
+                .and_then(|n| n.component::<ToolbarControl>())
                 .is_some()
             {
                 self.panel_mgr.panels[toolbar_index]

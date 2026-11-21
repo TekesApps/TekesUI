@@ -290,6 +290,22 @@ impl MenuContent {
     pub fn set_trigger_help(&mut self, help: Option<String>) {
         self.trigger.set_help(help);
     }
+    pub fn set_trigger_selected(&mut self, selected: bool) {
+        self.trigger.set_selected(selected);
+    }
+    pub fn set_trigger_image_position(&mut self, position: ButtonImagePosition) {
+        self.trigger.set_image_position(position);
+    }
+    pub fn set_trigger_icon_label(
+        &mut self,
+        icon: &str,
+        label: impl Into<String>,
+    ) -> Result<(), IconRenderError> {
+        self.trigger.set_icon_label(icon, label)
+    }
+    pub fn set_trigger_contents(&mut self, contents: impl Into<ButtonContents>) {
+        self.trigger.set_contents(contents);
+    }
     pub fn set_trigger_pointer_activation_phase(&mut self, phase: ButtonActivationPhase) {
         self.trigger.set_pointer_activation_phase(phase);
     }
@@ -1508,6 +1524,15 @@ impl Component for MenuContent {
     fn focus_decoration_above_siblings(&self) -> bool {
         self.trigger.focus_decoration_above_siblings()
     }
+    fn help(&self) -> Option<(&str, u64)> {
+        self.trigger.help()
+    }
+    fn requires_icon_services(&self) -> bool {
+        self.trigger.requires_icon_services()
+    }
+    fn icon_error(&self) -> Option<IconRenderError> {
+        self.trigger.icon_error()
+    }
     fn action_payload(&self, kind: ContentActionKind) -> Option<ContentActionPayload> {
         (kind == ContentActionKind::Activate)
             .then(|| {
@@ -1528,6 +1553,7 @@ impl Component for MenuContent {
     }
     fn lifecycle(&mut self, event: Lifecycle) {
         if event == Lifecycle::Unmounted {
+            self.trigger.lifecycle(event);
             self.menu.deactivate();
             self.menu.clear_presentation();
             self.popup = None;
@@ -1652,6 +1678,8 @@ impl Component for MenuContent {
                 layout.content
             };
             content.arrange(t, body, body.intersection(&clip).unwrap_or_default());
+        } else {
+            self.trigger.arrange(t, frame, clip);
         }
     }
     fn paint(
