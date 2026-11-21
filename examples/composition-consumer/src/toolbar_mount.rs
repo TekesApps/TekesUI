@@ -157,7 +157,7 @@ impl Component for JobProgress {
         theme: ContentTheme,
     ) {
         self.view
-            .render(scene, self.value, frame, Some(clip), theme.palette);
+            .render(scene, self.value, frame, Some(clip), theme.palette());
     }
     fn semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(ContentRole::Group, "Import progress");

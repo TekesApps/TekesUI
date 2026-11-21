@@ -4,7 +4,6 @@ use tekes_ui_controls::composition::{
     Button, ComponentId, Content, ScrollContent, StackContent, TextContent, TextFieldContent,
     TextSubmitPolicy, TextViewport,
 };
-use tekes_ui_controls::extended::{Axis, Stack};
 
 pub const ROOT: ComponentId = ComponentId(8200);
 pub const BODY: ComponentId = ComponentId(8201);
@@ -37,12 +36,9 @@ pub fn row_ids() -> Vec<ComponentId> {
 pub fn panel_body(composer: TextFieldContent, row_ids: &[ComponentId]) -> Content {
     let rows = Content::new(
         ROWS,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 2.,
-            },
-            children: row_ids
+        StackContent::vertical(
+            2.,
+            row_ids
                 .iter()
                 .map(|id| {
                     Content::new(
@@ -51,20 +47,15 @@ pub fn panel_body(composer: TextFieldContent, row_ids: &[ComponentId]) -> Conten
                     )
                 })
                 .collect(),
-            flexible_child: None,
-        },
+        ),
     );
-    let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-    scroll.viewport_height = Some(68.);
+    let scroll = ScrollContent::new(ScrollArea::default(), rows).with_viewport_height(Some(68.));
     let button = Content::new(ACTION, Button::new("原按钮")).preserving_focus();
     Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(
                     LABEL,
                     TextContent::new("原 Panel / Stack / Button / Composer / Scroll"),
@@ -73,8 +64,7 @@ pub fn panel_body(composer: TextFieldContent, row_ids: &[ComponentId]) -> Conten
                 Content::new(EDITOR, composer),
                 Content::new(SCROLL, scroll),
             ],
-            // TextViewport::Fill uses remaining space after fixed siblings.
-            flexible_child: Some(EDITOR),
-        },
+        )
+        .with_flexible_child(EDITOR),
     )
 }

@@ -131,7 +131,7 @@ impl ContainerToolbar {
         }
         scene.push_clip(clip);
         self.control
-            .render_clipped(scene, &mut text, self.frame, theme.palette, Some(clip));
+            .render_clipped(scene, &mut text, self.frame, theme.palette(), Some(clip));
         scene.pop_clip();
         self.ready = self.frame.size.width > 0. && self.frame.size.height > 0.;
     }

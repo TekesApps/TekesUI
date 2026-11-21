@@ -62,8 +62,8 @@ fn popup(owner: u64, child: u64) -> Content {
     let mut popup = PopoverContent::new(
         "Original form",
         Content::new(ComponentId(child), Button::new("Save")),
-    );
-    popup.initial_focus = Some(ComponentId(child));
+    )
+    .with_initial_focus(Some(ComponentId(child)));
     popup.set_dismiss_visible(false);
     Content::new(ComponentId(owner), popup)
 }

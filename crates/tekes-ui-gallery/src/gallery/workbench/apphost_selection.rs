@@ -70,7 +70,7 @@ impl Component for SelectionFixture {
             &mut super::apphost_basic::FixtureText(text),
             frame,
             clip,
-            theme.palette,
+            theme.palette(),
         );
     }
     fn inspection_properties(&self) -> Option<Vec<InspectionProperty>> {
@@ -138,11 +138,7 @@ pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
     }
     let disabled = disabled(renderer, state);
     let control = match renderer {
-        "icon-button" => {
-            let mut model = state.extended.icon_button_view.button().button.state;
-            model.disabled = disabled;
-            Content::new(SPECIMEN, super::apphost_actions::icon_button(model))
-        }
+        "icon-button" => Content::new(SPECIMEN, super::apphost_actions::icon_button(disabled)),
         "tabs" | "disclosure" => super::apphost_navigation::playground(renderer, state),
         "number-field" => Content::new(
             SPECIMEN,
@@ -171,9 +167,9 @@ pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
             Content::new(SPECIMEN, control)
         }
         "link" => {
-            let mut control = LinkContent::new("Open documentation");
-            control.model = state.extended.link.clone();
-            control.model.button.state.disabled = disabled;
+            let control = LinkContent::new("Open documentation")
+                .with_disabled(disabled || state.extended.link.button.state.disabled)
+                .with_loading(state.extended.link.button.state.loading);
             Content::new(SPECIMEN, control)
         }
         "segmented-control" => {
@@ -198,7 +194,7 @@ pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
                 },
                 state.extended.switch.checked,
             );
-            control.model.disabled = disabled;
+            control.set_disabled(disabled);
             Content::new(SPECIMEN, control)
         }
         "slider" => {
@@ -273,17 +269,17 @@ pub(super) fn sync_model(state: &mut StoryState, host: &mut ContentHost) {
         }
         state.extended.segmented = control.model().clone();
     } else if let Some(control) = content.component::<LinkContent>() {
-        state.extended.link = control.model.clone();
+        state.extended.link = control.model().clone();
     } else if let Some(control) = content.component::<SwitchContent>() {
-        if state.extended.switch.checked != control.model.checked {
-            message = Some(format!("switch: {}", control.model.checked));
+        if state.extended.switch.checked != control.is_checked() {
+            message = Some(format!("switch: {}", control.is_checked()));
         }
-        state.extended.switch = control.model;
+        state.extended.switch = control.model();
     } else if let Some(control) = content.component::<SliderContent>() {
-        if state.extended.slider.value() != control.model.value() {
-            message = Some(format!("value: {}", control.model.value()));
+        if state.extended.slider.value() != control.value() {
+            message = Some(format!("value: {}", control.value()));
         }
-        state.extended.slider = control.model;
+        state.extended.slider = control.model();
     } else if let Some(control) = content.component::<RadioGroupContent>() {
         if state.extended.radio.selected != control.model().selected {
             message = Some(format!("radio: {:?}", control.model().selected));
@@ -296,22 +292,23 @@ pub(super) fn sync_model(state: &mut StoryState, host: &mut ContentHost) {
             .unwrap()
             .component_mut::<TextContent>()
             .unwrap()
-            .text = state.log.iter().cloned().collect::<Vec<_>>().join("\n");
+            .set_text(state.log.iter().cloned().collect::<Vec<_>>().join("\n"));
         if let Some(value) = host.get_mut(ComponentId(92900)) {
-            value.component_mut::<TextContent>().unwrap().text =
-                format!("Value: {:.0}", state.extended.slider.value());
+            value
+                .component_mut::<TextContent>()
+                .unwrap()
+                .set_text(format!("Value: {:.0}", state.extended.slider.value()));
         }
         if let Some(control) = host
             .get_mut(SPECIMEN)
             .unwrap()
             .component_mut::<SwitchContent>()
         {
-            control.label = if control.model.checked {
+            control.set_label(if control.is_checked() {
                 "Notifications on"
             } else {
                 "Notifications off"
-            }
-            .into();
+            });
         }
     }
 }
@@ -340,17 +337,17 @@ pub(super) fn apply_disabled(host: &mut ContentHost, disabled: bool) {
     } else if let Some(control) = content.component_mut::<SegmentedControlContent>() {
         control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<Button>() {
-        control.button.cancel();
-        control.button.state.disabled = disabled;
+        control.cancel();
+        control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<LinkContent>() {
         control.event(&ContentEvent::Cancel);
-        control.model.button.state.disabled = disabled;
+        control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<SwitchContent>() {
         control.event(&ContentEvent::Cancel);
-        control.model.disabled = disabled;
+        control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<SliderContent>() {
         control.event(&ContentEvent::Cancel);
-        control.model.disabled = disabled;
+        control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<RadioGroupContent>() {
         control.set_disabled(disabled);
     }

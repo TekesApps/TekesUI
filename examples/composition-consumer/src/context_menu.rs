@@ -1,10 +1,6 @@
 //! Business-owned row identities and menu commands on the original ContentHost.
 //! No popup geometry, secondary host, synthetic trigger or selected-row polling.
-use tekes_ui_controls::{
-    TextSurface,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{TextSurface, composition::*};
 pub const ROOT: ComponentId = ComponentId(24400);
 pub const A: ComponentId = ComponentId(24401);
 pub const B: ComponentId = ComponentId(24402);
@@ -44,20 +40,16 @@ impl Sidebar {
         };
         let mut host = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                8.,
+                vec![
                     Content::new(A, Button::new("Session A")),
                     Content::new(B, Button::new("Session B")),
                     Content::new(DRAFT, draft),
                     Content::new(MENU_A, menu()),
                     Content::new(MENU_B, menu()),
                 ],
-            },
+            ),
         ))
         .unwrap();
         host.set_action_events(true);

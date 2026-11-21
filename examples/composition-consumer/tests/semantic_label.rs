@@ -107,8 +107,10 @@ fn original_owners_paint_exact_retained_glyph_order_coordinates_and_theme_roles(
                     let primary = kind != 0 && width == 600.;
                     let mut content = node(kind, overflow);
                     if primary {
-                        content.component_mut::<Button>().unwrap().variant =
-                            tekes_ui_controls::ButtonVariant::Primary;
+                        content
+                            .component_mut::<Button>()
+                            .unwrap()
+                            .set_variant(tekes_ui_controls::ButtonVariant::Primary);
                     }
                     let mut host = ContentHost::new(content).unwrap();
                     let mut recorder = Recorder::new();
@@ -206,8 +208,8 @@ fn stale_foreign_or_mismatched_updates_leave_original_source_and_model_unchanged
         assert_eq!(content.semantic_label().unwrap().version().revision, 2);
         let source = content
             .component::<TextContent>()
-            .map(|c| c.text.as_str())
-            .or_else(|| content.component::<Button>().map(|c| c.label.as_str()))
+            .map(|c| c.text())
+            .or_else(|| content.component::<Button>().map(|c| c.label()))
             .unwrap();
         assert_eq!(source, next_source);
     }
@@ -254,7 +256,7 @@ fn original_button_pointer_key_and_ax_have_one_action_owner() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             3
         );
         assert_eq!(host.semantic_mount(id), mount);

@@ -101,13 +101,13 @@ impl Review {
         let script = match stage {
             36_001 => {
                 assert!(records.is_empty());
-                assert!(!menu(tree).menu.is_open());
+                assert!(!menu(tree).is_open());
                 self.editor_mount = tree.semantic_mount(f::MESSAGE);
                 vec![(150, trigger(tree)), (500, next(36_002))]
             }
             36_002 => {
                 assert!(records.is_empty(), "opening has no selection callback");
-                assert!(menu(tree).menu.is_open());
+                assert!(menu(tree).is_open());
                 assert!(part(tree, "Move Pin Up").semantics.disabled);
                 self.stale = Some(key(tree, "Move Pin Down"));
                 let p = part(tree, "Sort by").frame.center();
@@ -244,7 +244,7 @@ impl Review {
                     2,
                     "old popup token, Escape and outside dismissal cannot select"
                 );
-                assert!(!menu(tree).menu.is_open());
+                assert!(!menu(tree).is_open());
                 vec![
                     (
                         100,
@@ -271,7 +271,7 @@ impl Review {
                 self.marked = Some(input.external_baseline());
                 // Original public MenuView opening preserves the editor owner;
                 // the following part actions use real published native AX selectors.
-                menu(tree).menu.show(0);
+                menu(tree).open();
                 vec![(250, next(36_009))]
             }
             36_009 => vec![
@@ -361,7 +361,7 @@ impl Review {
             }
             36_014 => {
                 assert_eq!(records.len(), 3);
-                assert!(!menu(tree).menu.is_open());
+                assert!(!menu(tree).is_open());
                 menu(tree)
                     .set_entries(vec![MenuEntry::submenu(
                         "sort",

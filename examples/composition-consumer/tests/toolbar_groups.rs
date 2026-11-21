@@ -190,7 +190,7 @@ impl Component for ConsumerDocumentState {
             proposal::TextRole::UiBody,
             frame,
             ButtonTextAlign::Leading,
-            theme.palette.color("primary-text").expect("DS text role"),
+            theme.palette().color("primary-text").expect("DS text role"),
         );
     }
 }

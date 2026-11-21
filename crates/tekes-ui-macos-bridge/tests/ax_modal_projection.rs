@@ -67,8 +67,7 @@ fn original_modal_scope_withdraws_background_and_restores_original_invoker() {
             .unwrap()
             .component::<SwitchContent>()
             .unwrap()
-            .model
-            .checked
+            .is_checked()
     );
     paint(&mut host);
     assert!(host.close_dialog());

@@ -202,7 +202,7 @@ fn section_title_uses_original_fixed_insets_positive_increasing_width_and_one_ax
                             .unwrap()
                             .component::<TextContent>()
                             .unwrap()
-                            .text,
+                            .text(),
                         SOURCE
                     );
                     let semantics = h.semantics();

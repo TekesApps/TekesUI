@@ -127,7 +127,7 @@ fn scroll_state(host: &ContentHost) -> (Point, String) {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap();
-    (s.scroll.offset, format!("{:?}", s.scroll))
+    (s.scroll().offset, format!("{:?}", s.scroll()))
 }
 #[test]
 fn positive_qualification_expires_without_geometry_change_and_logical_focus_needs_no_opt_in() {

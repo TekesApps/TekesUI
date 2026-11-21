@@ -6,7 +6,6 @@ use tekes_ui_controls::composition::{
     Button, ComponentId, Content, ContentEvent, ContentHost, ImageAlignment, ImageContent,
     ImageFit, ImageLoadOutcome, ImageSemantics, PanelContent, StackContent, TextFieldContent,
 };
-use tekes_ui_controls::extended::{Axis, Stack};
 use tekes_ui_controls::{ButtonTextRenderer, TextSurfaceHost, TextSurfaceTextRenderer};
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{GlyphAtlas, Point, Primitive, Rect, Scene, Size};
@@ -210,7 +209,7 @@ fn image_child_keeps_the_original_button_as_the_only_action_owner() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1
     );
     assert_eq!(host.focused(), Some(ComponentId(1)));
@@ -227,7 +226,7 @@ fn image_child_keeps_the_original_button_as_the_only_action_owner() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         2,
         "the original Button owns exactly one keyboard activation in addition to pointer activation"
     );
@@ -269,18 +268,14 @@ fn bitmap_local_curve_contract_composes_in_real_panel_stack_and_keeps_button_own
     );
     let stack = Content::new(
         ComponentId(9102),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.0,
-            },
-            children: vec![
+        StackContent::vertical(
+            4.0,
+            vec![
                 Content::new(ComponentId(9104), cover),
                 Content::new(ComponentId(9105), button),
                 Content::new(ComponentId(9106), field),
             ],
-            flexible_child: None,
-        },
+        ),
     );
     let mut panel = PanelContent::new(stack).expect("Local ImageContent is valid in Panel");
     panel.set_padding(Some(Insets::default())).unwrap();
@@ -507,7 +502,7 @@ fn bitmap_local_curve_contract_composes_in_real_panel_stack_and_keeps_button_own
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1,
         "the original Button owns one activation; ImageContent adds no action owner"
     );
@@ -580,11 +575,7 @@ fn two_content_owners_and_old_scene_share_the_original_registration_until_last_r
     );
     let root = Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            children: vec![first, second],
-            flexible_child: None,
-        },
+        StackContent::vertical(0., vec![first, second]),
     );
     let mut host = ContentHost::new(root).unwrap();
     let mut text = Text::new();
@@ -614,7 +605,7 @@ fn two_content_owners_and_old_scene_share_the_original_registration_until_last_r
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .children
+        .children_mut()
         .remove(0);
     let mut remaining_scene = Scene::new();
     host.render(
@@ -647,7 +638,7 @@ fn two_content_owners_and_old_scene_share_the_original_registration_until_last_r
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .children
+        .children_mut()
         .clear();
     let mut empty_scene = Scene::new();
     host.render(
@@ -687,11 +678,7 @@ fn host_unmount_and_remount_rejects_a_completion_from_the_old_mount() {
     let image = ImageContent::loading(Size::new(1.0, 1.0), ImageSemantics::Decorative).unwrap();
     let root = Content::new(
         root_id,
-        StackContent {
-            model: Stack::new(Axis::Vertical),
-            children: vec![Content::new(child_id, image)],
-            flexible_child: None,
-        },
+        StackContent::vertical(0., vec![Content::new(child_id, image)]),
     );
     let mut host = ContentHost::new(root).unwrap();
     let old_request = host

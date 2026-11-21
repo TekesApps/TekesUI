@@ -118,12 +118,7 @@ pub(crate) fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tekes_ui_controls::{
-        ButtonTextAlign, ScrollArea,
-        composition::*,
-        extended::{Axis, Stack},
-        layout::MeasuredChild,
-    };
+    use tekes_ui_controls::{ButtonTextAlign, ScrollArea, composition::*, layout::MeasuredChild};
     use tekes_ui_scene::{Rect, Scene, Size};
     use tekes_ui_tokens::{Rgba, Theme, proposal};
     struct Text;
@@ -156,17 +151,13 @@ mod tests {
                 ScrollArea::default(),
                 Content::new(
                     ComponentId(2),
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: 0.,
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::vertical(
+                        0.,
+                        vec![
                             Content::new(ComponentId(10), Row),
                             Content::new(ComponentId(11), Row),
                         ],
-                    },
+                    ),
                 ),
             ),
         ))
@@ -259,16 +250,14 @@ mod tests {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset;
+            .offset();
         assert!(original_offset.y > 0.);
         assert_eq!(
             host.get(ComponentId(1))
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset,
+                .offset(),
             original_offset
         );
         assert_eq!(
@@ -301,8 +290,7 @@ mod tests {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
-                .offset
+                .offset()
                 .y,
             0.
         );
@@ -353,8 +341,7 @@ mod tests {
                     .unwrap()
                     .component::<ScrollContent>()
                     .unwrap()
-                    .scroll
-                    .offset
+                    .offset()
                     .y,
                 0.
             );

@@ -1,9 +1,5 @@
 //! Consumer uses only the shared public numeric Content interface.
-use tekes_ui_controls::{
-    TextSurfaceAlignment,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{TextSurfaceAlignment, composition::*};
 use tekes_ui_tokens::Spacing;
 pub const ROOT: ComponentId = ComponentId(9400);
 pub const PERCENT: ComponentId = ComponentId(9401);
@@ -18,9 +14,8 @@ pub fn build() -> Result<ContentHost, CompositionError> {
         10.,
         DecimalNumberFormat { suffix: "%".into() },
     )
-    .unwrap();
-    percent.description =
-        Some("Enter a value with or without the percent sign. Up and Down adjust by 10".into());
+    .unwrap()
+    .with_description("Enter a value with or without the percent sign. Up and Down adjust by 10");
     percent.set_input_digits(3);
     percent.set_alignment(TextSurfaceAlignment::Trailing);
     let integer =
@@ -39,19 +34,15 @@ pub fn build() -> Result<ContentHost, CompositionError> {
     decimal.set_input_digits(4);
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![
                 Content::new(PERCENT, percent)
                     .with_help("Percentage: 50%–300%. Enter commits; Escape cancels."),
                 Content::new(INTEGER, integer).with_help("Quantity"),
                 Content::new(DECIMAL, decimal).with_help("Borderless decimal; step 0.25"),
                 Content::new(ComponentId(9404), Button::new("After numeric fields")),
             ],
-        },
+        ),
     ))
 }

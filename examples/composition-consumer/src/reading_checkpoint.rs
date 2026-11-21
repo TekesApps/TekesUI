@@ -1,10 +1,6 @@
 //! Reconstructible business document: each window owns different ComponentIds.
 //! Persistence and business mapping belong to this consumer; geometry does not.
-use tekes_ui_controls::{
-    ReadingDocumentVersion, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, ScrollArea, composition::*};
 
 pub struct Reader {
     pub host: ContentHost,
@@ -41,13 +37,9 @@ impl Reader {
             .map(|(key, id)| {
                 Content::new(
                     *id,
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: 4.0,
-                        },
-                        flexible_child: None,
-                        children: vec![
+                    StackContent::vertical(
+                        4.0,
+                        vec![
                             Content::new(
                                 ComponentId(id.0 + 1),
                                 TextContent::new(format!(
@@ -64,19 +56,15 @@ impl Reader {
                                 SwitchContent::new("Details", false),
                             ),
                         ],
-                    },
+                    ),
                 )
             })
             .collect();
         let mut host = ContentHost::new(Content::new(
             ComponentId(base),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.0,
-                },
-                flexible_child: Some(owner),
-                children: vec![
+            StackContent::vertical(
+                8.0,
+                vec![
                     Content::new(
                         owner,
                         ScrollContent::new(
@@ -86,7 +74,8 @@ impl Reader {
                     ),
                     Content::new(editor, TextFieldContent::new("Draft", "Untouched 中文")),
                 ],
-            },
+            )
+            .with_flexible_child(owner),
         ))
         .unwrap();
         let (version, ()) = host

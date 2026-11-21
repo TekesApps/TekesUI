@@ -1,8 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ReadingUpdateError, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
+    ButtonTextAlign, ButtonTextRenderer, ReadingUpdateError, ScrollArea, composition::*,
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -42,13 +40,9 @@ fn fixture() -> (ContentHost, Vec<ComponentId>) {
     let ids: Vec<_> = (100..120).map(ComponentId).collect();
     let host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: Some(SCROLL),
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(
                     SCROLL,
                     ScrollContent::new(
@@ -64,7 +58,8 @@ fn fixture() -> (ContentHost, Vec<ComponentId>) {
                 ),
                 Content::new(EDITOR, Button::new("Independent action")),
             ],
-        },
+        )
+        .with_flexible_child(SCROLL),
     ))
     .unwrap();
     (host, ids)
@@ -88,7 +83,7 @@ fn scroll_mut(host: &mut ContentHost) -> &mut ScrollContent {
 }
 fn mid(host: &mut ContentHost) {
     render(host);
-    scroll_mut(host).scroll.scroll_by(0., 280.);
+    scroll_mut(host).scroll_by(0., 280.);
     render(host);
 }
 fn anchor(host: &ContentHost) -> ComponentId {
@@ -108,14 +103,31 @@ fn prepend(host: &mut ContentHost, ids: &[ComponentId], id: ComponentId) {
 
 #[test]
 fn prepended_edge_sliver_does_not_replace_the_stable_anchor_on_reflow() {
-    let (mut host, ids) = fixture();
-    host.get_mut(ITEMS)
-        .unwrap()
-        .component_mut::<ListContent>()
-        .unwrap()
-        .rows
-        .model
-        .gap = 4.;
+    let ids: Vec<_> = (100..120).map(ComponentId).collect();
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        StackContent::vertical(
+            8.,
+            vec![
+                Content::new(
+                    SCROLL,
+                    ScrollContent::new(
+                        ScrollArea::default(),
+                        Content::new(
+                            ITEMS,
+                            StackContent::vertical(
+                                4.,
+                                ids.iter().map(|id| row(*id, 60.)).collect(),
+                            ),
+                        ),
+                    ),
+                ),
+                Content::new(EDITOR, Button::new("Independent action")),
+            ],
+        )
+        .with_flexible_child(SCROLL),
+    ))
+    .unwrap();
     let (v1, ()) = host
         .set_scroll_reading_document(SCROLL, "sliver", 1, ids.clone(), |_| ())
         .unwrap();
@@ -313,10 +325,7 @@ fn incoming_user_scroll_overrides_queued_arrival_and_never_repins_implicitly() {
     render(&mut host);
     assert!(scroll_mut(&mut host).follow_latest());
     render(&mut host);
-    assert_eq!(
-        scroll(&host).scroll.offset.y,
-        scroll(&host).scroll.limit().y
-    );
+    assert_eq!(scroll(&host).offset().y, scroll(&host).max_offset().y);
     let point = host.get(SCROLL).unwrap().frame().center();
     let order: Vec<_> = ids
         .iter()
@@ -338,10 +347,10 @@ fn incoming_user_scroll_overrides_queued_arrival_and_never_repins_implicitly() {
     });
     render(&mut host);
     assert!(!scroll(&host).is_following_latest());
-    assert!(scroll(&host).scroll.offset.y < scroll(&host).scroll.limit().y - 40.);
-    assert!(scroll(&host).scroll.needs_animation());
+    assert!(scroll(&host).offset().y < scroll(&host).max_offset().y - 40.);
+    assert!(scroll(&host).scroll().needs_animation());
     assert!(scroll(&host).reading_result().unwrap().user_input_won);
-    let before = scroll(&host).scroll.offset.y;
+    let before = scroll(&host).offset().y;
     host.event(&ContentEvent::Scroll {
         position: point,
         delta: Point::new(0., -7.),
@@ -352,7 +361,7 @@ fn incoming_user_scroll_overrides_queued_arrival_and_never_repins_implicitly() {
         time: 1.01,
     });
     render(&mut host);
-    assert!((scroll(&host).scroll.offset.y - (before - 7.)).abs() < 0.01);
+    assert!((scroll(&host).offset().y - (before - 7.)).abs() < 0.01);
     assert!(!scroll(&host).is_following_latest());
     scroll_mut(&mut host).follow_latest();
     render(&mut host);
@@ -400,7 +409,7 @@ fn deletion_uses_first_surviving_successor_and_empty_document_has_explicit_fallb
         scroll(&host).reading_result().unwrap().anchor,
         ContentReadingAnchorUpdate::Fallback(None)
     );
-    assert_eq!(scroll(&host).scroll.offset, Point::default());
+    assert_eq!(scroll(&host).offset(), Point::default());
     assert!(!scroll(&host).is_following_latest());
 }
 
@@ -505,7 +514,7 @@ fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {
     host.set_scroll_reading_document(SCROLL, "B", 1, ids, |_| ())
         .unwrap();
     render(&mut host);
-    let before = scroll(&host).scroll.offset;
+    let before = scroll(&host).offset();
     let old = host.event(&ContentEvent::Scroll {
         position: p,
         delta: Point::new(0., 15.),
@@ -519,7 +528,7 @@ fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {
         !old.consumed,
         "old document momentum cannot acquire the new document"
     );
-    assert_eq!(scroll(&host).scroll.offset, before);
+    assert_eq!(scroll(&host).offset(), before);
     host.event(&ContentEvent::Scroll {
         position: p,
         delta: Point::new(0., 5.),
@@ -531,7 +540,7 @@ fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {
     });
     scroll_mut(&mut host).follow_latest();
     render(&mut host);
-    let bottom = scroll(&host).scroll.offset.y;
+    let bottom = scroll(&host).offset().y;
     host.event(&ContentEvent::Scroll {
         position: p,
         delta: Point::new(0., -10.),
@@ -541,7 +550,7 @@ fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {
         momentum: true,
         time: 2.01,
     });
-    assert_eq!(scroll(&host).scroll.offset.y, bottom);
+    assert_eq!(scroll(&host).offset().y, bottom);
     assert!(scroll(&host).is_following_latest());
     host.event(&ContentEvent::Scroll {
         position: p,
@@ -552,7 +561,7 @@ fn document_switch_and_explicit_latest_reject_the_old_momentum_tail() {
         momentum: false,
         time: 3.,
     });
-    assert_eq!(scroll(&host).scroll.offset.y, bottom - 10.);
+    assert_eq!(scroll(&host).offset().y, bottom - 10.);
     assert!(!scroll(&host).is_following_latest());
 }
 
@@ -587,8 +596,8 @@ fn fully_clipped_viewport_suspends_and_restores_the_same_reading_anchor() {
 fn stopped_child_reader_pauses_ancestor_following_without_redispatching_its_wheel() {
     const INNER: ComponentId = ComponentId(801);
     const BODY: ComponentId = ComponentId(802);
-    let mut inner = ScrollContent::new(ScrollArea::default(), row(BODY, 1000.));
-    inner.viewport_height = Some(400.);
+    let inner = ScrollContent::new(ScrollArea::default(), row(BODY, 1000.))
+        .with_viewport_height(Some(400.));
     let mut host = ContentHost::new(Content::new(
         SCROLL,
         ScrollContent::new(ScrollArea::default(), Content::new(INNER, inner)),
@@ -605,14 +614,13 @@ fn stopped_child_reader_pauses_ancestor_following_without_redispatching_its_whee
         .unwrap()
         .follow_latest();
     render(&mut host);
-    let outer_offset = scroll(&host).scroll.offset;
+    let outer_offset = scroll(&host).offset();
     let inner_offset = host
         .get(INNER)
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
-        .offset
+        .offset()
         .y;
     assert!(scroll(&host).is_following_latest());
     assert!(
@@ -634,14 +642,14 @@ fn stopped_child_reader_pauses_ancestor_following_without_redispatching_its_whee
     });
     assert!(response.consumed && !host.event_bubbled());
     assert!(!scroll(&host).is_following_latest());
-    assert_eq!(scroll(&host).scroll.offset, outer_offset);
+    assert_eq!(scroll(&host).offset(), outer_offset);
     let child = host
         .get(INNER)
         .unwrap()
         .component::<ScrollContent>()
         .unwrap();
     assert!(!child.is_following_latest());
-    assert_eq!(inner_offset - child.scroll.offset.y, 16.);
+    assert_eq!(inner_offset - child.offset().y, 16.);
     assert!(
         host.reading_scroll_source()
             .is_some_and(|(source, _)| source == INNER)
@@ -684,7 +692,7 @@ fn stopped_nonreading_child_does_not_pause_ancestor_following() {
         .unwrap();
     scroll_mut(&mut host).follow_latest();
     render(&mut host);
-    let offset = scroll(&host).scroll.offset;
+    let offset = scroll(&host).offset();
     let visible = host.get(SINK).unwrap().visible().unwrap();
     let response = host.event(&ContentEvent::Scroll {
         position: Point::new(visible.min_x() + 10., visible.min_y() + 10.),
@@ -705,6 +713,6 @@ fn stopped_nonreading_child_does_not_pause_ancestor_following() {
         1
     );
     assert!(scroll(&host).is_following_latest());
-    assert_eq!(scroll(&host).scroll.offset, offset);
+    assert_eq!(scroll(&host).offset(), offset);
     assert!(host.reading_scroll_source().is_none());
 }

@@ -892,29 +892,25 @@ const STRICT_SPACER: ComponentId = ComponentId(8813);
 fn strict_search_host() -> ContentHost {
     let mut search = SearchFieldContent::new("Search documents", "needle");
     search.set_submit_policy(TextSubmitPolicy::Enter);
-    let mut stack = StackContent {
-        model: tekes_ui_controls::extended::Stack {
-            axis: tekes_ui_controls::extended::Axis::Vertical,
-            gap: 8.,
-        },
-        flexible_child: None,
-        children: vec![Content::new(
+    let mut stack = StackContent::vertical(
+        8.,
+        vec![Content::new(
             OTHER,
             TextFieldContent::new("Composer", "draft 😀"),
         )],
-    };
-    stack.children.extend((0..18).map(|i| {
+    );
+    stack.children_mut().extend((0..18).map(|i| {
         Content::new(
             ComponentId(8820 + i),
             TextContent::new(format!("scroll row {i}")),
         )
     }));
     stack
-        .children
+        .children_mut()
         .push(Content::new(STRICT_SPACER, TextContent::new("spacer")));
-    stack.children.push(Content::new(SEARCH, search));
+    stack.push_child(Content::new(SEARCH, search));
     let mut scroll = ScrollContent::new(ScrollArea::default(), Content::new(STRICT_STACK, stack));
-    scroll.viewport_height = Some(120.);
+    scroll.set_viewport_height(Some(120.));
     let mut host = ContentHost::new(Content::new(STRICT_ROOT, scroll)).unwrap();
     host.set_action_events(true);
     host
@@ -937,7 +933,7 @@ fn strict_scroll_offset(host: &ContentHost) -> Point {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
 }
 
@@ -1070,9 +1066,7 @@ fn strict_scroll_clear_sources_respect_another_composers_mark_and_then_clear_onc
             .unwrap()
             .component_mut::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
-            .y = 10_000.;
+            .scroll_to(0., 10_000.);
         render_strict(&mut host);
         let point = host
             .semantics()
@@ -1162,9 +1156,7 @@ fn strict_scroll_editor_drag_captured_by_search_cannot_clear_when_crossing_butto
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap()
-        .scroll
-        .offset
-        .y = 10_000.;
+        .scroll_to(0., 10_000.);
     render_strict(&mut host);
     let editor = host.text_surface(SEARCH).unwrap().inner();
     let down = Point::new(editor.min_x() + 3., editor.center().y);

@@ -6,9 +6,7 @@ use tekes_ui_composition_consumer::navigation_content::{
 };
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, TextSurfaceHost, TextSurfaceTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_text::{
@@ -623,14 +621,10 @@ fn inactive_tabs_panel_cannot_leak_retained_overlay_paint() {
     );
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.0,
-            },
-            children: vec![Content::new(TABS, TabsContent::new(vec![first, second], 1))],
-            flexible_child: None,
-        },
+        StackContent::vertical(
+            0.0,
+            vec![Content::new(TABS, TabsContent::new(vec![first, second], 1))],
+        ),
     ))
     .unwrap();
     render(&mut host, 400.0);
@@ -855,14 +849,7 @@ fn tabs_panel_inherits_and_clears_surface_without_remounting_content() {
     );
     let mut host = ContentHost::new(Content::new(
         host_id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.0,
-            },
-            children: vec![tabs],
-            flexible_child: None,
-        },
+        StackContent::vertical(0.0, vec![tabs]),
     ))
     .unwrap();
     let mount = host.semantic_mount(panel_id);
@@ -1240,17 +1227,13 @@ fn tabs_switch_retires_original_panel_button_capture_and_late_release() {
                     Content::new(ComponentId(9_971), TextContent::new("Panel A")),
                     Content::new(
                         FIRST_PANEL,
-                        StackContent {
-                            model: Stack {
-                                axis: Axis::Vertical,
-                                gap: 0.,
-                            },
-                            children: vec![Content::new(
+                        StackContent::vertical(
+                            0.,
+                            vec![Content::new(
                                 PANEL_ACTION,
                                 Button::new("Original panel action"),
                             )],
-                            flexible_child: None,
-                        },
+                        ),
                     ),
                 ),
                 TabItem::new(
@@ -1285,9 +1268,7 @@ fn tabs_switch_retires_original_panel_button_capture_and_late_release() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .pressed
+            .is_pressed()
     );
     assert!(!host.is_composing());
 
@@ -1323,9 +1304,7 @@ fn tabs_switch_retires_original_panel_button_capture_and_late_release() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
-            .state
-            .pressed
+            .is_pressed()
     );
     assert!(!host.event(&ContentEvent::PointerUp(pressed_at)).activated);
     assert_eq!(
@@ -1333,7 +1312,7 @@ fn tabs_switch_retires_original_panel_button_capture_and_late_release() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     assert!(host.drain_action_records().is_empty());
@@ -1370,7 +1349,7 @@ fn tabs_switch_retires_original_panel_button_capture_and_late_release() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1
     );
     assert!(host.drain_action_records().is_empty());

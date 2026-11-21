@@ -282,10 +282,10 @@ impl tekes_ui_controls::composition::Component for MatrixCase {
         let mut text = super::apphost_basic::FixtureText(text);
         match *self {
             Self::Toolbar(state) => {
-                render_toolbar(&mut text, scene, frame, clip, theme.palette, state)
+                render_toolbar(&mut text, scene, frame, clip, theme.palette(), state)
             }
             Self::Number(state) => {
-                render_number_field(&mut text, scene, frame, clip, theme.palette, state)
+                render_number_field(&mut text, scene, frame, clip, theme.palette(), state)
             }
         }
     }
@@ -343,10 +343,10 @@ mod tests {
             for i in 0..specimen_count {
                 let group = story.host.get(ComponentId(91650 + i as u64)).unwrap();
                 let stack = group.component::<StackContent>().unwrap();
-                assert_eq!(stack.model.gap, StackContent::SPECIMEN_LABEL_GAP);
+                assert_eq!(stack.gap(), StackContent::SPECIMEN_LABEL_GAP);
                 let label = story.host.get(ComponentId(91600 + i as u64 * 2)).unwrap();
                 assert_eq!(
-                    label.component::<TextContent>().unwrap().role,
+                    label.component::<TextContent>().unwrap().role(),
                     TextRole::UiCaption
                 );
                 let control = story.host.get(ComponentId(91601 + i as u64 * 2)).unwrap();

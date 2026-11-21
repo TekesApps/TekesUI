@@ -289,7 +289,7 @@ fn left_returns_to_parent_and_outside_dismissal_has_no_selection() {
     assert!(part(&h, "Sort by").focused);
     h.event(&ContentEvent::PointerDown(Point::new(620., 480.)));
     h.event(&ContentEvent::PointerUp(Point::new(620., 480.)));
-    assert!(!menu(&mut h).menu.is_open());
+    assert!(!menu(&mut h).is_open());
     assert!(parts(&h).is_empty());
     assert!(h.drain_actions().is_empty());
 }
@@ -300,7 +300,7 @@ fn invalid_declaration_rejects_atomically_and_equal_tree_is_noop() {
     let rev = menu(&mut h).model_revision();
     menu(&mut h).set_entries(entries()).unwrap();
     assert_eq!(menu(&mut h).model_revision(), rev);
-    assert!(menu(&mut h).menu.is_open());
+    assert!(menu(&mut h).is_open());
     for invalid in [
         vec![MenuEntry::item("dup", "A"), MenuEntry::item("dup", "B")],
         vec![MenuEntry::item(" ", "A")],
@@ -308,7 +308,7 @@ fn invalid_declaration_rejects_atomically_and_equal_tree_is_noop() {
     ] {
         assert!(menu(&mut h).set_entries(invalid).is_err());
         assert_eq!(menu(&mut h).model_revision(), rev);
-        assert!(menu(&mut h).menu.is_open());
+        assert!(menu(&mut h).is_open());
     }
     assert!(h.drain_actions().is_empty());
 }
@@ -329,8 +329,8 @@ fn original_compound_trigger_is_one_exact_action_with_passive_body_and_name() {
         .unwrap()
         .component::<MenuContent>()
         .unwrap()
-        .trigger
-        .activations;
+        .trigger()
+        .activations();
     let p = menu.frame.center();
     h.event(&ContentEvent::PointerDown(p));
     h.event(&ContentEvent::PointerUp(p));
@@ -341,8 +341,8 @@ fn original_compound_trigger_is_one_exact_action_with_passive_body_and_name() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .trigger
-            .activations,
+            .trigger()
+            .activations(),
         original + 1
     );
     let parts = h
@@ -375,8 +375,8 @@ fn toolbar_icon_menu_trigger_keeps_keyboard_focus_without_focus_border() {
     let mut trigger_menu = MenuContent::new("Actions", Vec::new())
         .with_trigger_content("Actions", trigger)
         .unwrap();
-    trigger_menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
-    trigger_menu.trigger.set_toolbar_icon_slot(true);
+    trigger_menu.set_trigger_variant(tekes_ui_controls::ButtonVariant::Toolbar);
+    trigger_menu.set_trigger_toolbar_icon_slot(true);
     trigger_menu
         .set_entries(vec![MenuEntry::item("create", "Create")])
         .unwrap();
@@ -421,8 +421,8 @@ fn toolbar_icon_menu_trigger_keeps_keyboard_focus_without_focus_border() {
         )),
         "toolbar icon trigger has no visual focus border"
     );
-    assert!(menu(&mut host).trigger.button.state.focused);
-    assert!(menu(&mut host).trigger.button.state.focus_visible);
+    assert!(menu(&mut host).trigger().is_focused());
+    assert!(menu(&mut host).trigger().focus_visible());
 
     host.event(&ContentEvent::Key {
         key: ControlKey::Enter,
@@ -433,7 +433,7 @@ fn toolbar_icon_menu_trigger_keeps_keyboard_focus_without_focus_border() {
         down: false,
     });
     draw(&mut host);
-    assert_eq!(menu(&mut host).trigger.activations, 1);
+    assert_eq!(menu(&mut host).trigger().activations(), 1);
     assert_eq!(host.focused(), Some(MENU));
     assert!(
         host.semantics()
@@ -493,8 +493,8 @@ fn compact_body_instance_survives_item_model_replacement() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .trigger
-            .label,
+            .trigger()
+            .label(),
         "Session list options"
     );
 }
@@ -504,8 +504,8 @@ fn reopening_original_view_without_a_paint_revokes_previous_semantic_generation(
     let mut h = host();
     open(&mut h);
     let old = part(&h, "Sort by").index;
-    menu(&mut h).menu.deactivate();
-    menu(&mut h).menu.show(0);
+    menu(&mut h).close();
+    menu(&mut h).open();
     assert!(
         !h.accessibility_action(MENU, Some(old), AccessibilityAction::Press)
             .consumed
@@ -654,8 +654,7 @@ fn semantic_submenu_selection_does_not_edit_or_unmark_focused_original_composer(
         .unwrap()
         .component_mut::<MenuContent>()
         .unwrap()
-        .menu
-        .show(0);
+        .open();
     paint(&mut h);
     let find = |h: &ContentHost, name: &str| {
         h.semantics()
@@ -690,7 +689,7 @@ fn ax_opening_second_submenu_updates_original_active_parent_before_left_return()
     open(&mut h);
     press(&mut h, "Group by");
     assert_eq!(
-        menu(&mut h).menu.menu().items.selected,
+        menu(&mut h).active_item_index(),
         1,
         "AX navigation must select/reveal the real requested parent, not keep index zero"
     );
@@ -802,7 +801,7 @@ fn old_declared_token_cannot_alias_a_legacy_position_after_model_mode_switch() {
     open(&mut h);
     let old = part(&h, "Sort by").index;
     let count = old.checked_add(1).filter(|&n| n < 10_000).unwrap_or(8);
-    menu(&mut h).labels = (0..count).map(|n| format!("Legacy {n}")).collect();
+    menu(&mut h).set_labels((0..count).map(|n| format!("Legacy {n}")).collect());
     menu(&mut h)
         .set_values((0..count).map(|n| format!("legacy-{n}")).collect())
         .unwrap();
@@ -902,7 +901,7 @@ fn content_adapter_advances_original_menu_rebound_from_host_clock() {
                 .collect::<Vec<_>>();
             if mode == 0 {
                 let m = menu(&mut h);
-                m.labels = (0..30).map(|i| format!("Row {i}")).collect();
+                m.set_labels((0..30).map(|i| format!("Row {i}")).collect());
             } else if mode == 1 {
                 menu(&mut h).set_entries(entries).unwrap();
             } else {

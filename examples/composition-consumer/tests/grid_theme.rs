@@ -2,9 +2,8 @@
 #![cfg(target_os = "macos")]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    composition::{Button, ComponentId, Content, ContentHost, GridContent, TextContent},
-    extended::Grid,
+use tekes_ui_controls::composition::{
+    Button, ComponentId, Content, ContentHost, GridContent, TextContent,
 };
 use tekes_ui_scene::{Primitive, Quad, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
@@ -16,18 +15,15 @@ fn grid_retained_themes_keep_measured_rows_clips_and_original_leaf_semantics() {
     const DETAIL: ComponentId = ComponentId(121_023);
     let root = Content::new(
         ROOT,
-        GridContent {
-            model: Grid {
-                columns: 2,
-                gap_x: 8.,
-                gap_y: 8.,
-            },
-            children: vec![
+        GridContent::with_columns(
+            2,
+            8.,
+            vec![
                 Content::new(TITLE, TextContent::new("Account")),
                 Content::new(ACTION, Button::new("Open")),
                 Content::new(DETAIL, TextContent::new("Preferences")),
             ],
-        },
+        ),
     )
     .with_surface("panel")
     .unwrap();
@@ -87,7 +83,7 @@ fn grid_retained_themes_keep_measured_rows_clips_and_original_leaf_semantics() {
         let button = action
             .component::<Button>()
             .unwrap()
-            .button
+            .model()
             .layout()
             .unwrap();
         let fill = scene

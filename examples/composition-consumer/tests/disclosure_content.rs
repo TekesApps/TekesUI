@@ -4,10 +4,7 @@
 mod coretext;
 use std::{cell::RefCell, rc::Rc, time::Duration};
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    ButtonTextRenderer, ControlKey, composition::*, layout::MeasuredChild,
     layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Primitive, Rect, Scene, Size};
@@ -349,17 +346,13 @@ fn marked_text_in_nested_body_rejects_collapse_without_mutating_original_editor(
     let editor = ComponentId(6);
     let body = Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: None,
-            children: vec![Content::new(
+        StackContent::vertical(
+            4.,
+            vec![Content::new(
                 editor,
                 TextFieldContent::new("Editor", "draft"),
             )],
-        },
+        ),
     );
     let mut h = host(body, true);
     let mut t = text();
@@ -435,8 +428,8 @@ fn rtl_narrow_chinese_indicator_and_quiet_header_keep_body_theme_separate() {
         let r = icons.calls.last().unwrap();
         assert_eq!(r.0, "tekes-expand");
         let theme = *paints.borrow().last().unwrap();
-        assert_eq!(theme.foreground, None);
-        assert_eq!(theme.icon_foreground, None);
+        assert_eq!(theme.foreground(), None);
+        assert_eq!(theme.icon_foreground(), None);
         assert_eq!(theme.surface(), "sidebar");
     }
     dm(&mut h).set_expanded(false);
@@ -494,14 +487,7 @@ fn original_retained_content_remount_rejects_old_drained_intent() {
     let outer = ComponentId(100);
     let mut h = ContentHost::new(Content::new(
         outer,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![disclosure],
-        },
+        StackContent::vertical(0., vec![disclosure]),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -524,17 +510,13 @@ fn body_preedit_after_collapse_request_rejects_confirmation_and_keeps_identity()
     let mut h = host(
         Content::new(
             BODY,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 0.,
-                },
-                flexible_child: None,
-                children: vec![Content::new(
+            StackContent::vertical(
+                0.,
+                vec![Content::new(
                     editor,
                     TextFieldContent::new("Editor", "draft"),
                 )],
-            },
+            ),
         ),
         true,
     );
@@ -581,13 +563,9 @@ fn collapsing_original_body_retires_nested_popup_and_never_paints_its_overlay_ag
     let action = ComponentId(8);
     let body = Content::new(
         BODY,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 2.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            2.,
+            vec![
                 Content::new(ComponentId(6), Button::new("Anchor")),
                 Content::new(
                     popup,
@@ -597,7 +575,7 @@ fn collapsing_original_body_retires_nested_popup_and_never_paints_its_overlay_ag
                     ),
                 ),
             ],
-        },
+        ),
     );
     let mut h = host(body, true);
     let mut t = text();

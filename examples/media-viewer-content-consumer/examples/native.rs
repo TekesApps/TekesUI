@@ -264,30 +264,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // A profile: the original Form and MediaPanel are siblings within the
         // original Dialog. Its existing inset reserves the complete focus ring;
         // the editor no longer inherits the MediaPanel's zero-padding clip.
-        let slots = tree
-            .get_mut(fixture::DIALOG)
+        tree.get_mut(fixture::DIALOG)
             .unwrap()
             .component_mut::<DialogContent>()
             .unwrap()
-            .children_mut()
-            .unwrap();
-        let panel = slots.remove(1);
-        slots.insert(
-            1,
-            Content::new(
-                IME_BODY,
-                StackContent {
-                    model: tekes_ui_controls::extended::Stack::new(
-                        tekes_ui_controls::extended::Axis::Vertical,
-                    ),
-                    flexible_child: Some(fixture::ROOT),
-                    children: vec![
-                        Content::new(IME_EDITOR, TextFieldContent::new(IME_EDITOR_LABEL, "draft")),
-                        panel,
-                    ],
-                },
-            ),
-        );
+            .replace_body_with(|panel| {
+                Content::new(
+                    IME_BODY,
+                    StackContent::vertical(
+                        0.,
+                        vec![
+                            Content::new(
+                                IME_EDITOR,
+                                TextFieldContent::new(IME_EDITOR_LABEL, "draft"),
+                            ),
+                            panel,
+                        ],
+                    )
+                    .with_flexible_child(fixture::ROOT),
+                )
+            });
         tree
     }
     // Reads the same original controls; no get_mut/drain or copied editor state.
@@ -310,7 +306,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .unwrap()
                         .component::<Button>()
                         .unwrap()
-                        .activations
+                        .activations()
                 })
                 .collect(),
             focused: tree.focused(),
@@ -605,9 +601,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap()
                     .component::<Button>()
                     .unwrap()
-                    .button
-                    .state
-                    .disabled
+                    .is_disabled()
             );
             let viewer = tree
                 .get(fixture::VIEW)
@@ -877,7 +871,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     (
                         id,
                         tree.get(id)
-                            .map(|content| content.component::<Button>().unwrap().activations),
+                            .map(|content| content.component::<Button>().unwrap().activations()),
                     )
                 })
                 .collect(),

@@ -186,7 +186,14 @@ impl Component for Fixture {
         theme: ContentTheme,
     ) {
         if let Some(n) = self.tab {
-            paint_tabs_case(n, scene, &mut FixtureText(text), frame, clip, theme.palette);
+            paint_tabs_case(
+                n,
+                scene,
+                &mut FixtureText(text),
+                frame,
+                clip,
+                theme.palette(),
+            );
         } else {
             let (view, model) = paint_disclosure_case(
                 self.state,
@@ -194,7 +201,7 @@ impl Component for Fixture {
                 &mut FixtureText(text),
                 frame,
                 clip,
-                theme.palette,
+                theme.palette(),
             );
             self.icon
                 .set_glyph(if model.open {
@@ -203,17 +210,15 @@ impl Component for Fixture {
                     "tekes-forward"
                 })
                 .expect("canonical disclosure glyph");
-            let mut theme = theme;
-            theme.icon_foreground = Some(
-                theme
-                    .palette
-                    .color(if self.state.disabled {
-                        "tertiary-text"
-                    } else {
-                        "primary-text"
-                    })
-                    .unwrap(),
-            );
+            let fg = theme
+                .palette()
+                .color(if self.state.disabled {
+                    "tertiary-text"
+                } else {
+                    "primary-text"
+                })
+                .unwrap();
+            let theme = theme.with_icon_foreground(Some(fg));
             self.icon.paint(scene, text, view.icon_frame(), clip, theme);
         }
     }

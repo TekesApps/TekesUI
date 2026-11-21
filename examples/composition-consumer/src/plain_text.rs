@@ -2,11 +2,7 @@
 //! text adapter. No Agent-specific model or copied text event routing.
 use tekes_ui_controls::{
     ButtonTextRenderer, DraftRevision, ExternalSelection, ExternalUndo, ExternalValueResult,
-    ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-    feedback_view::SurfaceView,
-    layout::MeasuredChild,
+    ScrollArea, composition::*, feedback_view::SurfaceView, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Spacing, Theme, proposal};
@@ -84,7 +80,7 @@ impl Component for Card {
             scene,
             frame,
             Some(clip),
-            theme.palette,
+            theme.palette(),
             true,
             text.backing_scale(),
         );
@@ -125,25 +121,20 @@ impl Scenario {
         ));
         let contents = Content::new(
             BODY_STACK,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                Spacing::Regular.value(),
+                vec![
                     Content::new(BODY, body),
                     Content::new(APPEND, Button::new("Append content")),
                     Content::new(
                         FOOTNOTE,
-                        TextContent {
-                            text: "Footnote · outer surface owns decoration and document scrolling"
-                                .into(),
-                            role: proposal::TextRole::UiCaption,
-                        },
+                        TextContent::new(
+                            "Footnote · outer surface owns decoration and document scrolling",
+                        )
+                        .with_role(proposal::TextRole::UiCaption),
                     ),
                 ],
-            },
+            ),
         );
         let panel = Content::new(
             PANEL,
@@ -155,20 +146,17 @@ impl Scenario {
         );
         let root = Content::new(
             ROOT,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: Spacing::Regular.value(),
-                },
-                flexible_child: Some(SCROLLER),
-                children: vec![
+            StackContent::vertical(
+                Spacing::Regular.value(),
+                vec![
                     Content::new(SCROLLER, ScrollContent::new(ScrollArea::default(), panel)),
                     Content::new(
                         FORM,
                         TextFieldContent::new("Ordinary field", "Form presentation unchanged"),
                     ),
                 ],
-            },
+            )
+            .with_flexible_child(SCROLLER),
         );
         let mut host = ContentHost::new(root)?;
         host.set_action_events(true);

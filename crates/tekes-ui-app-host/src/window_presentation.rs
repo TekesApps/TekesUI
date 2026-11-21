@@ -6080,7 +6080,7 @@ mod input_regressions {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap();
-            assert!(effort_menu.trigger.button.state.selected);
+            assert!(effort_menu.trigger().is_selected());
             let (_, updated_run) = find_ax_part(&mut host, "Run").unwrap();
             assert!(!updated_run.enabled);
             assert!(updated_run.selected);

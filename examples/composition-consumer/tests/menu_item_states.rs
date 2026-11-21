@@ -72,7 +72,7 @@ fn open(h: &mut ContentHost, theme: Theme) -> Text {
 fn keyboard_skips_disabled_separator_and_keeps_checked_independent() {
     let mut h = host();
     open(&mut h, Theme::LIGHT);
-    assert_eq!(menu(&mut h).popup.as_ref().unwrap().active_item, 1);
+    assert_eq!(menu(&mut h).popup_layout().unwrap().active_item, 1);
     h.event(&ContentEvent::Key {
         key: ControlKey::Down,
         down: true,
@@ -99,17 +99,17 @@ fn keyboard_skips_disabled_separator_and_keeps_checked_independent() {
         key: ControlKey::End,
         down: true,
     });
-    assert_eq!(menu(&mut h).menu.menu().items.selected, 3);
+    assert_eq!(menu(&mut h).active_item_index(), 3);
     h.event(&ContentEvent::Key {
         key: ControlKey::Down,
         down: true,
     });
-    assert_eq!(menu(&mut h).menu.menu().items.selected, 1);
+    assert_eq!(menu(&mut h).active_item_index(), 1);
     h.event(&ContentEvent::Key {
         key: ControlKey::Up,
         down: true,
     });
-    assert_eq!(menu(&mut h).menu.menu().items.selected, 3);
+    assert_eq!(menu(&mut h).active_item_index(), 3);
     assert!(h.drain_action_records().is_empty());
 }
 #[test]
@@ -125,16 +125,13 @@ fn disabled_and_separator_reject_ax_pointer_and_programmatic_item_activation() {
             !h.accessibility_action(MENU, Some(i), AccessibilityAction::Press)
                 .activated
         );
-        let p = menu(&mut h).popup.as_ref().unwrap().items[i].frame.center();
+        let p = menu(&mut h).popup_layout().unwrap().items[i].frame.center();
         h.event(&ContentEvent::PointerDown(p));
         assert!(!h.event(&ContentEvent::PointerUp(p)).activated);
-        assert_eq!(
-            menu(&mut h).menu.activate_item(i),
-            tekes_ui_controls::feedback_view::MenuEvent::None
-        );
+        assert!(menu(&mut h).selected().is_none());
     }
     assert!(h.drain_action_records().is_empty());
-    assert!(menu(&mut h).menu.is_open());
+    assert!(menu(&mut h).is_open());
 }
 #[test]
 fn checked_is_controlled_not_toggled_by_original_selection() {
@@ -173,13 +170,13 @@ fn declaration_update_cancels_old_popup_and_held_input_without_rebinding_queued_
             .activated
     );
     open(&mut h, Theme::LIGHT);
-    let p = menu(&mut h).popup.as_ref().unwrap().items[3].frame.center();
+    let p = menu(&mut h).popup_layout().unwrap().items[3].frame.center();
     h.event(&ContentEvent::PointerDown(p));
     let before = menu(&mut h).model_revision();
     assert!(menu(&mut h).set_item_disabled(3, true));
     assert_ne!(menu(&mut h).model_revision(), before);
     assert!(!h.event(&ContentEvent::PointerUp(p)).activated);
-    assert!(!menu(&mut h).menu.is_open());
+    assert!(!menu(&mut h).is_open());
     let r = h.drain_action_records();
     assert_eq!(r.len(), 1);
     let ContentActionPayload::MenuSelection(s) = r[0].payload.as_ref().unwrap() else {
@@ -237,7 +234,7 @@ fn an_all_unavailable_menu_has_no_selection_or_fake_focused_row() {
     paint(&mut h, Theme::LIGHT);
     assert!(h.semantics()[0].parts.iter().all(|p| !p.focused));
     assert!(h.drain_action_records().is_empty());
-    assert!(menu(&mut h).menu.is_open());
+    assert!(menu(&mut h).is_open());
 }
 
 #[test]
@@ -246,12 +243,12 @@ fn toggling_declared_check_state_keeps_content_sized_popup_geometry() {
     m.set_values(vec!["a".into(), "b".into()]).unwrap();
     let mut h = ContentHost::new(Content::new(MENU, m)).unwrap();
     open(&mut h, Theme::LIGHT);
-    let plain = menu(&mut h).popup.as_ref().unwrap().popup;
+    let plain = menu(&mut h).popup_layout().unwrap().popup;
     // Declaring a check column adds real content width. Its checked value must
     // not change that allocation or move the popup when it toggles.
     menu(&mut h).set_item_checked(0, false);
     open(&mut h, Theme::LIGHT);
-    let declared = menu(&mut h).popup.as_ref().unwrap().popup;
+    let declared = menu(&mut h).popup_layout().unwrap().popup;
     assert_eq!(declared.origin, plain.origin);
     assert_eq!(declared.size.height, plain.size.height);
     assert!(declared.size.width > plain.size.width);
@@ -260,7 +257,7 @@ fn toggling_declared_check_state_keeps_content_sized_popup_geometry() {
         menu(&mut h).set_item_checked(0, checked);
         open(&mut h, Theme::LIGHT);
         assert_eq!(
-            menu(&mut h).popup.as_ref().unwrap().popup,
+            menu(&mut h).popup_layout().unwrap().popup,
             declared,
             "toggling a declared check column must preserve popup geometry"
         );

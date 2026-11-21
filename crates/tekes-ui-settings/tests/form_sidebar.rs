@@ -201,7 +201,7 @@ fn resetting_a_menu_clears_prior_selection_semantics() {
         .unwrap()
         .component::<MenuContent>()
         .unwrap();
-    assert!(menu.trigger.label.contains("跟随系统"));
+    assert!(menu.trigger().label().contains("跟随系统"));
     assert_ne!(menu.semantics().value, Some("English".into()));
 }
 
@@ -372,7 +372,10 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
         let label = form.host().get(ComponentId(base + 1)).unwrap();
         assert_eq!(control.help_text(), Some(field.description.as_str()));
         assert_eq!(label.help_text(), Some(field.description.as_str()));
-        assert_eq!(label.component::<TextContent>().unwrap().text, field.label);
+        assert_eq!(
+            label.component::<TextContent>().unwrap().text(),
+            field.label
+        );
         assert!(form.host().get(ComponentId(base + 2)).is_none());
     }
     // Replacing values must not lose the original owner's help or mount.
@@ -391,7 +394,7 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
             .unwrap()
             .component::<TextContent>()
             .unwrap()
-            .text,
+            .text(),
         "文字大小: value outside allowed range"
     );
 }
@@ -399,7 +402,7 @@ fn descriptions_use_original_help_and_accessibility_without_extra_label_rows() {
 #[test]
 fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     use tekes_ui_controls::composition::{
-        Button, Component, ComponentId, ContentEvent, IconImage, IconRenderError, ScrollContent,
+        Button, ComponentId, ContentEvent, IconImage, IconRenderError, ScrollContent,
         SearchFieldContent, StackContent, WithIconRenderer,
     };
     use tekes_ui_scene::{ImageId, Rect, Scene};
@@ -435,10 +438,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
         .unwrap()
         .component::<StackContent>()
         .unwrap();
-    assert_eq!(
-        header.model.axis,
-        tekes_ui_controls::extended::Axis::Horizontal
-    );
+    assert_eq!(header.axis(), tekes_ui_controls::extended::Axis::Horizontal);
     assert_eq!(header.children().len(), 2);
     assert!(header.children()[0].component::<Button>().is_some());
     assert!(header.children()[1].component::<Button>().is_some());
@@ -452,11 +452,11 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
             Theme::LIGHT.into(),
         )
         .unwrap();
-    let back_mount = sidebar.host().semantic_mount(ComponentId(4));
+    let back_mount = sidebar.back_button_mount();
     let scroll_mount = sidebar.host().semantic_mount(ComponentId(1));
     assert!(back_mount.is_some() && scroll_mount.is_some());
     let search = sidebar.host().get(ComponentId(10)).unwrap().frame();
-    let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+    let back = sidebar.back_button_frame().unwrap();
     let header_frame = sidebar.host().get(ComponentId(5)).unwrap().frame();
     let scroll_frame = sidebar.host().get(ComponentId(1)).unwrap().frame();
     let first_heading = sidebar.host().get(ComponentId(100)).unwrap().frame();
@@ -516,13 +516,13 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
     );
     assert!(sidebar.host().get(ComponentId(10)).is_none());
     assert_eq!(sidebar.host().focused(), Some(ComponentId(6)));
-    assert!(sidebar.host().get(ComponentId(4)).is_none());
+    assert!(!sidebar.has_back_button());
     assert_eq!(sidebar.host().semantic_mount(ComponentId(1)), scroll_mount);
     assert!(sidebar.cancel_search().unwrap());
     assert!(sidebar.host().get(ComponentId(6)).is_none());
     assert_eq!(sidebar.host().focused(), Some(ComponentId(10)));
     assert_eq!(sidebar.host().semantic_mount(ComponentId(1)), scroll_mount);
-    let restored_back_mount = sidebar.host().semantic_mount(ComponentId(4));
+    let restored_back_mount = sidebar.back_button_mount();
     assert!(restored_back_mount.is_some());
     for width in [180., 360.] {
         let frame = Rect::new(12., 16., width, 500.);
@@ -535,7 +535,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
             )
             .unwrap();
         let search = sidebar.host().get(ComponentId(10)).unwrap().frame();
-        let back = sidebar.host().get(ComponentId(4)).unwrap().frame();
+        let back = sidebar.back_button_frame().unwrap();
         assert_eq!(
             back.min_x(),
             frame.min_x() + tekes_ui_tokens::Spacing::Loose.value()
@@ -545,10 +545,7 @@ fn pinned_header_composes_original_back_and_editor_outside_scroll_owner() {
             frame.max_x() - tekes_ui_tokens::Spacing::Loose.value()
         );
         assert_eq!(search.center().y, back.center().y);
-        assert_eq!(
-            sidebar.host().semantic_mount(ComponentId(4)),
-            restored_back_mount
-        );
+        assert_eq!(sidebar.back_button_mount(), restored_back_mount);
     }
 }
 
@@ -836,7 +833,7 @@ fn full_production_settings_form_preserves_long_labels_scaling_and_horizontal_sa
                     .unwrap()
                     .component::<TextContent>()
                     .unwrap()
-                    .text,
+                    .text(),
                 "工作区"
             );
             assert_eq!(
@@ -845,7 +842,7 @@ fn full_production_settings_form_preserves_long_labels_scaling_and_horizontal_sa
                     .unwrap()
                     .component::<TextContent>()
                     .unwrap()
-                    .text,
+                    .text(),
                 "阅读"
             );
             let row0 = form.host().get(ComponentId(1_u64 << 32)).unwrap().frame();

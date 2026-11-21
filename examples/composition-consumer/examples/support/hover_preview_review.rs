@@ -2,12 +2,7 @@
 //! Synthetic NSTextInputClient preedit is not a physical Chinese IME session.
 use std::path::Path;
 use tekes_ui_composition_consumer::hover_preview::*;
-use tekes_ui_controls::{
-    ButtonTextRenderer, ScrollArea,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
-};
+use tekes_ui_controls::{ButtonTextRenderer, ScrollArea, composition::*, layout::MeasuredChild};
 use tekes_ui_platform_macos::selftest::Action;
 use tekes_ui_scene::{Point, Rect, Size};
 const SCROLL: ComponentId = ComponentId(24700);
@@ -53,30 +48,13 @@ impl Review {
     pub fn prepare(f: &mut Transcript) -> Self {
         let a = f.host.remove(TICK_A).unwrap();
         let b = f.host.remove(TICK_B).unwrap();
-        let rows = Content::new(
-            ROWS,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Horizontal,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![a, b],
-            },
-        );
+        let rows = Content::new(ROWS, StackContent::horizontal(8., vec![a, b]));
         let column = Content::new(
             COLUMN,
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 8.,
-                },
-                flexible_child: None,
-                children: vec![rows, Content::new(SPACE, Space)],
-            },
+            StackContent::vertical(8., vec![rows, Content::new(SPACE, Space)]),
         );
         let mut scroll = ScrollContent::new(ScrollArea::default(), column);
-        scroll.viewport_height = Some(90.);
+        scroll.set_viewport_height(Some(90.));
         f.host.insert(ROOT, Content::new(SCROLL, scroll)).unwrap();
         f.host.reorder(ROOT, &[SCROLL, COMPOSER, PREVIEW]).unwrap();
         f.host.set_action_events(true);
@@ -240,25 +218,22 @@ impl Review {
                     .unwrap()
                     .component_mut::<ScrollContent>()
                     .unwrap()
-                    .scroll
-                    .offset = Point::default()
+                    .scroll_to(0., 0.);
             }
-            46017 => {
-                f.host
-                    .get_mut(SCROLL)
-                    .unwrap()
-                    .component_mut::<ScrollContent>()
-                    .unwrap()
-                    .viewport_height = Some(0.)
-            }
-            46018 => {
-                f.host
-                    .get_mut(SCROLL)
-                    .unwrap()
-                    .component_mut::<ScrollContent>()
-                    .unwrap()
-                    .viewport_height = Some(90.)
-            }
+            46017 => f
+                .host
+                .get_mut(SCROLL)
+                .unwrap()
+                .component_mut::<ScrollContent>()
+                .unwrap()
+                .set_viewport_height(Some(0.)),
+            46018 => f
+                .host
+                .get_mut(SCROLL)
+                .unwrap()
+                .component_mut::<ScrollContent>()
+                .unwrap()
+                .set_viewport_height(Some(90.)),
             46020 => {
                 self.old = f.version;
                 self.retired = Some(f.host.remove(TICK_B).unwrap());
@@ -390,7 +365,7 @@ impl Review {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset
                 .y
                 <= 0.

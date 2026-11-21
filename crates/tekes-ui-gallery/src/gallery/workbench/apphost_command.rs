@@ -108,7 +108,7 @@ impl Component for Fixture {
                 tekes_ui_tokens::proposal::TextRole::UiBody,
                 Rect::new(f.min_x(), f.max_y() - 36., f.size.width, 36.),
                 tekes_ui_controls::ButtonTextAlign::Leading,
-                theme.palette.color("primary-text").unwrap(),
+                theme.palette().color("primary-text").unwrap(),
             );
         }
     }

@@ -28,9 +28,23 @@ pub struct TabStripContent {
     toolbar: bool,
     gap: f32,
     intent: Option<TabStripIntent>,
-    pub title_max_width: f32,
+    title_max_width: f32,
 }
 impl TabStripContent {
+    pub fn with_title_max_width(mut self, width: f32) -> Self {
+        self.set_title_max_width(width);
+        self
+    }
+    pub fn set_title_max_width(&mut self, width: f32) {
+        self.title_max_width = if width.is_finite() && width >= 0. {
+            width
+        } else {
+            TAB_TITLE_MAX_WIDTH
+        };
+    }
+    pub fn title_max_width(&self) -> f32 {
+        self.title_max_width
+    }
     pub fn new(items: Vec<TabStripItem>, selected: usize) -> Self {
         let mut view = TabsView::new(items.len());
         let mut children = Vec::new();

@@ -165,9 +165,7 @@ fn icon_button_same_registered_image_repaints_themes_and_keeps_unavailable_contr
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     let scene = draw(&mut host, &mut text, Theme::DARK_INCREASED);
     let (_, _, actual) = sample(&scene, host.semantics()[0].frame);
     assert_eq!(actual.image, image);
@@ -192,8 +190,8 @@ fn icon_button_same_registered_image_repaints_themes_and_keeps_unavailable_contr
         .unwrap()
         .component_mut::<Button>()
         .unwrap();
-    button.button.state.disabled = false;
-    button.button.state.loading = true;
+    button.set_disabled(false);
+    button.set_loading(true);
     draw(&mut host, &mut text, Theme::DARK_INCREASED);
     assert!(
         !host
@@ -213,7 +211,7 @@ fn icon_button_same_registered_image_repaints_themes_and_keeps_unavailable_contr
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         0
     );
     assert!(renderer.unregister_image(image));

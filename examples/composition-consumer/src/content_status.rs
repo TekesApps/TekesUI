@@ -4,7 +4,7 @@ use std::{cell::Cell, rc::Rc};
 use tekes_ui_controls::{
     ButtonModel, ButtonSize, ButtonTextRenderer, ControlKey,
     composition::*,
-    extended::{Axis, Banner, Disclosure, EmptyState, NoticeTone, Progress, Stack},
+    extended::{Banner, Disclosure, EmptyState, NoticeTone, Progress},
     feedback_view::{BannerView, EmptyStateView, ProgressView},
     layout::MeasuredChild,
     layout_view::{DisclosureView, IconRenderer, IconView, TabsView},
@@ -119,7 +119,7 @@ impl Component for Header {
                     &["Content", "History", "Activity"],
                     f,
                     Some(c),
-                    theme.palette,
+                    theme.palette(),
                     proposal::TextRole::UiBody,
                     false,
                 );
@@ -132,7 +132,7 @@ impl Component for Header {
                     "Details",
                     f,
                     Some(c),
-                    theme.palette,
+                    theme.palette(),
                     proposal::TextRole::UiBody,
                 );
             }
@@ -144,8 +144,8 @@ impl Component for Header {
                 "tekes-forward"
             })
             .expect("canonical disclosure icon");
-            let mut theme = theme;
-            theme.icon_foreground = Some(theme.palette.color("primary-text").unwrap());
+            let theme =
+                theme.with_icon_foreground(Some(theme.palette().color("primary-text").unwrap()));
             icon.paint(s, t, view.icon_frame(), c, theme);
         }
         self.project();
@@ -407,7 +407,7 @@ impl Component for Feedback {
                     progress,
                     Rect::new(f.min_x(), f.min_y() + 48., f.size.width, 8.),
                     Some(c),
-                    theme.palette,
+                    theme.palette(),
                 );
             }
             Status::Error => {
@@ -423,7 +423,7 @@ impl Component for Feedback {
                     &model,
                     f,
                     Some(c),
-                    theme.palette,
+                    theme.palette(),
                     proposal::TextRole::UiBody,
                 );
             }
@@ -435,7 +435,7 @@ impl Component for Feedback {
                     &model,
                     f,
                     Some(c),
-                    theme.palette,
+                    theme.palette(),
                     proposal::TextRole::UiBody,
                 );
             }
@@ -513,14 +513,10 @@ pub fn fixture_content(
     );
     Content::new(
         root,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            children: vec![Content::new(header_id, header), panel],
-            flexible_child: None,
-        },
+        StackContent::vertical(
+            Spacing::Regular.value(),
+            vec![Content::new(header_id, header), panel],
+        ),
     )
 }
 

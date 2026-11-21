@@ -147,7 +147,7 @@ fn split_view_retained_themes_preserve_drag_capture_geometry_and_pane_context() 
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
+                .model()
                 .layout()
                 .unwrap();
             let fill = scene

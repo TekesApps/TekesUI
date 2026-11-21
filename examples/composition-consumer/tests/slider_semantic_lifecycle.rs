@@ -1,44 +1,91 @@
 //! Independent public consumer: semantic edits must use the retained view's availability.
 use tekes_ui_controls::{
-    composition::{AccessibilityAction as A, Component, SliderContent},
+    ButtonTextAlign, ButtonTextRenderer,
+    composition::{AccessibilityAction as A, ComponentId, Content, ContentHost, SliderContent},
     extended::Slider,
 };
-use tekes_ui_scene::{Rect, Scene};
-use tekes_ui_tokens::{Palette, Theme};
+use tekes_ui_scene::{Rect, Scene, Size};
+use tekes_ui_tokens::{Palette, Rgba, Theme, proposal};
+
+struct NoText;
+impl ButtonTextRenderer for NoText {
+    fn measure(&mut self, _: &str, _: proposal::TextRole, _: f32) -> Size {
+        Size::default()
+    }
+    fn draw(
+        &mut self,
+        _: &mut Scene,
+        _: &str,
+        _: proposal::TextRole,
+        _: Rect,
+        _: ButtonTextAlign,
+        _: Rgba,
+    ) {
+    }
+}
 
 #[test]
 fn semantic_range_updates_require_a_current_visible_active_mount() {
-    let mut control = SliderContent::new("Volume", Slider::new(50., 0., 100., 5.).unwrap());
-    assert!(!control.accessibility_action(None, &A::Increment).consumed);
-    assert_eq!(control.model.value(), 50.);
-    let frame = Rect::new(10., 10., 240., 36.);
-    control.view.render(
-        &mut Scene::new(),
-        control.model,
-        frame,
-        Some(frame),
-        Palette::from(Theme::LIGHT),
-    );
-    assert!(control.accessibility_action(None, &A::Increment).consumed);
-    assert_eq!(control.model.value(), 55.);
-    control.view.set_window_active(false);
+    const SLIDER: ComponentId = ComponentId(1);
+    let mut host = ContentHost::new(Content::new(
+        SLIDER,
+        SliderContent::new("Volume", Slider::new(50., 0., 100., 5.).unwrap()),
+    ))
+    .unwrap();
+    let value = |h: &ContentHost| {
+        h.get(SLIDER)
+            .unwrap()
+            .component::<SliderContent>()
+            .unwrap()
+            .value()
+    };
     assert!(
-        !control
-            .accessibility_action(None, &A::SetValue("80".into()))
+        !host
+            .accessibility_action(SLIDER, None, A::Increment)
             .consumed
     );
-    assert_eq!(control.model.value(), 55.);
-    control.view.set_window_active(true);
-    assert!(control.accessibility_action(None, &A::Decrement).consumed);
-    control.view.render(
+    assert_eq!(value(&host), 50.);
+    let frame = Rect::new(10., 10., 240., 36.);
+    let mut text = NoText;
+    host.render(
         &mut Scene::new(),
-        control.model,
+        &mut text,
         frame,
-        Some(Rect::new(500., 500., 20., 20.)),
-        Palette::from(Theme::LIGHT),
+        frame,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    assert!(
+        host.accessibility_action(SLIDER, None, A::Increment)
+            .consumed
     );
-    assert!(!control.accessibility_action(None, &A::Increment).consumed);
-    assert_eq!(control.model.value(), 50.);
+    assert_eq!(value(&host), 55.);
+    host.set_window_active(false);
+    assert!(
+        !host
+            .accessibility_action(SLIDER, None, A::SetValue("80".into()))
+            .consumed
+    );
+    assert_eq!(value(&host), 55.);
+    host.set_window_active(true);
+    assert!(
+        host.accessibility_action(SLIDER, None, A::Decrement)
+            .consumed
+    );
+    host.render(
+        &mut Scene::new(),
+        &mut text,
+        frame,
+        Rect::new(500., 500., 20., 20.),
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+    assert!(
+        !host
+            .accessibility_action(SLIDER, None, A::Increment)
+            .consumed
+    );
+    assert_eq!(value(&host), 50.);
 }
 
 #[test]

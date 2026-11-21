@@ -2,7 +2,7 @@
 use super::*;
 use std::cell::Cell;
 use std::rc::Rc;
-use tekes_ui_controls::{ButtonModel, ControlKey, ScrollArea, extended::Grid};
+use tekes_ui_controls::{ButtonModel, ControlKey, ScrollArea};
 
 pub mod ids {
     use tekes_ui_controls::composition::ComponentId;
@@ -65,37 +65,25 @@ impl Component for ActionRow {
             tekes_ui_controls::extended::FocusRingMetrics::paint(
                 scene,
                 frame,
-                theme.palette,
+                theme.palette(),
                 proposal::metric("radius", "radius-row").expect("JSON row radius"),
             );
         }
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        let mut stack = StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: Spacing::Regular.value(),
-            },
-            children: std::mem::take(&mut self.children),
-        };
+        let mut stack =
+            StackContent::horizontal(Spacing::Regular.value(), std::mem::take(&mut self.children));
         let measured = stack.measure(t, a);
-        self.children = stack.children;
+        self.children = std::mem::take(stack.children_mut());
         measured
     }
     fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
         self.frame = f;
         self.clip = c;
-        let mut stack = StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: Spacing::Regular.value(),
-            },
-            children: std::mem::take(&mut self.children),
-        };
+        let mut stack =
+            StackContent::horizontal(Spacing::Regular.value(), std::mem::take(&mut self.children));
         stack.arrange(t, f, c);
-        self.children = stack.children;
+        self.children = std::mem::take(stack.children_mut());
     }
     fn children(&self) -> &[Content] {
         &self.children
@@ -181,10 +169,7 @@ pub fn heterogeneous_list() -> Result<ListFixture, CompositionError> {
         vec![
             Content::new(
                 ids::LIST_TEXT,
-                TextContent {
-                    text: "Preferences".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
+                TextContent::new("Preferences").with_role(proposal::TextRole::UiHeading),
             ),
             Content::new(ids::LIST_BADGE, BadgeContent::new("Managed")?),
             Content::new(
@@ -221,13 +206,10 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
         .with_help("Choose a name visible to everyone on the team.");
     let form = Content::new(
         ids::DIALOG_GRID,
-        GridContent {
-            model: Grid {
-                columns: 2,
-                gap_x: Spacing::Regular.value(),
-                gap_y: Spacing::Regular.value(),
-            },
-            children: vec![
+        GridContent::with_columns(
+            2,
+            Spacing::Regular.value(),
+            vec![
                 Content::new(ids::DIALOG_FIELD, text_field),
                 Content::new(
                     ids::DIALOG_SWITCH,
@@ -235,20 +217,16 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
                 ),
                 Content::new(
                     ids::DIALOG_HELP,
-                    TextContent {
-                        text: "This name is shown to collaborators.".into(),
-                        role: proposal::TextRole::UiCaption,
-                    },
+                    TextContent::new("This name is shown to collaborators.")
+                        .with_role(proposal::TextRole::UiCaption),
                 ),
                 Content::new(
                     ids::DIALOG_ERROR,
-                    TextContent {
-                        text: "Changes take effect when you save this form.".into(),
-                        role: proposal::TextRole::UiCaption,
-                    },
+                    TextContent::new("Changes take effect when you save this form.")
+                        .with_role(proposal::TextRole::UiCaption),
                 ),
             ],
-        },
+        ),
     );
     let body = Content::new(
         ids::DIALOG_BODY,
@@ -267,10 +245,7 @@ pub fn rich_dialog() -> Result<ContentHost, CompositionError> {
             "Edit workspace",
             Content::new(
                 ids::DIALOG_HEADER,
-                TextContent {
-                    text: "Workspace details".into(),
-                    role: proposal::TextRole::UiHeading,
-                },
+                TextContent::new("Workspace details").with_role(proposal::TextRole::UiHeading),
             ),
             body,
             footer,

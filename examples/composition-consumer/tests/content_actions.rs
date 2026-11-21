@@ -118,15 +118,13 @@ fn disabled_controls_never_emit_and_focus_or_render_never_replays_counters() {
     let mut f = ActionFixture::new();
     paint(&mut f);
     f.accessibility_action(FIRST, None, AccessibilityAction::Press);
-    assert_eq!(button(&f, FIRST).activations, 1);
+    assert_eq!(button(&f, FIRST).activations(), 1);
     f.host
         .get_mut(FIRST)
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     let p = f.host.get(FIRST).unwrap().frame().center();
     f.event(&ContentEvent::PointerDown(p));
     f.event(&ContentEvent::PointerUp(p));
@@ -216,7 +214,6 @@ impl Component for Multiple {
 }
 #[test]
 fn nested_multi_action_delivery_is_ordered_and_independent_of_changed_or_activation() {
-    use tekes_ui_controls::extended::{Axis, Stack};
     let mut h = ContentHost::new(Content::new(
         ROOT,
         ListContent::new(
@@ -225,14 +222,7 @@ fn nested_multi_action_delivery_is_ordered_and_independent_of_changed_or_activat
                 Content::new(FIRST, Multiple),
                 Content::new(
                     SECOND,
-                    StackContent {
-                        model: Stack {
-                            axis: Axis::Vertical,
-                            gap: 0.,
-                        },
-                        flexible_child: None,
-                        children: vec![Content::new(EDITOR, Multiple)],
-                    },
+                    StackContent::vertical(0., vec![Content::new(EDITOR, Multiple)]),
                 ),
             ],
         ),
@@ -362,12 +352,6 @@ fn editor_submit_is_typed_and_composition_barriers_do_not_emit_actions() {
         input_context_consumed: false,
     });
     assert_eq!(f.delivered.len(), 1);
-    f.host
-        .get_mut(FIRST)
-        .unwrap()
-        .component_mut::<Button>()
-        .unwrap()
-        .activations = 100;
     f.host.focus(Some(FIRST), true);
     paint(&mut f);
     assert!(f.host.drain_actions().is_empty());
@@ -434,7 +418,7 @@ fn a_successful_action_survives_hiding_but_not_a_same_id_public_child_replacemen
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .children;
+        .children_mut();
     let index = children.iter().position(|c| c.id() == FIRST).unwrap();
     children[index] = Content::new(FIRST, Button::new("replacement"));
     assert!(f.host.drain_actions().is_empty());
@@ -601,7 +585,7 @@ fn public_bubbling_contract_keeps_original_button_and_once_only_action_queue() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             1
         );
         assert!(host.drain_action_records().is_empty());

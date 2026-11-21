@@ -174,8 +174,8 @@ fn decorative_status_never_overrides_original_action_ink_in_any_original_phase()
                             icon.set_disabled(true);
                             let mut b = Button::new(Content::new(ComponentId(2), icon))
                                 .with_accessible_name("Execute");
-                            b.variant = variant;
-                            b.button.state.selected = phase.starts_with("selected");
+                            b.set_variant(variant);
+                            b.set_selected(phase.starts_with("selected"));
                             let mut h = ContentHost::new(Content::new(ComponentId(1), b)).unwrap();
                             h.get_mut(ComponentId(1))
                                 .unwrap()
@@ -195,8 +195,8 @@ fn decorative_status_never_overrides_original_action_ink_in_any_original_phase()
                                 .unwrap()
                                 .component_mut::<Button>()
                                 .unwrap();
-                            b.button.state.disabled = phase.contains("disabled");
-                            b.button.state.loading = phase == "loading";
+                            b.set_disabled(phase.contains("disabled"));
+                            b.set_loading(phase == "loading");
                             paint(&mut h, &mut icons, p);
                             let expected = resolve_surface(
                                 p,

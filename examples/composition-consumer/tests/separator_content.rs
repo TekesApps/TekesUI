@@ -80,9 +80,7 @@ fn tiny_allocations_and_sub_one_backing_never_paint_outside_the_allocated_leaf()
 
 use std::{cell::RefCell, rc::Rc};
 use tekes_ui_controls::{
-    ButtonTextRenderer, ControlKey, ReadingDocumentVersion, ScrollArea,
-    extended::{Axis as LayoutAxis, Stack},
-    layout::MeasuredChild,
+    ButtonTextRenderer, ControlKey, ReadingDocumentVersion, ScrollArea, layout::MeasuredChild,
     layout_view::SeparatorView,
 };
 use tekes_ui_scene::{Point, Size};
@@ -90,7 +88,7 @@ use tekes_ui_tokens::{Palette, proposal};
 #[test]
 fn logical_measurement_is_finite_clamped_and_independent_of_backing_and_typography() {
     let rule = proposal::metric("stroke", "stroke-rule").unwrap();
-    assert_eq!(SeparatorContent::default().model.axis, Axis::Horizontal);
+    assert_eq!(SeparatorContent::default().axis(), Axis::Horizontal);
     for axis in [Axis::Horizontal, Axis::Vertical] {
         for backing in [0.5, 1., 2., 0., f32::NAN] {
             for type_scale in [1., 1.5] {
@@ -347,31 +345,15 @@ fn reader(
         SCROLL,
         ScrollContent::new(
             ScrollArea::default(),
-            Content::new(
-                DOC,
-                StackContent {
-                    model: Stack {
-                        axis: LayoutAxis::Vertical,
-                        gap: 2.,
-                    },
-                    flexible_child: None,
-                    children,
-                },
-            ),
+            Content::new(DOC, StackContent::vertical(2., children)),
         ),
     );
     let mut editor = TextFieldContent::new("Composer", "draft");
     editor.submit_policy = TextSubmitPolicy::Enter;
     let root = Content::new(
         ComponentId(54100),
-        StackContent {
-            model: Stack {
-                axis: LayoutAxis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: Some(SCROLL),
-            children: vec![Content::new(EDITOR, editor), history],
-        },
+        StackContent::vertical(4., vec![Content::new(EDITOR, editor), history])
+            .with_flexible_child(SCROLL),
     );
     let root = if checked_separator {
         Content::new(

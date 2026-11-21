@@ -54,23 +54,15 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
     }
 }
 
-use tekes_ui_controls::{
-    TextSurface,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::TextSurface;
 const ROOT: ComponentId = ComponentId(9600);
 const IDS: [ComponentId; 3] = [ComponentId(9601), ComponentId(9602), ComponentId(9603)];
 fn build() -> ContentHost {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 12.,
-            },
-            flexible_child: None,
-            children: IDS
-                .into_iter()
+        StackContent::vertical(
+            12.,
+            IDS.into_iter()
                 .enumerate()
                 .map(|(i, id)| {
                     let field = if i == 1 {
@@ -85,7 +77,7 @@ fn build() -> ContentHost {
                     Content::new(id, field)
                 })
                 .collect(),
-        },
+        ),
     ))
     .unwrap()
 }

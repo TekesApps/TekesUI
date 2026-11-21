@@ -1,9 +1,6 @@
 //! Original nested readers in three real processes. SDK owns all input routing.
 use super::*;
-use tekes_ui_controls::{
-    ReadingDocumentVersion, ScrollArea, ScrollPolicy,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ReadingDocumentVersion, ScrollArea, ScrollPolicy};
 use tekes_ui_module_runtime::ProcessContainer;
 use tekes_ui_scene::Point;
 pub(super) const MODULE: &str = "original-content-scroll";
@@ -108,30 +105,22 @@ fn create_with_accessibility(native_accessibility: bool) -> Box<dyn ProcessModul
     editor.submit_policy = TextSubmitPolicy::Enter;
     module.host = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            flexible_child: Some(PARENT),
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(
                     PARENT,
                     ScrollContent::new(
                         ScrollArea::default(),
                         Content::new(
                             BODY,
-                            StackContent {
-                                model: Stack {
-                                    axis: Axis::Vertical,
-                                    gap: 4.,
-                                },
-                                flexible_child: None,
-                                children: vec![
+                            StackContent::vertical(
+                                4.,
+                                vec![
                                     Content::new(INNER, inner),
                                     Content::new(TAIL, TextContent::new("After history")),
                                 ],
-                            },
+                            ),
                         ),
                     ),
                 ),
@@ -146,7 +135,8 @@ fn create_with_accessibility(native_accessibility: bool) -> Box<dyn ProcessModul
                     ),
                 ),
             ],
-        },
+        )
+        .with_flexible_child(PARENT),
     ))
     .unwrap();
     module.host.set_action_events(true);
@@ -219,7 +209,7 @@ impl ProcessModule for Reader {
                     serde_json::json!({"id":id.0,"frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height]})
                 }).collect();
                 Ok(
-                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"history_mount":self.module.host.semantic_mount(INNER),"history_family":proposal::text_family(history.role().id()),"items":items,"parent_limit":parent.scroll.limit().y,"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface().scroll().offset.y,"parent_offset":parent.scroll.offset.y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().text(),"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface().marked()}),
+                    serde_json::json!({"pid":std::process::id(),"history_frame":[frame.min_x(),frame.min_y(),frame.size.width,frame.size.height],"history_mount":self.module.host.semantic_mount(INNER),"history_family":proposal::text_family(history.role().id()),"items":items,"parent_limit":parent.scroll().limit().y,"edit_frame":[edit.min_x(),edit.min_y(),edit.size.width,edit.size.height],"inner_offset":history.surface().scroll().offset.y,"parent_offset":parent.offset().y,"following":parent.is_following_latest(),"revision":self.module.revision,"text":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().text(),"marked":self.module.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().surface().marked()}),
                 )
             }
             RequestBody::Message { topic, .. } if topic == "reading-monospace" => {
@@ -240,10 +230,7 @@ impl ProcessModule for Reader {
                 items.insert(0, id);
                 let (version, ()) = self.module.host.update_scroll_reading_document(
                     PARENT, &self.version, self.version.revision()+1, items.clone(), |h| {
-                        h.insert(BODY, Content::new(id, TextContent {
-                            text: "Prepended page: one complete stable reading item with enough text to reflow at different widths.\n".repeat(24),
-                            role: proposal::TextRole::Code,
-                        })).unwrap();
+                        h.insert(BODY, Content::new(id, TextContent::new("Prepended page: one complete stable reading item with enough text to reflow at different widths.\n".repeat(24)).with_role(proposal::TextRole::Code))).unwrap();
                         h.reorder(BODY, &items).unwrap();
                     }
                 ).map_err(|error| anyhow::anyhow!("{error:?}"))?;
@@ -356,9 +343,12 @@ impl Component for ReviewRow {
         // measure returns the available size. Delegate the real Grid layout,
         // then admit only its finite current cells. Positive translation keeps
         // these relative frames and the inherited clip unchanged.
-        let cells = self.grid.model.layout(frame, self.grid.children.len(), 0.);
-        let valid = self.grid.model.columns == IDS.len()
-            && self.grid.children.len() == IDS.len()
+        let cells = self
+            .grid
+            .model()
+            .layout(frame, self.grid.children().len(), 0.);
+        let valid = self.grid.model().columns == IDS.len()
+            && self.grid.children().len() == IDS.len()
             && [frame, clip].into_iter().all(|r| {
                 [
                     r.min_x(),
@@ -373,7 +363,7 @@ impl Component for ReviewRow {
                     && r.size.width > 0.
                     && r.size.height > 0.
             })
-            && self.grid.children.iter().zip(cells).all(|(child, cell)| {
+            && self.grid.children().iter().zip(cells).all(|(child, cell)| {
                 child.component::<ProcessContainer>().is_some()
                     && child.frame()
                         == Rect::new(
@@ -384,15 +374,15 @@ impl Component for ReviewRow {
                         )
             });
         if valid {
-            self.arranged = Some(self.grid.model);
+            self.arranged = Some(self.grid.model());
         }
     }
     fn host_reveal_passthrough(&self) -> bool {
-        self.arranged == Some(self.grid.model)
-            && self.grid.children.len() == IDS.len()
+        self.arranged == Some(self.grid.model())
+            && self.grid.children().len() == IDS.len()
             && self
                 .grid
-                .children
+                .children()
                 .iter()
                 .all(|child| child.component::<ProcessContainer>().is_some())
     }
@@ -400,7 +390,7 @@ impl Component for ReviewRow {
         self.grid.children()
     }
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        self.grid.children_mut()
+        Some(self.grid.children_mut())
     }
 }
 fn container(h: &ContentHost, id: ComponentId) -> &ProcessContainer {
@@ -647,10 +637,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
         ComponentId(480),
         ReviewRow {
             arranged: None,
-            grid: GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children,
-            },
+            grid: GridContent::with_columns(3, 0., children),
         },
     );
     let mut host = ContentHost::new(Content::new(
@@ -813,8 +800,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset;
+            .offset();
         let response = host.event(&event);
         ensure!(
             response.consumed && !host.event_bubbled(),
@@ -826,7 +812,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
             .component::<ScrollContent>()
             .unwrap();
         ensure!(
-            !outer.is_following_latest() && outer.scroll.offset == outer_offset,
+            !outer.is_following_latest() && outer.offset() == outer_offset,
             "remote original reading intent failed to reach outer reader or double-scrolled it"
         );
         ensure!(
@@ -1246,10 +1232,7 @@ pub(super) fn lifecycle_roundtrip() -> Result<serde_json::Value> {
         ComponentId(480),
         ReviewRow {
             arranged: None,
-            grid: GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children: (0..3).map(create).collect::<Result<_>>()?,
-            },
+            grid: GridContent::with_columns(3, 0., (0..3).map(create).collect::<Result<_>>()?),
         },
     ))?;
     let mut gpu = tekes_ui_render::Renderer::new_headless()?;
@@ -1569,10 +1552,7 @@ pub(super) fn anchor_roundtrip() -> Result<serde_json::Value> {
         ComponentId(480),
         ReviewRow {
             arranged: None,
-            grid: GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children,
-            },
+            grid: GridContent::with_columns(3, 0., children),
         },
     );
     let mut host = ContentHost::new(Content::new(

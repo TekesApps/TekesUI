@@ -2,7 +2,7 @@ use std::time::Duration;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext,
     composition::*,
-    extended::{Banner, NoticeTone, Stack, Toast},
+    extended::{Banner, NoticeTone, Toast},
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
@@ -108,9 +108,9 @@ fn mounted_clock_baseline_fraction_pause_show_hide_and_zero() {
 }
 #[test]
 fn clock_error_all_owners_zero_advance_and_next_valid_baseline() {
-    let root = StackContent {
-        model: Stack::new(tekes_ui_controls::extended::Axis::Vertical),
-        children: vec![
+    let root = StackContent::vertical(
+        0.,
+        vec![
             Content::new(
                 T,
                 ToastContent::new("One", Toast::new("One", NoticeTone::Info, 1000), A).unwrap(),
@@ -120,8 +120,7 @@ fn clock_error_all_owners_zero_advance_and_next_valid_baseline() {
                 ToastContent::new("Two", Toast::new("Two", NoticeTone::Success, 1000), A2).unwrap(),
             ),
         ],
-        flexible_child: None,
-    };
+    );
     let mut h = ContentHost::new(Content::new(ComponentId(1), root)).unwrap();
     let mut text = Text::default();
     paint(&mut h, &mut text, 1000).unwrap();
@@ -465,15 +464,8 @@ fn original_unmount_retains_model_but_resumes_with_new_baseline_and_mount() {
         T,
         ToastContent::new("Toast", Toast::new("Saved", NoticeTone::Info, 1000), A).unwrap(),
     );
-    let mut h = ContentHost::new(Content::new(
-        root,
-        StackContent {
-            model: Stack::new(tekes_ui_controls::extended::Axis::Vertical),
-            children: vec![node],
-            flexible_child: None,
-        },
-    ))
-    .unwrap();
+    let mut h =
+        ContentHost::new(Content::new(root, StackContent::vertical(0., vec![node]))).unwrap();
     let mut t = Text::default();
     paint(&mut h, &mut t, 0).unwrap();
     paint(&mut h, &mut t, 1000).unwrap();

@@ -129,22 +129,20 @@ pub(crate) fn apply_menu_declaration(
     viewport: Rect,
 ) {
     menu.set_popup_viewport(Some(viewport));
-    menu.trigger.variant = tekes_ui_controls::ButtonVariant::Toolbar;
-    menu.trigger.set_selection_fill_only(true);
-    menu.trigger.set_toolbar_icon_slot(decl.icon_slot);
-    menu.trigger.image_position = decl.icon_position;
+    menu.set_trigger_variant(tekes_ui_controls::ButtonVariant::Toolbar);
+    menu.set_trigger_selection_fill_only(true);
+    menu.set_trigger_toolbar_icon_slot(decl.icon_slot);
+    menu.set_trigger_image_position(decl.icon_position);
     if let Some(icon) = &decl.icon {
-        menu.trigger
-            .set_icon_label(icon, decl.title.clone())
+        menu.set_trigger_icon_label(icon, decl.title.clone())
             .expect("menu icon validated before sync");
     } else {
-        menu.trigger.set_contents(decl.title.clone());
+        menu.set_trigger_contents(decl.title.clone());
     }
-    menu.trigger
-        .set_accessible_name(decl.accessible_name.clone());
-    menu.trigger.set_help(decl.tooltip.clone());
-    menu.trigger.button.state.disabled = !decl.enabled;
-    menu.trigger.button.state.selected = decl.selected;
+    menu.set_trigger_accessible_name(decl.accessible_name.clone());
+    menu.set_trigger_help(decl.tooltip.clone());
+    menu.set_disabled(!decl.enabled);
+    menu.set_trigger_selected(decl.selected);
     menu.set_entries(decl.entries.clone())
         .expect("menu entries validated before sync");
 }
@@ -330,7 +328,7 @@ impl MountedToolbar {
                             Contents::Title(title) => {
                                 self.host
                                     .update_component::<TextContent>(d.id, target, |label| {
-                                        label.text = title.clone()
+                                        label.set_text(title.clone())
                                     })
                             }
                         };
@@ -902,8 +900,8 @@ mod tests {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap()
-                .trigger
-                .label,
+                .trigger()
+                .label(),
             "Effort: Low"
         );
 
@@ -940,8 +938,8 @@ mod tests {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap()
-                .trigger
-                .label,
+                .trigger()
+                .label(),
             "Model: Default"
         );
 
@@ -1137,7 +1135,7 @@ mod region_lifecycle_tests {
             .get(ComponentId(d.id.0 + 1))
             .unwrap();
         assert_eq!(
-            title_node.component::<TextContent>().unwrap().role,
+            title_node.component::<TextContent>().unwrap().role(),
             tekes_ui_tokens::proposal::TextRole::UiLabel
         );
         toolbar.sync(viewport, vec![], vec![]).unwrap();

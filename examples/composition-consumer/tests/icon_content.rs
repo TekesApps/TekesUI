@@ -1,10 +1,7 @@
 //! Original public IconContent, Button and resource capability; no private Gallery.
 use std::rc::Rc;
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout_view::IconRenderer,
+    ButtonTextAlign, ButtonTextRenderer, composition::*, layout_view::IconRenderer,
 };
 use tekes_ui_scene::{ImageId, Primitive, Rect, Scene, Size};
 use tekes_ui_tokens::{
@@ -54,13 +51,9 @@ impl IconRenderer for Icons {
 fn tree() -> ContentHost {
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), IconContent::new("tekes-settings").unwrap()),
                 Content::new(
                     ComponentId(3),
@@ -71,7 +64,7 @@ fn tree() -> ContentHost {
                     .with_accessible_name("Back"),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap();
     host.set_action_events(true);
@@ -231,17 +224,13 @@ mod coretext;
 fn failed_icon_and_background_glyph_update_preserve_original_composer_marked() {
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), TextFieldContent::new("Composer", "draft😀")),
                 Content::new(ComponentId(3), IconContent::new("tekes-settings").unwrap()),
             ],
-        },
+        ),
     ))
     .unwrap();
     let mut text = coretext::Text::new(1.);
@@ -402,11 +391,11 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
         let point = h.get(BACK).unwrap().frame().center();
         assert!(h.event(&ContentEvent::PointerDown(point)).capture_pointer);
         let b = h.get_mut(BACK).unwrap().component_mut::<Button>().unwrap();
-        b.button.state.selected = true;
+        b.set_selected(true);
         if unavailable == "disabled" {
-            b.button.state.disabled = true;
+            b.set_disabled(true);
         } else {
-            b.button.state.loading = true;
+            b.set_loading(true);
         }
         scene.clear();
         h.render(
@@ -424,8 +413,8 @@ fn independent_scene_run_stop_and_glyph_button_states_keep_original_composer_own
         );
         assert!(process_actions(&mut h).is_empty());
         let b = h.get_mut(BACK).unwrap().component_mut::<Button>().unwrap();
-        b.button.state.disabled = false;
-        b.button.state.loading = false;
+        b.set_disabled(false);
+        b.set_loading(false);
     }
     assert!(
         h.accessibility_action(BACK, None, AccessibilityAction::Press)

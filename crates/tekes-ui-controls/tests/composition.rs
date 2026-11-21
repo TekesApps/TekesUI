@@ -31,17 +31,7 @@ fn button(n: u64) -> Content {
     Content::new(id(n), Button::new(format!("Action {n}")))
 }
 fn stack(children: Vec<Content>) -> Content {
-    Content::new(
-        id(1),
-        StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            children,
-        },
-    )
+    Content::new(id(1), StackContent::vertical(8., children))
 }
 fn render(h: &mut ContentHost) {
     h.render(
@@ -57,13 +47,14 @@ fn render(h: &mut ContentHost) {
 #[test]
 fn distributed_stack_allocates_main_axis_without_changing_intrinsic_or_default_layout() {
     for axis in [Axis::Horizontal, Axis::Vertical] {
-        let make = || StackContent {
-            model: Stack { axis, gap: 8. },
-            children: vec![
-                Content::new(id(2), TextContent::new("Back")),
-                Content::new(id(3), TextContent::new("Search")),
-            ],
-            flexible_child: None,
+        let make = || {
+            StackContent::new(
+                Stack { axis, gap: 8. },
+                vec![
+                    Content::new(id(2), TextContent::new("Back")),
+                    Content::new(id(3), TextContent::new("Search")),
+                ],
+            )
         };
         let proposal = Size::new(260., 180.);
         let mut original = Content::new(id(1), make());
@@ -82,8 +73,8 @@ fn distributed_stack_allocates_main_axis_without_changing_intrinsic_or_default_l
         let frame = Rect::new(7., 11., measured.size.width, measured.size.height);
         distributed.arrange(&mut Text, frame, frame);
         let stack = distributed.component::<StackContent>().unwrap();
-        let first = stack.children[0].frame();
-        let last = stack.children[1].frame();
+        let first = stack.children()[0].frame();
+        let last = stack.children()[1].frame();
         match axis {
             Axis::Horizontal => {
                 assert_eq!(first.min_x(), frame.min_x());
@@ -176,8 +167,7 @@ fn focused_ime_owns_raw_control_keys_before_any_overlay_router() {
             .unwrap()
             .component_mut::<MenuContent>()
             .unwrap()
-            .menu
-            .show(0);
+            .open();
         render(&mut h);
         let before = h
             .get(id(3))
@@ -194,8 +184,8 @@ fn focused_ime_owns_raw_control_keys_before_any_overlay_router() {
                 "IME raw key must remain available to the native input method: {key:?}"
             );
             let menu = h.get(id(2)).unwrap().component::<MenuContent>().unwrap();
-            assert!(menu.menu.is_open());
-            assert_eq!(menu.selected, None);
+            assert!(menu.is_open());
+            assert_eq!(menu.selected(), None);
             assert_eq!(
                 h.get(id(3))
                     .unwrap()
@@ -301,14 +291,14 @@ fn duplicate_keys_fail_before_mount_or_mutation() {
 fn nested_scroll_grid_uses_real_button_and_same_clip_for_hits() {
     let grid = Content::new(
         id(3),
-        GridContent {
-            model: Grid {
+        GridContent::new(
+            Grid {
                 columns: 1,
                 gap_x: 0.,
                 gap_y: 8.,
             },
-            children: (4..14).map(button).collect(),
-        },
+            (4..14).map(button).collect(),
+        ),
     );
     let mut h = ContentHost::new(Content::new(
         id(1),
@@ -331,7 +321,7 @@ fn nested_scroll_grid_uses_real_button_and_same_clip_for_hits() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1
     );
     assert!(
@@ -356,8 +346,7 @@ fn nested_scroll_grid_uses_real_button_and_same_clip_for_hits() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
-            .offset
+            .offset()
             .y
             > 0.
     );
@@ -425,17 +414,13 @@ fn theme_and_relayout_preserve_real_button_keyboard_arm() {
 fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
     let content = Content::new(
         id(2),
-        StackContent {
-            flexible_child: None,
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 4.,
-            },
-            children: vec![
+        StackContent::vertical(
+            4.,
+            vec![
                 Content::new(id(3), TextContent::new("Title")),
                 Content::new(id(4), TextContent::new("Description")),
             ],
-        },
+        ),
     );
     let action = Button::new(content).with_accessible_name("Open workspace");
     let mut h = ContentHost::new(Content::new(id(1), action)).unwrap();
@@ -451,7 +436,7 @@ fn compound_action_has_one_focus_one_name_and_rejects_nested_controls() {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations,
+            .activations(),
         1
     );
     assert!(
@@ -803,8 +788,7 @@ fn captured_pointer_release_reaches_owner_before_new_overlay() {
         .unwrap()
         .component_mut::<MenuContent>()
         .unwrap()
-        .menu
-        .show(0);
+        .open();
     render(&mut h);
     let point = h
         .semantics()

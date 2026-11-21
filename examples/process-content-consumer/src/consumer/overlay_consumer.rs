@@ -43,9 +43,10 @@ fn ready(
 pub(super) fn roundtrip() -> Result<serde_json::Value> {
     let mut host = ContentHost::new(Content::new(
         ComponentId(519),
-        GridContent {
-            model: tekes_ui_controls::extended::Grid::new(3),
-            children: vec![
+        GridContent::with_columns(
+            3,
+            0.,
+            vec![
                 Content::new(
                     REMOTE,
                     ProcessContainer::new_view(
@@ -56,7 +57,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
                 Content::new(BACK, Button::new("Parent background")),
                 Content::new(EDITOR, TextFieldContent::new("Parent editor", "keep")),
             ],
-        },
+        ),
     ))?;
     host.set_action_events(true);
     let mut renderer = tekes_ui_render::Renderer::new_headless()?;
@@ -228,7 +229,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations
+            .activations()
             == 0,
         "outside dismissal clicked background"
     );
@@ -268,7 +269,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations
+            .activations()
             == 1,
         "fresh background click failed"
     );
@@ -300,7 +301,7 @@ pub(super) fn roundtrip() -> Result<serde_json::Value> {
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .activations
+            .activations()
             == 2,
         "held original gesture did not finish once"
     );

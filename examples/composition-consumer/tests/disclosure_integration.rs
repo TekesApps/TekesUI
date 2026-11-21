@@ -3,11 +3,7 @@
 #![cfg(all(target_os = "macos", feature = "svg-icons"))]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Disclosure, Stack},
-    layout_view::DisclosureView,
-};
+use tekes_ui_controls::{composition::*, extended::Disclosure, layout_view::DisclosureView};
 use tekes_ui_scene::{Primitive, Rect, Scene};
 use tekes_ui_tokens::{Theme, proposal};
 const DISCLOSURE: ComponentId = ComponentId(1);
@@ -23,17 +19,13 @@ fn disclosure(h: &mut ContentHost) -> &mut DisclosureContent {
 fn fixture_order(sibling_first: bool) -> ContentHost {
     let title = Content::new(
         TITLE,
-        StackContent {
-            model: Stack {
-                axis: Axis::Horizontal,
-                gap: 4.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::horizontal(
+            4.,
+            vec![
                 Content::new(TITLE_ICON, IconContent::new("tekes-settings").unwrap()),
                 Content::new(TITLE_TEXT, TextContent::new("复合标题 中文")),
             ],
-        },
+        ),
     );
     let d = Content::new(
         DISCLOSURE,
@@ -55,14 +47,7 @@ fn fixture_order(sibling_first: bool) -> ContentHost {
     };
     let mut h = ContentHost::new(Content::new(
         ComponentId(100),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: Some(DISCLOSURE),
-            children,
-        },
+        StackContent::vertical(8., children).with_flexible_child(DISCLOSURE),
     ))
     .unwrap();
     h.set_action_events(true);

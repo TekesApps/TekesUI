@@ -85,7 +85,7 @@ pub struct TabsContent {
     closable_items: Vec<bool>,
     open_items: Vec<bool>,
     view: TabsView,
-    pub compact: bool,
+    compact: bool,
     disabled: bool,
     window_active: bool,
     sizes: Vec<Size>,
@@ -94,6 +94,16 @@ pub struct TabsContent {
     last_selection: Option<ContentActionPayload>,
 }
 impl TabsContent {
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn is_compact(&self) -> bool {
+        self.compact
+    }
     pub fn new(items: Vec<TabItem>, selected: usize) -> Self {
         let count = items.len();
         let mut this = Self {

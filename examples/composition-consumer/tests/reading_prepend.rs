@@ -117,10 +117,7 @@ fn original_button_activation_drives_public_prepend_once() {
 
 #[test]
 fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_focus() {
-    use tekes_ui_controls::{
-        TextRangeMapping, TextSurface,
-        extended::{Axis, Stack},
-    };
+    use tekes_ui_controls::{TextRangeMapping, TextSurface};
     let old: String = (0..100)
         .map(|i| format!("Row {i}: 中文 e\u{301} 😀 retained content\n"))
         .collect();
@@ -128,17 +125,13 @@ fn readonly_textfield_adapter_reuses_versioned_anchor_without_taking_sibling_foc
     let v = field.set_reading_document("history", 1, &old).unwrap();
     let mut host = ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), field),
                 Content::new(ComponentId(3), TextFieldContent::new("Draft", "keep me")),
             ],
-        },
+        ),
     ))
     .unwrap();
     let render = |host: &mut ContentHost| {

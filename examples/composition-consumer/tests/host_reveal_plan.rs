@@ -2,9 +2,7 @@
 use std::rc::Rc;
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer, Insets, ScrollArea, ScrollRevealOptions,
-    ScrollRevealPlacement, TextSurfaceHost, TextSurfaceTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
+    ScrollRevealPlacement, TextSurfaceHost, TextSurfaceTextRenderer, composition::*,
 };
 use tekes_ui_scene::{ClipBudget, ClipRegion, ClipShape, CornerRadii, Point, Rect, Scene, Size};
 use tekes_ui_text::{
@@ -88,17 +86,7 @@ const ITEMS: ComponentId = ComponentId(9802);
 const FIELD: ComponentId = ComponentId(9803);
 const TARGET: ComponentId = ComponentId(9804);
 fn column(id: ComponentId, children: Vec<Content>) -> Content {
-    Content::new(
-        id,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children,
-        },
-    )
+    Content::new(id, StackContent::vertical(0., children))
 }
 fn setup() -> (ContentHost, Text) {
     let rows = column(
@@ -109,7 +97,7 @@ fn setup() -> (ContentHost, Text) {
             .collect(),
     );
     let mut scroll = ScrollContent::new(ScrollArea::default(), rows);
-    scroll.viewport_height = Some(100.);
+    scroll.set_viewport_height(Some(100.));
     let mut h = ContentHost::new(column(
         ROOT,
         vec![
@@ -153,7 +141,7 @@ fn offset(h: &ContentHost) -> Point {
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset
 }
 #[derive(Debug, PartialEq)]
@@ -228,7 +216,6 @@ fn stale_input_geometry_mount_version_offset_and_foreign_host_reject_atomically(
                     .unwrap()
                     .component_mut::<ScrollContent>()
                     .unwrap()
-                    .scroll
                     .scroll_by(0., 3.);
             }
             _ => {
@@ -341,7 +328,7 @@ fn nested_original_scrolls_plan_without_layout_or_trial_mutation() {
                 .collect(),
         ),
     );
-    inner.viewport_height = Some(70.);
+    inner.set_viewport_height(Some(70.));
     let rows = column(
         ComponentId(9990),
         (0..12)
@@ -355,7 +342,7 @@ fn nested_original_scrolls_plan_without_layout_or_trial_mutation() {
             .collect(),
     );
     let mut outer = ScrollContent::new(ScrollArea::default(), rows);
-    outer.viewport_height = Some(110.);
+    outer.set_viewport_height(Some(110.));
     let mut h = ContentHost::new(Content::new(ROOT, outer)).unwrap();
     let mut t = Text::new(true);
     paint(&mut h, &mut t);
@@ -364,7 +351,7 @@ fn nested_original_scrolls_plan_without_layout_or_trial_mutation() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         offset(&h),
         h.get(TARGET).unwrap().frame(),
@@ -379,7 +366,7 @@ fn nested_original_scrolls_plan_without_layout_or_trial_mutation() {
                 .unwrap()
                 .component::<ScrollContent>()
                 .unwrap()
-                .scroll
+                .scroll()
                 .offset,
             offset(&h),
             h.get(TARGET).unwrap().frame()
@@ -585,7 +572,7 @@ fn opaque_custom_reveal_is_never_invoked_as_a_readonly_probe_or_error_fallback()
         },
     );
     let mut scroll = ScrollContent::new(ScrollArea::default(), opaque);
-    scroll.viewport_height = Some(100.);
+    scroll.set_viewport_height(Some(100.));
     let mut h = ContentHost::new(column(
         ROOT,
         vec![
@@ -781,7 +768,7 @@ fn nested_scroll_commit_ignores_unplanned_mutable_getter_between_owners() {
                 .collect(),
         ),
     );
-    inner.viewport_height = Some(70.);
+    inner.set_viewport_height(Some(70.));
     let rows = column(
         ComponentId(9990),
         (0..12)
@@ -790,7 +777,7 @@ fn nested_scroll_commit_ignores_unplanned_mutable_getter_between_owners() {
             .collect(),
     );
     let mut outer = ScrollContent::new(ScrollArea::default(), rows);
-    outer.viewport_height = Some(110.);
+    outer.set_viewport_height(Some(110.));
     let mut h = ContentHost::new(Content::new(ROOT, outer)).unwrap();
     let mut t = Text::new(true);
     paint(&mut h, &mut t);
@@ -804,7 +791,7 @@ fn nested_scroll_commit_ignores_unplanned_mutable_getter_between_owners() {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.

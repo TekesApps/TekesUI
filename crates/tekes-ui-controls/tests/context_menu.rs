@@ -1,7 +1,5 @@
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer, ControlKey, TextInput,
-    composition::*,
-    extended::{Axis, Stack},
+    ButtonTextAlign, ButtonTextRenderer, ControlKey, TextInput, composition::*,
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -74,19 +72,15 @@ fn menu(id: ComponentId) -> Content {
 fn host() -> (ContentHost, ContextMenuBinding, ContextMenuBinding) {
     let mut host = ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            0.,
+            vec![
                 Content::new(A, Draft::default()),
                 Content::new(B, Button::new("Row B")),
                 menu(MENU_A),
                 menu(MENU_B),
             ],
-        },
+        ),
     ))
     .unwrap();
     host.set_action_events(true);
@@ -205,7 +199,6 @@ fn context_menu_marked_text_and_capture_policy_is_explicit() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert_eq!(host.focused(), Some(A));
@@ -271,8 +264,7 @@ fn context_menu_keyboard_owner_rect_clamps_and_escape_outside_do_not_activate() 
         .unwrap()
         .component::<MenuContent>()
         .unwrap()
-        .popup
-        .as_ref()
+        .popup_layout()
         .unwrap()
         .popup;
     assert!(popup.min_x() >= 0. && popup.max_x() <= 300. && popup.max_y() <= 240.);
@@ -292,7 +284,6 @@ fn context_menu_keyboard_owner_rect_clamps_and_escape_outside_do_not_activate() 
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert!(host.drain_actions().is_empty());
@@ -307,8 +298,7 @@ fn context_menu_anchor_movement_clipping_and_deactivation_retire() {
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .model
-        .gap = 10.;
+        .set_gap(10.);
     render(&mut host);
     assert!(
         !host
@@ -316,7 +306,6 @@ fn context_menu_anchor_movement_clipping_and_deactivation_retire() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     host.request_context_menu(b, ContentActionSource::Keyboard)
@@ -329,7 +318,6 @@ fn context_menu_anchor_movement_clipping_and_deactivation_retire() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     host.set_window_active(true);
@@ -350,7 +338,6 @@ fn context_menu_anchor_movement_clipping_and_deactivation_retire() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
 }
@@ -425,8 +412,7 @@ fn context_menu_semantic_root_is_the_real_popup_without_a_trigger_node() {
         .unwrap()
         .component::<MenuContent>()
         .unwrap()
-        .popup
-        .as_ref()
+        .popup_layout()
         .unwrap()
         .popup;
     let semantics = host.semantics();
@@ -503,7 +489,6 @@ fn context_menu_shift_f10_opens_only_after_original_native_key_chain_finishes() 
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     host.event(&ContentEvent::TextKeyEnd {
@@ -516,7 +501,6 @@ fn context_menu_shift_f10_opens_only_after_original_native_key_chain_finishes() 
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert_eq!(host.focused(), Some(B));
@@ -574,7 +558,6 @@ fn context_menu_bound_owner_cannot_open_through_front_interactive_sibling() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     host.remove(front).unwrap();
@@ -585,7 +568,6 @@ fn context_menu_bound_owner_cannot_open_through_front_interactive_sibling() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
 }
@@ -644,9 +626,7 @@ fn context_menu_ax_discovery_and_route_reject_marked_disabled_part_and_remount()
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     assert!(!host.can_show_context_menu(B));
     assert!(
         !host
@@ -657,9 +637,7 @@ fn context_menu_ax_discovery_and_route_reject_marked_disabled_part_and_remount()
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = false;
+        .set_disabled(false);
     let row = host.remove(B).unwrap();
     host.insert(ROOT, row).unwrap();
     render(&mut host);
@@ -695,7 +673,6 @@ fn context_menu_window_margin_primary_click_closes_without_retargeting() {
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap()
-                .menu
                 .is_open()
         );
         assert_eq!(host.focused(), Some(A));
@@ -729,7 +706,6 @@ fn context_menu_control_primary_retargets_original_owner_instead_of_dismissing()
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert!(
@@ -738,7 +714,6 @@ fn context_menu_control_primary_retargets_original_owner_instead_of_dismissing()
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert_eq!(host.focused(), Some(A));

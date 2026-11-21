@@ -361,8 +361,7 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .popup
-            .as_ref()
+            .popup_layout()
             .unwrap()
             .items[1]
             .visible;
@@ -389,7 +388,7 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
                 .unwrap()
                 .component::<MenuContent>()
                 .unwrap()
-                .selected,
+                .selected(),
             Some(1)
         );
         assert!(host.drain_commands().is_empty());

@@ -61,12 +61,12 @@ fn inner_history_scroll_pauses_parent_follow_without_moving_parent_or_composer()
     let before = field.input().external_baseline();
     assert!(wheel(&mut host, 160., 1., false).consumed);
     paint(&mut host, &mut text);
-    let outer_offset = parent(&host).scroll.offset;
+    let outer_offset = parent(&host).scroll().offset;
     assert!(inner(&host).surface().scroll().offset.y > 100.);
     assert!(wheel(&mut host, -60., 2., false).consumed);
     assert!(inner(&host).surface().scroll().offset.y < 150.);
     assert_eq!(
-        parent(&host).scroll.offset,
+        parent(&host).scroll().offset,
         outer_offset,
         "same wheel must not scroll parent twice"
     );
@@ -87,7 +87,7 @@ fn inner_history_scroll_pauses_parent_follow_without_moving_parent_or_composer()
     paint(&mut host, &mut text);
     assert!((host.get(INNER).unwrap().frame().min_y() - before_y).abs() <= 1.);
     assert!(host.get(INNER).unwrap().visible().is_some());
-    assert_eq!(parent(&host).scroll.offset, outer_offset);
+    assert_eq!(parent(&host).scroll().offset, outer_offset);
     assert_eq!(host.focused(), Some(COMPOSER));
     let surface = &host
         .get(COMPOSER)
@@ -109,13 +109,13 @@ fn nested_momentum_obeys_return_latest_and_fresh_gesture_without_double_scroll()
         parent(&host).is_following_latest(),
         "downward inner reading must not pause parent"
     );
-    let offset = parent(&host).scroll.offset;
+    let offset = parent(&host).scroll().offset;
     assert!(wheel(&mut host, -10., 1.01, true).consumed);
     assert!(
         !parent(&host).is_following_latest(),
         "fresh original gesture must allow its upward momentum"
     );
-    assert_eq!(parent(&host).scroll.offset, offset);
+    assert_eq!(parent(&host).scroll().offset, offset);
     host.get_mut(PARENT)
         .unwrap()
         .component_mut::<ScrollContent>()
@@ -128,7 +128,7 @@ fn nested_momentum_obeys_return_latest_and_fresh_gesture_without_double_scroll()
     );
     assert!(wheel(&mut host, -10., 2., false).consumed);
     assert!(!parent(&host).is_following_latest());
-    assert_eq!(parent(&host).scroll.offset, offset);
+    assert_eq!(parent(&host).scroll().offset, offset);
 }
 
 #[test]
@@ -158,9 +158,9 @@ fn nonoverflow_bubbles_once_editable_stays_local_and_ineligible_sources_do_not_n
         .component_mut::<ScrollContent>()
         .unwrap();
     scroll.stop_following();
-    scroll.scroll.scroll_by(0., 80. - scroll.scroll.offset.y);
+    scroll.scroll_by(0., 80. - scroll.scroll().offset.y);
     paint(&mut host, &mut text);
-    let before = parent(&host).scroll.offset.y;
+    let before = parent(&host).scroll().offset.y;
     let point = host.get(INNER).unwrap().visible().unwrap().center();
     host.event(&ContentEvent::Scroll {
         position: point,
@@ -171,7 +171,7 @@ fn nonoverflow_bubbles_once_editable_stays_local_and_ineligible_sources_do_not_n
         momentum: false,
         time: 1.,
     });
-    assert!(parent(&host).scroll.offset.y < before);
+    assert!(parent(&host).scroll().offset.y < before);
 
     // An editable nested surface is an editor viewport, not a readonly-history
     // source. Scrolling it must not alter a containing reading document's intent.
@@ -257,9 +257,10 @@ fn original_ancestor_path_notifies_all_nested_readers_and_no_sibling_document() 
     let sibling_text = ComponentId(53101);
     let mut host = ContentHost::new(Content::new(
         ComponentId(53102),
-        GridContent {
-            model: tekes_ui_controls::extended::Grid::new(2),
-            children: vec![
+        GridContent::with_columns(
+            2,
+            0.,
+            vec![
                 original,
                 Content::new(
                     sibling,
@@ -269,7 +270,7 @@ fn original_ancestor_path_notifies_all_nested_readers_and_no_sibling_document() 
                     ),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap();
     host.set_scroll_reading_document(PARENT, "parent-A", 1, vec![INNER, TAIL], |_| ())
@@ -300,7 +301,7 @@ fn original_ancestor_path_notifies_all_nested_readers_and_no_sibling_document() 
     original
         .component_mut::<ScrollContent>()
         .unwrap()
-        .viewport_height = Some(240.);
+        .set_viewport_height(Some(240.));
     let outer = ComponentId(53200);
     let mut host = ContentHost::new(Content::new(
         outer,
@@ -324,7 +325,7 @@ fn original_ancestor_path_notifies_all_nested_readers_and_no_sibling_document() 
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     wheel(&mut host, 160., 3., false);
     wheel(&mut host, -60., 4., false);
@@ -336,7 +337,8 @@ fn original_ancestor_path_notifies_all_nested_readers_and_no_sibling_document() 
         .unwrap();
     assert!(!outer.is_following_latest());
     assert_eq!(
-        outer.scroll.offset, before,
+        outer.scroll().offset,
+        before,
         "nested notice must never execute outer wheel"
     );
 }
@@ -433,7 +435,7 @@ fn readonly_keyboard_navigation_pauses_parent_even_when_no_parent_reveal_is_need
         let (mut host, mut text, _) = fixture();
         assert!(host.focus(Some(INNER), true));
         assert!(parent(&host).is_following_latest());
-        let before = parent(&host).scroll.offset;
+        let before = parent(&host).scroll().offset;
         let event = if command {
             ContentEvent::TextCommand(tekes_ui_controls::TextEditCommand::MoveDown)
         } else {
@@ -448,7 +450,7 @@ fn readonly_keyboard_navigation_pauses_parent_even_when_no_parent_reveal_is_need
             !parent(&host).is_following_latest(),
             "original readonly keyboard navigation did not notify parent"
         );
-        assert_eq!(parent(&host).scroll.offset, before);
+        assert_eq!(parent(&host).scroll().offset, before);
         assert_eq!(host.focused(), Some(INNER));
         assert!(!inner(&host).surface().text().is_empty());
     }
@@ -468,7 +470,7 @@ fn original_readonly_selection_and_scrollbar_capture_pause_parent_without_copyin
         } else {
             inner(&host).surface().inner().center()
         };
-        let before = parent(&host).scroll.offset;
+        let before = parent(&host).scroll().offset;
         let response = host.event(&ContentEvent::PointerDown(point));
         assert!(response.consumed && response.capture_pointer);
         assert!(host.pointer_capture().is_some_and(|(id, _)| id == INNER));
@@ -480,7 +482,7 @@ fn original_readonly_selection_and_scrollbar_capture_pause_parent_without_copyin
             !parent(&host).is_following_latest(),
             "original readonly pointer/scrollbar selection did not notify parent"
         );
-        assert_eq!(parent(&host).scroll.offset, before);
+        assert_eq!(parent(&host).scroll().offset, before);
         assert_eq!(
             host.focused(),
             Some(INNER),
@@ -686,7 +688,7 @@ fn original_scrollbar_drag_and_track_click_never_reveal_the_old_insertion_caret(
             Point::new(track.center().x, track.max_y() - 8.)
         };
         let selection = surface.input().selection();
-        let before_parent = parent(&host).scroll.offset;
+        let before_parent = parent(&host).scroll().offset;
         assert!(
             host.event(&ContentEvent::PointerDown(point))
                 .capture_pointer
@@ -708,7 +710,7 @@ fn original_scrollbar_drag_and_track_click_never_reveal_the_old_insertion_caret(
             "release restored old caret"
         );
         assert_eq!(inner(&host).surface().input().selection(), selection);
-        assert_eq!(parent(&host).scroll.offset, before_parent);
+        assert_eq!(parent(&host).scroll().offset, before_parent);
         assert!(!parent(&host).is_following_latest());
         assert!(host.pointer_capture().is_none());
         paint(&mut host, &mut text);

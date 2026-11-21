@@ -5,10 +5,7 @@ use std::{
     rc::Rc,
 };
 use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-    layout::MeasuredChild,
+    ButtonTextAlign, ButtonTextRenderer, composition::*, layout::MeasuredChild,
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
@@ -28,23 +25,14 @@ fn text(id: u64, value: impl Into<String>) -> Content {
     Content::new(ComponentId(id), TextContent::new(value))
 }
 fn primary(label: &str) -> Button {
-    let mut button = Button::new(label);
-    button.variant = tekes_ui_controls::ButtonVariant::Primary;
-    button
+    Button::new(label).with_variant(tekes_ui_controls::ButtonVariant::Primary)
 }
 fn card(id: ComponentId, children: Vec<Content>) -> Content {
     Content::new(
         id,
         SurfaceContent::panel(Content::new(
             ComponentId(id.0 + 1000),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: 12.,
-                },
-                children,
-                flexible_child: None,
-            },
+            StackContent::vertical(12., children),
         )),
     )
 }
@@ -131,10 +119,10 @@ impl Component for Roles {
     ) {
         scene.push_clip(clip);
         let mut y = frame.min_y();
-        for (label, caption, bg, fg) in self.rows(theme.palette) {
+        for (label, caption, bg, fg) in self.rows(theme.palette()) {
             let sample = Rect::new(frame.min_x(), y, frame.size.width, 30.);
             let (width, ink) = tekes_ui_controls::feedback_view::SurfaceView::decorative_border(
-                theme.palette,
+                theme.palette(),
                 text.backing_scale(),
             );
             scene.push_quad(
@@ -161,7 +149,7 @@ impl Component for Roles {
                 proposal::TextRole::UiCaption,
                 Rect::new(frame.min_x(), y + 34., frame.size.width, h),
                 ButtonTextAlign::Leading,
-                theme.palette.color("secondary-text").expect("text role"),
+                theme.palette().color("secondary-text").expect("text role"),
             );
             y += h + 42.;
         }
@@ -250,12 +238,9 @@ impl BrandStory {
         let dialog = brand_scope(120051, dialog);
         let intro = Content::new(
             ComponentId(120006),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     Content::new(
                         ComponentId(120002),
                         TextContent::heading("Choose a hue direction"),
@@ -265,8 +250,7 @@ impl BrandStory {
                         "Selecting a direction prepares a compiler-generated candidate. It does not change the app palette; only Confirm use applies it globally.",
                     ),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let document = Content::new(
             ComponentId(120060),
@@ -350,7 +334,7 @@ impl BrandStory {
                 .unwrap()
                 .component::<TextContent>()
                 .unwrap()
-                .text
+                .text()
                 != value
             {
                 self.host
@@ -358,7 +342,7 @@ impl BrandStory {
                     .unwrap()
                     .component_mut::<TextContent>()
                     .unwrap()
-                    .text = value;
+                    .set_text(value);
             }
         }
         for id in [CONFIRM, CANCEL] {
@@ -369,9 +353,7 @@ impl BrandStory {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .disabled
+                .is_disabled()
                 != disabled
             {
                 self.host
@@ -379,9 +361,7 @@ impl BrandStory {
                     .unwrap()
                     .component_mut::<Button>()
                     .unwrap()
-                    .button
-                    .state
-                    .disabled = disabled;
+                    .set_disabled(disabled);
             }
         }
         for (i, d) in crate::gallery::brands::gallery_brand_directions()
@@ -396,9 +376,7 @@ impl BrandStory {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .selected
+                .is_selected()
                 != selected
             {
                 self.host
@@ -406,9 +384,7 @@ impl BrandStory {
                     .unwrap()
                     .component_mut::<Button>()
                     .unwrap()
-                    .button
-                    .state
-                    .selected = selected;
+                    .set_selected(selected);
             }
         }
     }
@@ -602,7 +578,7 @@ mod tests {
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .document_size();
         assert!(document.height > frame.size.height);
         assert!(
@@ -726,7 +702,7 @@ mod tests {
                         .into(),
                 );
                 assert_eq!(
-                    projected.palette,
+                    projected.palette(),
                     crate::gallery::brands::brand_palette(theme, index).unwrap()
                 );
             }

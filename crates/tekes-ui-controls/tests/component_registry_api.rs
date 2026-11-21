@@ -1129,6 +1129,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::IconRenderError",
     );
+    public_type::<tekes_ui_controls::composition::IconTextContent>(
+        &mut actual,
+        "tekes_ui_controls::composition::IconTextContent",
+    );
     #[cfg(feature = "bitmap-images")]
     {
         public_type::<tekes_ui_controls::composition::ImageAlignment>(
@@ -1377,7 +1381,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::composition::NumberFieldContent",
     );
     #[allow(dead_code)]
-    fn public_trait_204<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
+    fn public_trait_205<T: tekes_ui_controls::composition::NumberFormat + ?Sized>() {}
     actual.push("tekes_ui_controls::composition::NumberFormat");
     public_type::<tekes_ui_controls::composition::NumberParseError>(
         &mut actual,
@@ -2266,7 +2270,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_425<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_426<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,

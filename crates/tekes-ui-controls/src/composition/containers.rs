@@ -10,13 +10,100 @@ use tekes_ui_tokens::proposal;
 /// layout primitives it does not introduce a viewport; use ScrollContent or
 /// the host clip to bound overflow. No implicit flex/shrink or per-child frames.
 pub struct StackContent {
-    pub model: Stack,
-    pub children: Vec<Content>,
+    pub(crate) model: Stack,
+    pub(crate) children: Vec<Content>,
     /// One child is remeasured in the main-axis space left by fixed siblings.
     /// This expresses e.g. wrapping text beside an intrinsic icon and badge.
-    pub flexible_child: Option<ComponentId>,
+    pub(crate) flexible_child: Option<ComponentId>,
 }
 impl StackContent {
+    /// Construct a stack with explicit `Stack` layout settings and children.
+    pub fn new(model: Stack, children: Vec<Content>) -> Self {
+        Self {
+            model,
+            children,
+            flexible_child: None,
+        }
+    }
+
+    /// Construct a vertical stack with semantic gap and children.
+    pub fn vertical(gap: f32, children: Vec<Content>) -> Self {
+        Self::new(
+            Stack {
+                axis: Axis::Vertical,
+                gap,
+            },
+            children,
+        )
+    }
+
+    /// Construct a horizontal stack with semantic gap and children.
+    pub fn horizontal(gap: f32, children: Vec<Content>) -> Self {
+        Self::new(
+            Stack {
+                axis: Axis::Horizontal,
+                gap,
+            },
+            children,
+        )
+    }
+
+    /// Designate one child `ComponentId` to re-measure in the remaining main-axis space.
+    pub fn with_flexible_child(mut self, id: ComponentId) -> Self {
+        self.flexible_child = Some(id);
+        self
+    }
+
+    /// Configure an optional flexible child `ComponentId`.
+    pub fn with_optional_flexible_child(mut self, id: Option<ComponentId>) -> Self {
+        self.flexible_child = id;
+        self
+    }
+
+    pub fn set_flexible_child(&mut self, id: Option<ComponentId>) {
+        self.flexible_child = id;
+    }
+
+    pub fn flexible_child(&self) -> Option<ComponentId> {
+        self.flexible_child
+    }
+
+    pub fn model(&self) -> Stack {
+        self.model.clone()
+    }
+
+    pub fn axis(&self) -> Axis {
+        self.model.axis
+    }
+
+    pub fn set_axis(&mut self, axis: Axis) {
+        self.model.axis = axis;
+    }
+
+    pub fn gap(&self) -> f32 {
+        self.model.gap
+    }
+
+    pub fn set_gap(&mut self, gap: f32) {
+        self.model.gap = gap;
+    }
+
+    pub fn children(&self) -> &[Content] {
+        &self.children
+    }
+
+    pub fn children_mut(&mut self) -> &mut Vec<Content> {
+        &mut self.children
+    }
+
+    pub fn push_child(&mut self, child: Content) {
+        self.children.push(child);
+    }
+
+    pub fn replace_children(&mut self, children: Vec<Content>) {
+        self.children = children;
+    }
+
     /// Canonical inter-section gap in scrolled document pages (`Spacing::Section` = 24 pt).
     pub const DOCUMENT_SECTION_GAP: f32 = tekes_ui_tokens::Spacing::Section.value();
     /// Canonical inter-group gap in side panels and Inspector (`Spacing::Loose` = 16 pt).
@@ -263,8 +350,35 @@ impl Component for StackContent {
 }
 #[derive(Debug)]
 pub struct GridContent {
-    pub model: Grid,
-    pub children: Vec<Content>,
+    pub(crate) model: Grid,
+    pub(crate) children: Vec<Content>,
+}
+impl GridContent {
+    pub fn new(model: Grid, children: Vec<Content>) -> Self {
+        Self { model, children }
+    }
+    pub fn with_columns(columns: usize, gap: f32, children: Vec<Content>) -> Self {
+        let mut model = Grid::new(columns);
+        model.gap_x = gap;
+        model.gap_y = gap;
+        Self::new(model, children)
+    }
+    pub fn model(&self) -> Grid {
+        self.model
+    }
+    pub fn set_columns(&mut self, columns: usize) {
+        self.model.columns = columns;
+    }
+    pub fn set_gaps(&mut self, gap_x: f32, gap_y: f32) {
+        self.model.gap_x = gap_x;
+        self.model.gap_y = gap_y;
+    }
+    pub fn children(&self) -> &[Content] {
+        &self.children
+    }
+    pub fn children_mut(&mut self) -> &mut Vec<Content> {
+        &mut self.children
+    }
 }
 impl Component for GridContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
@@ -365,8 +479,8 @@ pub struct ScrollContent {
     pub(super) toolbar_tabs: bool,
     pub(super) horizontal: bool,
     pub(super) reveal_horizontal: Option<Rect>,
-    pub scroll: ScrollArea,
-    pub viewport_height: Option<f32>,
+    pub(crate) scroll: ScrollArea,
+    pub(crate) viewport_height: Option<f32>,
     pub(super) backing_scale: f32,
     pub(super) children: Vec<Content>,
     pub(super) viewport: Rect,
@@ -482,6 +596,63 @@ impl ScrollContent {
         let padding = finite(padding);
         self.content_insets = crate::layout::Insets::new(padding, padding, padding, padding);
         self
+    }
+    pub fn scroll(&self) -> &ScrollArea {
+        &self.scroll
+    }
+    pub fn offset(&self) -> Point {
+        self.scroll.offset
+    }
+    pub fn max_offset(&self) -> Point {
+        self.scroll.limit()
+    }
+    pub fn viewport_height(&self) -> Option<f32> {
+        self.viewport_height
+    }
+    pub fn with_viewport_height(mut self, height: Option<f32>) -> Self {
+        self.viewport_height = height;
+        self
+    }
+    pub fn set_viewport_height(&mut self, height: Option<f32>) {
+        self.viewport_height = height;
+    }
+    pub fn scroll_to(&mut self, x: f32, y: f32) -> bool {
+        if !x.is_finite() || !y.is_finite() {
+            return false;
+        }
+        let before = self.scroll.offset;
+        let l = self.scroll.limit();
+        self.scroll.offset.x = x.clamp(0., l.x);
+        self.scroll.offset.y = y.clamp(0., l.y);
+        before != self.scroll.offset
+    }
+    pub fn scroll_by(&mut self, dx: f32, dy: f32) -> bool {
+        self.scroll.scroll_by(dx, dy)
+    }
+    pub fn scroll_wheel(&mut self, dx: f32, dy: f32, precise: bool) -> bool {
+        self.scroll.scroll_wheel(dx, dy, precise)
+    }
+    pub fn set_scroll_policy(
+        &mut self,
+        horizontal: crate::ScrollPolicy,
+        vertical: crate::ScrollPolicy,
+    ) {
+        self.scroll.set_scroll_policy(horizontal, vertical);
+    }
+    pub fn set_scrollbar_visibility(&mut self, horizontal: bool, vertical: bool) {
+        self.scroll.set_scrollbar_visibility(horizontal, vertical);
+    }
+    pub fn set_reduced_motion(&mut self, reduced: bool) {
+        self.scroll.set_reduced_motion(reduced);
+    }
+    pub fn tick(&mut self, dt: f32) -> bool {
+        self.scroll.tick(dt)
+    }
+    pub fn end_scroll_gesture(&mut self) {
+        self.scroll.end_gesture();
+    }
+    pub fn cancel_scroll(&mut self) {
+        self.scroll.cancel();
     }
     /// Asymmetric four-edge document insets; the original focus bleed remains a minimum.
     pub fn content_insets(mut self, insets: crate::layout::Insets) -> Self {
@@ -1078,8 +1249,8 @@ impl ButtonTextRenderer for TextAdapter<'_> {
 }
 #[derive(Debug)]
 pub struct TextContent {
-    pub text: String,
-    pub role: proposal::TextRole,
+    pub(crate) text: String,
+    pub(crate) role: proposal::TextRole,
 }
 impl TextContent {
     pub fn new(text: impl Into<String>) -> Self {
@@ -1087,6 +1258,18 @@ impl TextContent {
             text: text.into(),
             role: proposal::TextRole::UiBody,
         }
+    }
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+    pub fn set_text(&mut self, text: impl Into<String>) {
+        self.text = text.into();
+    }
+    pub fn role(&self) -> proposal::TextRole {
+        self.role
+    }
+    pub fn set_role(&mut self, role: proposal::TextRole) {
+        self.role = role;
     }
     /// Override the typographic role on this text node.
     pub fn with_role(mut self, role: proposal::TextRole) -> Self {

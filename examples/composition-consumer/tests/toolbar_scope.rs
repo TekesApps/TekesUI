@@ -122,7 +122,7 @@ fn window_controls_and_editor_stay_fixed_through_both_container_transitions_and_
         {
             h.set_regions(7, VIEW, regions(left, right, true)).unwrap();
             h.update_component::<Button>(ComponentId(100), ComponentId(101), |button| {
-                button.button.state.disabled = left == 0.
+                button.set_disabled(left == 0.)
             })
             .unwrap();
             let scene = draw(&mut h, &mut t);

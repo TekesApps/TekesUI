@@ -2,11 +2,7 @@
 //! keeps the production TextSurface or Select/Combo view, without a native owner.
 use super::{Entry, apphost_basic::FixtureText};
 use tekes_ui_controls::layout::MeasuredChild;
-use tekes_ui_controls::{
-    ButtonTextRenderer, ControlState,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextRenderer, ControlState, composition::*};
 use tekes_ui_scene::{Rect, Scene, Size};
 
 fn text(id: u64, value: impl Into<String>) -> Content {
@@ -48,17 +44,7 @@ pub(super) fn body(entry: &'static Entry, section: usize) -> Content {
         })),
         _ => unreachable!("live input chapters retain the original subtree"),
     }
-    Content::new(
-        ComponentId(91007),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 16.,
-            },
-            flexible_child: None,
-            children,
-        },
-    )
+    Content::new(ComponentId(91007), StackContent::vertical(16., children))
 }
 fn matrix(renderer: &str) -> Vec<Content> {
     let mut children = Vec::new();
@@ -354,7 +340,7 @@ impl Component for NavigationFixture {
                 self.trigger,
                 frame,
                 None,
-                theme.palette,
+                theme.palette(),
                 tekes_ui_tokens::proposal::TextRole::UiBody,
                 false,
             );
@@ -378,7 +364,7 @@ impl Component for NavigationFixture {
                 self.trigger,
                 frame,
                 Some(clip),
-                theme.palette,
+                theme.palette(),
                 tekes_ui_tokens::proposal::TextRole::UiBody,
                 false,
             );
@@ -393,7 +379,7 @@ impl Component for NavigationFixture {
                 self.trigger,
                 frame,
                 Some(clip),
-                theme.palette,
+                theme.palette(),
                 tekes_ui_tokens::proposal::TextRole::UiBody,
                 false,
             );
@@ -412,7 +398,7 @@ impl Component for NavigationFixture {
                 ),
                 tekes_ui_controls::ButtonTextAlign::default(),
                 theme
-                    .palette
+                    .palette()
                     .color("primary-text")
                     .expect("registered body ink"),
             );

@@ -1,9 +1,5 @@
 //! Caller restoration uses the same mounted object, never an ID replacement.
-use tekes_ui_controls::{
-    ButtonTextAlign, ButtonTextRenderer,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
 use tekes_ui_scene::{Rect, Scene, Size};
 use tekes_ui_tokens::{Rgba, Theme, proposal};
 const ROOT: ComponentId = ComponentId(10);
@@ -28,13 +24,9 @@ impl ButtonTextRenderer for Text {
 fn host() -> ContentHost {
     ContentHost::new(Content::new(
         ROOT,
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(CALLER, Button::new("Original caller")),
                 Content::new(
                     DIALOG,
@@ -46,7 +38,7 @@ fn host() -> ContentHost {
                     ),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap()
 }
@@ -111,9 +103,7 @@ fn dialog_restoration_keeps_the_same_mount_after_reorder_and_rejects_unavailable
                     .unwrap()
                     .component_mut::<Button>()
                     .unwrap()
-                    .button
-                    .state
-                    .disabled = true;
+                    .set_disabled(true);
             }
             3 => {
                 h.remove(CALLER).unwrap();
@@ -135,17 +125,13 @@ fn dialog_does_not_capture_an_already_ineligible_programmatic_caller() {
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = true;
+        .set_disabled(true);
     h.show_dialog(DIALOG).unwrap();
     h.get_mut(CALLER)
         .unwrap()
         .component_mut::<Button>()
         .unwrap()
-        .button
-        .state
-        .disabled = false;
+        .set_disabled(false);
     assert!(h.close_dialog());
     assert_eq!(
         h.focused(),
@@ -159,10 +145,9 @@ fn stale_curved_pointer_input_does_not_block_modal_escape_and_original_caller_re
     for lossless in [false, true] {
         let mut h = ContentHost::new(Content::new(
             ROOT,
-            StackContent {
-                model: Stack::new(Axis::Vertical),
-                flexible_child: None,
-                children: vec![
+            StackContent::vertical(
+                0.,
+                vec![
                     Content::new(CALLER, Button::new("Original caller")),
                     Content::new(
                         DIALOG,
@@ -181,7 +166,7 @@ fn stale_curved_pointer_input_does_not_block_modal_escape_and_original_caller_re
                         ),
                     ),
                 ],
-            },
+            ),
         ))
         .unwrap();
         render(&mut h);
@@ -194,7 +179,7 @@ fn stale_curved_pointer_input_does_not_block_modal_escape_and_original_caller_re
             .unwrap()
             .component::<Button>()
             .unwrap()
-            .button
+            .model()
             .layout()
             .unwrap()
             .frame
@@ -229,7 +214,7 @@ fn stale_curved_pointer_input_does_not_block_modal_escape_and_original_caller_re
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             0
         );
         assert!(

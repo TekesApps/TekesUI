@@ -1,22 +1,15 @@
 #![cfg(all(target_os = "macos", feature = "svg-icons"))]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::composition::*;
 use tekes_ui_scene::{Primitive, Rect, Scene};
 use tekes_ui_tokens::{Palette, Theme, surface_palette::resolve_surface};
 fn host() -> ContentHost {
     ContentHost::new(Content::new(
         ComponentId(1),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(ComponentId(2), IconContent::new("tekes-settings").unwrap()),
                 Content::new(
                     ComponentId(3),
@@ -27,7 +20,7 @@ fn host() -> ContentHost {
                     .with_accessible_name("Back"),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap()
 }

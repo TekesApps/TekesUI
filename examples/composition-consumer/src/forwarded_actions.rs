@@ -24,8 +24,8 @@ impl Component for Decoration {
         t: ContentTheme,
     ) {
         let ink = t
-            .foreground
-            .unwrap_or_else(|| t.palette.color("primary-text").unwrap());
+            .foreground()
+            .unwrap_or_else(|| t.palette().color("primary-text").unwrap());
         s.push_quad(Quad::new(
             Rect::new(f.min_x() + 8., f.center().y - 1., 24., 2.),
             ink,
@@ -170,10 +170,10 @@ pub fn build() -> ContentHost {
             ButtonActivationPhase::Release,
         ),
     ] {
-        let mut b = Button::new(Content::new(ComponentId(id.0 + 100), Decoration))
-            .with_accessible_name(label);
-        b.button.frame_policy = ButtonFramePolicy::Exact;
-        b.pointer_activation_phase = phase;
+        let b = Button::new(Content::new(ComponentId(id.0 + 100), Decoration))
+            .with_accessible_name(label)
+            .with_frame_policy(ButtonFramePolicy::Exact)
+            .with_pointer_activation_phase(phase);
         children.push(if wrapped {
             Content::new(
                 id,

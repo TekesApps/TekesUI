@@ -212,8 +212,8 @@ fn opt_in_does_not_replace_button_activation_focus_or_disabled_loading_isolation
             .unwrap()
             .component_mut::<Button>()
             .unwrap();
-        button.button.state.disabled = !loading;
-        button.button.state.loading = loading;
+        button.set_disabled(!loading);
+        button.set_loading(loading);
         render(&mut host, &mut text, 140., Theme::LIGHT).unwrap();
         assert!(
             !host
@@ -230,8 +230,8 @@ fn opt_in_does_not_replace_button_activation_focus_or_disabled_loading_isolation
         .unwrap()
         .component::<Button>()
         .unwrap();
-    assert_eq!(button.activations, 1);
-    assert_eq!(button.label, ORIGINAL);
+    assert_eq!(button.activations(), 1);
+    assert_eq!(button.label(), ORIGINAL);
 }
 #[test]
 fn editable_or_container_nodes_cannot_accidentally_use_readonly_label_geometry() {
@@ -353,8 +353,8 @@ fn toolbar_defaults_to_single_line_for_original_text_and_button_at_narrow_widths
                 let node = host.get(id).unwrap();
                 assert_eq!(
                     node.component::<TextContent>()
-                        .map(|c| c.text.as_str())
-                        .or_else(|| node.component::<Button>().map(|c| c.label.as_str()))
+                        .map(|c| c.text())
+                        .or_else(|| node.component::<Button>().map(|c| c.label()))
                         .unwrap(),
                     ORIGINAL
                 );
@@ -391,9 +391,7 @@ fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .hovered
+                .is_hovered()
         );
         assert!(!host.event(&ContentEvent::PointerDown(point)).activated);
         assert!(
@@ -401,9 +399,7 @@ fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .button
-                .state
-                .pressed
+                .is_pressed()
         );
         assert!(host.event(&ContentEvent::PointerUp(point)).activated);
         assert_eq!(
@@ -411,7 +407,7 @@ fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
                 .unwrap()
                 .component::<Button>()
                 .unwrap()
-                .activations,
+                .activations(),
             1
         );
         host.focus(Some(id), true);
@@ -437,8 +433,8 @@ fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
         assert_eq!(host.semantic_mount(id).unwrap(), mount);
         for loading in [false, true] {
             let button = host.get_mut(id).unwrap().component_mut::<Button>().unwrap();
-            button.button.state.disabled = !loading;
-            button.button.state.loading = loading;
+            button.set_disabled(!loading);
+            button.set_loading(loading);
             assert!(!host.event(&ContentEvent::PointerDown(point)).activated);
             assert!(!host.event(&ContentEvent::PointerUp(point)).activated);
             assert_eq!(
@@ -446,7 +442,7 @@ fn opt_in_label_keeps_original_pointer_chrome_frame_and_focus_ring() {
                     .unwrap()
                     .component::<Button>()
                     .unwrap()
-                    .activations,
+                    .activations(),
                 1
             );
         }

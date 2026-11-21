@@ -55,7 +55,7 @@ impl tekes_ui_controls::TextSurfaceTextRenderer for Text {
 
 use tekes_ui_controls::{
     ControlKey, ScrollArea, TextSurface,
-    extended::{Axis, Pane, Stack},
+    extended::{Axis, Pane},
 };
 const BUDGET: usize = 64 * 1024 * 1024;
 fn id(n: u64) -> ComponentId {
@@ -116,14 +116,10 @@ fn genuine_editor_composer_button_scroll_and_owned_replacement() {
             ScrollArea::default(),
             Content::new(
                 id(21),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 6.,
-                    },
-                    flexible_child: None,
-                    children: vec![composer(22), Content::new(id(23), Button::new("Send"))],
-                },
+                StackContent::vertical(
+                    6.,
+                    vec![composer(22), Content::new(id(23), Button::new("Send"))],
+                ),
             ),
         ),
     );
@@ -514,17 +510,7 @@ impl Component for UnknownProbe {
     }
 }
 fn row(children: Vec<Content>) -> Content {
-    Content::new(
-        id(100),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 0.,
-            },
-            flexible_child: None,
-            children,
-        },
-    )
+    Content::new(id(100), StackContent::vertical(0., children))
 }
 #[test]
 fn preceding_unknown_getter_untouched_on_actual_success_and_refusal() {
@@ -746,17 +732,7 @@ fn original_reveal_moves_offscreen_composer_inside_the_actual_split_pane_clip() 
         id(20),
         ScrollContent::new(
             ScrollArea::default(),
-            Content::new(
-                id(21),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 8.,
-                    },
-                    flexible_child: None,
-                    children,
-                },
-            ),
+            Content::new(id(21), StackContent::vertical(8., children)),
         ),
     );
     let mut host = ContentHost::try_new_prepared(
@@ -775,7 +751,7 @@ fn original_reveal_moves_offscreen_composer_inside_the_actual_split_pane_clip() 
         .unwrap()
         .component::<ScrollContent>()
         .unwrap();
-    assert!(scroll.scroll.offset.y > 0.);
+    assert!(scroll.scroll().offset.y > 0.);
     let snapshot = host.text_input_snapshot().unwrap();
     let pane = host
         .get(id(1))
@@ -1277,17 +1253,7 @@ fn real_modal_replacement_uses_original_pure_reveal_for_offscreen_retained_compo
         id(20),
         ScrollContent::new(
             ScrollArea::default(),
-            Content::new(
-                id(21),
-                StackContent {
-                    model: Stack {
-                        axis: Axis::Vertical,
-                        gap: 8.,
-                    },
-                    flexible_child: None,
-                    children,
-                },
-            ),
+            Content::new(id(21), StackContent::vertical(8., children)),
         ),
     );
     let mut host = ContentHost::try_new_prepared(split(dialog(), reader), BUDGET).unwrap();
@@ -1302,16 +1268,14 @@ fn real_modal_replacement_uses_original_pure_reveal_for_offscreen_retained_compo
         .unwrap()
         .component_mut::<ScrollContent>()
         .unwrap()
-        .scroll
-        .offset
-        .y = 0.;
+        .scroll_to(0., 0.);
     render(&mut host, 600., 240.);
     assert_eq!(
         host.get(id(20))
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y,
         0.
@@ -1331,7 +1295,7 @@ fn real_modal_replacement_uses_original_pure_reveal_for_offscreen_retained_compo
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset
             .y
             > 0.
@@ -1550,7 +1514,7 @@ fn splitter_non_binary_minimum_domain_accepts_decimal_endpoint_through_strict_sc
         .unwrap()
         .component::<ScrollContent>()
         .unwrap()
-        .scroll
+        .scroll()
         .offset;
     let before_ratio = host
         .get(id(1))
@@ -1581,7 +1545,7 @@ fn splitter_non_binary_minimum_domain_accepts_decimal_endpoint_through_strict_sc
             .unwrap()
             .component::<ScrollContent>()
             .unwrap()
-            .scroll
+            .scroll()
             .offset,
         before_invalid
     );

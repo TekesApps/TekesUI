@@ -1,11 +1,7 @@
 #![cfg(target_os = "macos")]
 #[path = "support/coretext.rs"]
 mod coretext;
-use tekes_ui_controls::{
-    ControlKey,
-    composition::*,
-    extended::{Axis, Stack},
-};
+use tekes_ui_controls::{ControlKey, composition::*};
 use tekes_ui_scene::{Rect, Scene};
 use tekes_ui_tokens::Theme;
 const EDITOR: ComponentId = ComponentId(1);
@@ -18,20 +14,16 @@ fn host() -> (ContentHost, coretext::Text) {
     composer.submit_policy = TextSubmitPolicy::Enter;
     let mut h = ContentHost::new(Content::new(
         ComponentId(3),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: 8.,
-            },
-            flexible_child: None,
-            children: vec![
+        StackContent::vertical(
+            8.,
+            vec![
                 Content::new(EDITOR, composer),
                 Content::new(
                     SELECT,
                     SelectContent::new("Mode", vec!["One".into(), "Two".into()]),
                 ),
             ],
-        },
+        ),
     ))
     .unwrap();
     h.set_action_events(true);
@@ -229,7 +221,7 @@ fn actual_original_reading_fixture_menu_wheel_does_not_record_background_history
         .unwrap()
         .component_mut::<StackContent>()
         .unwrap()
-        .children
+        .children_mut()
         .insert(
             1,
             Content::new(
@@ -434,7 +426,6 @@ fn original_menu_unknown_strict_action_is_not_default_authorized() {
             .unwrap()
             .component::<MenuContent>()
             .unwrap()
-            .menu
             .is_open()
     );
     assert!(h.drain_actions().is_empty());

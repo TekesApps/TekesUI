@@ -216,9 +216,9 @@ mod consumer {
                     let f = aux.frame();
                     Ok(
                         serde_json::json!({"aux_frame":[f.min_x(),f.min_y(),f.size.width,f.size.height],
-                        "aux_activations":aux.component::<Button>().unwrap().activations,
-                        "aux_pressed":aux.component::<Button>().unwrap().button.state.pressed,
-                        "view_revision":self.revision,"overlay_activations":self.host.get(ComponentId(6)).unwrap().component::<Button>().unwrap().activations,
+                        "aux_activations":aux.component::<Button>().unwrap().activations(),
+                        "aux_pressed":aux.component::<Button>().unwrap().is_pressed(),
+                        "view_revision":self.revision,"overlay_activations":self.host.get(ComponentId(6)).unwrap().component::<Button>().unwrap().activations(),
                         "toolbar_calls":self.toolbar_calls,"submits":self.submits,"focused":self.host.focused().map(|id|id.0),"composing":self.host.is_composing(),"edit_text":self.host.get(EDIT).unwrap().component::<TextFieldContent>().unwrap().text()}),
                     )
                 }
@@ -1121,10 +1121,7 @@ mod consumer {
         }
         let mut host = ContentHost::new(Content::new(
             ComponentId(100),
-            GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children,
-            },
+            GridContent::with_columns(3, 0., children),
         ))?;
         let mut renderer = tekes_ui_render::Renderer::new_headless()?;
         let frame = Rect::new(10., 20., 900., 300.);
@@ -2120,9 +2117,10 @@ mod consumer {
         let owner = ComponentId(202);
         let mut host = ContentHost::new(Content::new(
             ComponentId(200),
-            GridContent {
-                model: tekes_ui_controls::extended::Grid::new(3),
-                children: vec![
+            GridContent::with_columns(
+                3,
+                0.,
+                vec![
                     Content::new(ComponentId(201), Button::new("Before")),
                     Content::new(
                         owner,
@@ -2140,7 +2138,7 @@ mod consumer {
                     ),
                     Content::new(ComponentId(203), Button::new("After")),
                 ],
-            },
+            ),
         ))?;
         host.set_action_events(true);
         host.set_focus_wrap(false);

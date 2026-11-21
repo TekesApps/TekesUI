@@ -1149,6 +1149,12 @@
       "reason": "Explicit resource, motion and capability failure of the original icon owner."
     },
     {
+      "api": "tekes_ui_controls::composition::IconTextContent",
+      "category": "composition",
+      "components": [],
+      "reason": "Shared horizontal leading decorative IconContent + flexible wrapping TextContent composition row with token-sourced Spacing::Snug gap; preserves caller-owned child ComponentId and mount identity without adding a new component family."
+    },
+    {
       "api": "tekes_ui_controls::composition::ImageAlignment",
       "category": "optional-component-support",
       "components": [],

@@ -20,7 +20,7 @@ use tekes_ui_controls::{
         ListIntentKind, ListRowDisplay, ScrollContent, SearchFieldContent, StackContent,
         TextContent, TextFieldContent,
     },
-    extended::{Axis, KeyedListSnapshot, ListBudget, ListItemKey, Stack},
+    extended::{KeyedListSnapshot, ListBudget, ListItemKey},
 };
 #[cfg(test)]
 use tekes_ui_tokens::proposal::TextRole;
@@ -285,14 +285,7 @@ pub(super) fn text(id: u64, value: impl Into<String>) -> Content {
 pub(super) fn stack(id: u64, children: Vec<Content>) -> Content {
     Content::new(
         ComponentId(id),
-        StackContent {
-            model: Stack {
-                axis: Axis::Vertical,
-                gap: Spacing::Regular.value(),
-            },
-            children,
-            flexible_child: None,
-        },
+        StackContent::vertical(Spacing::Regular.value(), children),
     )
 }
 /// Original hosted stories keep their owning StoryState; plain pages keep the
@@ -518,17 +511,13 @@ fn page_host(page: &str, palette: &Rc<Cell<Palette>>) -> anyhow::Result<MountedP
     if entry.renderer() == "apphost" {
         let intro = Content::new(
             ComponentId(124005),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     workbench::story_heading(124002, entry.title()),
                     text(124003, workbench::story_docs(entry)),
                 ],
-                flexible_child: None,
-            },
+            ),
         );
         let mut host = ContentHost::new(Content::new(
             ComponentId(124000),
@@ -574,17 +563,13 @@ fn page_host(page: &str, palette: &Rc<Cell<Palette>>) -> anyhow::Result<MountedP
     if matches!(entry.renderer(), "docs" | "index") {
         let mut children = vec![Content::new(
             ComponentId(93005),
-            StackContent {
-                model: Stack {
-                    axis: Axis::Vertical,
-                    gap: StackContent::SECTION_HEADER_GAP,
-                },
-                children: vec![
+            StackContent::vertical(
+                StackContent::SECTION_HEADER_GAP,
+                vec![
                     workbench::story_heading(93001, entry.title()),
                     text(93002, workbench::story_docs(entry)),
                 ],
-                flexible_child: None,
-            },
+            ),
         )];
         if entry.renderer() == "docs" {
             children.push(text(93003, workbench::overview_copy(entry)));

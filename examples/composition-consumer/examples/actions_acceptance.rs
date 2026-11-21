@@ -41,9 +41,7 @@ mod macos {
             .unwrap()
             .component_mut::<tekes_ui_controls::composition::Button>()
             .unwrap()
-            .button
-            .state
-            .disabled = true;
+            .set_disabled(true);
         fixture.host.focus(Some(FIRST), true);
         App::new(AppConfig {
             name: Some("TekesUI 公共动作".into()),
