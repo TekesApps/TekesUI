@@ -1,18 +1,26 @@
 use crate::city_views::{CityView, CityViews};
 use crate::district::DistrictDemo;
 use std::{collections::HashMap, path::PathBuf, time::Instant};
+use tekes_ui_controls::ControlKey;
+use tekes_ui_controls::composition::*;
+use tekes_ui_controls::extended::SegmentedControl;
+use tekes_ui_macos_bridge::{
+    WindowContentAccessibilityExt,
+    content_accessibility::{ContentAccessibilitySnapshot, content_action},
+    coretext_host::CoreTextHost,
+    translate_key, translate_pointer,
+};
 use tekes_ui_platform_macos::*;
 use tekes_ui_render::Renderer;
-use tekes_ui_scene::{GlyphAtlas, ImageId, Point as ScenePoint, Quad, Rect, Scene};
+use tekes_ui_scene::{ImageId, Point as ScenePoint, Quad, Rect, Scene};
 use tekes_ui_scene3d::{Asset3D, Camera3D, Lighting3D, Renderer3D, Scene3D};
 use tekes_ui_text::{
-    coretext::{CoreTextFonts, CoreTextRasterizer, CoreTextShaper},
     model::{Paragraph, ShapeOptions},
     push::push_paragraph,
     style::TextStyle,
     traits::Shaper,
 };
-use tekes_ui_tokens::{ColorRole, Rgba, Theme};
+use tekes_ui_tokens::{ColorRole, Palette, Rgba, Theme};
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 /// Schedule autonomous animation without reducing input/rotation responsiveness.
@@ -273,7 +281,7 @@ pub fn run() -> Result<()> {
         let clear = viewer.clear_color();
         let bytes = viewer.ui.as_mut().unwrap().render_to_rgba8(
             &scene,
-            &mut viewer.atlas,
+            &mut viewer.text_host.atlas,
             (960, 720),
             1.,
             clear,
@@ -372,10 +380,27 @@ enum DragMode {
     Rotate,
     Pan,
 }
+fn city_tab_host() -> ContentHost {
+    let model = SegmentedControl::new(CityView::ALL.len());
+    let labels = CityView::ALL
+        .iter()
+        .map(|view| view.label().to_owned())
+        .collect();
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(1),
+        SegmentedControlContent::from_model("City viewpoint", model, labels)
+            .expect("valid city viewpoint segmented control"),
+    ))
+    .expect("unique city viewpoint host id");
+    host.set_action_events(true);
+    host.set_window_active(true);
+    host
+}
 struct Viewer {
     view: Scene3D,
     district: Option<DistrictDemo>,
     city_views: Option<CityViews>,
+    city_tabs: ContentHost,
     overview_camera: Camera3D,
     camera: Camera3D,
     home: Camera3D,
@@ -385,9 +410,7 @@ struct Viewer {
     image: Option<ImageId>,
     size: (f32, f32),
     scale: f32,
-    atlas: GlyphAtlas,
-    shaper: CoreTextShaper,
-    raster: CoreTextRasterizer,
+    text_host: CoreTextHost,
     text: HashMap<String, Paragraph>,
     theme: Theme,
     drag: Option<(MouseButton, Point, DragMode)>,
@@ -424,11 +447,11 @@ impl Viewer {
             .transpose()?;
         let playing = district.is_some();
         let home = camera_for_asset(&name);
-        let fonts = CoreTextFonts::new();
         Ok(Self {
             view,
             district,
             city_views,
+            city_tabs: city_tab_host(),
             overview_camera: home.clone(),
             camera: home.clone(),
             home,
@@ -438,9 +461,7 @@ impl Viewer {
             image: None,
             size: (960., 720.),
             scale: 1.,
-            atlas: GlyphAtlas::default(),
-            shaper: CoreTextShaper::new(fonts.clone()),
-            raster: CoreTextRasterizer::new(fonts),
+            text_host: CoreTextHost::new(),
             text: HashMap::new(),
             theme: Theme::LIGHT,
             drag: None,
@@ -548,7 +569,8 @@ impl Viewer {
         if let Some(scene) = &self.cached_scene {
             return Ok(scene.clone());
         }
-        self.atlas.begin_frame();
+        self.text_host.atlas.begin_frame();
+        self.text_host.scale = self.scale;
         let mut scene = Scene::new();
         if self.following() && !self.night {
             scene.push_quad(Quad::new(self.stage(), Rgba::new(0.71, 0.83, 0.89, 1.)));
@@ -614,7 +636,7 @@ impl Viewer {
         ))) {
             let fps_paragraph;
             let paragraph = if label == fps_label {
-                fps_paragraph = self.shaper.shape(
+                fps_paragraph = self.text_host.shaper.shape(
                     &label,
                     &TextStyle::system(size),
                     &ShapeOptions {
@@ -625,7 +647,7 @@ impl Viewer {
                 &fps_paragraph
             } else {
                 self.text.entry(label.clone()).or_insert_with(|| {
-                    self.shaper.shape(
+                    self.text_host.shaper.shape(
                         &label,
                         &TextStyle::system(size),
                         &ShapeOptions {
@@ -637,8 +659,8 @@ impl Viewer {
             };
             push_paragraph(
                 &mut scene,
-                &mut self.atlas,
-                &mut self.raster,
+                &mut self.text_host.atlas,
+                &mut self.text_host.raster,
                 paragraph,
                 ScenePoint::new(x, y),
                 self.scale,
@@ -649,51 +671,19 @@ impl Viewer {
                 },
             );
         }
-        if let Some(views) = &self.city_views {
-            let selected = views.selected;
-            for (index, view) in CityView::ALL.into_iter().enumerate() {
-                let rect = self.tab_rect(index);
-                let active = selected == view;
-                scene.push_quad(
-                    Quad::new(
-                        rect,
-                        if active {
-                            Rgba::new(0.16, 0.38, 0.66, 1.)
-                        } else if self.night {
-                            Rgba::new(0.10, 0.14, 0.20, 1.)
-                        } else {
-                            Rgba::new(0.90, 0.93, 0.96, 1.)
-                        },
-                    )
-                    .with_corner_radius(6.),
-                );
-                let paragraph = self.text.entry(view.label().to_owned()).or_insert_with(|| {
-                    self.shaper.shape(
-                        view.label(),
-                        &TextStyle::system(13.),
-                        &ShapeOptions {
-                            width: Some(140.),
-                            line_spacing: 0.,
-                        },
-                    )
-                });
-                push_paragraph(
-                    &mut scene,
-                    &mut self.atlas,
-                    &mut self.raster,
-                    paragraph,
-                    ScenePoint::new(rect.origin.x + 8., rect.origin.y + 6.),
-                    self.scale,
-                    if active || self.night {
-                        Rgba::new(1., 1., 1., 1.)
-                    } else {
-                        Rgba::new(0.14, 0.18, 0.24, 1.)
-                    },
-                );
-            }
-        }
+        self.render_city_tabs(&mut scene)?;
         self.cached_scene = Some(scene.clone());
         Ok(scene)
+    }
+    fn render_city_tabs(&mut self, scene: &mut Scene) -> Result<()> {
+        if self.city_views.is_some() {
+            self.text_host.scale = self.scale;
+            let tab_bar = self.tab_bar_frame();
+            let palette = self.ui_palette();
+            self.city_tabs
+                .render(scene, &mut self.text_host, tab_bar, tab_bar, palette)?;
+        }
+        Ok(())
     }
     fn draw(&mut self) -> Result<()> {
         self.update_city_camera()?;
@@ -715,10 +705,11 @@ impl Viewer {
             .as_ref()
             .map(|d| (d.environment(), d.motion_clocks()));
         let mut acquired = false;
-        self.ui
-            .as_mut()
-            .unwrap()
-            .render_with_gpu(scene, &mut self.atlas, clear, |encoder| {
+        self.ui.as_mut().unwrap().render_with_gpu(
+            scene,
+            &mut self.text_host.atlas,
+            clear,
+            |encoder| {
                 acquired = true;
                 if let Some((environment, clocks)) = environment {
                     gpu.set_environment_and_clocks(environment, clocks)
@@ -726,7 +717,8 @@ impl Viewer {
                 }
                 gpu.encode_camera(view, camera, encoder)
                     .map_err(|e| tekes_ui_render::RenderError::Surface(e.to_string()))
-            })?;
+            },
+        )?;
         if acquired && self.last.is_some() {
             self.frame_rate.frames += 1;
         }
@@ -775,6 +767,9 @@ impl Viewer {
             .as_ref()
             .map(|d| CityViews::new(&d.config))
             .transpose()?;
+        if let Some(views) = &self.city_views {
+            self.sync_city_tab_selection(views.selected);
+        }
         self.spin = false;
         self.drag = None;
         self.last = None;
@@ -782,9 +777,179 @@ impl Viewer {
         self.cached_scene = None;
         Ok(())
     }
-    fn tab_rect(&self, index: usize) -> Rect {
-        let width = ((self.size.0 - 48.) / 5.).min(148.);
-        Rect::new(24. + index as f32 * width, 78., width - 4., 30.)
+    fn tab_bar_frame(&self) -> Rect {
+        Rect::new(24., 78., (self.size.0 - 48.).clamp(0., 740.), 32.)
+    }
+    fn ui_palette(&self) -> Palette {
+        let theme = if self.night {
+            if matches!(self.theme, Theme::LIGHT_INCREASED | Theme::DARK_INCREASED) {
+                Theme::DARK_INCREASED
+            } else {
+                Theme::DARK
+            }
+        } else {
+            self.theme
+        };
+        Palette::from(theme)
+    }
+    fn sync_city_tab_selection(&mut self, view: CityView) {
+        if let Some(segmented) = self
+            .city_tabs
+            .get_mut(ComponentId(1))
+            .and_then(|node| node.component_mut::<SegmentedControlContent>())
+        {
+            let _ = segmented.set_selected(view as usize);
+        }
+    }
+    fn drain_city_tab_actions(&mut self) -> Result<bool> {
+        let mut switched = false;
+        for record in self.city_tabs.drain_action_records() {
+            if record.action.kind == ContentActionKind::Activate
+                && let Some(ContentActionPayload::SegmentSelection(intent)) = record.payload
+                && let Some(view) = CityView::ALL.get(intent.index()).copied()
+            {
+                self.select_city_view(view)?;
+                switched = true;
+            }
+        }
+        Ok(switched)
+    }
+    fn sync_accessibility(&self, window: &Window) {
+        if self.city_views.is_some() {
+            if let Some(snapshot) = ContentAccessibilitySnapshot::from_host(&self.city_tabs) {
+                window.set_content_accessibility_snapshot(snapshot);
+            }
+        } else {
+            window.set_content_accessibility_publication(None);
+        }
+    }
+    fn handle_city_tab_mouse(&mut self, e: MouseEvent) -> Result<Option<bool>> {
+        if self.city_views.is_none() || self.drag.is_some() {
+            return Ok(None);
+        }
+        let point = ScenePoint::new(e.position.x as f32, e.position.y as f32);
+        let in_tabs = self.tab_bar_frame().contains(point);
+        if !in_tabs
+            && self.city_tabs.pointer_capture().is_none()
+            && !matches!(
+                e.kind,
+                MouseEventKind::Moved | MouseEventKind::Exited | MouseEventKind::Up { .. }
+            )
+        {
+            return Ok(None);
+        }
+        let response = self.city_tabs.event(&translate_pointer(e));
+        let switched = self.drain_city_tab_actions()?;
+        if response.changed || switched {
+            self.cached_scene = None;
+        }
+        if response.consumed || switched || in_tabs {
+            Ok(Some(response.changed || switched))
+        } else {
+            Ok(None)
+        }
+    }
+    fn handle_city_tab_key(&mut self, e: &KeyEvent) -> Result<Option<bool>> {
+        if self.city_views.is_none() {
+            return Ok(None);
+        }
+        let down = e.kind == KeyEventKind::Down;
+        let translated = translate_key(e.clone());
+        let Some(key) = translated.key else {
+            return Ok(None);
+        };
+        if !down && key != ControlKey::Space {
+            return Ok(None);
+        }
+        if down && matches!(key, ControlKey::Tab { .. }) {
+            let response = self.city_tabs.event(&ContentEvent::Key { key, down: true });
+            let switched = self.drain_city_tab_actions()?;
+            if response.changed || switched {
+                self.cached_scene = None;
+            }
+            return Ok(Some(response.changed || switched));
+        }
+        if self.city_tabs.focused().is_some() {
+            if down && matches!(key, ControlKey::Escape) {
+                self.city_tabs.focus(None, false);
+                self.cached_scene = None;
+                return Ok(Some(true));
+            }
+            if matches!(key, ControlKey::Space)
+                || (down
+                    && matches!(
+                        key,
+                        ControlKey::Left
+                            | ControlKey::Right
+                            | ControlKey::Home
+                            | ControlKey::End
+                            | ControlKey::Enter
+                    ))
+            {
+                let response = self.city_tabs.event(&ContentEvent::Key { key, down });
+                let switched = self.drain_city_tab_actions()?;
+                if response.changed || switched {
+                    self.cached_scene = None;
+                }
+                return Ok(Some(response.changed || switched));
+            }
+        }
+        Ok(None)
+    }
+    fn handle_stage_mouse(&mut self, e: MouseEvent) -> Result<bool> {
+        let mut redraw = true;
+        match e.kind {
+            MouseEventKind::Down { button, .. }
+                if self
+                    .stage()
+                    .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32)) =>
+            {
+                if self.city_tabs.focused().is_some() {
+                    self.city_tabs.focus(None, false);
+                    self.cached_scene = None;
+                }
+                let mode = if button == MouseButton::Middle
+                    || (button == MouseButton::Left && (e.modifiers.shift || e.modifiers.alt))
+                {
+                    DragMode::Pan
+                } else if button == MouseButton::Right {
+                    DragMode::Rotate
+                } else {
+                    DragMode::Orbit
+                };
+                self.drag = Some((button, e.position, mode));
+            }
+            MouseEventKind::Dragged { button } => {
+                if let Some((held, previous, mode)) = self.drag
+                    && held == button
+                {
+                    let x = (e.position.x - previous.x) as f32 * 0.008;
+                    let y = (e.position.y - previous.y) as f32 * 0.008;
+                    if self.following() {
+                        self.turn_camera(-x, -y)?;
+                    } else {
+                        match mode {
+                            DragMode::Pan => {
+                                let stage = self.stage();
+                                self.camera.pan_by(
+                                    (e.position.x - previous.x) as f32 / stage.size.width.max(1.),
+                                    -(e.position.y - previous.y) as f32 / stage.size.height.max(1.),
+                                )?;
+                            }
+                            DragMode::Rotate => self.camera.rotate_model(x, y, 0.)?,
+                            DragMode::Orbit if button == MouseButton::Left => {
+                                self.camera.orbit(-x, y)?
+                            }
+                            _ => {}
+                        }
+                    }
+                    self.drag = Some((held, e.position, mode));
+                }
+            }
+            MouseEventKind::Up { .. } => self.drag = None,
+            _ => redraw = false,
+        }
+        Ok(redraw)
     }
     fn following(&self) -> bool {
         self.city_views
@@ -799,6 +964,7 @@ impl Viewer {
             self.overview_camera = self.camera.clone();
         }
         self.city_views.as_mut().unwrap().select(view);
+        self.sync_city_tab_selection(view);
         self.camera = if view == CityView::Overview {
             self.overview_camera.clone()
         } else {
@@ -985,109 +1151,55 @@ impl Viewer {
                 }
                 redraw = false;
             }
-            Event::Mouse(e) => match e.kind {
-                MouseEventKind::Down {
-                    button: MouseButton::Left,
-                    ..
-                } if self.city_views.is_some()
-                    && (0..5).any(|i| {
-                        self.tab_rect(i)
-                            .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32))
-                    }) =>
-                {
-                    let index = (0..5)
-                        .find(|&i| {
-                            self.tab_rect(i)
-                                .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32))
-                        })
-                        .unwrap();
-                    self.select_city_view(CityView::ALL[index])?;
-                }
-                MouseEventKind::Down { button, .. }
-                    if self
-                        .stage()
-                        .contains(ScenePoint::new(e.position.x as f32, e.position.y as f32)) =>
-                {
-                    let mode = if button == MouseButton::Middle
-                        || (button == MouseButton::Left && (e.modifiers.shift || e.modifiers.alt))
-                    {
-                        DragMode::Pan
-                    } else if button == MouseButton::Right {
-                        DragMode::Rotate
-                    } else {
-                        DragMode::Orbit
-                    };
-                    self.drag = Some((button, e.position, mode))
-                }
-                MouseEventKind::Dragged { button } => {
-                    if let Some((held, previous, mode)) = self.drag
-                        && held == button
-                    {
-                        let x = (e.position.x - previous.x) as f32 * 0.008;
-                        let y = (e.position.y - previous.y) as f32 * 0.008;
-                        if self.following() {
-                            self.turn_camera(-x, -y)?;
-                        } else {
-                            match mode {
-                                DragMode::Pan => {
-                                    let stage = self.stage();
-                                    self.camera.pan_by(
-                                        (e.position.x - previous.x) as f32
-                                            / stage.size.width.max(1.),
-                                        -(e.position.y - previous.y) as f32
-                                            / stage.size.height.max(1.),
-                                    )?;
-                                }
-                                DragMode::Rotate => self.camera.rotate_model(x, y, 0.)?,
-                                DragMode::Orbit if button == MouseButton::Left => {
-                                    self.camera.orbit(-x, y)?
-                                }
-                                _ => {}
-                            }
-                        }
-                        self.drag = Some((held, e.position, mode));
-                    }
-                }
-                MouseEventKind::Up { .. } => self.drag = None,
-                _ => redraw = false,
-            },
+            Event::Mouse(e) => {
+                redraw = match self.handle_city_tab_mouse(e)? {
+                    Some(changed) => changed,
+                    None => self.handle_stage_mouse(e)?,
+                };
+            }
             Event::Scroll(e) => {
                 let amount =
                     (e.delta.y as f32 * if e.precise { 0.01 } else { 0.08 }).clamp(-1., 1.);
                 self.camera.zoom_by(amount.exp())?;
             }
-            Event::Key(e) if e.kind == KeyEventKind::Down && !e.modifiers.command => {
-                let direction = match e.key_code {
-                    123 => Some((-0.15, 0.)),
-                    124 => Some((0.15, 0.)),
-                    125 => Some((0., -0.15)),
-                    126 => Some((0., 0.15)),
-                    _ => None,
-                };
-                if let Some((x, y)) = direction {
-                    if !self.following() && (e.modifiers.shift || e.modifiers.alt) {
-                        self.camera.pan_by(x * 0.4, y * 0.4)?;
+            Event::Key(e) if !e.modifiers.command => {
+                if let Some(changed) = self.handle_city_tab_key(&e)? {
+                    redraw = changed;
+                } else if e.kind == KeyEventKind::Down {
+                    let direction = match e.key_code {
+                        123 => Some((-0.15, 0.)),
+                        124 => Some((0.15, 0.)),
+                        125 => Some((0., -0.15)),
+                        126 => Some((0., 0.15)),
+                        _ => None,
+                    };
+                    if let Some((x, y)) = direction {
+                        if !self.following() && (e.modifiers.shift || e.modifiers.alt) {
+                            self.camera.pan_by(x * 0.4, y * 0.4)?;
+                        } else {
+                            self.turn_camera(x, y)?;
+                        }
                     } else {
-                        self.turn_camera(x, y)?;
+                        let id = match e.characters.to_lowercase().as_str() {
+                            "1" => 30,
+                            "2" => 31,
+                            "3" => 32,
+                            "4" => 33,
+                            "5" => 34,
+                            "r" => 1,
+                            "+" | "=" => 2,
+                            "-" => 3,
+                            " " => 9,
+                            "a" => 10,
+                            "b" => 18,
+                            "h" => 19,
+                            "n" => 17,
+                            _ => 0,
+                        };
+                        self.command(id)?;
                     }
                 } else {
-                    let id = match e.characters.to_lowercase().as_str() {
-                        "1" => 30,
-                        "2" => 31,
-                        "3" => 32,
-                        "4" => 33,
-                        "5" => 34,
-                        "r" => 1,
-                        "+" | "=" => 2,
-                        "-" => 3,
-                        " " => 9,
-                        "a" => 10,
-                        "b" => 18,
-                        "h" => 19,
-                        "n" => 17,
-                        _ => 0,
-                    };
-                    self.command(id)?;
+                    redraw = false;
                 }
             }
             Event::Command(id) => {
@@ -1096,9 +1208,20 @@ impl Viewer {
             }
             Event::Focus(active) => {
                 self.active = active;
+                self.city_tabs.set_window_active(active);
+                self.cached_scene = None;
                 self.drag = None;
                 self.last = None;
                 self.cadence.reset();
+            }
+            Event::Accessibility { target, action } if self.city_views.is_some() => {
+                let response = content_action(&mut self.city_tabs, target, action);
+                let switched = self.drain_city_tab_actions()?;
+                if response.changed || switched {
+                    self.cached_scene = None;
+                } else {
+                    redraw = false;
+                }
             }
             Event::SystemMotionChanged(reduced) => {
                 self.reduced = reduced;
@@ -1159,6 +1282,7 @@ impl Viewer {
             }
             self.menu_state = Some(menu_state);
         }
+        self.sync_accessibility(window);
         if redraw {
             self.pending_redraw = true;
             window.request_redraw();
@@ -1202,7 +1326,7 @@ mod tests {
                 .ui
                 .as_mut()
                 .unwrap()
-                .render_to_rgba8(&scene, &mut viewer.atlas, (640, 480), 1., clear)
+                .render_to_rgba8(&scene, &mut viewer.text_host.atlas, (640, 480), 1., clear)
                 .unwrap();
             assert!(images.iter().all(|previous| previous != &pixels));
             images.push(pixels);
@@ -1252,7 +1376,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut direct.atlas,
+                    &mut direct.text_host.atlas,
                     (320, 240),
                     1.,
                     ColorRole::DocumentCanvas.resolve(direct.theme),
@@ -1274,7 +1398,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8_with_gpu(
                     &scene,
-                    &mut combined.atlas,
+                    &mut combined.text_host.atlas,
                     (320, 240),
                     1.,
                     ColorRole::DocumentCanvas.resolve(combined.theme),
@@ -1352,7 +1476,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     ColorRole::DocumentCanvas.resolve(v.theme),
@@ -1661,7 +1785,7 @@ mod tests {
             let clear = v.clear_color();
             v.ui.as_mut()
                 .unwrap()
-                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .render_to_rgba8(&scene, &mut v.text_host.atlas, (960, 720), 1., clear)
                 .unwrap()
         };
         let day = capture(&mut viewer);
@@ -1770,7 +1894,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     Rgba::new(0., 0., 0., 1.),
@@ -1859,7 +1983,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     Rgba::new(0., 0., 0., 1.),
@@ -1957,7 +2081,7 @@ mod tests {
             let clear = v.clear_color();
             v.ui.as_mut()
                 .unwrap()
-                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .render_to_rgba8(&scene, &mut v.text_host.atlas, (960, 720), 1., clear)
                 .unwrap()
         };
         let evening = capture(&mut viewer, 10.);
@@ -2069,7 +2193,7 @@ mod tests {
             let clear = v.clear_color();
             v.ui.as_mut()
                 .unwrap()
-                .render_to_rgba8(&scene, &mut v.atlas, (960, 720), 1., clear)
+                .render_to_rgba8(&scene, &mut v.text_host.atlas, (960, 720), 1., clear)
                 .unwrap()
         };
         let evening = capture(&mut viewer, 0.);
@@ -2135,7 +2259,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     ColorRole::DocumentCanvas.resolve(v.theme),
@@ -2199,7 +2323,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &scene,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     ColorRole::DocumentCanvas.resolve(v.theme),
@@ -2263,7 +2387,7 @@ mod tests {
                 .unwrap()
                 .render_to_rgba8(
                     &s,
-                    &mut v.atlas,
+                    &mut v.text_host.atlas,
                     (960, 720),
                     1.,
                     ColorRole::DocumentCanvas.resolve(v.theme),
@@ -2303,6 +2427,234 @@ mod tests {
                 "missing demo error for {demo} should mention {script}: {err}"
             );
         }
+    }
+    fn test_city_viewer() -> Viewer {
+        let asset = Asset3D::load(default_asset()).unwrap();
+        let mut viewer = Viewer::new(asset, "rubiks-cube.glb".into()).unwrap();
+        let config =
+            tekes_ui_city::DistrictConfig::from_json(include_bytes!("../assets/city-block.json"))
+                .unwrap();
+        viewer.city_views = Some(CityViews::new(&config).unwrap());
+        viewer
+    }
+    fn key_event(kind: KeyEventKind, key_code: u16, ch: &str) -> KeyEvent {
+        KeyEvent {
+            kind,
+            key_code,
+            characters: ch.into(),
+            characters_ignoring_modifiers: ch.into(),
+            modifiers: Modifiers::NONE,
+            is_repeat: false,
+        }
+    }
+    #[test]
+    fn city_tabs_pointer_hover_down_and_up_switch_all_five_city_views() {
+        let mut viewer = test_city_viewer();
+        viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        let parts = viewer
+            .city_tabs
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == ComponentId(1))
+            .unwrap()
+            .parts;
+        assert_eq!(parts.len(), CityView::ALL.len());
+        for (part, expected) in parts.iter().zip(CityView::ALL) {
+            assert_eq!(part.semantics.name, expected.label());
+            assert!(!part.frame.is_empty());
+        }
+        for (index, part) in parts.iter().enumerate().rev() {
+            let pos = Point {
+                x: f64::from(part.frame.center().x),
+                y: f64::from(part.frame.center().y),
+            };
+            let prev = viewer.city_views.as_ref().unwrap().selected;
+            assert!(
+                viewer
+                    .handle_city_tab_mouse(MouseEvent {
+                        kind: MouseEventKind::Moved,
+                        position: pos,
+                        modifiers: Modifiers::NONE,
+                    })
+                    .unwrap()
+                    .is_some()
+            );
+            assert!(
+                viewer
+                    .handle_city_tab_mouse(MouseEvent {
+                        kind: MouseEventKind::Down {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                        position: pos,
+                        modifiers: Modifiers::NONE,
+                    })
+                    .unwrap()
+                    .is_some()
+            );
+            assert_eq!(viewer.city_views.as_ref().unwrap().selected, prev);
+            assert_eq!(
+                viewer
+                    .handle_city_tab_mouse(MouseEvent {
+                        kind: MouseEventKind::Up {
+                            button: MouseButton::Left,
+                            click_count: 1,
+                        },
+                        position: pos,
+                        modifiers: Modifiers::NONE,
+                    })
+                    .unwrap(),
+                Some(true)
+            );
+            assert_eq!(
+                viewer.city_views.as_ref().unwrap().selected,
+                CityView::ALL[index]
+            );
+            viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        }
+    }
+    #[test]
+    fn city_tabs_keyboard_navigation_and_number_keys_stay_synchronized() {
+        let mut viewer = test_city_viewer();
+        viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        assert!(viewer.city_tabs.focused().is_none());
+
+        let tab = key_event(KeyEventKind::Down, 48, "\t");
+        assert!(viewer.handle_city_tab_key(&tab).unwrap().is_some());
+        assert_eq!(viewer.city_tabs.focused(), Some(ComponentId(1)));
+
+        for (code, expected) in [
+            (124, CityView::Pedestrian),
+            (119, CityView::Passenger),
+            (123, CityView::TrainCab),
+            (115, CityView::Overview),
+        ] {
+            assert_eq!(
+                viewer
+                    .handle_city_tab_key(&key_event(KeyEventKind::Down, code, ""))
+                    .unwrap(),
+                Some(true)
+            );
+            assert_eq!(viewer.city_views.as_ref().unwrap().selected, expected);
+            viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        }
+
+        assert_eq!(
+            viewer
+                .handle_city_tab_key(&key_event(KeyEventKind::Down, 53, "\u{1b}"))
+                .unwrap(),
+            Some(true)
+        );
+        assert!(viewer.city_tabs.focused().is_none());
+
+        viewer.command(32).unwrap();
+        assert_eq!(
+            viewer.city_views.as_ref().unwrap().selected,
+            CityView::Driver
+        );
+        viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        let parts = viewer
+            .city_tabs
+            .semantics()
+            .into_iter()
+            .find(|node| node.id == ComponentId(1))
+            .unwrap()
+            .parts;
+        assert!(parts[2].semantics.selected);
+        assert_eq!(
+            parts.iter().filter(|part| part.semantics.selected).count(),
+            1
+        );
+    }
+    #[test]
+    fn city_tabs_accessibility_snapshot_and_press_action_switch_views() {
+        let mut viewer = test_city_viewer();
+        viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        let snapshot = ContentAccessibilitySnapshot::from_host(&viewer.city_tabs).unwrap();
+        assert!(snapshot.nodes().iter().any(
+            |node| node.label == "City viewpoint" && node.role == AccessibilityRole::RadioGroup
+        ));
+        for view in CityView::ALL {
+            assert!(
+                snapshot
+                    .nodes()
+                    .iter()
+                    .any(|node| node.label == view.label()
+                        && node.role == AccessibilityRole::RadioButton)
+            );
+        }
+        let target = snapshot
+            .nodes()
+            .iter()
+            .find(|node| node.label == CityView::TrainCab.label())
+            .unwrap()
+            .key;
+        assert!(
+            content_action(
+                &mut viewer.city_tabs,
+                target,
+                tekes_ui_platform_macos::AccessibilityAction::Press,
+            )
+            .consumed
+        );
+        assert!(viewer.drain_city_tab_actions().unwrap());
+        assert_eq!(
+            viewer.city_views.as_ref().unwrap().selected,
+            CityView::TrainCab
+        );
+        viewer.render_city_tabs(&mut Scene::new()).unwrap();
+        let updated = ContentAccessibilitySnapshot::from_host(&viewer.city_tabs).unwrap();
+        let selected_node = updated
+            .nodes()
+            .iter()
+            .find(|node| node.label == CityView::TrainCab.label())
+            .unwrap();
+        assert!(selected_node.selected);
+    }
+    #[test]
+    fn city_tabs_render_across_light_dark_and_high_contrast_themes_without_hardcoded_srgb() {
+        let mut viewer = test_city_viewer();
+        let tab_bar = viewer.tab_bar_frame();
+        let legacy_srgb = [
+            Rgba::new(0.16, 0.38, 0.66, 1.),
+            Rgba::new(0.90, 0.93, 0.96, 1.),
+            Rgba::new(0.10, 0.14, 0.20, 1.),
+        ];
+        let mut fills_for = |theme: Theme, night: bool| -> Vec<Rgba> {
+            viewer.theme = theme;
+            viewer.night = night;
+            let mut scene = Scene::new();
+            viewer.render_city_tabs(&mut scene).unwrap();
+            let fills: Vec<Rgba> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    tekes_ui_scene::Primitive::Quad(q)
+                        if q.rect.intersection(&tab_bar).is_some() =>
+                    {
+                        Some(q.fill)
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!fills.is_empty());
+            for forbidden in legacy_srgb {
+                assert!(
+                    !fills.contains(&forbidden),
+                    "legacy hardcoded sRGB fill in {theme:?}"
+                );
+            }
+            fills
+        };
+        let light = fills_for(Theme::LIGHT, false);
+        let dark = fills_for(Theme::DARK, false);
+        let light_inc = fills_for(Theme::LIGHT_INCREASED, false);
+        let dark_inc = fills_for(Theme::DARK_INCREASED, false);
+        let night = fills_for(Theme::LIGHT, true);
+        assert_ne!(light, dark);
+        assert_ne!(light, light_inc);
+        assert_ne!(dark, dark_inc);
+        assert_eq!(night, dark);
     }
 }
 

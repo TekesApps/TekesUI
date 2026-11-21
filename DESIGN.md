@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.4` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.5` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 共享表面路由、容器组合与演示收敛（`v0.4.5` / #379, #371）
+
+- **控件表面包与微调能力（#379）**：`NumberField` 支持 `{min, max, step}`、`ScrollArea` 支持 `scroll_wheel` / `wheel_step`，`tekes-ui-controls` 补齐 `slider_on_surface` 与 `switch_on_surface*` 并让 `NumberFieldView`、`SliderView`、`SwitchView`、`SelectView` 通过表面解析函数消费声明式表面；`IconContent` / `SeparatorContent` 在显式禁用与中性语义路径上支持 `CurveSubtreeCapability::Local`。
+- **共享组合容器、外观与中性文本收口（#379, #371）**：`tekes-ui-controls::composition` 新增 `StepperContent`（紧凑步进数值适配器）、`SurfaceContent`（统一 `canvas`/`panel`/`framed` 表面容器）、`ResponsiveGridContent`（响应式自适应列网格）、`MaxWidthContent`（保持子项本征高度的居最大限宽容器）、`ThemeScopeContent`（局部主题作用域）、`ModalViewportContent`（弹窗视口宿主），并扩展 `ScrollContent::horizontal_strip`、`Button::icon_label` / `with_icon_ink_leading` 与 `DialogContent::actions_row`。
+- **工作台与示例消费端收敛（#379, #371）**：`SettingsSidebar` / `SettingsForm` 绑定 `"sidebar"` / `"panel"` 表面；`AppHost` 移除空白面板历史网格并改用 `CreationGrid` 语义表面与 `Button::icon_label`、`OthersListScroll` 改用 `ScrollArea::scroll_wheel`；Gallery 移除 `Stepper`、`SectionBar`、`SampleGrid`、`CHOICE`、`Card`、`EmptyStateSurface`、`DialogViewport`、`Viewport` 等局部重复脚手架（收敛至 `SegmentedControlContent` 与 `SurfaceContent`，补齐 #371 剩余边界）；`examples/*`（`composition-consumer`、`process-content-consumer`、`panel-module-demo`、`panel-content-consumer`、`media-viewer-content-consumer`、`city-3d-demo/tekes-ui-3d`）移除自绘 `Popup`、`DialogScreen`、`Stepper` 与重复 `CoreText` 文本宿主，统一接入 `ContentHost`、`SegmentedControlContent`、`CoreTextHost` 与 `resolve_surface`。
 
 ### 表单字段、受控文本契约与分组设置行（`v0.4.4` / #372, #374, #369）
 

@@ -1024,6 +1024,9 @@ impl Host {
         if let Some(tabs) = &mut self.layout.presentation_tabs {
             tabs.blur();
         }
+        if let Some(grid) = &mut self.layout.presentation_creation_grid {
+            grid.host.focus(None, false);
+        }
         self.select_toolbar_container(index);
         let Some(target) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
@@ -1229,11 +1232,24 @@ impl Host {
             .presentation_tabs
             .as_ref()
             .is_some_and(|header| header.content_host().focused().is_some());
+        let grid_focused = self
+            .layout
+            .presentation_creation_grid
+            .as_ref()
+            .is_some_and(|grid| grid.host.focused().is_some());
         if key.down
             && let Some(ControlKey::Tab { reverse }) = key.key
             && self.open_toolbar().is_none()
         {
             let targets = self.toolbar_focus_targets();
+            if grid_focused {
+                if self.presentation_creation_grid_input(&ContentEvent::KeyInput(key.clone()))? {
+                    return Ok(true);
+                }
+                if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    grid.host.focus(None, false);
+                }
+            }
             if header_focused {
                 if self.presentation_tab_input(&ContentEvent::KeyInput(key.clone()))? {
                     return Ok(true);
@@ -1299,6 +1315,9 @@ impl Host {
                     .content_host()
                     .focused()
                     .is_some());
+        }
+        if grid_focused {
+            return self.presentation_creation_grid_input(&ContentEvent::KeyInput(key));
         }
         if header_focused {
             return self.presentation_tab_input(&ContentEvent::KeyInput(key));

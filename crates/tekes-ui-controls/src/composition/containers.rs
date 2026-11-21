@@ -436,6 +436,13 @@ impl ScrollContent {
             reading_mounted: false,
         }
     }
+    /// Standard scrollable single-line strip (finite intrinsic cross-axis height
+    /// and a bottom horizontal scrollbar) for section/tab navigation bars.
+    pub fn horizontal_strip(child: Content) -> Self {
+        Self::new(ScrollArea::default(), child)
+            .horizontal(true)
+            .scrollbar(true)
+    }
     /// Standard vertically scrolled document owning a single `Spacing::Loose` (16 pt)
     /// padding contract and a flush edge scrollbar.
     pub fn document(child: Content) -> Self {
@@ -718,30 +725,38 @@ impl Component for ScrollContent {
         Some(&mut self.children)
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        // A horizontal document uses its natural width until it overflows.
-        // This lets a fixed sibling follow short tabs while a flexible viewport
-        // consumes only the space remaining beside that sibling on narrow rows.
+        // A horizontal document uses its natural width (and natural cross-axis
+        // height when vertical scrolling is disabled and no explicit height is pinned).
+        let mut child_cross = 0_f32;
         let width = if self.horizontal {
             let (_, insets) = self.document_gutter(text);
-            let document = self
-                .children
-                .iter_mut()
-                .map(|child| {
-                    child
-                        .measure_intrinsic(text, Size::new(1e8, available.height))
-                        .size
-                        .width
-                })
-                .fold(0., f32::max);
+            let mut document = 0_f32;
+            for child in &mut self.children {
+                let measured = child
+                    .measure_intrinsic(text, Size::new(1e8, available.height))
+                    .size;
+                document = document.max(measured.width);
+                child_cross += measured.height;
+            }
             available.width.min(document + insets.left + insets.right)
         } else {
             available.width
         };
-        MeasuredChild::new(Size::new(
-            width,
-            self.viewport_height
-                .map_or(available.height, |h| finite(h).min(available.height)),
-        ))
+        let height = if let Some(h) = self.viewport_height {
+            finite(h).min(available.height)
+        } else if self.horizontal && self.scroll.scroll_policy().1 == crate::ScrollPolicy::Disabled
+        {
+            let (_, insets) = self.document_gutter(text);
+            let scrollbar_band = if self.scroll.scrollbar_requested(false) {
+                proposal::SCROLLBAR_WIDTH + proposal::SCROLLBAR_INSET
+            } else {
+                0.
+            };
+            (insets.top + insets.bottom + child_cross + scrollbar_band).min(available.height)
+        } else {
+            available.height
+        };
+        MeasuredChild::new(Size::new(width, height))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         if self.viewport != frame || self.clip != frame.intersection(&clip).unwrap_or_default() {
@@ -915,11 +930,7 @@ impl Component for ScrollContent {
             } => {
                 // Match the existing TextSurface wheel contract at this input
                 // boundary. ScrollArea itself consumes logical point offsets.
-                let step = if *precise {
-                    1.
-                } else {
-                    proposal::metric("size", "size-row-height").expect("JSON metric")
-                };
+                let step = ScrollArea::wheel_step(*precise);
                 let delta = Point::new(delta.x * step, delta.y * step);
                 if self
                     .reading
@@ -1271,5 +1282,450 @@ mod section_and_insets_tests {
                 .role,
             proposal::TextRole::UiCaption
         );
+    }
+
+    #[test]
+    fn horizontal_strip_measures_finite_cross_axis_height() {
+        use tekes_ui_tokens::Spacing;
+        let row = Content::new(
+            ComponentId(20),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Horizontal,
+                    gap: Spacing::Regular.value(),
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(ComponentId(21), Button::new("Docs")),
+                    Content::new(ComponentId(22), Button::new("Playground")),
+                    Content::new(ComponentId(23), Button::new("Reset")),
+                ],
+            },
+        );
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(19),
+            StackContent {
+                model: Stack {
+                    axis: Axis::Vertical,
+                    gap: Spacing::Regular.value(),
+                },
+                flexible_child: None,
+                children: vec![
+                    Content::new(ComponentId(24), ScrollContent::horizontal_strip(row)),
+                    Content::new(ComponentId(25), TextContent::new("Below strip")),
+                ],
+            },
+        ))
+        .unwrap();
+        let viewport = Rect::new(0., 0., 220., 600.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            viewport,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let strip = host.get(ComponentId(24)).unwrap().frame();
+        let below = host.get(ComponentId(25)).unwrap().frame();
+        assert!(strip.size.height > 0. && strip.size.height < 100.);
+        assert_eq!(below.min_y() - strip.max_y(), Spacing::Regular.value());
+        assert_eq!(
+            host.get(ComponentId(21)).unwrap().frame().min_y(),
+            host.get(ComponentId(23)).unwrap().frame().min_y()
+        );
+    }
+
+    #[test]
+    fn responsive_grid_max_width_and_theme_scope_behave_as_containers() {
+        let mut grid = ResponsiveGridContent::new(
+            1,
+            8.,
+            12.,
+            vec![
+                Content::new(ComponentId(31), TextContent::new("A")),
+                Content::new(ComponentId(32), TextContent::new("B")),
+                Content::new(ComponentId(33), TextContent::new("C")),
+                Content::new(ComponentId(34), TextContent::new("D")),
+            ],
+        )
+        .with_breakpoints(vec![(600., 4), (260., 2)]);
+        grid.measure(&mut Text, Size::new(700., 400.));
+        assert_eq!(grid.columns(), 4);
+        grid.measure(&mut Text, Size::new(300., 400.));
+        assert_eq!(grid.columns(), 2);
+        grid.measure(&mut Text, Size::new(200., 400.));
+        assert_eq!(grid.columns(), 1);
+
+        let scoped = Content::new(
+            ComponentId(40),
+            MaxWidthContent::new(
+                240.,
+                Content::new(
+                    ComponentId(41),
+                    ThemeScopeContent::new(
+                        tekes_ui_tokens::Theme::DARK.into(),
+                        Content::new(ComponentId(42), Button::new("Scoped")),
+                    ),
+                ),
+            ),
+        );
+        let mut host = ContentHost::new(scoped).unwrap();
+        let viewport = Rect::new(0., 0., 500., 300.);
+        let mut scene = Scene::new();
+        host.render(
+            &mut scene,
+            &mut Text,
+            viewport,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(host.get(ComponentId(41)).unwrap().frame().size.width, 240.);
+        assert!(host.get(ComponentId(41)).unwrap().frame().size.height < 300.);
+        assert!(
+            host.get(ComponentId(40))
+                .unwrap()
+                .component::<MaxWidthContent>()
+                .unwrap()
+                .host_reveal_passthrough()
+        );
+        assert!(
+            host.get(ComponentId(41))
+                .unwrap()
+                .component::<ThemeScopeContent>()
+                .unwrap()
+                .host_reveal_passthrough()
+        );
+    }
+}
+
+/// Breakpoint-driven responsive wrapper over [`GridContent`].
+///
+/// Updates the underlying `Grid` column count from `available.width` using descending
+/// `(min_width, columns)` breakpoints, preserving container invariants and focus-reveal passthrough.
+#[derive(Debug)]
+pub struct ResponsiveGridContent {
+    grid: GridContent,
+    default_columns: usize,
+    breakpoints: Vec<(f32, usize)>,
+    arranged: bool,
+}
+
+impl ResponsiveGridContent {
+    pub fn new(default_columns: usize, gap_x: f32, gap_y: f32, children: Vec<Content>) -> Self {
+        let default_columns = default_columns.max(1);
+        let mut model = Grid::new(default_columns);
+        model.gap_x = finite(gap_x);
+        model.gap_y = finite(gap_y);
+        Self {
+            grid: GridContent { model, children },
+            default_columns,
+            breakpoints: Vec::new(),
+            arranged: false,
+        }
+    }
+
+    /// Configure `(min_width, columns)` breakpoints evaluated from highest `min_width` down.
+    pub fn with_breakpoints(mut self, breakpoints: Vec<(f32, usize)>) -> Self {
+        self.breakpoints = breakpoints
+            .into_iter()
+            .map(|(min_width, cols)| (finite(min_width), cols.max(1)))
+            .collect();
+        self.breakpoints.sort_by(|a, b| b.0.total_cmp(&a.0));
+        self
+    }
+
+    pub fn columns(&self) -> usize {
+        self.grid.model.columns
+    }
+
+    pub fn model(&self) -> &Grid {
+        &self.grid.model
+    }
+
+    fn resolve_columns(&self, width: f32) -> usize {
+        self.breakpoints
+            .iter()
+            .find(|(min_width, _)| width >= *min_width)
+            .map_or(self.default_columns, |(_, cols)| *cols)
+            .max(1)
+    }
+}
+
+impl Component for ResponsiveGridContent {
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.arranged = false;
+        }
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+
+    fn ignores_pointer_actions(&self) -> bool {
+        true
+    }
+
+    fn children(&self) -> &[Content] {
+        &self.grid.children
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.grid.children)
+    }
+
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged = false;
+        self.grid.model.columns = self.resolve_columns(available.width);
+        self.grid.measure(text, available)
+    }
+
+    fn measure_intrinsic(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> MeasuredChild {
+        self.arranged = false;
+        self.grid.model.columns = self.resolve_columns(available.width);
+        self.grid.measure_intrinsic(text, available)
+    }
+
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.grid.model.columns = self.resolve_columns(frame.size.width);
+        self.grid.arrange(text, frame, clip);
+        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
+    }
+}
+
+/// Single-child container capping measured and arranged width to `max_width`.
+#[derive(Debug)]
+pub struct MaxWidthContent {
+    max_width: f32,
+    children: Vec<Content>,
+    arranged_child: Option<(ComponentId, u64)>,
+}
+
+impl MaxWidthContent {
+    pub fn new(max_width: f32, child: Content) -> Self {
+        Self {
+            max_width: finite(max_width),
+            children: vec![child],
+            arranged_child: None,
+        }
+    }
+
+    pub fn max_width(&self) -> f32 {
+        self.max_width
+    }
+}
+
+impl Component for MaxWidthContent {
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.arranged_child = None;
+        }
+    }
+
+    fn host_reveal_passthrough(&self) -> bool {
+        self.children.len() == 1
+            && self.arranged_child.is_some_and(|identity| {
+                let child = &self.children[0];
+                (child.id(), child.mount_identity()) == identity
+            })
+    }
+
+    fn fixed_slots(&self) -> bool {
+        true
+    }
+
+    fn validate(&self) -> Result<(), CompositionError> {
+        if self.children.len() != 1 {
+            Err(CompositionError::InvalidSlotCount)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+
+    fn ignores_pointer_actions(&self) -> bool {
+        true
+    }
+
+    fn children(&self) -> &[Content] {
+        &self.children
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.children)
+    }
+
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged_child = None;
+        self.children[0].measure(
+            text,
+            Size::new(available.width.min(self.max_width), available.height),
+        )
+    }
+
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        let width = frame.size.width.min(self.max_width);
+        let measured_height = self.children[0]
+            .measure(text, Size::new(width, frame.size.height))
+            .size
+            .height;
+        let height = if measured_height.is_finite() {
+            measured_height.min(frame.size.height).max(0.)
+        } else {
+            frame.size.height
+        };
+        let capped = Rect::new(frame.min_x(), frame.min_y(), width, height);
+        self.children[0].arrange(text, capped, clip);
+        self.arranged_child = self
+            .children
+            .first()
+            .filter(|child| !child.frame().is_empty())
+            .map(|child| (child.id(), child.mount_identity()));
+    }
+}
+
+enum PaletteScopeResolver {
+    Fixed(Palette),
+    Dynamic(Box<dyn Fn(Palette) -> Palette>),
+}
+
+impl std::fmt::Debug for PaletteScopeResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Fixed(palette) => f.debug_tuple("Fixed").field(palette).finish(),
+            Self::Dynamic(_) => f.write_str("Dynamic(..)"),
+        }
+    }
+}
+
+impl PaletteScopeResolver {
+    fn apply(&self, inherited: Palette) -> Palette {
+        match self {
+            Self::Fixed(palette) => *palette,
+            Self::Dynamic(resolve) => resolve(inherited),
+        }
+    }
+}
+
+/// Single-child container projecting an explicit or derived `Palette` onto its subtree
+/// while inheriting host layout and surface declarations.
+#[derive(Debug)]
+pub struct ThemeScopeContent {
+    children: Vec<Content>,
+    resolver: PaletteScopeResolver,
+    arranged: bool,
+}
+
+impl ThemeScopeContent {
+    pub fn new(palette: Palette, child: Content) -> Self {
+        Self {
+            children: vec![child],
+            resolver: PaletteScopeResolver::Fixed(palette),
+            arranged: false,
+        }
+    }
+
+    pub fn with_resolver(resolve: impl Fn(Palette) -> Palette + 'static, child: Content) -> Self {
+        Self {
+            children: vec![child],
+            resolver: PaletteScopeResolver::Dynamic(Box::new(resolve)),
+            arranged: false,
+        }
+    }
+
+    pub fn set_palette(&mut self, palette: Palette) {
+        self.resolver = PaletteScopeResolver::Fixed(palette);
+    }
+}
+
+impl Component for ThemeScopeContent {
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.arranged = false;
+        }
+    }
+
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+
+    fn fixed_slots(&self) -> bool {
+        true
+    }
+
+    fn validate(&self) -> Result<(), CompositionError> {
+        if self.children.len() != 1 {
+            Err(CompositionError::InvalidSlotCount)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+
+    fn ignores_pointer_actions(&self) -> bool {
+        true
+    }
+
+    fn children(&self) -> &[Content] {
+        &self.children
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.children)
+    }
+
+    fn child_theme(&self, mut theme: ContentTheme) -> ContentTheme {
+        theme.palette = self.resolver.apply(theme.palette);
+        theme
+    }
+
+    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+        self.arranged = false;
+        self.children[0].measure(text, available)
+    }
+
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        self.children[0].arrange(text, frame, clip);
+        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
     }
 }

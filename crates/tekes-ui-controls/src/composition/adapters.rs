@@ -149,6 +149,7 @@ impl Component for SwitchContent {
         c: Rect,
         theme: ContentTheme,
     ) {
+        let _ = self.view.set_surface(theme.surface());
         self.view.render_labeled(
             s,
             &mut TextAdapter(t),
@@ -221,6 +222,20 @@ pub struct DialogContent {
     max_width: Option<f32>,
 }
 impl DialogContent {
+    /// Standard horizontal trailing-aligned action row (`Spacing::Regular` = 8 pt gap)
+    /// for dialog footers.
+    pub fn actions_row(id: ComponentId, actions: Vec<Content>) -> Content {
+        StackContent {
+            model: Stack {
+                axis: Axis::Horizontal,
+                gap: Spacing::Regular.value(),
+            },
+            flexible_child: None,
+            children: actions,
+        }
+        .into_content_with_distribution(id, proposal::layout::MainAxisDistribution::End)
+    }
+
     pub fn new(name: impl Into<String>, header: Content, body: Content, footer: Content) -> Self {
         Self {
             model: Dialog::default(),
@@ -456,6 +471,7 @@ impl Component for SliderContent {
         c: Rect,
         theme: ContentTheme,
     ) {
+        let _ = self.view.set_surface(theme.surface());
         self.view.render(s, self.model, f, Some(c), theme.palette);
     }
     fn focusable(&self) -> bool {
@@ -631,6 +647,119 @@ impl ListContent {
     }
 }
 
+/// Full-viewport overlay host placing background content alongside one or more
+/// `DialogContent` siblings without coupling modal bounds to scrolled documents.
+#[derive(Debug)]
+pub struct ModalViewportContent {
+    children: Vec<Content>,
+    name: String,
+    content_padding: crate::layout::Insets,
+    arranged: bool,
+}
+
+impl ModalViewportContent {
+    pub fn new(children: Vec<Content>) -> Self {
+        Self {
+            children,
+            name: String::new(),
+            content_padding: crate::layout::Insets::ZERO,
+            arranged: false,
+        }
+    }
+
+    pub fn with_accessible_name(mut self, name: impl Into<String>) -> Self {
+        self.name = name.into();
+        self
+    }
+
+    /// Optional inner padding applied to non-dialog children (e.g. a screen invoker
+    /// button), while `DialogContent` children continue to occupy the full viewport.
+    pub fn with_content_padding(mut self, padding: crate::layout::Insets) -> Self {
+        self.content_padding = crate::layout::Insets::new(
+            finite(padding.top),
+            finite(padding.right),
+            finite(padding.bottom),
+            finite(padding.left),
+        );
+        self
+    }
+}
+
+impl Component for ModalViewportContent {
+    fn children(&self) -> &[Content] {
+        &self.children
+    }
+
+    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+        Some(&mut self.children)
+    }
+
+    fn host_reveal_passthrough(&self) -> bool {
+        self.arranged
+    }
+
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Recursive
+    }
+
+    fn has_stable_hooks(&self) -> bool {
+        true
+    }
+
+    fn supports_prepared_lifecycle(&self) -> bool {
+        true
+    }
+
+    fn ignores_pointer_actions(&self) -> bool {
+        true
+    }
+
+    fn lifecycle(&mut self, event: Lifecycle) {
+        if event == Lifecycle::Unmounted {
+            self.arranged = false;
+        }
+    }
+
+    fn semantics(&self) -> ContentSemantics {
+        ContentSemantics::new(ContentRole::Group, &self.name)
+    }
+
+    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+        self.arranged = false;
+        MeasuredChild::new(a)
+    }
+
+    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
+        let has_pad = self.content_padding != crate::layout::Insets::ZERO;
+        let inner = if has_pad {
+            Rect::new(
+                frame.min_x() + self.content_padding.left,
+                frame.min_y() + self.content_padding.top,
+                (frame.size.width - self.content_padding.left - self.content_padding.right).max(0.),
+                (frame.size.height - self.content_padding.top - self.content_padding.bottom)
+                    .max(0.),
+            )
+        } else {
+            frame
+        };
+        for child in &mut self.children {
+            if !has_pad || child.component::<DialogContent>().is_some() {
+                child.arrange(text, frame, clip);
+            } else {
+                let measured = child.measure_intrinsic(text, inner.size).size;
+                let rect = Rect::new(
+                    inner.min_x(),
+                    inner.min_y(),
+                    measured.width.min(inner.size.width),
+                    measured.height.min(inner.size.height),
+                );
+                child.arrange(text, rect, clip);
+            }
+        }
+        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
+    }
+}
+
 #[cfg(test)]
 mod dialog_geometry_tests {
     use super::*;
@@ -751,5 +880,90 @@ mod dialog_geometry_tests {
         assert_eq!(scroll_frame.min_y() - header_frame.max_y(), 8.);
         assert_eq!(row_frame.min_x(), leading.min_x());
         assert_eq!(row_frame.min_y() - header_frame.max_y(), 16.);
+    }
+
+    #[test]
+    fn modal_viewport_and_dialog_actions_row_align_horizontally_and_preserve_reveal() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let footer = DialogContent::actions_row(
+            ComponentId(20),
+            vec![
+                Content::new(ComponentId(21), Button::new("Cancel")),
+                Content::new(ComponentId(22), Button::new("Confirm")),
+            ],
+        );
+        let dialog = Content::new(
+            ComponentId(2),
+            DialogContent::new(
+                "Confirm",
+                Content::new(ComponentId(10), TextContent::heading("Title")),
+                Content::new(ComponentId(11), TextContent::new("Body")),
+                footer,
+            ),
+        );
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(1),
+            ModalViewportContent::new(vec![
+                Content::new(ComponentId(3), Button::new("Open")),
+                dialog,
+            ])
+            .with_content_padding(crate::Insets::new(
+                Spacing::Section.value(),
+                Spacing::Section.value(),
+                Spacing::Section.value(),
+                Spacing::Section.value(),
+            )),
+        ))
+        .unwrap();
+        let viewport = Rect::new(0., 0., 500., 400.);
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            viewport,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(host.get(ComponentId(3)).unwrap().frame().min_x(), 24.);
+        assert!(
+            host.get(ComponentId(1))
+                .unwrap()
+                .component::<ModalViewportContent>()
+                .unwrap()
+                .host_reveal_passthrough()
+        );
+        host.show_dialog(ComponentId(2)).unwrap();
+        host.render(
+            &mut Scene::new(),
+            &mut Text,
+            viewport,
+            viewport,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let cancel = host.get(ComponentId(21)).unwrap().frame();
+        let confirm = host.get(ComponentId(22)).unwrap().frame();
+        assert_eq!(cancel.min_y(), confirm.min_y());
+        assert_eq!(confirm.min_x() - cancel.max_x(), Spacing::Regular.value());
+        let footer_frame = host.get(ComponentId(20)).unwrap().frame();
+        assert!((footer_frame.max_x() - confirm.max_x()).abs() <= 0.1);
     }
 }

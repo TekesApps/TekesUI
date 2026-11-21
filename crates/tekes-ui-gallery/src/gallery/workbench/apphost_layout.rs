@@ -236,49 +236,5 @@ pub(super) fn children(renderer: &str, variants: bool) -> Vec<Content> {
 /// content is a sibling of the scrolled document, never a row measured with the
 /// document's unbounded height. Both stories use this one composition boundary.
 pub(super) fn dialog_viewport(id: ComponentId, children: Vec<Content>) -> Content {
-    Content::new(
-        id,
-        DialogViewport {
-            children,
-            arranged: false,
-        },
-    )
-}
-#[derive(Debug)]
-struct DialogViewport {
-    children: Vec<Content>,
-    arranged: bool,
-}
-impl Component for DialogViewport {
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn host_reveal_passthrough(&self) -> bool {
-        self.arranged
-    }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
-        CurveSubtreeCapability::Recursive
-    }
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn lifecycle(&mut self, _: Lifecycle) {
-        self.arranged = false;
-    }
-    fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        self.arranged = false;
-        MeasuredChild::new(a)
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        for child in &mut self.children {
-            child.arrange(text, frame, clip);
-        }
-        self.arranged = true;
-    }
+    Content::new(id, ModalViewportContent::new(children))
 }

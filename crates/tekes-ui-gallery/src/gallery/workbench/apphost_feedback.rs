@@ -665,72 +665,6 @@ fn stack(id: ComponentId, children: Vec<Content>) -> Content {
         },
     )
 }
-/// The original feedback page's rectangular SurfaceView decoration. Its border
-/// does not impose a curved input/clip boundary on the real EmptyState child.
-#[derive(Debug)]
-struct EmptyStateSurface {
-    children: Vec<Content>,
-    arranged: bool,
-}
-impl Component for EmptyStateSurface {
-    fn fixed_slots(&self) -> bool {
-        true
-    }
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn host_reveal_passthrough(&self) -> bool {
-        // The last arrange uses a fixed inset and forwards the exact ancestor
-        // rectangular clip. Ancestor scrolling only translates these frames.
-        self.arranged
-    }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        if event == Lifecycle::Unmounted {
-            self.arranged = false;
-        }
-    }
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.arranged = false;
-        let inset = proposal::metric("spacing", "space-loose").unwrap_or(16.);
-        let width = available.width.min(520.);
-        let child = self.children[0].measure(
-            text,
-            Size::new((width - 2. * inset).max(0.), available.height),
-        );
-        MeasuredChild::new(Size::new(width, (child.size.height + 2. * inset).max(164.)))
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        let inset = proposal::metric("spacing", "space-loose").unwrap_or(16.);
-        self.children[0].arrange(text, frame.inset(inset), clip);
-        self.arranged = frame.size.width > 0. && frame.size.height > 0.;
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        SurfaceView::default().render_at_scale(
-            scene,
-            frame,
-            Some(clip),
-            theme.palette,
-            true,
-            text.backing_scale(),
-        );
-    }
-}
 #[derive(Debug)]
 struct Matrix {
     renderer: &'static str,
@@ -943,7 +877,7 @@ impl FeedbackStory {
                 "Confirm changes?",
                 text(103031, "Confirm changes?"),
                 text(103032, "Review your changes before continuing."),
-                stack(
+                DialogContent::actions_row(
                     ComponentId(103033),
                     vec![
                         Content::new(ACTION, Button::new("Cancel")),
@@ -1058,18 +992,18 @@ impl FeedbackStory {
                 "empty-state" => {
                     children.push(Content::new(
                         ComponentId(103024),
-                        EmptyStateSurface {
-                            arranged: false,
-                            children: vec![Content::new(
-                                CONTROL,
-                                EmptyStateContent::new(
-                                    "Documents",
-                                    empty_model(state.extended.empty_state_created),
-                                    ACTION,
-                                )
-                                .unwrap(),
-                            )],
-                        },
+                        SurfaceContent::canvas(Content::new(
+                            CONTROL,
+                            EmptyStateContent::new(
+                                "Documents",
+                                empty_model(state.extended.empty_state_created),
+                                ACTION,
+                            )
+                            .unwrap(),
+                        ))
+                        .with_border(true)
+                        .with_max_width(520.)
+                        .with_min_height(164.),
                     ));
                 }
                 "menu" => {

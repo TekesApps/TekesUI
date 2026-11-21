@@ -7,8 +7,8 @@ use crate::control_motion::{ProgressTransition, motion_for};
 use crate::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ControlState,
     extended::{
-        Axis, ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider,
-        switch_with_state, switch_with_state_and_thumb_progress,
+        Axis, ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider_on_surface,
+        switch_on_surface, switch_on_surface_with_thumb_progress,
     },
 };
 use std::time::Duration;
@@ -32,6 +32,7 @@ pub struct SliderLayout {
 
 #[derive(Clone, Debug)]
 pub struct SliderView {
+    surface: &'static str,
     layout: SliderLayout,
     hovered: bool,
     focused: bool,
@@ -42,6 +43,16 @@ pub struct SliderView {
 impl SliderView {
     pub fn new() -> Self {
         Self::default()
+    }
+    pub fn surface(&self) -> &'static str {
+        self.surface
+    }
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        Ok(())
     }
     pub fn render(
         &mut self,
@@ -70,7 +81,7 @@ impl SliderView {
             }
         }
         let geom = if visible.is_some() {
-            slider(
+            slider_on_surface(
                 scene,
                 normalized,
                 palette,
@@ -83,7 +94,9 @@ impl SliderView {
                     disabled: model.disabled,
                     ..Default::default()
                 },
+                self.surface,
             )
+            .expect("SliderView Surface packet")
         } else {
             crate::extended::SliderGeometry {
                 track: Rect::default(),
@@ -250,6 +263,7 @@ impl SliderView {
 impl Default for SliderView {
     fn default() -> Self {
         Self {
+            surface: "canvas",
             layout: SliderLayout::default(),
             hovered: false,
             focused: false,
@@ -591,9 +605,14 @@ impl RadioGroupView {
                         label,
                         ButtonTextAlign::Leading,
                         if state.disabled {
-                            palette
-                                .color("disabled-text")
-                                .expect("Radio disabled label role")
+                            tekes_ui_tokens::surface_palette::resolve_surface(
+                                palette,
+                                self.surface,
+                                "content",
+                                "disabled",
+                            )
+                            .expect("Radio disabled label surface")
+                            .text
                         } else {
                             crate::paint::choice_label_color(palette, self.surface, state)
                         },
@@ -890,6 +909,7 @@ impl Default for RadioGroupView {
 
 #[derive(Clone, Debug)]
 pub struct SwitchView {
+    surface: &'static str,
     error: bool,
     placement: ControlFrame,
     hovered: bool,
@@ -910,6 +930,17 @@ pub struct SwitchView {
 impl SwitchView {
     /// Intrinsic track width of the shared Switch control.
     pub const TRACK_WIDTH: f32 = 48.0;
+
+    pub fn surface(&self) -> &'static str {
+        self.surface
+    }
+    pub fn set_surface(
+        &mut self,
+        surface: &str,
+    ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
+        self.surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        Ok(())
+    }
 
     /// Host validation does not disable toggling or erase the current value.
     pub fn set_error(&mut self, error: bool) {
@@ -995,18 +1026,20 @@ impl SwitchView {
             if let Some(context) = context {
                 let progress =
                     self.prepare_thumb_progress(model.checked, model.disabled, palette, context);
-                switch_with_state_and_thumb_progress(
+                let _ = switch_on_surface_with_thumb_progress(
                     scene,
                     self.placement.frame(),
                     palette,
                     state,
                     progress,
+                    self.surface,
                 );
             } else {
                 let _ = self
                     .thumb_transition
                     .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
-                switch_with_state(scene, self.placement.frame(), palette, state);
+                let _ =
+                    switch_on_surface(scene, self.placement.frame(), palette, state, self.surface);
             }
             if clip.is_some() {
                 scene.pop_clip();
@@ -1191,12 +1224,13 @@ impl SwitchView {
             if let Some(context) = context {
                 let progress =
                     self.prepare_thumb_progress(model.checked, model.disabled, palette, context);
-                switch_with_state_and_thumb_progress(
+                let _ = switch_on_surface_with_thumb_progress(
                     scene,
                     self.placement.frame(),
                     palette,
                     state,
                     progress,
+                    self.surface,
                 );
                 if self.needs_animation() {
                     text.request_animation_frame();
@@ -1205,7 +1239,8 @@ impl SwitchView {
                 let _ = self
                     .thumb_transition
                     .snap(if model.checked { 1.0 } else { 0.0 }, self.motion_now);
-                switch_with_state(scene, self.placement.frame(), palette, state);
+                let _ =
+                    switch_on_surface(scene, self.placement.frame(), palette, state, self.surface);
             }
             if clip.is_some() {
                 scene.pop_clip();
@@ -1221,6 +1256,14 @@ impl SwitchView {
             .visible_frame()
             .and_then(|visible| ControlFrame::new(label, Some(visible)).visible_frame());
         if let Some(label_clip) = label_visible {
+            let ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                self.surface,
+                "content",
+                if model.disabled { "disabled" } else { "rest" },
+            )
+            .expect("Design System label text")
+            .text;
             scene.push_clip(label_clip);
             text.draw(
                 scene,
@@ -1228,13 +1271,7 @@ impl SwitchView {
                 proposal::TextRole::UiBody,
                 label,
                 ButtonTextAlign::Leading,
-                palette
-                    .color(if model.disabled {
-                        "disabled-text"
-                    } else {
-                        "primary-text"
-                    })
-                    .expect("Design System label text"),
+                ink,
             );
             scene.pop_clip();
         }
@@ -1388,6 +1425,7 @@ fn rows_visibility_for(layout: &RadioGroupLayout, index: usize) -> Option<Rect> 
 impl Default for SwitchView {
     fn default() -> Self {
         Self {
+            surface: "canvas",
             error: false,
             placement: ControlFrame::default(),
             hovered: false,
@@ -2347,5 +2385,96 @@ mod tests {
         assert!((left_inset - regular).abs() <= 0.01);
         assert!((indicator_gap - regular).abs() <= 0.01);
         assert!((right_inset - regular).abs() <= 0.01);
+    }
+
+    #[test]
+    fn slider_and_switch_resolve_surface_packets_across_themes_and_surfaces() {
+        for theme in Theme::ALL {
+            let palette = Palette::new(theme, 0).expect("registered Gallery brand");
+            for surface in ["canvas", "panel", "sidebar", "toolbar"] {
+                let mut slider_view = SliderView::new();
+                slider_view.set_surface(surface).unwrap();
+                assert_eq!(slider_view.surface(), surface);
+                let mut scene = Scene::new();
+                let mut slider = Slider::new(40., 0., 100., 5.).unwrap();
+                slider_view.render(
+                    &mut scene,
+                    slider,
+                    Rect::new(0., 0., 160., 30.),
+                    None,
+                    palette,
+                );
+                let expected_range = tekes_ui_tokens::surface_palette::resolve_range_surface(
+                    palette, surface, "rest",
+                )
+                .unwrap();
+                let slider_quads: Vec<_> = scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) => Some(*q),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(slider_quads[0].fill, expected_range.track.background);
+                assert_eq!(slider_quads[1].fill, expected_range.track.marker.unwrap());
+                assert_eq!(slider_quads[2].fill, expected_range.thumb.background);
+                assert_eq!(
+                    slider_quads[2].border_color,
+                    expected_range
+                        .thumb
+                        .boundary
+                        .unwrap_or(slider_quads[2].fill)
+                );
+
+                slider.disabled = true;
+                slider_view.render(
+                    &mut scene,
+                    slider,
+                    Rect::new(0., 0., 160., 30.),
+                    None,
+                    palette,
+                );
+
+                let mut switch_view = SwitchView::new();
+                switch_view.set_surface(surface).unwrap();
+                assert_eq!(switch_view.surface(), surface);
+                let mut sw_scene = Scene::new();
+                let mut text = TestText::default();
+                switch_view.render_labeled(
+                    &mut sw_scene,
+                    &mut text,
+                    Switch {
+                        checked: false,
+                        disabled: false,
+                    },
+                    Rect::new(0., 0., 180., 32.),
+                    None,
+                    palette,
+                    "Surface",
+                );
+                let expected_toggle = tekes_ui_tokens::surface_palette::resolve_toggle_surface(
+                    palette,
+                    surface,
+                    "rest",
+                    tekes_ui_tokens::surface_palette::SurfaceOptions::default(),
+                )
+                .unwrap();
+                let sw_quads: Vec<_> = sw_scene
+                    .primitives()
+                    .iter()
+                    .filter_map(|p| match p {
+                        tekes_ui_scene::Primitive::Quad(q) => Some(*q),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(sw_quads[0].fill, expected_toggle.track.background);
+                assert_eq!(
+                    sw_quads[0].border_color,
+                    expected_toggle.track.boundary.unwrap_or(sw_quads[0].fill)
+                );
+                assert_eq!(sw_quads[1].fill, expected_toggle.thumb.background);
+            }
+        }
     }
 }

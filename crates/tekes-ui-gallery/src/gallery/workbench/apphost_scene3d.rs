@@ -384,12 +384,24 @@ impl AppHostScene3D {
             StackContent {
                 model: Stack {
                     axis: Axis::Horizontal,
-                    gap: 8.,
+                    gap: tekes_ui_tokens::Spacing::Regular.value(),
                 },
-                children: [(1, "Docs"), (2, "Playground"), (0, "Reset")]
-                    .into_iter()
-                    .map(|(n, label)| Content::new(ComponentId(COMMAND + n), Button::new(label)))
-                    .collect(),
+                children: vec![
+                    Content::new(
+                        ComponentId(COMMAND + 1),
+                        SegmentedControlContent::from_model(
+                            "Scene3D view",
+                            {
+                                let mut m = tekes_ui_controls::extended::SegmentedControl::new(2);
+                                m.selected = 1;
+                                m
+                            },
+                            vec!["Docs".into(), "Playground".into()],
+                        )
+                        .unwrap(),
+                    ),
+                    Content::new(ComponentId(COMMAND), Button::new("Reset")),
+                ],
                 flexible_child: None,
             },
         );
@@ -452,6 +464,13 @@ impl AppHostScene3D {
         }
     }
     pub(crate) fn select_section(&mut self, section: usize) {
+        if let Some(segmented) = self
+            .host
+            .get_mut(ComponentId(COMMAND + 1))
+            .and_then(|node| node.component_mut::<SegmentedControlContent>())
+        {
+            let _ = segmented.set_selected(section.min(1));
+        }
         let playground = section != 0;
         if self.playground != playground {
             self.playground = playground;
@@ -469,15 +488,15 @@ impl AppHostScene3D {
             if record.action.kind != ContentActionKind::Activate {
                 continue;
             }
-            match record.action.target.0.checked_sub(COMMAND) {
-                Some(0) => {
-                    let mut state = self.state.borrow_mut();
-                    state.preview.reset();
-                    state.last_time = None;
-                    let _ = self.host.get_mut(SPECIMEN);
-                }
-                Some(n @ 1..=2) => self.select_section((n - 1) as usize),
-                _ => {}
+            if record.action.target == ComponentId(COMMAND) {
+                let mut state = self.state.borrow_mut();
+                state.preview.reset();
+                state.last_time = None;
+                let _ = self.host.get_mut(SPECIMEN);
+            } else if record.action.target == ComponentId(COMMAND + 1)
+                && let Some(ContentActionPayload::SegmentSelection(intent)) = &record.payload
+            {
+                self.select_section(intent.index());
             }
         }
     }
@@ -927,11 +946,99 @@ mod tests {
                 Palette::from(Theme::default()),
             )
             .unwrap();
+        let docs = page
+            .host
+            .get(ComponentId(COMMAND + 1))
+            .unwrap()
+            .component::<SegmentedControlContent>()
+            .unwrap()
+            .part_token(0);
         page.host
-            .accessibility_action(ComponentId(COMMAND + 1), None, AccessibilityAction::Press);
+            .accessibility_action(ComponentId(COMMAND + 1), docs, AccessibilityAction::Press);
         page.after_host_visit();
         assert!(!page.playground);
         assert!(page.host.get(SPECIMEN).is_none());
+        assert_eq!(page.state.borrow().last_time, None);
+    }
+
+    #[test]
+    fn apphost_scene3d_segmented_control_switches_sections_and_reset_acts() {
+        let mut page = page();
+        let mut text = TextEngine::new();
+        let frame = Rect::new(0., 0., 640., 480.);
+        page.host
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(page.playground);
+        assert!(page.host.get(SPECIMEN).is_some());
+
+        let docs = page
+            .host
+            .get(ComponentId(COMMAND + 1))
+            .unwrap()
+            .component::<SegmentedControlContent>()
+            .unwrap()
+            .part_token(0);
+        assert!(
+            page.host
+                .accessibility_action(ComponentId(COMMAND + 1), docs, AccessibilityAction::Press)
+                .consumed
+        );
+        page.after_host_visit();
+        assert!(!page.playground);
+        assert!(page.host.get(SPECIMEN).is_none());
+        page.host
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        let playground = page
+            .host
+            .get(ComponentId(COMMAND + 1))
+            .unwrap()
+            .component::<SegmentedControlContent>()
+            .unwrap()
+            .part_token(1);
+        assert!(
+            page.host
+                .accessibility_action(
+                    ComponentId(COMMAND + 1),
+                    playground,
+                    AccessibilityAction::Press
+                )
+                .consumed
+        );
+        page.after_host_visit();
+        assert!(page.playground);
+        assert!(page.host.get(SPECIMEN).is_some());
+        page.host
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        page.state.borrow_mut().last_time = Some(Duration::from_secs(2));
+        assert!(
+            page.host
+                .accessibility_action(ComponentId(COMMAND), None, AccessibilityAction::Press)
+                .consumed
+        );
+        page.after_host_visit();
         assert_eq!(page.state.borrow().last_time, None);
     }
 }

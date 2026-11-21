@@ -557,6 +557,15 @@ impl NumberField {
     pub fn value(self) -> f64 {
         self.value
     }
+    pub fn min(self) -> f64 {
+        self.min
+    }
+    pub fn max(self) -> f64 {
+        self.max
+    }
+    pub fn step(self) -> f64 {
+        self.step
+    }
     /// Whether one configured step can change the value in the requested direction.
     pub fn can_increment(self, up: bool) -> bool {
         if up {

@@ -295,6 +295,21 @@ impl ScrollView {
         self.offset.y = (self.offset.y + y).clamp(0.0, l.y);
         before != self.offset
     }
+    pub(crate) fn wheel_step(precise: bool) -> f32 {
+        if precise {
+            1.
+        } else {
+            proposal::metric("size", "size-row-height").expect("JSON metric")
+        }
+    }
+    /// Apply discrete line-stepped or precise point-unit wheel deltas directly.
+    pub fn scroll_wheel(&mut self, dx: f32, dy: f32, precise: bool) -> bool {
+        if !dx.is_finite() || !dy.is_finite() {
+            return false;
+        }
+        let step = Self::wheel_step(precise);
+        self.scroll_by(dx * step, dy * step)
+    }
     pub fn wheel(
         &mut self,
         x: f32,
@@ -1173,5 +1188,17 @@ mod tests {
             snapshot.document_to_viewport(Rect::new(60.0, 60.0, 5.0, 5.0)),
             Some(Rect::new(40.0, 50.0, 5.0, 5.0))
         );
+    }
+
+    #[test]
+    fn scroll_wheel_converts_stepped_and_precise_deltas() {
+        let mut scroll = ScrollView::default();
+        scroll.layout(Size::new(100.0, 100.0), Size::new(100.0, 500.0));
+        assert!(scroll.scroll_wheel(0.0, 10.0, true));
+        assert_eq!(scroll.offset.y, 10.0);
+        let row = proposal::metric("size", "size-row-height").unwrap();
+        assert!(scroll.scroll_wheel(0.0, 2.0, false));
+        assert!((scroll.offset.y - (10.0 + 2.0 * row)).abs() < 0.001);
+        assert!(!scroll.scroll_wheel(0.0, f32::NAN, false));
     }
 }

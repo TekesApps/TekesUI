@@ -30,6 +30,10 @@ impl Default for SeparatorContent {
     }
 }
 impl Component for SeparatorContent {
+    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
+        CurveSubtreeCapability::Local
+    }
+
     fn has_stable_hooks(&self) -> bool {
         true
     }

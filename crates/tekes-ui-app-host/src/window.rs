@@ -116,6 +116,12 @@ fn content_geometry(bounds: Rect, toolbar_height: f32) -> Rect {
 
 // Each original ContentHost keeps its frame leases until its next render.
 // The shared SVG renderer owns uploads and renderer-scoped image retirement.
+pub(super) fn surface_ground(palette: Palette, surface: &str) -> tekes_ui_tokens::Rgba {
+    tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
+        .expect("valid semantic surface ground")
+        .background
+}
+
 fn with_content_icons<R>(
     renderer: &mut Renderer,
     icons: &mut tekes_ui_controls::composition::SvgIconCache,
@@ -367,6 +373,11 @@ impl Host {
             && tabs.content_host().input_overlay_owner().is_some()
         {
             return tabs.content_host().text_cursor_regions();
+        }
+        if let Some(grid) = &self.layout.presentation_creation_grid
+            && grid.host.input_overlay_owner().is_some()
+        {
+            return grid.host.text_cursor_regions();
         }
         if let Some(target) = self.open_toolbar()
             && let Some(index) = self.toolbar_container(target)
@@ -762,7 +773,7 @@ impl Host {
         // Workspace panes are flat layout regions, not decorated Panel cards.
         // Keep component defaults intact; the consumer chooses no frame/shadow.
         let palette = self.palette();
-        scene.push_quad(Quad::new(whole, palette.color("surface-1").unwrap()));
+        scene.push_quad(Quad::new(whole, surface_ground(palette, "canvas")));
         let mut frames = self.arrange_column_frames(whole);
         if self.panel_mgr.panels.len() >= 2 {
             frames = presented_frames(&frames, whole, progress, w.scale() as f32);
@@ -872,7 +883,7 @@ impl Host {
                     whole.size.width,
                     toolbar_paint_height,
                 ),
-                palette.color("surface-0").unwrap(),
+                surface_ground(palette, "toolbar"),
             ));
         }
         self.sync_toolbar(
@@ -1047,7 +1058,7 @@ impl Host {
         renderer.render(
             &scene,
             &mut self.text.atlas,
-            palette.color("surface-1").unwrap(),
+            surface_ground(palette, "canvas"),
         )?;
         self.layout.presentation_scroll_pending = false;
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
@@ -1482,7 +1493,12 @@ impl Host {
                         .layout
                         .presentation_tabs
                         .as_ref()
-                        .is_none_or(|tabs| tabs.content_host().pointer_capture().is_none()) =>
+                        .is_none_or(|tabs| tabs.content_host().pointer_capture().is_none())
+                    && self
+                        .layout
+                        .presentation_creation_grid
+                        .as_ref()
+                        .is_none_or(|grid| grid.host.pointer_capture().is_none()) =>
                 {
                     return true;
                 }
@@ -1747,6 +1763,9 @@ impl Host {
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.event(&ContentEvent::Cancel);
                 }
+                if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    grid.host.event(&ContentEvent::Cancel);
+                }
                 self.cancel_toolbar_input();
                 self.draw(w)?;
             }
@@ -1803,6 +1822,9 @@ impl Host {
                             self.layout.focused = i;
                             if let Some(tabs) = &mut self.layout.presentation_tabs {
                                 tabs.blur();
+                            }
+                            if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                                grid.host.focus(None, false);
                             }
                             self.set_toolbar_focus(None, false);
                             if self
@@ -1941,6 +1963,9 @@ impl Host {
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(true);
                 }
+                if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    grid.host.set_window_active(true);
+                }
                 w.set_menu_bar(&self.menu_bar())
                     .map_err(|error| anyhow::anyhow!("AppHost menu: {error}"))?;
                 host_diag!(
@@ -1964,6 +1989,9 @@ impl Host {
             Event::Focus(false) => {
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(false);
+                }
+                if let Some(grid) = &mut self.layout.presentation_creation_grid {
+                    grid.host.set_window_active(false);
                 }
                 host_diag!(
                     "TOOLBAR_WINDOW_ACTIVE window={} active=false",
@@ -2220,6 +2248,10 @@ impl Host {
         scene: &mut Scene,
         renderer: &mut Renderer,
     ) -> Result<()> {
+        let is_nav = self.layout.presentation.as_ref().is_some_and(|state| {
+            state.nav_bar_id() == Some(self.panel_mgr.panels[index].module_id.as_str())
+        });
+        let body_surface = if is_nav { "sidebar" } else { "panel" };
         let p = &mut self.panel_mgr.panels[index];
         let content = p.content_frame();
         if self.layout.presentation.is_some() {
@@ -2227,7 +2259,7 @@ impl Host {
         }
         scene.push_quad(Quad::new(
             p.geometry.content,
-            palette.color("surface-panel").unwrap(),
+            surface_ground(palette, body_surface),
         ));
         if self.layout.presentation.is_some() {
             scene.pop_clip();
@@ -2398,7 +2430,7 @@ impl Host {
         self.layout.container_window_boundary = Some(content_boundary);
 
         let palette = self.palette();
-        let clear = palette.color("surface-1").unwrap();
+        let clear = surface_ground(palette, "canvas");
         let mut scene = Scene::new();
         scene.push_quad(Quad::new(whole, clear));
         let frames = if self.layout.presentation.is_some() {
@@ -2440,7 +2472,7 @@ impl Host {
                     whole.size.width,
                     toolbar_paint_height,
                 ),
-                palette.color("surface-0").unwrap(),
+                surface_ground(palette, "toolbar"),
             ));
             self.sync_container_toolbars_with_renderer(
                 active,

@@ -1,12 +1,10 @@
 //! Original fixture with real glyph rendering and one native window adapter.
 use super::*;
 use tekes_ui_controls::{TextSurfaceHost, TextSurfaceTextRenderer};
-use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
+use tekes_ui_macos_bridge::{WindowContentAccessibilityExt, coretext_host::CoreTextHost};
 use tekes_ui_platform_macos as native;
 use tekes_ui_render::Renderer;
 use tekes_ui_scene::{Point, Size};
-#[path = "native_fonts.rs"]
-mod fonts;
 
 const CAPS: ViewCapabilities = ViewCapabilities {
     accessibility: true,
@@ -14,39 +12,26 @@ const CAPS: ViewCapabilities = ViewCapabilities {
 };
 pub(super) const MODULE: &str = "original-content-native-glyphs";
 pub(super) struct NativeText {
-    fonts: fonts::Fonts,
-    pub(super) atlas: GlyphAtlas,
-    pub(super) scale: f32,
+    pub(super) core: CoreTextHost,
     pub(super) context: ViewContext,
-    animation_requested: bool,
 }
 impl NativeText {
     pub(super) fn new() -> Self {
         Self {
-            fonts: fonts::Fonts::new(),
-            atlas: GlyphAtlas::default(),
-            scale: 1.,
+            core: CoreTextHost::new(),
             context: ViewContext::default(),
-            animation_requested: false,
         }
     }
     pub(super) fn apply_context(&mut self, context: &ViewContext) -> Result<()> {
         tekes_ui_module_runtime::view_context_palette(context)?;
-        self.fonts.set_type_scale(context.type_scale);
+        self.core.type_scale = context.type_scale;
         self.context = context.clone();
         Ok(())
-    }
-    fn adapter(&mut self) -> fonts::TextRenderer<'_> {
-        fonts::TextRenderer {
-            fonts: &mut self.fonts,
-            atlas: &mut self.atlas,
-            scale: self.scale,
-        }
     }
 }
 impl ButtonTextRenderer for NativeText {
     fn request_animation_frame(&mut self) {
-        self.animation_requested = true;
+        self.core.request_animation_frame();
     }
     fn motion_context(&self) -> Option<tekes_ui_controls::ControlMotionContext> {
         Some(tekes_ui_controls::ControlMotionContext {
@@ -59,10 +44,16 @@ impl ButtonTextRenderer for NativeText {
         Some(self)
     }
     fn backing_scale(&self) -> f32 {
-        self.scale
+        self.core.backing_scale()
+    }
+    fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+        self.core.resolved_font_size(role)
+    }
+    fn first_line_height(&mut self, s: &str, role: proposal::TextRole, width: f32) -> f32 {
+        self.core.first_line_height(s, role, width)
     }
     fn measure(&mut self, s: &str, role: proposal::TextRole, width: f32) -> Size {
-        self.adapter().measure(s, role, width)
+        self.core.measure(s, role, width)
     }
     fn draw(
         &mut self,
@@ -73,7 +64,7 @@ impl ButtonTextRenderer for NativeText {
         align: ButtonTextAlign,
         ink: Rgba,
     ) {
-        self.adapter().draw(scene, s, role, rect, align, ink);
+        self.core.draw(scene, s, role, rect, align, ink);
     }
 }
 impl TextSurfaceTextRenderer for NativeText {
@@ -85,16 +76,52 @@ impl TextSurfaceTextRenderer for NativeText {
         ink: Rgba,
         clip: Rect,
     ) {
-        self.adapter().push_visible(scene, p, origin, ink, clip);
+        self.core.push_visible(scene, p, origin, ink, clip);
     }
 }
 impl TextSurfaceHost for NativeText {
     fn caret_visible(&self) -> bool {
         self.context.caret_visible
     }
-
     fn type_scale(&self) -> f32 {
-        self.fonts.type_scale
+        self.core.type_scale()
+    }
+    fn shape_system_text_with_weight(
+        &mut self,
+        value: &str,
+        final_logical_point_size: f32,
+        weight: u16,
+        width: Option<f32>,
+    ) -> Option<std::rc::Rc<tekes_ui_text::Paragraph>> {
+        self.core
+            .shape_system_text_with_weight(value, final_logical_point_size, weight, width)
+    }
+    fn shape_system_text(
+        &mut self,
+        value: &str,
+        final_logical_point_size: f32,
+        width: Option<f32>,
+    ) -> Option<std::rc::Rc<tekes_ui_text::Paragraph>> {
+        self.core
+            .shape_system_text(value, final_logical_point_size, width)
+    }
+    fn shape_label(
+        &mut self,
+        value: &str,
+        role: proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
+        self.core.shape_label(value, role, width, options)
+    }
+    fn shape_semantic_label(
+        &mut self,
+        value: &tekes_ui_text::SemanticLabel,
+        role: proposal::TextRole,
+        width: f32,
+        options: tekes_ui_text::LabelOptions,
+    ) -> Option<std::rc::Rc<tekes_ui_text::LabelLayout>> {
+        self.core.shape_semantic_label(value, role, width, options)
     }
     fn shape_surface(
         &mut self,
@@ -102,7 +129,7 @@ impl TextSurfaceHost for NativeText {
         role: proposal::TextRole,
         width: Option<f32>,
     ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
-        self.adapter().shape_surface(s, role, width)
+        self.core.shape_surface(s, role, width)
     }
 }
 struct NativeModule {
@@ -164,17 +191,17 @@ impl PanelModule for NativeModule {
         scene: &mut Scene,
         atlas: &mut GlyphAtlas,
     ) -> Result<ModuleState> {
-        self.text.scale = input.scale;
+        self.text.core.scale = input.scale;
         // The worker owns its original persistent atlas; the adapter only
         // borrows it during this same original Content render.
-        std::mem::swap(atlas, &mut self.text.atlas);
+        std::mem::swap(atlas, &mut self.text.core.atlas);
         let frame = Rect::new(0., 0., input.width as f32, input.height as f32);
         let palette = tekes_ui_module_runtime::view_context_palette(&self.text.context)?;
         let rendered = self
             .original
             .host
             .render(scene, &mut self.text, frame, frame, palette);
-        std::mem::swap(atlas, &mut self.text.atlas);
+        std::mem::swap(atlas, &mut self.text.core.atlas);
         rendered?;
         self.original.revision += 1;
         Ok(ModuleState {
@@ -292,7 +319,7 @@ fn original_layer_scene(
     // an exact retired-grant acknowledgement may resume unsent resource intent
     // even when no new image has been prepared in this pass.
     let mut scene = Scene::new();
-    text.animation_requested = false;
+    text.core.animation_requested = false;
     host.repaint_current(&mut scene, text, frame, frame, palette)?;
     if prepared {
         eprintln!("PROCESS_NATIVE_B2_LAYER_FRAME_RECEIVED");
@@ -706,7 +733,7 @@ impl Host {
                     .prepare(renderer)?;
             }
         }
-        self.text.scale = w.scale() as f32;
+        self.text.core.scale = w.scale() as f32;
         let size = w.size();
         // Keep the original Host viewport size while placing its curved
         // outside-corner probe beyond NSWindow's resize chrome. The B2 test
@@ -718,7 +745,7 @@ impl Host {
             (size.width as f32 - 2. * inset).max(0.),
             (size.height as f32 - 2. * inset).max(0.),
         );
-        self.text.animation_requested = false;
+        self.text.core.animation_requested = false;
         tree.set_inherited_surface(&self.context.surface)
             .expect("validated window Surface");
         let scene = if self.curve_mode {
@@ -747,7 +774,7 @@ impl Host {
         if let Some(began) = render_timing {
             log_b2_timing(w, "render_begin", began);
         }
-        let rendered = renderer.render(&scene, &mut self.text.atlas, clear);
+        let rendered = renderer.render(&scene, &mut self.text.core.atlas, clear);
         if let Some(began) = render_timing {
             log_b2_timing(
                 w,
@@ -760,7 +787,7 @@ impl Host {
             );
         }
         rendered?;
-        w.set_animating(w.is_active() && self.text.animation_requested);
+        w.set_animating(w.is_active() && self.text.core.animation_requested);
         if !self.logged_ready
             && self.ids.iter().all(|id| {
                 tree.get(*id)
@@ -862,7 +889,7 @@ impl Host {
         let (width, height) = w.drawable_size();
         let rgba = renderer.render_to_rgba8(
             scene,
-            &mut self.text.atlas,
+            &mut self.text.core.atlas,
             (width, height),
             backing,
             clear,
@@ -965,7 +992,7 @@ impl Host {
             .context("B2 parent Panel geometry missing")?;
         let mut corner = None;
         let shape_rect = panel.shape.rect();
-        let scale = self.text.scale;
+        let scale = self.text.core.scale;
         for dy in 0..64 {
             for dx in 0..64 {
                 let x = shape_rect.origin.x + (dx as f32 + 0.5) / scale;
@@ -1585,7 +1612,7 @@ impl Host {
     }
     fn zoom(&mut self, w: &native::Window, delta: f32) -> Result<()> {
         self.type_scale = (self.type_scale + delta).clamp(0.5, 4.);
-        self.text.fonts.set_type_scale(self.type_scale);
+        self.text.core.type_scale = self.type_scale;
         self.context.type_scale = self.type_scale;
         self.sync_context(false)?;
         eprintln!("PROCESS_NATIVE_FONT {}", self.type_scale);
@@ -2208,7 +2235,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
     let frame = Rect::new(inset, inset, 1000., 500.);
     let mut renderer = Renderer::new_headless()?;
     let mut text = NativeText::new();
-    text.scale = scale;
+    text.core.scale = scale;
     fn assert_stale_layer_callbacks(
         child: &tekes_ui_module_runtime::ProcessContainer,
         snapshot: &tekes_ui_module_runtime::ProcessContentSnapshot,
@@ -2324,7 +2351,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
         ((500. + 2. * inset) * scale).round() as u32,
     );
     let clear = tekes_ui_module_runtime::view_context_background(&context)?;
-    let rgba = renderer.render_to_rgba8(&scene, &mut text.atlas, target, scale, clear)?;
+    let rgba = renderer.render_to_rgba8(&scene, &mut text.core.atlas, target, scale, clear)?;
     let clear8 = [clear.r, clear.g, clear.b, clear.a].map(|v| (v * 255.).round() as u8);
     for index in 0..3 {
         let panel = host
@@ -3011,7 +3038,7 @@ pub(super) fn independent_layer_roundtrip() -> Result<serde_json::Value> {
     );
     let corner_scene =
         original_layer_scene(&mut host, &mut renderer, &mut text, &ids, frame, &context)?.0;
-    let _ = renderer.render_to_rgba8(&corner_scene, &mut text.atlas, target, scale, clear)?;
+    let _ = renderer.render_to_rgba8(&corner_scene, &mut text.core.atlas, target, scale, clear)?;
     let _ = settled_scene(&mut host, &mut renderer, &mut text, &ids, frame, &context)?;
     ensure!(
         b2_auxiliary_state(&host)? == (auxiliary_start + 4, false)

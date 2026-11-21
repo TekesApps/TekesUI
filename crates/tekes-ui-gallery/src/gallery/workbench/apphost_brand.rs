@@ -7,7 +7,7 @@ use std::{
 use tekes_ui_controls::{
     ButtonTextAlign, ButtonTextRenderer,
     composition::*,
-    extended::{Axis, Grid, Stack},
+    extended::{Axis, Stack},
     layout::MeasuredChild,
 };
 use tekes_ui_scene::{Quad, Rect, Scene, Size};
@@ -32,73 +32,11 @@ fn primary(label: &str) -> Button {
     button.variant = tekes_ui_controls::ButtonVariant::Primary;
     button
 }
-#[derive(Debug)]
-struct Card(StackContent, bool);
-impl Component for Card {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.1
-    }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        if event == Lifecycle::Unmounted {
-            self.1 = false;
-        }
-    }
-
-    fn children(&self) -> &[Content] {
-        &self.0.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.0.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.1 = false;
-        let size = self
-            .0
-            .measure(
-                text,
-                Size::new((available.width - 28.).max(0.), available.height),
-            )
-            .size;
-        MeasuredChild::new(Size::new(available.width, size.height + 24.))
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        // No additional clip or transform: this layout's child frames retain
-        // their relative positions under the ancestor Scroll translation.
-        self.1 = true;
-        self.0.arrange(
-            text,
-            Rect::new(
-                frame.min_x() + 14.,
-                frame.min_y() + 12.,
-                (frame.size.width - 28.).max(0.),
-                (frame.size.height - 24.).max(0.),
-            ),
-            clip,
-        );
-    }
-    fn paint(
-        &mut self,
-        scene: &mut Scene,
-        text: &mut dyn ButtonTextRenderer,
-        frame: Rect,
-        clip: Rect,
-        theme: ContentTheme,
-    ) {
-        scene.push_clip(clip);
-        tekes_ui_controls::feedback_view::SurfaceView::paint_kind_at_scale(
-            scene,
-            frame,
-            theme.palette,
-            tekes_ui_controls::SurfaceKind::Panel,
-            text.backing_scale(),
-        );
-        scene.pop_clip();
-    }
-}
 fn card(id: ComponentId, children: Vec<Content>) -> Content {
     Content::new(
         id,
-        Card(
+        SurfaceContent::panel(Content::new(
+            ComponentId(id.0 + 1000),
             StackContent {
                 model: Stack {
                     axis: Axis::Vertical,
@@ -107,112 +45,7 @@ fn card(id: ComponentId, children: Vec<Content>) -> Content {
                 children,
                 flexible_child: None,
             },
-            false,
-        ),
-    )
-}
-
-/// Project only the candidate brand onto the receiving window's current theme.
-/// The shared selection cell never owns a window's appearance or contrast.
-#[derive(Debug)]
-struct CandidateTheme {
-    children: Vec<Content>,
-    model: Rc<RefCell<BrandPreview>>,
-    arranged: bool,
-}
-impl Component for CandidateTheme {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.arranged
-    }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        if event == Lifecycle::Unmounted {
-            self.arranged = false;
-        }
-    }
-
-    fn children(&self) -> &[Content] {
-        &self.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.children)
-    }
-    fn child_theme(&self, mut theme: ContentTheme) -> ContentTheme {
-        if let Some(index) = self.model.borrow().candidate() {
-            theme.palette = crate::gallery::brands::brand_palette(theme.palette.theme, index)
-                .expect("compiled brand");
-        }
-        theme
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.arranged = false;
-        self.children[0].measure(text, available)
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        // No additional clip or transform: this layout's child frames retain
-        // their relative positions under the ancestor Scroll translation.
-        self.arranged = true;
-        self.children[0].arrange(text, frame, clip);
-    }
-}
-
-/// Retain the original two/four direction columns and stacked/two-column cards.
-#[derive(Debug)]
-struct ResponsiveGrid {
-    grid: GridContent,
-    breakpoint: f32,
-    narrow: usize,
-    wide: usize,
-    arranged: bool,
-}
-impl Component for ResponsiveGrid {
-    fn host_reveal_passthrough(&self) -> bool {
-        self.arranged
-    }
-    fn lifecycle(&mut self, event: Lifecycle) {
-        if event == Lifecycle::Unmounted {
-            self.arranged = false;
-        }
-    }
-
-    fn children(&self) -> &[Content] {
-        &self.grid.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.grid.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.arranged = false;
-        self.grid.model.columns = if available.width < self.breakpoint {
-            self.narrow
-        } else {
-            self.wide
-        };
-        self.grid.measure(text, available)
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        // No additional clip or transform: this layout's child frames retain
-        // their relative positions under the ancestor Scroll translation.
-        self.arranged = true;
-        self.grid.arrange(text, frame, clip);
-    }
-}
-fn grid(id: u64, children: Vec<Content>, breakpoint: f32, narrow: usize, wide: usize) -> Content {
-    Content::new(
-        ComponentId(id),
-        ResponsiveGrid {
-            grid: GridContent {
-                model: Grid {
-                    columns: wide,
-                    gap_x: 12.,
-                    gap_y: 12.,
-                },
-                children,
-            },
-            breakpoint,
-            narrow,
-            wide,
-            arranged: false,
-        },
+        )),
     )
 }
 
@@ -397,22 +230,24 @@ impl BrandStory {
             .enumerate()
             .map(|(i, d)| Content::new(ComponentId(DIRECTION + i as u64), Button::new(d.name)))
             .collect();
-        let candidate = Content::new(
-            ComponentId(120050),
-            CandidateTheme {
-                children: vec![candidate],
-                model: model.clone(),
-                arranged: false,
-            },
-        );
-        let dialog = Content::new(
-            ComponentId(120051),
-            CandidateTheme {
-                children: vec![dialog],
-                model: model.clone(),
-                arranged: false,
-            },
-        );
+        let brand_scope = |id: u64, child: Content| {
+            let model = model.clone();
+            Content::new(
+                ComponentId(id),
+                ThemeScopeContent::with_resolver(
+                    move |mut palette| {
+                        if let Some(index) = model.borrow().candidate() {
+                            palette = crate::gallery::brands::brand_palette(palette.theme, index)
+                                .expect("compiled brand");
+                        }
+                        palette
+                    },
+                    child,
+                ),
+            )
+        };
+        let candidate = brand_scope(120050, candidate);
+        let dialog = brand_scope(120051, dialog);
         let intro = Content::new(
             ComponentId(120006),
             StackContent {
@@ -439,8 +274,16 @@ impl BrandStory {
                 ComponentId(120001),
                 vec![
                     intro,
-                    grid(120004, directions, 480., 2, 4),
-                    grid(120005, vec![current, candidate], 720., 1, 2),
+                    Content::new(
+                        ComponentId(120004),
+                        ResponsiveGridContent::new(2, 12., 12., directions)
+                            .with_breakpoints(vec![(480., 4)]),
+                    ),
+                    Content::new(
+                        ComponentId(120005),
+                        ResponsiveGridContent::new(1, 12., 12., vec![current, candidate])
+                            .with_breakpoints(vec![(720., 2)]),
+                    ),
                 ],
             )),
         );
@@ -874,7 +717,7 @@ mod tests {
                 .host
                 .get(ComponentId(id))
                 .unwrap()
-                .component::<CandidateTheme>()
+                .component::<ThemeScopeContent>()
                 .unwrap();
             for theme in [Theme::LIGHT, Theme::DARK] {
                 let projected = scope.child_theme(

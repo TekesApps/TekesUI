@@ -315,6 +315,7 @@ pub struct SelectView {
     trigger: ButtonModel,
     menu: MenuView,
     layout: SelectLayout,
+    surface: &'static str,
     window_active: bool,
     disabled: bool,
 }
@@ -363,6 +364,7 @@ impl SelectView {
             trigger: ButtonModel::default(),
             menu: MenuView::new_external(),
             layout: SelectLayout::default(),
+            surface: "canvas",
             window_active: true,
             disabled: false,
         }
@@ -470,11 +472,15 @@ impl SelectView {
         self.menu.open_generation()
     }
     /// The trigger inherits its parent Surface; the popup keeps its Menu Surface.
+    pub fn surface(&self) -> &'static str {
+        self.surface
+    }
     pub fn set_surface(
         &mut self,
         surface: &str,
     ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        self.surface = surface;
         self.trigger.set_surface(surface);
         Ok(())
     }
@@ -585,13 +591,22 @@ impl SelectView {
         );
         trigger.content.size.width = (trigger.content.size.width - icon_width - gap).max(0.);
         if let Some(visible) = trigger.visible {
-            let ink = palette
-                .color(if self.trigger.state.disabled {
-                    "tertiary-text"
+            let ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                self.surface,
+                if self.trigger.state.disabled {
+                    "action-quiet"
                 } else {
-                    "primary-text"
-                })
-                .expect("select ink");
+                    "content"
+                },
+                if self.trigger.state.disabled {
+                    "disabled"
+                } else {
+                    "rest"
+                },
+            )
+            .expect("select Surface ink")
+            .text;
             scene.push_clip(visible);
             // Explicit text clipping keeps long values out of the popup indicator slot.
             scene.push_clip(trigger.content);

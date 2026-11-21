@@ -146,7 +146,9 @@ pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
         "tabs" | "disclosure" => super::apphost_navigation::playground(renderer, state),
         "number-field" => Content::new(
             SPECIMEN,
-            super::apphost_actions::Stepper::new(state.number, disabled),
+            StepperContent::new("Bounded numeric stepper", state.number)
+                .with_disabled(disabled)
+                .with_description("Range 1 to 32; step 1. Read-only numeric value."),
         ),
         "toolbar" => {
             let mut control = tekes_ui_controls::ToolbarControl::default();
@@ -260,11 +262,11 @@ pub(super) fn sync_model(state: &mut StoryState, host: &mut ContentHost) {
             message = Some(format!("tab: {}", control.selected()));
         }
         state.tabs_view.select(control.selected());
-    } else if let Some(control) = content.component::<super::apphost_actions::Stepper>() {
-        if state.number.value() != control.model.value() {
-            message = Some(format!("value: {}", control.model.value()));
+    } else if let Some(control) = content.component::<StepperContent>() {
+        if state.number.value() != control.value() {
+            message = Some(format!("value: {}", control.value()));
         }
-        state.number = control.model;
+        state.number = control.model();
     } else if let Some(control) = content.component::<SegmentedControlContent>() {
         if state.extended.segmented.selected != control.model().selected {
             message = Some(format!("segment: {}", control.model().selected));
@@ -319,7 +321,7 @@ pub(super) fn apply_disabled(host: &mut ContentHost, disabled: bool) {
         control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<DisclosureContent>() {
         control.set_disabled(disabled);
-    } else if let Some(control) = content.component_mut::<super::apphost_actions::Stepper>() {
+    } else if let Some(control) = content.component_mut::<StepperContent>() {
         control.set_disabled(disabled);
     } else if let Some(control) = content.component_mut::<BreadcrumbContent>() {
         control.set_disabled(disabled);

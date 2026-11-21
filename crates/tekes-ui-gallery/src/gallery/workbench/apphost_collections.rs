@@ -463,69 +463,6 @@ impl tekes_ui_controls::layout_view::IconRenderer for Icons<'_> {
 }
 // Retain the original story width caps. This is a layout-only wrapper; its
 // child still owns input, focus, accessibility and the application clock.
-#[derive(Debug)]
-struct Viewport {
-    width: f32,
-    stack: StackContent,
-    arranged_child: Option<(ComponentId, u64)>,
-}
-impl Component for Viewport {
-    fn lifecycle(&mut self, _: Lifecycle) {
-        self.arranged_child = None;
-    }
-    fn host_reveal_passthrough(&self) -> bool {
-        // Width capping is translation invariant. Reveal must still reject a
-        // new/unarranged child after Reset or a Host subtree replacement.
-        self.stack.children.len() == 1
-            && self.arranged_child.is_some_and(|identity| {
-                let child = &self.stack.children[0];
-                (child.id(), child.mount_identity()) == identity
-            })
-    }
-    fn curve_subtree_capability(&self) -> CurveSubtreeCapability {
-        CurveSubtreeCapability::Recursive
-    }
-    fn has_stable_hooks(&self) -> bool {
-        true
-    }
-    fn supports_prepared_lifecycle(&self) -> bool {
-        true
-    }
-    fn ignores_pointer_actions(&self) -> bool {
-        true
-    }
-    fn children(&self) -> &[Content] {
-        &self.stack.children
-    }
-    fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        Some(&mut self.stack.children)
-    }
-    fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        self.arranged_child = None;
-        self.stack.measure(
-            text,
-            Size::new(available.width.min(self.width), available.height),
-        )
-    }
-    fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        self.stack.arrange(
-            text,
-            Rect::new(
-                frame.min_x(),
-                frame.min_y(),
-                frame.size.width.min(self.width),
-                frame.size.height,
-            ),
-            clip,
-        );
-        self.arranged_child = self
-            .stack
-            .children
-            .first()
-            .filter(|child| !child.frame().is_empty())
-            .map(|child| (child.id(), child.mount_identity()));
-    }
-}
 fn table_snapshot() -> controls::KeyedTableSnapshot {
     use controls::*;
     let names = ["Project", "Notes", "Assets", "Archive", "Readme"];
@@ -699,18 +636,7 @@ pub(super) fn playground(renderer: &str, state: &StoryState) -> Vec<Content> {
         "data-table" => 720.,
         _ => 760.,
     };
-    let specimen = Content::new(
-        ComponentId(97003),
-        Viewport {
-            width,
-            arranged_child: None,
-            stack: StackContent {
-                model: controls::Stack::new(controls::Axis::Vertical),
-                children: vec![specimen],
-                flexible_child: None,
-            },
-        },
-    );
+    let specimen = Content::new(ComponentId(97003), MaxWidthContent::new(width, specimen));
     vec![
         specimen,
         text(97002, help),

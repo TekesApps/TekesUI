@@ -140,7 +140,7 @@ fn create_with_accessibility(native_accessibility: bool) -> Box<dyn ProcessModul
                 Content::new(OTHER, TextFieldContent::new("Other", "other")),
                 Content::new(
                     ComponentId(5),
-                    Popup::new(
+                    PopoverContent::new(
                         "Pointer scope",
                         Content::new(ComponentId(6), Button::new("Overlay action")),
                     ),
@@ -306,8 +306,8 @@ impl PanelModule for Reader {
         scene: &mut Scene,
         atlas: &mut GlyphAtlas,
     ) -> Result<ModuleState> {
-        self.text.scale = input.scale;
-        std::mem::swap(atlas, &mut self.text.atlas);
+        self.text.core.scale = input.scale;
+        std::mem::swap(atlas, &mut self.text.core.atlas);
         let frame = Rect::new(0., 0., input.width as f32, input.height as f32);
         if std::env::var_os("TEKESUI_PROCESS_NATIVE_B2_SELFTEST").is_some() {
             // Keep one opaque B ground beneath the real original Content tree.
@@ -320,7 +320,7 @@ impl PanelModule for Reader {
             .module
             .host
             .render(scene, &mut self.text, frame, frame, palette);
-        std::mem::swap(atlas, &mut self.text.atlas);
+        std::mem::swap(atlas, &mut self.text.core.atlas);
         rendered?;
         ensure!(
             scene

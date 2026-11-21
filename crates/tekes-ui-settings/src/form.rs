@@ -354,7 +354,9 @@ impl SettingsForm {
                 ]),
             ]));
         }
-        let mut root = stack(ROOT.0, Axis::Vertical, 0., root_children);
+        let mut root = stack(ROOT.0, Axis::Vertical, 0., root_children)
+            .with_surface("panel")
+            .map_err(|e| SettingsError::Ui(format!("Settings form surface: {e:?}")))?;
         // The body alone shrinks on small windows; footer remains reachable.
         root.component_mut::<StackContent>().unwrap().flexible_child = Some(ComponentId(11));
         let mut host = ContentHost::new(root)

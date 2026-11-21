@@ -1579,7 +1579,7 @@ fn apphost_section_bar_keeps_one_row_and_reveals_last_command_at_narrow_width() 
             )
             .unwrap();
             let last = host.get(ComponentId(92100)).unwrap().frame();
-            let viewport = host.get(ComponentId(92012)).unwrap().frame();
+            let viewport = host.get(ComponentId(92006)).unwrap().frame();
             assert!(
                 last.min_x() >= viewport.min_x() - 0.1 && last.max_x() <= viewport.max_x() + 0.1,
                 "Reset remains outside the horizontal viewport"
@@ -2308,9 +2308,16 @@ fn apphost_foundations_atlas_maintains_gestalt_hierarchy() {
             tekes_ui_tokens::Theme::LIGHT.into(),
         )
         .unwrap();
+    let part = page
+        .host
+        .get(ComponentId(97805))
+        .unwrap()
+        .component::<tekes_ui_controls::composition::SegmentedControlContent>()
+        .unwrap()
+        .part_token(1);
     assert!(
         page.host
-            .accessibility_action(ComponentId(97811), None, AccessibilityAction::Press)
+            .accessibility_action(ComponentId(97805), part, AccessibilityAction::Press)
             .consumed
     );
     page.after_host_visit();
