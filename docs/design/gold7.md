@@ -196,7 +196,7 @@ Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页
 
 对 TekesUI (`v0.4.7`) 进行常规 UI 与 Gold7 全面审计（Figma 审计交付件：`https://www.figma.com/design/pU278AMFuXUVHTp5aupWI0`），并在独立分支 `token_table_gold7_audit` 上依次收敛以下 8 项 Issue：
 
-1. **Issue #388 (P0)**：补齐 `dark` elevated 填充阶梯与 `dark-ic` 四级文字对比梯度（`surface-card`、`action-quiet-disabled`、`text-muted` / `placeholder-text`），保持普通主题低干扰带通与高对比单调性。
+1. **Issue #388 (P0)**：抬升 dark 模式下 elevated 交互填充（`p-button-hover.dark`、`p-button-pressed.dark`、`p-row-selection.dark`、`p-row-selection-hover.dark`），拉大 `p-segmented-track.dark` 与 `p-segmented-thumb.dark` 分离度，并将 `p-secondary-text.dark-ic` 与 `tertiary-text` 严格分层，保持普通主题低干扰带通与高对比单调性。
 2. **Issue #389 (P0)**：Toast `Warning` 变体对齐 `status-running` 语义，并经由共享 `paint_notice_background` 与 `SurfaceKind::Floating`、`OverlayPresence` 纳入统一浮层投影与入退场寿命控制。
 3. **Issue #390 (P0)**：`TooltipView` 通过 `"hint"` surface/text 角色解析与 `SurfaceKind::Floating` 获得统一浮层阴影（普通主题两层、IC 无阴影 + `border`）及 `OverlayPresence`；`ContentHost` 的 dwell-gated tooltip 调用 `settle_presentation(true)` 避免额外动画帧。
 4. **Issue #391 (P1)**：对齐 `design/source/interaction-contracts.json`、本文档与 `text_surface.rs` 对 `TextField` 获得焦点单边框的 2pt `c-focus-width`（`border-focused`）契约，消除 1pt 过期描述。
