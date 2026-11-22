@@ -251,10 +251,15 @@ impl Checkbox {
         }
     }
 
+    /// Whether this Checkbox currently needs a host-driven animation frame.
+    pub fn needs_animation(&self) -> bool {
+        self.button.needs_animation()
+    }
+
     /// Paint only the original prepared geometry; never replay placement or input reconciliation.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn paint_prepared(
-        &self,
+        &mut self,
         scene: &mut Scene,
         text: &mut impl ButtonTextRenderer,
         label: &str,
@@ -267,17 +272,20 @@ impl Checkbox {
         let control = layout.control;
         let label_slot = layout.label;
         if let Some(visible) = layout.visible {
+            let (check_progress, mark_state) = self.button.update_check_motion(self.checked, text);
             let control_clip = prepared.control_clip;
             if let Some(control_clip) = control_clip {
                 scene.push_clip(control_clip);
             }
-            let _mark_ink = crate::paint::checkbox_on_surface(
+            let _mark_ink = crate::paint::checkbox_on_surface_with_progress(
                 scene,
                 control,
                 palette,
                 self.button.state,
                 self.checked,
                 surface,
+                check_progress,
+                mark_state,
             );
             if control_clip.is_some() {
                 scene.pop_clip();

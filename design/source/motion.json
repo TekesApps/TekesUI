@@ -58,8 +58,8 @@
   },
   "version": "0.2.0-proposal.1",
   "control_duration": {
-    "press_feedback": 0.06,
-    "hover_feedback": 0.2,
+    "press_feedback": 0.07,
+    "hover_feedback": 0.15,
     "selection_snap": 0.12,
     "disclosure_reveal": 0.3,
     "overlay_presence": 0.15

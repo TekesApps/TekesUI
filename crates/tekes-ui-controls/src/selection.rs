@@ -7,8 +7,8 @@ use crate::control_motion::{ProgressTransition, motion_for};
 use crate::{
     ButtonTextAlign, ButtonTextRenderer, ControlKey, ControlMotionContext, ControlState,
     extended::{
-        Axis, ControlFrame, RadioGroup, Slider, Switch, radio_on_surface, slider_on_surface,
-        switch_on_surface, switch_on_surface_with_thumb_progress,
+        Axis, ControlFrame, RadioGroup, Slider, Switch, radio_on_surface_with_progress,
+        slider_on_surface, switch_on_surface, switch_on_surface_with_thumb_progress,
     },
 };
 use std::time::Duration;
@@ -317,6 +317,9 @@ pub struct RadioGroupView {
     window_active: bool,
     disabled: bool,
     error: bool,
+    select_progress: Vec<ProgressTransition>,
+    select_motion_initialized: bool,
+    motion_now: Duration,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct RadioActionState {
@@ -575,7 +578,7 @@ impl RadioGroupView {
     }
     /// Paint only the original arranged geometry, without a second reconciliation.
     pub(crate) fn paint_content(
-        &self,
+        &mut self,
         scene: &mut Scene,
         text: &mut impl ButtonTextRenderer,
         model: &RadioGroup,
@@ -583,6 +586,67 @@ impl RadioGroupView {
         palette: Palette,
         labels: &[&str],
     ) {
+        let count = self.layout.rows.len();
+        let progresses: Vec<f32> = if let Some(context) = text.motion_context() {
+            self.motion_now = self.motion_now.max(context.now);
+            let prev_len = self.select_progress.len();
+            self.select_progress
+                .resize_with(count, ProgressTransition::default);
+            let motion = motion_for("switch_thumb");
+            let mut values = Vec::with_capacity(count);
+            for (index, transition) in self.select_progress.iter_mut().enumerate() {
+                let target = if model.selected == Some(index) {
+                    1.0
+                } else {
+                    0.0
+                };
+                let v = if !self.select_motion_initialized || index >= prev_len {
+                    transition.snap(target, self.motion_now)
+                } else {
+                    transition.retarget(target, motion, self.motion_now, context.reduced_motion)
+                }
+                .unwrap_or(target);
+                values.push(v.clamp(0., 1.) as f32);
+            }
+            self.select_motion_initialized = true;
+            if self.needs_animation() {
+                text.request_animation_frame();
+            }
+            values
+        } else if self.needs_animation() {
+            let prev_len = self.select_progress.len();
+            self.select_progress
+                .resize_with(count, ProgressTransition::default);
+            (0..count)
+                .map(|index| {
+                    let target = if model.selected == Some(index) {
+                        1.0
+                    } else {
+                        0.0
+                    };
+                    if index >= prev_len {
+                        let _ = self.select_progress[index].snap(target, self.motion_now);
+                        target as f32
+                    } else {
+                        self.select_progress[index]
+                            .snap(target, self.motion_now)
+                            .unwrap_or(target)
+                            .clamp(0., 1.) as f32
+                    }
+                })
+                .collect()
+        } else {
+            (0..count)
+                .map(|index| {
+                    if model.selected == Some(index) {
+                        1.
+                    } else {
+                        0.
+                    }
+                })
+                .collect()
+        };
+
         for (index, row) in self.layout.rows.iter().enumerate() {
             let indicator = self.layout.indicators[index];
             let label = self.layout.labels[index];
@@ -601,7 +665,14 @@ impl RadioGroupView {
                     focus_visible: focused && self.focus_visible,
                     ..Default::default()
                 };
-                radio_on_surface(scene, indicator, palette, state, self.surface);
+                radio_on_surface_with_progress(
+                    scene,
+                    indicator,
+                    palette,
+                    state,
+                    self.surface,
+                    progresses[index],
+                );
                 let label_visible = ControlFrame::new(label, row.visible_frame()).visible_frame();
                 if let Some(label_clip) = label_visible {
                     scene.push_clip(label_clip);
@@ -760,10 +831,19 @@ impl RadioGroupView {
         self.hovered = None;
         self.cancel();
     }
+    pub fn needs_animation(&self) -> bool {
+        self.select_progress
+            .iter()
+            .any(ProgressTransition::needs_animation)
+    }
     pub fn set_window_active(&mut self, active: bool) {
         self.window_active = active;
         if !active {
             self.blur();
+            for transition in &mut self.select_progress {
+                let target = transition.target();
+                let _ = transition.snap(target, self.motion_now);
+            }
         }
     }
     pub fn set_disabled(&mut self, disabled: bool) {
@@ -910,6 +990,9 @@ impl Default for RadioGroupView {
             window_active: true,
             disabled: false,
             error: false,
+            select_progress: Vec::new(),
+            select_motion_initialized: false,
+            motion_now: Duration::default(),
         }
     }
 }
@@ -1646,12 +1729,13 @@ mod tests {
                             ..Default::default()
                         };
                         let mut actual = Scene::new();
-                        crate::extended::radio_on_surface(
+                        crate::extended::radio_on_surface_with_progress(
                             &mut actual,
                             frame,
                             palette,
                             state,
                             surface,
+                            0.,
                         );
                         // The unchanged public Radio primitive is independent of
                         // the recovered Surface painter and Checkbox's packet.
@@ -2481,7 +2565,188 @@ mod tests {
                     expected_toggle.track.boundary.unwrap_or(sw_quads[0].fill)
                 );
                 assert_eq!(sw_quads[1].fill, expected_toggle.thumb.background);
+                assert_eq!(
+                    sw_quads[1].corner_radii,
+                    tekes_ui_scene::CornerRadii::uniform(
+                        tekes_ui_tokens::CornerRadius::concentric(
+                            sw_quads[0].rect.size.height * 0.5,
+                            2.0
+                        )
+                    )
+                );
             }
         }
+    }
+
+    #[test]
+    fn radio_group_progress_transition_animates_under_clock_and_snaps_when_reduced_or_static() {
+        #[derive(Default)]
+        struct ClockText {
+            ms: u64,
+            reduced: bool,
+            requests: usize,
+        }
+        impl ButtonTextRenderer for ClockText {
+            fn motion_context(&self) -> Option<ControlMotionContext> {
+                Some(ControlMotionContext {
+                    now: Duration::from_millis(self.ms),
+                    reduced_motion: self.reduced,
+                })
+            }
+            fn request_animation_frame(&mut self) {
+                self.requests += 1;
+            }
+            fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(max),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        struct StaticText;
+        impl ButtonTextRenderer for StaticText {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(max),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+
+        let bounds = Rect::new(10., 10., 220., 120.);
+        let labels = ["Alpha", "Beta"];
+        let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+        let mut model = RadioGroup::new(2);
+        model.select(0);
+        let mut view = RadioGroupView::new();
+        let mut text = ClockText::default();
+
+        view.render(
+            &mut Scene::new(),
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        assert!(!view.needs_animation());
+        assert_eq!(text.requests, 0);
+
+        model.select(1);
+        text.ms = 10;
+        let mut s_start = Scene::new();
+        view.render(
+            &mut s_start,
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        assert!(view.needs_animation());
+        assert!(text.requests > 0);
+
+        text.ms = 70;
+        let mut s_mid = Scene::new();
+        let layout = view.render(
+            &mut s_mid, &mut text, &model, bounds, None, palette, &labels,
+        );
+        let dot_mid = s_mid
+            .primitives()
+            .iter()
+            .filter_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q)
+                    if q.rect.size.width > 0.
+                        && q.rect.size.width < layout.indicators[1].size.width * 0.44 =>
+                {
+                    Some(*q)
+                }
+                _ => None,
+            })
+            .count();
+        assert!(
+            dot_mid >= 1,
+            "mid-transition radio indicators should have scaled dot quads"
+        );
+
+        text.ms = 200;
+        view.render(
+            &mut Scene::new(),
+            &mut text,
+            &model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        assert!(!view.needs_animation());
+
+        // Reduced motion snaps in one frame.
+        let mut rm_model = RadioGroup::new(2);
+        rm_model.select(0);
+        let mut rm_view = RadioGroupView::new();
+        let mut rm_text = ClockText {
+            ms: 0,
+            reduced: true,
+            requests: 0,
+        };
+        rm_view.render(
+            &mut Scene::new(),
+            &mut rm_text,
+            &rm_model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        rm_model.select(1);
+        rm_text.ms = 10;
+        rm_text.requests = 0;
+        rm_view.render(
+            &mut Scene::new(),
+            &mut rm_text,
+            &rm_model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        assert!(!rm_view.needs_animation());
+        assert_eq!(rm_text.requests, 0);
+
+        // No clock snaps deterministically.
+        let mut static_view = RadioGroupView::new();
+        static_view.render(
+            &mut Scene::new(),
+            &mut StaticText,
+            &model,
+            bounds,
+            None,
+            palette,
+            &labels,
+        );
+        assert!(!static_view.needs_animation());
     }
 }

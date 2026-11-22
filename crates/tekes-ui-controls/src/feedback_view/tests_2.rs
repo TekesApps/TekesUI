@@ -347,6 +347,30 @@ fn tooltip_render_consumes_theme_surface_and_text_roles() {
             proposal::TextRole::UiBody,
         );
         assert_eq!(layout.visible, Some(layout.frame), "{theme:?}");
+        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "hint",
+            "surface-frame",
+            "rest",
+        )
+        .expect("validated Tooltip frame packet");
+        let text_colors =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, "hint", "content", "rest")
+                .expect("validated Tooltip content packet");
+        let shadows = scene
+            .primitives()
+            .iter()
+            .filter(|primitive| matches!(primitive, Primitive::Shadow(_)))
+            .count();
+        if theme.is_increased() {
+            assert_eq!(shadows, 0, "{theme:?} IC tooltip should remain shadow-free");
+        } else {
+            let expected_layers = proposal::elevation("popover", theme).len();
+            assert_eq!(
+                shadows, expected_layers,
+                "{theme:?} ordinary tooltip should use popover elevation layers"
+            );
+        }
         let background = scene
             .primitives()
             .iter()
@@ -355,21 +379,18 @@ fn tooltip_render_consumes_theme_surface_and_text_roles() {
                 _ => None,
             })
             .expect("public Tooltip consumer paints its background");
+        assert_eq!(background.fill, frame_colors.background, "{theme:?}");
+        let expected_stroke = crate::paint::decorative_border(palette, text.backing_scale()).0;
+        assert_eq!(background.border_width, expected_stroke, "{theme:?}");
         assert_eq!(
-            background.fill,
-            palette
-                .color("surface-3")
-                .expect("generated Tooltip surface role"),
+            Some(background.border_color),
+            frame_colors.boundary,
             "{theme:?}"
         );
         let radius =
             proposal::metric("radius", "radius-floating").expect("generated Tooltip radius");
         assert_eq!(background.corner_radii.top_left, radius, "{theme:?}");
-        assert_eq!(
-            text.0,
-            vec![palette.color("primary-text").expect("semantic text role")],
-            "{theme:?}"
-        );
+        assert_eq!(text.0, vec![text_colors.text], "{theme:?}");
     }
 }
 #[test]
@@ -1173,4 +1194,447 @@ fn popover_uses_symmetric_token_insets_and_empty_state_detail_uses_muted_ink() {
     let detail_ink = text.0.iter().find(|(s, _)| s == &emodel.detail).unwrap().1;
     assert_eq!(title_ink, primary);
     assert_eq!(detail_ink, muted);
+}
+
+#[test]
+fn toast_warning_marker_matches_banner_warning_and_differs_from_error_across_all_themes() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        for surface in tekes_ui_tokens::surface_palette::surface_names() {
+            let toast_warn = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-toast-warning",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            let banner_warn = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-banner-warning",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            let toast_err = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-error",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            assert_eq!(toast_warn, banner_warn, "{theme:?}/{surface}");
+            assert_ne!(toast_warn, toast_err, "{theme:?}/{surface}");
+        }
+    }
+}
+
+#[test]
+fn toast_view_paints_floating_elevation_in_ordinary_modes_and_shadow_free_in_ic() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut view = ToastView::default();
+        let model = Toast::new("Check configuration", NoticeTone::Warning, 5000);
+        let mut text = FixedText;
+        let frame = Rect::new(20., 20., 320., 64.);
+        let mut scene = Scene::new();
+        view.render(&mut scene, &mut text, &model, frame, None, palette, role());
+        let shadows = scene
+            .primitives()
+            .iter()
+            .filter(|p| matches!(p, Primitive::Shadow(_)))
+            .count();
+        if theme.is_increased() {
+            assert_eq!(shadows, 0, "{theme:?} IC toast should remain shadow-free");
+        } else {
+            let expected_layers = proposal::elevation("popover", theme).len();
+            assert_eq!(
+                shadows, expected_layers,
+                "{theme:?} ordinary toast should use popover elevation layers"
+            );
+        }
+        let surface_quad = scene
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                Primitive::Quad(q) if q.rect == frame => Some(*q),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            surface_quad.corner_radii.top_left,
+            proposal::metric("radius", "radius-floating").unwrap()
+        );
+    }
+}
+
+#[test]
+fn toast_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_motion() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: std::time::Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+            FixedText.measure(value, role, max)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let mut view = ToastView::default();
+    let mut model = Toast::new("Saved", NoticeTone::Warning, 5000);
+    let mut text = ClockText::default();
+    let frame = Rect::new(20., 20., 300., 60.);
+
+    // Frame 0: visible -> enters from 0 -> 1 via overlay_presence.
+    let mut s0 = Scene::new();
+    view.render(&mut s0, &mut text, &model, frame, None, palette(), role());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    // Mid-exit after dismissal while animated.
+    text.ms = 200;
+    let mut s_full = Scene::new();
+    view.render(
+        &mut s_full,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.needs_animation());
+
+    model.dismiss();
+    text.ms = 250;
+    text.requests = 0;
+    let mut s_exit = Scene::new();
+    view.render(
+        &mut s_exit,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(view.is_presented());
+    assert!(view.needs_animation());
+    assert!(!s_exit.primitives().is_empty());
+
+    // After duration completes, exit completes and stops painting.
+    text.ms = 500;
+    let mut s_done = Scene::new();
+    view.render(
+        &mut s_done,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.is_presented());
+    assert!(!view.needs_animation());
+    assert!(s_done.primitives().is_empty());
+
+    // Reduced motion snaps immediately with no animation frame requested.
+    let mut rm_view = ToastView::default();
+    let mut rm_model = Toast::new("Saved", NoticeTone::Warning, 5000);
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &rm_model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+    rm_model.dismiss();
+    rm_text.ms = 16;
+    let mut s_rm_closed = Scene::new();
+    rm_view.render(
+        &mut s_rm_closed,
+        &mut rm_text,
+        &rm_model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.is_presented());
+    assert!(s_rm_closed.primitives().is_empty());
+}
+
+#[test]
+fn tooltip_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_motion() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: std::time::Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+            FixedText.measure(value, role, max)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let anchor = Rect::new(24., 24., 120., 32.);
+    let viewport = Rect::new(0., 0., 360., 220.);
+    let mut view = TooltipView::default();
+    let mut model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut text = ClockText::default();
+
+    let mut s0 = Scene::new();
+    let l0 = view.render(
+        &mut s0,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(l0.visible.is_some());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    text.ms = 200;
+    let mut s_full = Scene::new();
+    view.render(
+        &mut s_full,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.needs_animation());
+
+    // Dismissing triggers exit fade while layout.visible is None and is_presented is true.
+    model.visible = false;
+    text.ms = 250;
+    text.requests = 0;
+    let mut s_exit = Scene::new();
+    let l_exit = view.render(
+        &mut s_exit,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert_eq!(l_exit.visible, None);
+    assert!(view.is_presented());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+    assert!(!s_exit.primitives().is_empty());
+
+    // After duration completes, exit settles cleanly.
+    text.ms = 500;
+    let mut s_done = Scene::new();
+    view.render(
+        &mut s_done,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.is_presented());
+    assert!(!view.needs_animation());
+    assert!(s_done.primitives().is_empty());
+
+    // Reduced motion snaps enter & exit immediately with zero frame requests.
+    let mut rm_view = TooltipView::default();
+    let mut rm_model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &rm_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+    rm_model.visible = false;
+    rm_text.ms = 16;
+    let mut s_rm_closed = Scene::new();
+    rm_view.render(
+        &mut s_rm_closed,
+        &mut rm_text,
+        &rm_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.is_presented());
+    assert!(s_rm_closed.primitives().is_empty());
+
+    // Window deactivation immediately clears presentation.
+    let mut active_view = TooltipView::default();
+    let active_model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut active_text = ClockText::default();
+    active_view.render(
+        &mut Scene::new(),
+        &mut active_text,
+        &active_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    active_text.ms = 200;
+    active_view.render(
+        &mut Scene::new(),
+        &mut active_text,
+        &active_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(active_view.is_presented());
+    active_view.set_window_active(false);
+    assert!(!active_view.is_presented());
+}
+
+#[test]
+fn dialog_view_default_buttons_use_popover_surface_contract() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut view = DialogView::default();
+        view.show(1);
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let layout = view
+            .render(
+                &mut scene,
+                &mut text,
+                "Confirm changes",
+                Rect::new(0., 0., 640., 480.),
+                None,
+                palette,
+                role(),
+                false,
+            )
+            .expect("open Dialog layout");
+        let cancel_frame = layout.buttons[0].frame;
+        let cancel_quad = scene
+            .primitives()
+            .iter()
+            .rev()
+            .find_map(|p| match p {
+                Primitive::Quad(q) if q.rect == cancel_frame && q.fill.a > 0. => Some(*q),
+                _ => None,
+            })
+            .expect("Dialog Cancel button background quad");
+        let expected_cancel = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "popover",
+            "action-quiet",
+            "rest",
+        )
+        .unwrap()
+        .background;
+        assert_eq!(cancel_quad.fill, expected_cancel, "{theme:?}");
+        if theme != tekes_ui_tokens::Theme::LIGHT_INCREASED {
+            assert_ne!(
+                cancel_quad.fill,
+                palette.color("surface-2").unwrap(),
+                "{theme:?} Cancel button should inherit popover surface rather than surface-2"
+            );
+        }
+    }
 }

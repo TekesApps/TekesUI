@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.8` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.9` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### Gold7 Token 与交互契约审计收敛（`v0.4.9` / #388–#395）
+
+- **表面对比与告警/浮层语义（#388, #389, #390）**：上调暗色高层交互填充（`button-hover` / `button-pressed` / `row-selection`）与 `dark-ic` `secondary-text` / `tertiary-text` 梯度以消除悬停塌缩；修正 `notice-marker-toast-warning` 为 `status-running`（区分 Warning 琥珀色与 Error 红色），并为 `ToastView` 与 `TooltipView`（`"hint"` 表面）统一接入 `SurfaceKind::Floating`（常规模式投影、`-ic` 模式 1pt 边界）与 `OverlayPresence` 进退场动画。
+- **焦点契约、控件 Surface 与分段圆角（#391, #392, #393）**：统一 `TextField` 焦点边界（1pt 常规 / 2pt `-ic` + 独立 2pt `border-focused` 聚焦环，#391）跨 `interaction-contracts.json` / `gold7.md` / `text_surface.rs`；将 `DialogView` / `DisclosureView` 迁入 `Surface` 契约并统一 `mix_rgba_linear` 线性 RGB 混色（#392）；`SegmentedControlView` 接入专用 `segmented-*` token 与 `CornerRadius::concentric`（#393）。
+- **动效连续性与 Gold7 治理同步（#394, #395）**：消除 `motion.json` 双时长表（`hover` 120ms / `press` 80ms / `switch_thumb` 180ms）并为复选/单选/分段/标签页接入 `ProgressTransition`；同步 `docs/design/gold7.md`、`gold7-alignment.json`、`gold7.json` 与 `reference-alignment.json` 至当前 `MediaViewer`/macOS AX 基线，保留未启用消费者配方与实机/VoiceOver/IME/120Hz 独立验收边界。
 
 ### 集成胶囊分段工具栏组（`v0.4.8`）
 

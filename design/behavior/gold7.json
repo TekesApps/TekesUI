@@ -299,11 +299,17 @@
           "evidence_refs": []
         },
         "code": {
-          "status": "fail",
-          "reason": "Production Button, Switch and Disclosure now consume StateTransition with JSON role bindings and Gallery host frame requests. Full component-state coverage, especially floating-surface enter/exit lifecycle, remains incomplete; no blanket Gold7 pass.",
+          "status": "unverified",
+          "reason": "motion.json durations are unified (press_feedback = 70ms, hover_feedback = 150ms); Button, Switch, Disclosure, Checkbox, RadioGroupView, SegmentedControlView, and TabsView wire shared StateTransition/ProgressTransition and Menu, Dialog, Popover, ToastView, and TooltipView wire OverlayPresence with ReducedMotion and deactivation snap. Remaining component state channels and physical/120Hz review stay unverified.",
           "evidence_refs": [
             {
               "$ref": "../../crates/tekes-ui-motion/src/state_transition.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/control_motion.rs"
+            },
+            {
+              "$ref": "../../docs/design/component-motion-integration.md"
             },
             {
               "$ref": "../../docs/design/gold7.md"
@@ -474,11 +480,20 @@
           "evidence_refs": []
         },
         "code": {
-          "status": "fail",
-          "reason": "The cited media-viewer contract explicitly records a specified-but-unimplemented runtime. A contract reference cannot be counted as code integration.",
+          "status": "unverified",
+          "reason": "MediaViewerContent and Geometry (crates/tekes-ui-controls/src/composition/media_viewer/{content.rs,geometry.rs}, bitmap-images feature) and Split (extended.rs) implement anchor-preserving zoom (1x-8x), bounded pan/split clamp, capture cancellation, and non-gesture keyboard/command alternatives in code; physical gesture, display, and native experience review stay unverified.",
           "evidence_refs": [
             {
               "$ref": "../behavior/reference-alignment.json#/media_viewer"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/composition/media_viewer/content.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/composition/media_viewer/geometry.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-controls/src/extended.rs"
             }
           ]
         },
@@ -551,7 +566,18 @@
         },
         "code": {
           "status": "unverified",
-          "evidence_refs": []
+          "reason": "Canonical components, documentation, runnable previews, and per-control macOS NSAccessibility projection (crates/tekes-ui-macos-bridge/src/content_accessibility.rs and crates/tekes-ui-platform-macos/src/accessibility.rs NativeAccessibilityElement) are implemented in code; VoiceOver, physical IME, and complete native component acceptance remain unverified.",
+          "evidence_refs": [
+            {
+              "$ref": "../../crates/tekes-ui-macos-bridge/src/content_accessibility.rs"
+            },
+            {
+              "$ref": "../../crates/tekes-ui-platform-macos/src/accessibility.rs"
+            },
+            {
+              "$ref": "../../docs/design/gold7.md"
+            }
+          ]
         },
         "experience": {
           "status": "unverified",

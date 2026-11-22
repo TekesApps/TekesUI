@@ -346,7 +346,7 @@
         "zooming",
         "closed"
       ],
-      "implementation": "missing-runtime",
+      "implementation": "model-and-composition",
       "native_acceptance": "unverified",
       "color_roles": [
         "surface-popover",
@@ -415,12 +415,21 @@
     }
   ],
   "media_viewer": {
-    "status": "specified-not-implemented",
+    "status": "implemented-unverified",
+    "feature_gate": "bitmap-images",
     "design_candidate": {
       "$ref": "../../docs/archive/design-logs/media-viewer-design-20261031.md",
       "issue": "https://github.com/TekesApps/TekesUI/issues/201",
       "status": "proposed-not-runtime"
     },
+    "runtime_sources": [
+      {
+        "$ref": "../../crates/tekes-ui-controls/src/composition/media_viewer/content.rs"
+      },
+      {
+        "$ref": "../../crates/tekes-ui-controls/src/composition/media_viewer/geometry.rs"
+      }
+    ],
     "api": {
       "inputs": [
         "resource",
@@ -539,7 +548,7 @@
       "id": "agent.media-viewer",
       "name": "MediaViewer",
       "category": "consumer-recipe",
-      "status": "specified-not-implemented",
+      "status": "implemented-unverified",
       "component_ids": [
         "tui.dialog",
         "tui.icon-button",

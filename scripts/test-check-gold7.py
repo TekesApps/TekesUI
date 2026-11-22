@@ -75,7 +75,16 @@ class Gold7CheckerTests(unittest.TestCase):
     def test_missing_explicit_media_gap_is_not_reported_as_unverified(self):
         gold = self.read("design/behavior/gold7.json")
         gold["items"][5]["assessment"]["code"]["status"] = "unverified"
-        errors = check_gold7.check(ROOT, {"design/behavior/gold7.json": gold})
+        reference = self.read("design/behavior/reference-alignment.json")
+        reference["media_viewer"]["status"] = "specified-not-implemented"
+        next(entry for entry in reference["components"] if entry["id"] == "media")["implementation"] = "missing-runtime"
+        errors = check_gold7.check(
+            ROOT,
+            {
+                "design/behavior/gold7.json": gold,
+                "design/behavior/reference-alignment.json": reference,
+            },
+        )
         self.assertTrue(any("explicitly missing media runtime as fail" in error for error in errors))
 
     def test_pass_requires_artifact_and_immutable_input_manifest(self):
@@ -290,7 +299,14 @@ class Gold7CheckerTests(unittest.TestCase):
         self.assertEqual(report["review_assessments"]["status"], "separate-review-required")
         self.assertEqual(
             next(item for item in report["review_assessments"]["items"] if item["id"] == "G6")["code"]["status"],
+            "unverified",
+        )
+        self.assertEqual(
+            next(item for item in report["review_assessments"]["items"] if item["id"] == "G5")["code"]["status"],
             "fail",
+        )
+        self.assertTrue(
+            all(item["experience"]["status"] == "unverified" for item in report["review_assessments"]["items"])
         )
 
     def test_not_applicable_requires_a_scope_reason(self):

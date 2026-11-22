@@ -377,7 +377,19 @@ fn disclosure_icon_slot_keeps_label_geometry_stable_across_state_and_text_scale(
         assert_eq!(icon.name, "tekes-forward");
         assert_eq!(icon.frame.center(), closed_icon_frame.center());
         assert_eq!(icon.frame.center().y, closed.frame.center().y);
-        assert_eq!(icon.tint, Palette::from(Theme::LIGHT).color("primary-text"));
+        assert_eq!(
+            icon.tint,
+            Some(
+                tekes_ui_tokens::surface_palette::resolve_surface(
+                    Palette::from(Theme::LIGHT),
+                    "panel",
+                    "action-quiet",
+                    "rest",
+                )
+                .unwrap()
+                .icon
+            )
+        );
 
         model.open = true;
         let opened = view.render(
@@ -1452,4 +1464,321 @@ fn select_reopens_with_selected_item_revealed_in_unchanged_popup() {
         .unwrap();
     assert!(popup.scroll_offset > 0.);
     assert!(popup.items[9].visible.is_some_and(has_area));
+}
+
+#[test]
+fn disclosure_view_label_and_icon_resolve_via_surface_contract() {
+    #[derive(Default)]
+    struct CaptureText {
+        inks: Vec<tekes_ui_tokens::Rgba>,
+    }
+    impl ButtonTextRenderer for CaptureText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            FixedText.measure(text, role, max_width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: tekes_ui_tokens::Rgba,
+        ) {
+            self.inks.push(ink);
+        }
+    }
+    #[derive(Default)]
+    struct CaptureIcons {
+        tints: Vec<tekes_ui_tokens::Rgba>,
+    }
+    impl IconRenderer for CaptureIcons {
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, tint: tekes_ui_tokens::Rgba) {
+            self.tints.push(tint);
+        }
+    }
+
+    let frame = Rect::new(20., 20., 220., 36.);
+    let model = Disclosure::default();
+    let palette = Palette::from(Theme::DARK);
+
+    let mut view = DisclosureView::default();
+    let mut text = CaptureText::default();
+    let mut icons = CaptureIcons::default();
+    view.render_with_icon(
+        &mut Scene::new(),
+        &mut text,
+        &mut icons,
+        &model,
+        "Details",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        16.,
+    );
+    let expected_panel_rest =
+        tekes_ui_tokens::surface_palette::resolve_surface(palette, "panel", "action-quiet", "rest")
+            .unwrap();
+    assert_eq!(text.inks, vec![expected_panel_rest.text]);
+    assert_eq!(icons.tints, vec![expected_panel_rest.icon]);
+
+    view.set_surface("sidebar").unwrap();
+    view.pointer_move(frame.center());
+    let mut text2 = CaptureText::default();
+    let mut icons2 = CaptureIcons::default();
+    view.render_with_icon(
+        &mut Scene::new(),
+        &mut text2,
+        &mut icons2,
+        &model,
+        "Details",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        16.,
+    );
+    let expected_sidebar_hover = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        "sidebar",
+        "action-quiet",
+        "hover",
+    )
+    .unwrap();
+    assert_eq!(text2.inks, vec![expected_sidebar_hover.text]);
+    assert_eq!(icons2.tints, vec![expected_sidebar_hover.icon]);
+}
+
+#[test]
+fn segmented_control_uses_dedicated_track_thumb_inset_and_concentric_radii() {
+    let mut model = SegmentedControl::new(3);
+    let mut view = SegmentedControlView::new(3);
+    let mut text = FixedText;
+    let frame = Rect::new(10., 20., 360., 38.);
+    let inset = proposal::metric("spacing", "space-segmented-inset").unwrap();
+    let expected_outer = proposal::metric("radius", "c-segmented-radius")
+        .unwrap()
+        .min(frame.size.height * 0.5)
+        .min(frame.size.width * 0.5);
+    let expected_thumb = tekes_ui_tokens::CornerRadius::concentric(expected_outer, inset);
+
+    for theme in Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &mut model,
+            &["Day", "Week", "Month"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        let quads: Vec<_> = scene
+            .primitives()
+            .iter()
+            .filter_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q) => Some(*q),
+                _ => None,
+            })
+            .collect();
+        let track = quads.iter().find(|q| q.rect == layout.frame).unwrap();
+        assert_eq!(track.fill, palette.color("segmented-track").unwrap());
+        assert_eq!(
+            track.corner_radii,
+            tekes_ui_scene::CornerRadii::uniform(expected_outer)
+        );
+        let thumb = quads
+            .iter()
+            .find(|q| q.rect == layout.items[0].frame)
+            .unwrap();
+        assert_eq!(thumb.fill, palette.color("segmented-thumb").unwrap());
+        assert_eq!(
+            thumb.corner_radii,
+            tekes_ui_scene::CornerRadii::uniform(expected_thumb)
+        );
+    }
+}
+
+#[test]
+fn segmented_control_thumb_slides_under_clock_and_snaps_when_reduced_or_static() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            Some(ControlMotionContext {
+                now: Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            FixedText.measure(text, role, max_width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let frame = Rect::new(10., 20., 360., 38.);
+    let palette = Palette::from(Theme::LIGHT);
+    let mut model = SegmentedControl::new(3);
+    let mut view = SegmentedControlView::new(3);
+    let mut text = ClockText::default();
+
+    let l0 = view.render(
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!view.needs_animation());
+    assert_eq!(text.requests, 0);
+
+    model.select(2);
+    text.ms = 10;
+    let mut s_start = Scene::new();
+    view.render(
+        &mut s_start,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    text.ms = 70;
+    let mut s_mid = Scene::new();
+    let l_mid = view.render(
+        &mut s_mid,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    let mid_thumb = s_mid
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            tekes_ui_scene::Primitive::Quad(q)
+                if q.fill == palette.color("segmented-thumb").unwrap() =>
+            {
+                Some(*q)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!(mid_thumb.rect.min_x() > l0.items[0].frame.min_x());
+    assert!(mid_thumb.rect.min_x() < l_mid.items[2].frame.min_x());
+
+    text.ms = 200;
+    let mut s_end = Scene::new();
+    view.render(
+        &mut s_end,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!view.needs_animation());
+    let end_thumb = s_end
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            tekes_ui_scene::Primitive::Quad(q)
+                if q.fill == palette.color("segmented-thumb").unwrap() =>
+            {
+                Some(*q)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!((end_thumb.rect.min_x() - l_mid.items[2].frame.min_x()).abs() < 0.01);
+
+    // Reduced motion snaps on selection change.
+    let mut rm_model = SegmentedControl::new(3);
+    let mut rm_view = SegmentedControlView::new(3);
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    rm_view.render(
+        &mut Scene::new(),
+        &mut rm_text,
+        &mut rm_model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    rm_model.select(2);
+    rm_text.ms = 10;
+    rm_text.requests = 0;
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &mut rm_model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+
+    // No clock snaps immediately without mutation.
+    let mut static_view = SegmentedControlView::new(3);
+    let mut static_text = FixedText;
+    static_view.render(
+        &mut Scene::new(),
+        &mut static_text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!static_view.needs_animation());
 }

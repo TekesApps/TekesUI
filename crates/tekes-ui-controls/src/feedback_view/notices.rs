@@ -29,10 +29,12 @@ pub struct ToastView {
     pub(super) layout: ViewLayout,
     pub(super) dismiss: ButtonModel,
     pub(super) dismiss_layout: Option<crate::ButtonLayout>,
+    exit_dismiss_layout: Option<crate::ButtonLayout>,
     pub(super) logical_dismiss_frame: Option<Rect>,
     pub(super) inactive: bool,
     pub(super) surface: Option<&'static str>,
     prepared: Option<NoticePrepared>,
+    presence: crate::control_motion::OverlayPresence,
 }
 impl ToastView {
     fn stacked(frame: Rect) -> bool {
@@ -179,10 +181,25 @@ impl ToastView {
         } else {
             None
         };
+        if model.visible {
+            self.exit_dismiss_layout = self.dismiss_layout;
+        } else if !self.presence.is_presented() {
+            self.exit_dismiss_layout = None;
+        }
         if self.dismiss_layout.is_none() {
             self.dismiss.clear_layout();
         }
         self.layout
+    }
+    pub fn is_presented(&self) -> bool {
+        self.presence.is_presented()
+    }
+    pub fn needs_animation(&self) -> bool {
+        self.presence.needs_animation()
+    }
+    pub fn clear_presentation(&mut self) {
+        self.presence.clear();
+        self.exit_dismiss_layout = None;
     }
     pub fn set_surface(
         &mut self,
@@ -219,69 +236,103 @@ impl ToastView {
         model: &Toast,
         palette: Palette,
     ) {
-        if !model.visible {
+        let open = model.visible && !self.inactive;
+        if !open && !self.presence.is_presented() {
+            self.exit_dismiss_layout = None;
             return;
         }
-        let (Some(p), Some(v)) = (self.prepared, self.layout.visible) else {
-            return;
-        };
         let surface = self.surface.unwrap_or("panel");
-        let usage = notice_usage(model.tone, true);
-        let marker =
-            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, usage, "rest")
-                .expect("validated notice marker packet");
-        let body =
-            tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, "content", "rest")
-                .expect("validated notice content packet");
-        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+        let paint_context = format!(
+            "{:?}{:?}{:?}{:?}{}{:?}{}",
+            self.layout.frame,
+            self.prepared.and_then(|p| p.clip),
             palette,
             surface,
-            "surface-frame",
-            "rest",
-        )
-        .expect("validated notice frame packet");
-        self.dismiss.set_surface(surface);
-        let _action = self
-            .dismiss
-            .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
-        paint_notice_background(
-            scene,
-            self.layout.frame,
-            p.clip,
-            Some(v),
-            palette,
-            paint::SurfaceKind::Panel,
             text.backing_scale(),
-            frame_colors,
+            model.tone,
+            model.message
         );
-        scene.push_clip(v);
-        scene.push_quad(
-            Quad::new(p.marker, marker.marker.expect("notice marker"))
-                .with_corner_radius(p.marker.size.height * 0.5),
-        );
-        if !p.message.is_empty() && !model.message.is_empty() {
-            text.draw(
-                scene,
-                &model.message,
-                p.role,
-                p.message,
-                ButtonTextAlign::Leading,
-                body.text,
-            );
-        }
-        if let Some(layout) = self.dismiss_layout {
-            self.dismiss.paint_prepared_label_variant(
-                scene,
-                text,
-                "Dismiss",
-                layout,
+        let paint_frame = if open {
+            match (self.prepared, self.layout.visible) {
+                (Some(p), Some(v)) => Some((p, v, self.dismiss_layout)),
+                _ => None,
+            }
+        } else if let Some(p) = self.prepared
+            && let Some(v) = clipped(self.layout.frame, p.clip)
+        {
+            Some((p, v, self.exit_dismiss_layout))
+        } else {
+            None
+        };
+        let overlay = paint_frame.map(|(p, v, dismiss_layout)| {
+            let mut overlay_scene = scene.fragment();
+            let usage = notice_usage(model.tone, true);
+            let marker =
+                tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, usage, "rest")
+                    .expect("validated notice marker packet");
+            let body = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette, surface, "content", "rest",
+            )
+            .expect("validated notice content packet");
+            let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "surface-frame",
+                "rest",
+            )
+            .expect("validated notice frame packet");
+            self.dismiss.set_surface(surface);
+            let _action =
+                self.dismiss
+                    .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
+            paint_notice_background(
+                &mut overlay_scene,
+                self.layout.frame,
+                p.clip,
                 Some(v),
                 palette,
-                p.role,
-                paint::ButtonVariant::Quiet,
+                paint::SurfaceKind::Floating,
+                text.backing_scale(),
+                frame_colors,
             );
+            overlay_scene.push_clip(v);
+            overlay_scene.push_quad(
+                Quad::new(p.marker, marker.marker.expect("notice marker"))
+                    .with_corner_radius(p.marker.size.height * 0.5),
+            );
+            if !p.message.is_empty() && !model.message.is_empty() {
+                text.draw(
+                    &mut overlay_scene,
+                    &model.message,
+                    p.role,
+                    p.message,
+                    ButtonTextAlign::Leading,
+                    body.text,
+                );
+            }
+            if let Some(layout) = dismiss_layout {
+                self.dismiss.paint_prepared_label_variant(
+                    &mut overlay_scene,
+                    text,
+                    "Dismiss",
+                    layout,
+                    Some(v),
+                    palette,
+                    p.role,
+                    paint::ButtonVariant::Quiet,
+                );
+            }
+            overlay_scene.pop_clip();
+            overlay_scene
+        });
+        if open && overlay.is_none() {
+            return;
         }
-        scene.pop_clip();
+        self.presence
+            .paint(scene, text, open, paint_context, overlay);
+        if !open && !self.presence.is_presented() {
+            self.exit_dismiss_layout = None;
+        }
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
@@ -348,6 +399,7 @@ impl ToastView {
         if !active {
             self.cancel();
             self.dismiss.blur();
+            self.clear_presentation();
         }
     }
     pub fn pointer_move(&mut self, model: &mut Toast, p: Point) {

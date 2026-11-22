@@ -30,6 +30,10 @@ pub struct ButtonModel {
     )>,
     pub(super) motion_now: Duration,
     pub(super) motion_suspended: bool,
+    pub(super) check_progress: ProgressTransition,
+    pub(super) check_motion_initialized: bool,
+    pub(super) last_active_check: Option<super::CheckState>,
+    pub(super) selection_progress_override: Option<f32>,
     // Effective parent Surface supplied by the original feedback View.
     pub(super) surface: Option<&'static str>,
     // Menu/Tab selection uses fill; ordinary actions retain their own boundary.
@@ -87,6 +91,9 @@ impl ButtonModel {
     pub(crate) fn set_surface(&mut self, surface: &'static str) {
         self.surface = Some(surface);
     }
+    pub(crate) fn surface(&self) -> Option<&'static str> {
+        self.surface
+    }
     pub(crate) fn clear_surface(&mut self) {
         self.surface = None;
     }
@@ -110,13 +117,65 @@ impl ButtonModel {
     pub(crate) fn tone(&self) -> crate::paint::ButtonTone {
         self.tone
     }
+    pub(crate) fn set_selection_progress(&mut self, progress: Option<f32>) {
+        self.selection_progress_override = progress;
+    }
+    pub(crate) fn update_check_motion(
+        &mut self,
+        checked: super::CheckState,
+        text: &mut impl ButtonTextRenderer,
+    ) -> (f32, super::CheckState) {
+        let target = if checked == super::CheckState::Unchecked {
+            0.0
+        } else {
+            1.0
+        };
+        let Some(context) = text.motion_context() else {
+            let active = if checked == super::CheckState::Unchecked {
+                self.last_active_check.unwrap_or(super::CheckState::Checked)
+            } else {
+                checked
+            };
+            if !self.check_progress.needs_animation() {
+                return (target as f32, active);
+            }
+            let value = self
+                .check_progress
+                .snap(target, self.motion_now)
+                .unwrap_or(target);
+            return (value.clamp(0., 1.) as f32, active);
+        };
+        self.motion_now = self.motion_now.max(context.now);
+        if checked != super::CheckState::Unchecked {
+            self.last_active_check = Some(checked);
+        }
+        let value = if !self.check_motion_initialized {
+            self.check_motion_initialized = true;
+            self.check_progress.snap(target, self.motion_now)
+        } else {
+            self.check_progress.retarget(
+                target,
+                motion_for("switch_thumb"),
+                self.motion_now,
+                context.reduced_motion,
+            )
+        }
+        .unwrap_or(target);
+        if self.check_progress.needs_animation() {
+            text.request_animation_frame();
+        }
+        (
+            value.clamp(0., 1.) as f32,
+            self.last_active_check.unwrap_or(super::CheckState::Checked),
+        )
+    }
     pub(crate) fn surface_colors(
         &self,
         palette: Palette,
         variant: crate::paint::ButtonVariant,
         surface: &str,
     ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-        crate::paint::button_surface_colors_with_tone(
+        crate::paint::button_surface_colors_with_tone_and_selection_progress(
             palette,
             surface,
             self.state,
@@ -125,6 +184,7 @@ impl ButtonModel {
             self.press_transition.value() as f32,
             self.tone,
             self.transparent_rest,
+            self.selection_progress_override,
         )
     }
     pub(crate) fn synchronize_activation(&mut self) {
@@ -403,6 +463,98 @@ impl ButtonModel {
         )
     }
 
+    fn update_hover_press_transitions(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        palette: Palette,
+        context: Option<ControlMotionContext>,
+    ) -> Option<(f32, f32)> {
+        if let Some(context) = context {
+            self.motion_now = context.now;
+            let palette_key = (palette.theme, palette.source());
+            let palette_changed = self
+                .motion_palette
+                .is_some_and(|previous| previous != palette_key);
+            self.motion_palette = Some(palette_key);
+            let interaction_enabled =
+                !self.motion_suspended && !self.state.disabled && !self.state.loading;
+            let hover_target = if interaction_enabled && self.state.hovered {
+                1.0
+            } else {
+                0.0
+            };
+            let press_target = if interaction_enabled && self.state.pressed {
+                1.0
+            } else {
+                0.0
+            };
+            let snap = palette_changed || !interaction_enabled;
+            let hover = if snap {
+                self.hover_transition.snap(hover_target, context.now)
+            } else {
+                self.hover_transition.retarget(
+                    hover_target,
+                    motion_for("button_hover"),
+                    context.now,
+                    context.reduced_motion,
+                )
+            }
+            .unwrap_or_else(|_| self.hover_transition.value());
+            let pressed = if snap {
+                self.press_transition.snap(press_target, context.now)
+            } else {
+                self.press_transition.retarget(
+                    press_target,
+                    motion_for("button_press"),
+                    context.now,
+                    context.reduced_motion,
+                )
+            }
+            .unwrap_or_else(|_| self.press_transition.value());
+            if self.needs_animation() {
+                text.request_animation_frame();
+            }
+            Some((hover as f32, pressed as f32))
+        } else {
+            let _ = self.hover_transition.snap(
+                if self.state.hovered && !self.state.disabled && !self.state.loading {
+                    1.0
+                } else {
+                    0.0
+                },
+                self.motion_now,
+            );
+            let _ = self.press_transition.snap(
+                if self.state.pressed && !self.state.disabled && !self.state.loading {
+                    1.0
+                } else {
+                    0.0
+                },
+                self.motion_now,
+            );
+            None
+        }
+    }
+    pub(crate) fn update_segment_motion(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        palette: Palette,
+    ) -> (f32, f32) {
+        let context = text.motion_context();
+        self.update_hover_press_transitions(text, palette, context)
+            .unwrap_or((
+                if self.state.hovered && !self.state.disabled && !self.state.loading {
+                    1.
+                } else {
+                    0.
+                },
+                if self.state.pressed && !self.state.disabled && !self.state.loading {
+                    1.
+                } else {
+                    0.
+                },
+            ))
+    }
     #[allow(clippy::too_many_arguments)]
     fn render_with_motion_context(
         &mut self,
@@ -482,71 +634,7 @@ impl ButtonModel {
         }
         self.refresh_pointer_state();
 
-        let transition_progress = if let Some(context) = context {
-            self.motion_now = context.now;
-            let palette_key = (palette.theme, palette.source());
-            let palette_changed = self
-                .motion_palette
-                .is_some_and(|previous| previous != palette_key);
-            self.motion_palette = Some(palette_key);
-            let interaction_enabled =
-                !self.motion_suspended && !self.state.disabled && !self.state.loading;
-            let hover_target = if interaction_enabled && self.state.hovered {
-                1.0
-            } else {
-                0.0
-            };
-            let press_target = if interaction_enabled && self.state.pressed {
-                1.0
-            } else {
-                0.0
-            };
-            let snap = palette_changed || !interaction_enabled;
-            let hover = if snap {
-                self.hover_transition.snap(hover_target, context.now)
-            } else {
-                self.hover_transition.retarget(
-                    hover_target,
-                    motion_for("button_hover"),
-                    context.now,
-                    context.reduced_motion,
-                )
-            }
-            .unwrap_or_else(|_| self.hover_transition.value());
-            let pressed = if snap {
-                self.press_transition.snap(press_target, context.now)
-            } else {
-                self.press_transition.retarget(
-                    press_target,
-                    motion_for("button_press"),
-                    context.now,
-                    context.reduced_motion,
-                )
-            }
-            .unwrap_or_else(|_| self.press_transition.value());
-            if self.needs_animation() {
-                text.request_animation_frame();
-            }
-            Some((hover as f32, pressed as f32))
-        } else {
-            let _ = self.hover_transition.snap(
-                if self.state.hovered && !self.state.disabled && !self.state.loading {
-                    1.0
-                } else {
-                    0.0
-                },
-                self.motion_now,
-            );
-            let _ = self.press_transition.snap(
-                if self.state.pressed && !self.state.disabled && !self.state.loading {
-                    1.0
-                } else {
-                    0.0
-                },
-                self.motion_now,
-            );
-            None
-        };
+        let transition_progress = self.update_hover_press_transitions(text, palette, context);
 
         if let Some(visible) = layout.visible {
             let background_clip =
@@ -580,6 +668,7 @@ impl ButtonModel {
                     transparent_background,
                     self.transparent_rest,
                     self.tone,
+                    self.selection_progress_override,
                 )
                 .text
             } else {
@@ -818,7 +907,9 @@ impl ButtonModel {
 
     /// Whether this component currently needs a host-driven animation frame.
     pub fn needs_animation(&self) -> bool {
-        self.hover_transition.needs_animation() || self.press_transition.needs_animation()
+        self.hover_transition.needs_animation()
+            || self.press_transition.needs_animation()
+            || self.check_progress.needs_animation()
     }
 
     /// Advance component-owned presentation state using the host monotonic clock.

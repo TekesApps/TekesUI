@@ -210,7 +210,7 @@ fn notice_marker_role(usage: &str) -> Option<&'static str> {
         "notice-marker-info" => "status-info",
         "notice-marker-success" => "status-succeeded",
         "notice-marker-error" => "status-failed",
-        "notice-marker-toast-warning" => "status-failed",
+        "notice-marker-toast-warning" => "status-running",
         "notice-marker-banner-warning" => "status-running",
         _ => return None,
     })
@@ -2949,7 +2949,7 @@ mod notice_marker_tests {
             assert!(compile_surface_rules(&bad).unwrap_err().contains("cyclic"));
         }
         for (usage, wrong) in [
-            ("notice-marker-toast-warning", "status-running"),
+            ("notice-marker-toast-warning", "status-failed"),
             ("notice-marker-banner-warning", "status-failed"),
         ] {
             let mut bad = r.clone();

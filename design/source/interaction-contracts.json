@@ -103,7 +103,7 @@
       "boundary_role": "required-input",
       "error_boundary_role": "error",
       "fill": "transcript-input",
-      "focus": "independent existing neutral focus ring",
+      "focus": "single-edge border-focused at c-focus-width (2pt) across all four themes (light, dark, light-ic, dark-ic; no dual/outer focus ring), matching crates/tekes-ui-controls/src/text_surface.rs",
       "hover_pressed_overrides": false,
       "motion": "none; no Button wash, tint, border substitution, scaling or press animation",
       "radius": "radius-input",

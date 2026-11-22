@@ -17,58 +17,81 @@ fn assert_segment(
     ground: &str,
     backing: f32,
 ) {
+    let inset = proposal::metric("spacing", "space-segmented-inset").unwrap();
+    let outer_radius = proposal::metric("radius", "c-segmented-radius")
+        .unwrap()
+        .min(layout.frame.size.height * 0.5)
+        .min(layout.frame.size.width * 0.5);
+    let thumb_radius = tekes_ui_tokens::CornerRadius::concentric(outer_radius, inset);
+    let (track_index, track) = scene
+        .primitives()
+        .iter()
+        .enumerate()
+        .find_map(|(i, p)| match p {
+            Primitive::Quad(q) if q.rect == layout.frame => Some((i, *q)),
+            _ => None,
+        })
+        .expect("actual Segmented track quad");
+    assert_eq!(track.fill, palette.color("segmented-track").unwrap());
+    assert_eq!(
+        track.corner_radii,
+        tekes_ui_scene::CornerRadii::uniform(outer_radius)
+    );
     let item = &layout.items[index];
-    let (paint_index, quad) = scene
+    assert!(
+        item.frame.min_x() >= layout.frame.min_x() + inset - 0.01
+            && item.frame.min_y() >= layout.frame.min_y() + inset - 0.01
+            && item.frame.max_x() <= layout.frame.max_x() - inset + 0.01
+            && item.frame.max_y() <= layout.frame.max_y() - inset + 0.01
+    );
+    let maybe_quad = scene
         .primitives()
         .iter()
         .enumerate()
         .rev()
         .find_map(|(i, p)| match p {
-            Primitive::Quad(q) if q.rect == item.frame => Some((i, *q)),
+            Primitive::Quad(q) if q.rect == item.frame && q.fill.a > 0. => Some((i, *q)),
             _ => None,
-        })
-        .expect("actual segment own Button ground");
-    assert_eq!(quad.fill, palette.color(ground).unwrap());
-    assert_eq!(quad.fill.a, 1.);
-    assert_eq!(
-        quad.corner_radii,
-        tekes_ui_scene::CornerRadii::uniform(
-            proposal::metric("radius", "c-button-md-radius").unwrap()
-        )
-    );
-    if state.selected && !state.disabled {
+        });
+    let (paint_index, fill) = if state.selected || ground != "segmented-track" {
+        let (i, quad) = maybe_quad.expect("actual selected or interactive segment pill quad");
+        assert_eq!(quad.fill, palette.color(ground).unwrap());
+        assert_eq!(quad.fill.a, 1.);
         assert_eq!(
-            quad.border_width,
-            proposal::metric("stroke", "stroke-rule").unwrap()
+            quad.corner_radii,
+            tekes_ui_scene::CornerRadii::uniform(thumb_radius)
         );
-        assert_eq!(quad.border_color, palette.color("border").unwrap());
-        assert!(
-            contrast(quad.border_color, quad.fill) >= 3.,
-            "selection boundary/own ground"
-        );
-        let peer = layout
-            .items
-            .iter()
-            .enumerate()
-            .find(|(i, _)| *i != index)
-            .unwrap()
-            .1;
-        let peer_ground = scene
-            .primitives()
-            .iter()
-            .rev()
-            .find_map(|p| match p {
-                Primitive::Quad(q) if q.rect == peer.frame => Some(q.fill),
-                _ => None,
-            })
-            .unwrap();
-        assert!(
-            contrast(quad.border_color, peer_ground) >= 3.,
-            "selection boundary/actual neighboring ground"
-        );
+        if state.selected && !state.disabled {
+            if palette.theme.is_increased() {
+                assert_eq!(
+                    quad.border_width,
+                    proposal::metric("stroke", "stroke-rule").unwrap()
+                );
+                assert_eq!(quad.border_color, palette.color("border").unwrap());
+                assert!(
+                    contrast(quad.border_color, quad.fill) >= 3.,
+                    "selection boundary/own ground"
+                );
+                assert!(
+                    contrast(quad.border_color, track.fill) >= 3.,
+                    "selection boundary/segmented-track ground"
+                );
+            } else {
+                let expected_width = 1. / backing.max(1.);
+                assert_eq!(quad.border_width, expected_width);
+                assert_eq!(quad.border_color, palette.color("separator").unwrap());
+            }
+        } else {
+            assert_eq!(quad.border_width, 0.);
+        }
+        (i, quad.fill)
     } else {
-        assert_eq!(quad.border_width, 0.);
-    }
+        assert!(
+            maybe_quad.is_none(),
+            "unselected rest cell rests directly on segmented-track without extra quad"
+        );
+        (track_index, track.fill)
+    };
     let inks: Vec<_> = scene.primitives()[paint_index + 1..]
         .iter()
         .filter_map(|p| match p {
@@ -94,20 +117,20 @@ fn assert_segment(
         !inks.is_empty(),
         "actual CoreText text after this segment's own paint"
     );
+    let expected_ink = if state.disabled {
+        palette.color("tertiary-text").unwrap()
+    } else if state.selected || ground != "segmented-track" {
+        palette.color("primary-text").unwrap()
+    } else {
+        tekes_ui_tokens::surface_palette::resolve_surface(palette, "canvas", "action-quiet", "rest")
+            .unwrap()
+            .text
+    };
     for ink in inks {
-        assert_eq!(
-            ink,
-            palette
-                .color(if state.disabled {
-                    "tertiary-text"
-                } else {
-                    "primary-text"
-                })
-                .unwrap()
-        );
+        assert_eq!(ink, expected_ink);
         if !state.disabled {
             assert!(
-                contrast(ink, quad.fill)
+                contrast(ink, fill)
                     >= if palette.theme.is_increased() {
                         7.
                     } else {
@@ -177,7 +200,11 @@ fn segmented_control_same_instance_repaints_themes_and_preserves_selection_focus
                     disabled: i == 1,
                     ..Default::default()
                 },
-                if i == 0 { "row-selection" } else { "surface-2" },
+                if i == 0 {
+                    "segmented-thumb"
+                } else {
+                    "segmented-track"
+                },
                 text.backing,
             );
         }
@@ -223,7 +250,7 @@ fn segmented_control_same_instance_repaints_themes_and_preserves_selection_focus
         2,
         palette,
         ControlState::default(),
-        "surface-2",
+        "segmented-track",
         text.backing,
     );
     assert_eq!(view.pointer_up(Point::new(530., 120.), &mut model), None);
@@ -243,7 +270,7 @@ fn segmented_control_same_instance_repaints_themes_and_preserves_selection_focus
             selected: true,
             ..Default::default()
         },
-        "row-selection",
+        "segmented-thumb",
         text.backing,
     );
     assert!(scene.primitives().iter().any(|p|matches!(p,Primitive::Quad(q)if q.fill.a==0. && q.border_width>0.
@@ -277,7 +304,11 @@ fn segmented_control_same_instance_repaints_themes_and_preserves_selection_focus
                 disabled: true,
                 ..Default::default()
             },
-            "surface-2",
+            if i == 0 {
+                "segmented-thumb"
+            } else {
+                "segmented-track"
+            },
             text.backing,
         );
     }

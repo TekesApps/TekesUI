@@ -2,7 +2,7 @@
 
 Additive to rules 1.8.0, schema 1.3.0: the original 37 usages, states, seven-channel packets and compiled color role maps remain unchanged. Palette, resolve_surface and SurfaceColors APIs are unchanged.
 
-Five rest-only usages: notice-marker-info→status-info; notice-marker-success→status-succeeded; notice-marker-error→status-failed; notice-marker-toast-warning→status-failed; notice-marker-banner-warning→status-running. These are marker roles, not business NoticeTone names. Warning remains Warning.
+Five rest-only usages: notice-marker-info→status-info; notice-marker-success→status-succeeded; notice-marker-error→status-failed; notice-marker-toast-warning→status-running; notice-marker-banner-warning→status-running. These are marker roles, not business NoticeTone names. Warning remains Warning.
 
 All five require background=$surface, text/icon=primary-text, exact marker above, boundary/focus/helper=null. All seven fields are mandatory. Every other state rejects. Marker ink contrasts with the actual Surface ground at >=3, text/icon follow the existing >=4.5 rule. No new role, token, base color, required boundary or badge on-fill borrowing.
 

@@ -635,15 +635,52 @@ pub(crate) fn choice_label_color(palette: Palette, surface: &str, state: Control
     .unwrap_or_else(|_| color(palette, "primary-text"))
 }
 
-pub(crate) fn checkbox_on_surface(
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn checkbox_on_surface_with_progress(
     scene: &mut Scene,
     rect: Rect,
     palette: Palette,
     state: ControlState,
     checked: CheckState,
     surface: &str,
+    check_progress: f32,
+    mark_state: CheckState,
 ) -> Rgba {
-    let colors = check_surface_colors(palette, surface, state, checked);
+    let progress = if check_progress.is_finite() {
+        check_progress.clamp(0., 1.)
+    } else if checked == CheckState::Unchecked {
+        0.
+    } else {
+        1.
+    };
+    let active_mark = if mark_state == CheckState::Unchecked {
+        CheckState::Checked
+    } else {
+        mark_state
+    };
+    let (colors, draw_mark) = if progress <= 0. {
+        (
+            check_surface_colors(palette, surface, state, CheckState::Unchecked),
+            None,
+        )
+    } else if progress >= 1. {
+        let resolved = if checked == CheckState::Unchecked {
+            active_mark
+        } else {
+            checked
+        };
+        (
+            check_surface_colors(palette, surface, state, resolved),
+            Some(resolved),
+        )
+    } else {
+        let unchecked = check_surface_colors(palette, surface, state, CheckState::Unchecked);
+        let target_checked = check_surface_colors(palette, surface, state, active_mark);
+        (
+            mix_button_colors(unchecked, target_checked, progress),
+            Some(active_mark),
+        )
+    };
     let radius = metric("radius", "c-checkbox-radius", 4.0);
     let ink = colors.marker.unwrap_or(colors.icon);
     let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
@@ -651,7 +688,7 @@ pub(crate) fn checkbox_on_surface(
         quad = quad.with_border(metric("stroke", "stroke-rule", 1.0), boundary);
     }
     scene.push_quad(quad);
-    if checked == CheckState::Mixed {
+    if draw_mark == Some(CheckState::Mixed) {
         scene.push_quad(
             Quad::new(
                 Rect::new(
@@ -664,7 +701,7 @@ pub(crate) fn checkbox_on_surface(
             )
             .with_corner_radius(1.),
         );
-    } else if checked == CheckState::Checked {
+    } else if draw_mark == Some(CheckState::Checked) {
         let stroke = metric("size", "size-icon-artboard-stroke", 1.5);
         for (a, b) in [((0.20, 0.50), (0.42, 0.72)), ((0.42, 0.72), (0.80, 0.28))] {
             let ax = rect.min_x() + rect.size.width * a.0;
@@ -841,20 +878,7 @@ pub(crate) fn button_variant_with_selection_fill(
             0.
         }
     };
-    let mix = |a: Rgba, b: Rgba, t: f32| {
-        if t <= 0. {
-            return a;
-        }
-        if t >= 1. {
-            return b;
-        }
-        Rgba::new(
-            a.r + (b.r - a.r) * t,
-            a.g + (b.g - a.g) * t,
-            a.b + (b.b - a.b) * t,
-            a.a + (b.a - a.a) * t,
-        )
-    };
+    let mix = |a: Rgba, b: Rgba, t: f32| mix_rgba_linear(a, b, t);
     let pressed_progress = if state.selected && variant == ButtonVariant::Quiet {
         0.
     } else {
@@ -1000,7 +1024,33 @@ pub(crate) fn button_surface_colors_with_tone(
     colors
 }
 
-fn mix_button_colors(
+pub(crate) fn mix_rgba_linear(a: Rgba, b: Rgba, t: f32) -> Rgba {
+    if !t.is_finite() || t <= 0. {
+        return a;
+    }
+    if t >= 1. {
+        return b;
+    }
+    let encode_srgb = |linear: f32| -> f32 {
+        let clamped = linear.clamp(0., 1.);
+        if clamped <= 0.003_130_8 {
+            12.92 * clamped
+        } else {
+            1.055 * clamped.powf(1. / 2.4) - 0.055
+        }
+        .clamp(0., 1.)
+    };
+    let al = a.to_linear();
+    let bl = b.to_linear();
+    Rgba::new(
+        encode_srgb(al[0] + (bl[0] - al[0]) * t),
+        encode_srgb(al[1] + (bl[1] - al[1]) * t),
+        encode_srgb(al[2] + (bl[2] - al[2]) * t),
+        (a.a + (b.a - a.a) * t).clamp(0., 1.),
+    )
+}
+
+pub(crate) fn mix_button_colors(
     a: tekes_ui_tokens::surface_palette::SurfaceColors,
     b: tekes_ui_tokens::surface_palette::SurfaceColors,
     progress: f32,
@@ -1017,14 +1067,7 @@ fn mix_button_colors(
     if t == 1. {
         return b;
     }
-    let mix = |a: Rgba, b: Rgba| {
-        Rgba::new(
-            a.r + (b.r - a.r) * t,
-            a.g + (b.g - a.g) * t,
-            a.b + (b.b - a.b) * t,
-            a.a + (b.a - a.a) * t,
-        )
-    };
+    let mix = |a: Rgba, b: Rgba| mix_rgba_linear(a, b, t);
     let optional = |a: Option<Rgba>, b: Option<Rgba>| match (a, b) {
         (None, None) => None,
         (Some(a), Some(b)) => Some(mix(a, b)),
@@ -1040,6 +1083,90 @@ fn mix_button_colors(
         marker: optional(a.marker, b.marker),
         helper: optional(a.helper, b.helper),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_surface_colors_with_tone_and_selection_progress(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    variant: ButtonVariant,
+    hover: f32,
+    pressed: f32,
+    tone: ButtonTone,
+    transparent_rest: bool,
+    selection_progress: Option<f32>,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    let Some(progress) = selection_progress.filter(|value| value.is_finite()) else {
+        return button_surface_colors_with_tone(
+            palette,
+            surface,
+            state,
+            variant,
+            hover,
+            pressed,
+            tone,
+            transparent_rest,
+        );
+    };
+    let progress = progress.clamp(0., 1.);
+    if progress <= 0. {
+        return button_surface_colors_with_tone(
+            palette,
+            surface,
+            ControlState {
+                selected: false,
+                ..state
+            },
+            variant,
+            hover,
+            pressed,
+            tone,
+            transparent_rest,
+        );
+    }
+    if progress >= 1. {
+        return button_surface_colors_with_tone(
+            palette,
+            surface,
+            ControlState {
+                selected: true,
+                ..state
+            },
+            variant,
+            hover,
+            pressed,
+            tone,
+            transparent_rest,
+        );
+    }
+    let unselected = button_surface_colors_with_tone(
+        palette,
+        surface,
+        ControlState {
+            selected: false,
+            ..state
+        },
+        variant,
+        hover,
+        pressed,
+        tone,
+        transparent_rest,
+    );
+    let selected = button_surface_colors_with_tone(
+        palette,
+        surface,
+        ControlState {
+            selected: true,
+            ..state
+        },
+        variant,
+        hover,
+        pressed,
+        tone,
+        transparent_rest,
+    );
+    mix_button_colors(unselected, selected, progress)
 }
 
 #[cfg(test)]
@@ -1071,6 +1198,7 @@ pub(crate) fn button_variant_on_surface(
         transparent_background,
         false,
         ButtonTone::Default,
+        None,
     )
 }
 
@@ -1089,8 +1217,9 @@ pub(crate) fn button_variant_on_surface_styled(
     transparent_background: bool,
     transparent_rest: bool,
     tone: ButtonTone,
+    selection_progress: Option<f32>,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-    let mut colors = button_surface_colors_with_tone(
+    let mut colors = button_surface_colors_with_tone_and_selection_progress(
         palette,
         surface,
         state,
@@ -1099,6 +1228,7 @@ pub(crate) fn button_variant_on_surface_styled(
         pressed,
         tone,
         transparent_rest,
+        selection_progress,
     );
     if selection_fill_only && state.selected && !state.error {
         colors.boundary = None;
@@ -1489,5 +1619,23 @@ mod focus_tests {
             );
             assert_eq!(scene.primitives().len(), 1);
         }
+    }
+
+    #[test]
+    fn mix_rgba_linear_interpolates_in_linear_rgb_space_and_preserves_endpoints() {
+        let black = Rgba::new(0., 0., 0., 1.);
+        let white = Rgba::new(1., 1., 1., 1.);
+        assert_eq!(mix_rgba_linear(black, white, 0.0), black);
+        assert_eq!(mix_rgba_linear(black, white, 1.0), white);
+        assert_eq!(mix_rgba_linear(black, white, -0.5), black);
+        assert_eq!(mix_rgba_linear(black, white, 1.5), white);
+        let mid = mix_rgba_linear(black, white, 0.5);
+        assert!(
+            mid.r > 0.72 && mid.r < 0.75,
+            "linear 0.5 encodes to sRGB ~0.735, got {}",
+            mid.r
+        );
+        assert!((mid.r - mid.g).abs() < 1e-6 && (mid.g - mid.b).abs() < 1e-6);
+        assert_eq!(mid.a, 1.0);
     }
 }
