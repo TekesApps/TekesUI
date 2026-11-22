@@ -59,10 +59,14 @@ pub struct DialogView {
 
 impl Default for DialogView {
     fn default() -> Self {
+        let mut buttons = [ButtonModel::default(), ButtonModel::default()];
+        for button in &mut buttons {
+            button.set_surface("popover");
+        }
         Self {
             presence: OverlayPresence::default(),
             model: Dialog::default(),
-            buttons: [ButtonModel::default(), ButtonModel::default()],
+            buttons,
             placement: DialogLayout::default(),
             return_focus: None,
             window_active: true,

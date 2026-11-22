@@ -1589,3 +1589,52 @@ fn tooltip_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_mot
     active_view.set_window_active(false);
     assert!(!active_view.is_presented());
 }
+
+#[test]
+fn dialog_view_default_buttons_use_popover_surface_contract() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut view = DialogView::default();
+        view.show(1);
+        let mut scene = Scene::new();
+        let mut text = FixedText;
+        let layout = view
+            .render(
+                &mut scene,
+                &mut text,
+                "Confirm changes",
+                Rect::new(0., 0., 640., 480.),
+                None,
+                palette,
+                role(),
+                false,
+            )
+            .expect("open Dialog layout");
+        let cancel_frame = layout.buttons[0].frame;
+        let cancel_quad = scene
+            .primitives()
+            .iter()
+            .rev()
+            .find_map(|p| match p {
+                Primitive::Quad(q) if q.rect == cancel_frame && q.fill.a > 0. => Some(*q),
+                _ => None,
+            })
+            .expect("Dialog Cancel button background quad");
+        let expected_cancel = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "popover",
+            "action-quiet",
+            "rest",
+        )
+        .unwrap()
+        .background;
+        assert_eq!(cancel_quad.fill, expected_cancel, "{theme:?}");
+        if theme != tekes_ui_tokens::Theme::LIGHT_INCREASED {
+            assert_ne!(
+                cancel_quad.fill,
+                palette.color("surface-2").unwrap(),
+                "{theme:?} Cancel button should inherit popover surface rather than surface-2"
+            );
+        }
+    }
+}

@@ -738,20 +738,7 @@ pub(crate) fn button_variant_with_selection_fill(
             0.
         }
     };
-    let mix = |a: Rgba, b: Rgba, t: f32| {
-        if t <= 0. {
-            return a;
-        }
-        if t >= 1. {
-            return b;
-        }
-        Rgba::new(
-            a.r + (b.r - a.r) * t,
-            a.g + (b.g - a.g) * t,
-            a.b + (b.b - a.b) * t,
-            a.a + (b.a - a.a) * t,
-        )
-    };
+    let mix = |a: Rgba, b: Rgba, t: f32| mix_rgba_linear(a, b, t);
     let pressed_progress = if state.selected && variant == ButtonVariant::Quiet {
         0.
     } else {
@@ -842,7 +829,33 @@ pub(crate) fn button_surface_colors(
     )
 }
 
-fn mix_button_colors(
+pub(crate) fn mix_rgba_linear(a: Rgba, b: Rgba, t: f32) -> Rgba {
+    if !t.is_finite() || t <= 0. {
+        return a;
+    }
+    if t >= 1. {
+        return b;
+    }
+    let encode_srgb = |linear: f32| -> f32 {
+        let clamped = linear.clamp(0., 1.);
+        if clamped <= 0.003_130_8 {
+            12.92 * clamped
+        } else {
+            1.055 * clamped.powf(1. / 2.4) - 0.055
+        }
+        .clamp(0., 1.)
+    };
+    let al = a.to_linear();
+    let bl = b.to_linear();
+    Rgba::new(
+        encode_srgb(al[0] + (bl[0] - al[0]) * t),
+        encode_srgb(al[1] + (bl[1] - al[1]) * t),
+        encode_srgb(al[2] + (bl[2] - al[2]) * t),
+        (a.a + (b.a - a.a) * t).clamp(0., 1.),
+    )
+}
+
+pub(crate) fn mix_button_colors(
     a: tekes_ui_tokens::surface_palette::SurfaceColors,
     b: tekes_ui_tokens::surface_palette::SurfaceColors,
     progress: f32,
@@ -859,14 +872,7 @@ fn mix_button_colors(
     if t == 1. {
         return b;
     }
-    let mix = |a: Rgba, b: Rgba| {
-        Rgba::new(
-            a.r + (b.r - a.r) * t,
-            a.g + (b.g - a.g) * t,
-            a.b + (b.b - a.b) * t,
-            a.a + (b.a - a.a) * t,
-        )
-    };
+    let mix = |a: Rgba, b: Rgba| mix_rgba_linear(a, b, t);
     let optional = |a: Option<Rgba>, b: Option<Rgba>| match (a, b) {
         (None, None) => None,
         (Some(a), Some(b)) => Some(mix(a, b)),
@@ -1286,5 +1292,23 @@ mod focus_tests {
             );
             assert_eq!(scene.primitives().len(), 1);
         }
+    }
+
+    #[test]
+    fn mix_rgba_linear_interpolates_in_linear_rgb_space_and_preserves_endpoints() {
+        let black = Rgba::new(0., 0., 0., 1.);
+        let white = Rgba::new(1., 1., 1., 1.);
+        assert_eq!(mix_rgba_linear(black, white, 0.0), black);
+        assert_eq!(mix_rgba_linear(black, white, 1.0), white);
+        assert_eq!(mix_rgba_linear(black, white, -0.5), black);
+        assert_eq!(mix_rgba_linear(black, white, 1.5), white);
+        let mid = mix_rgba_linear(black, white, 0.5);
+        assert!(
+            mid.r > 0.72 && mid.r < 0.75,
+            "linear 0.5 encodes to sRGB ~0.735, got {}",
+            mid.r
+        );
+        assert!((mid.r - mid.g).abs() < 1e-6 && (mid.g - mid.b).abs() < 1e-6);
+        assert_eq!(mid.a, 1.0);
     }
 }

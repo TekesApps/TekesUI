@@ -166,7 +166,11 @@ impl ButtonRuntime {
         if let Some(visible) = button_layout.visible.filter(|v| has_area(*v)) {
             if !label.is_empty() && has_area(content) {
                 scene.push_clip(visible);
-                let ink = icon_foreground(palette, self.button.state, variant);
+                let ink = if let Some(surface) = self.button.surface() {
+                    self.button.surface_colors(palette, variant, surface).text
+                } else {
+                    icon_foreground(palette, self.button.state, variant)
+                };
                 text.draw(scene, label, role, content, ButtonTextAlign::Leading, ink);
                 scene.pop_clip();
             }
@@ -247,7 +251,7 @@ pub struct DisclosureBodyLayout {
     pub interactive: bool,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DisclosureView {
     runtime: ButtonRuntime,
     icon: IconView,
@@ -256,6 +260,21 @@ pub struct DisclosureView {
     reveal_initialized: bool,
     reveal_suspended: bool,
     motion_now: Duration,
+}
+impl Default for DisclosureView {
+    fn default() -> Self {
+        let mut runtime = ButtonRuntime::default();
+        runtime.button.set_surface("panel");
+        Self {
+            runtime,
+            icon: IconView::default(),
+            icon_frame: Rect::default(),
+            reveal: ProgressTransition::default(),
+            reveal_initialized: false,
+            reveal_suspended: false,
+            motion_now: Duration::default(),
+        }
+    }
 }
 impl DisclosureView {
     /// Request-only delivery uses the original ButtonRuntime, without changing
@@ -485,6 +504,15 @@ impl DisclosureView {
         palette: Palette,
         icon_size: f32,
     ) -> IconLayout {
+        let tint = self
+            .runtime
+            .button
+            .surface_colors(
+                palette,
+                ButtonVariant::Quiet,
+                self.runtime.button.surface().unwrap_or("panel"),
+            )
+            .icon;
         self.icon.render_tinted(
             scene,
             renderer,
@@ -497,7 +525,7 @@ impl DisclosureView {
             icon_size,
             clip,
             palette,
-            icon_foreground(palette, self.runtime.button.state, ButtonVariant::Quiet),
+            tint,
         )
     }
     #[allow(clippy::too_many_arguments)]

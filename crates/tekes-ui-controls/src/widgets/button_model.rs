@@ -83,6 +83,9 @@ impl ButtonModel {
     pub(crate) fn set_surface(&mut self, surface: &'static str) {
         self.surface = Some(surface);
     }
+    pub(crate) fn surface(&self) -> Option<&'static str> {
+        self.surface
+    }
     pub(crate) fn clear_surface(&mut self) {
         self.surface = None;
     }

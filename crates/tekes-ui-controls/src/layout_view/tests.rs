@@ -377,7 +377,19 @@ fn disclosure_icon_slot_keeps_label_geometry_stable_across_state_and_text_scale(
         assert_eq!(icon.name, "tekes-forward");
         assert_eq!(icon.frame.center(), closed_icon_frame.center());
         assert_eq!(icon.frame.center().y, closed.frame.center().y);
-        assert_eq!(icon.tint, Palette::from(Theme::LIGHT).color("primary-text"));
+        assert_eq!(
+            icon.tint,
+            Some(
+                tekes_ui_tokens::surface_palette::resolve_surface(
+                    Palette::from(Theme::LIGHT),
+                    "panel",
+                    "action-quiet",
+                    "rest",
+                )
+                .unwrap()
+                .icon
+            )
+        );
 
         model.open = true;
         let opened = view.render(
@@ -1452,4 +1464,88 @@ fn select_reopens_with_selected_item_revealed_in_unchanged_popup() {
         .unwrap();
     assert!(popup.scroll_offset > 0.);
     assert!(popup.items[9].visible.is_some_and(has_area));
+}
+
+#[test]
+fn disclosure_view_label_and_icon_resolve_via_surface_contract() {
+    #[derive(Default)]
+    struct CaptureText {
+        inks: Vec<tekes_ui_tokens::Rgba>,
+    }
+    impl ButtonTextRenderer for CaptureText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            FixedText.measure(text, role, max_width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            ink: tekes_ui_tokens::Rgba,
+        ) {
+            self.inks.push(ink);
+        }
+    }
+    #[derive(Default)]
+    struct CaptureIcons {
+        tints: Vec<tekes_ui_tokens::Rgba>,
+    }
+    impl IconRenderer for CaptureIcons {
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, tint: tekes_ui_tokens::Rgba) {
+            self.tints.push(tint);
+        }
+    }
+
+    let frame = Rect::new(20., 20., 220., 36.);
+    let model = Disclosure::default();
+    let palette = Palette::from(Theme::DARK);
+
+    let mut view = DisclosureView::default();
+    let mut text = CaptureText::default();
+    let mut icons = CaptureIcons::default();
+    view.render_with_icon(
+        &mut Scene::new(),
+        &mut text,
+        &mut icons,
+        &model,
+        "Details",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        16.,
+    );
+    let expected_panel_rest =
+        tekes_ui_tokens::surface_palette::resolve_surface(palette, "panel", "action-quiet", "rest")
+            .unwrap();
+    assert_eq!(text.inks, vec![expected_panel_rest.text]);
+    assert_eq!(icons.tints, vec![expected_panel_rest.icon]);
+
+    view.set_surface("sidebar").unwrap();
+    view.pointer_move(frame.center());
+    let mut text2 = CaptureText::default();
+    let mut icons2 = CaptureIcons::default();
+    view.render_with_icon(
+        &mut Scene::new(),
+        &mut text2,
+        &mut icons2,
+        &model,
+        "Details",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        16.,
+    );
+    let expected_sidebar_hover = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        "sidebar",
+        "action-quiet",
+        "hover",
+    )
+    .unwrap();
+    assert_eq!(text2.inks, vec![expected_sidebar_hover.text]);
+    assert_eq!(icons2.tints, vec![expected_sidebar_hover.icon]);
 }
