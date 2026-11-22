@@ -778,3 +778,182 @@ fn button_point_interaction_uses_clipped_placement_and_cancels_outside_release()
     button.clear_layout();
     assert_eq!(button.layout(), None);
 }
+
+#[test]
+fn checkbox_progress_transition_animates_under_clock_and_snaps_when_reduced_or_static() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            Some(ControlMotionContext {
+                now: std::time::Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(
+                (value.chars().count() as f32 * 8.).min(max_width),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    let frame = Rect::new(10., 10., 180., 36.);
+    let palette = Palette::from(Theme::LIGHT);
+    let mut cb = Checkbox::default();
+    let mut text = ClockText::default();
+
+    // First frame snaps to initial unchecked state.
+    cb.render(
+        &mut Scene::new(),
+        &mut text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    assert!(!cb.needs_animation());
+    assert_eq!(text.requests, 0);
+
+    // Toggle checked -> mid-transition at 60ms.
+    cb.toggle();
+    text.ms = 10;
+    let mut s_start = Scene::new();
+    cb.render(
+        &mut s_start,
+        &mut text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    assert!(cb.needs_animation());
+    assert!(text.requests > 0);
+
+    text.ms = 70;
+    let mut s_mid = Scene::new();
+    cb.render(
+        &mut s_mid,
+        &mut text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    let mid_box = s_mid
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            Primitive::Quad(q) if (q.rect.size.width - 16.).abs() < 0.01 => Some(*q),
+            _ => None,
+        })
+        .unwrap();
+    let unchecked_bg = crate::paint::check_surface_colors(
+        palette,
+        "canvas",
+        ControlState::default(),
+        CheckState::Unchecked,
+    )
+    .background;
+    let checked_bg = crate::paint::check_surface_colors(
+        palette,
+        "canvas",
+        ControlState::default(),
+        CheckState::Checked,
+    )
+    .background;
+    assert_ne!(mid_box.fill, unchecked_bg);
+    assert_ne!(mid_box.fill, checked_bg);
+
+    text.ms = 200;
+    let mut s_end = Scene::new();
+    cb.render(
+        &mut s_end,
+        &mut text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    assert!(!cb.needs_animation());
+    let end_box = s_end
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            Primitive::Quad(q) if (q.rect.size.width - 16.).abs() < 0.01 => Some(*q),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(end_box.fill, checked_bg);
+
+    // Reduced motion snaps immediately with zero animation frame requests.
+    let mut rm = Checkbox::default();
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    rm.render(
+        &mut Scene::new(),
+        &mut rm_text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    rm.toggle();
+    rm_text.ms = 10;
+    rm_text.requests = 0;
+    let mut s_rm = Scene::new();
+    rm.render(
+        &mut s_rm,
+        &mut rm_text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    assert!(!rm.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+
+    // No clock snaps deterministically without mutating motion state.
+    let mut static_cb = Checkbox::default();
+    let mut static_text = FixedText {
+        measured: Size::new(50., 18.),
+        drawn: None,
+    };
+    static_cb.toggle();
+    static_cb.render(
+        &mut Scene::new(),
+        &mut static_text,
+        "Enable",
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+    );
+    assert!(!static_cb.needs_animation());
+}

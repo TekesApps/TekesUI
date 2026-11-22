@@ -1,9 +1,11 @@
 use super::{ComponentEvent, has_area, safe_clip, valid};
+use crate::control_motion::{ProgressTransition, motion_for};
 use crate::{
     ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
     extended::{Axis, Breadcrumb, ControlFrame, SegmentedControl, Stack},
     paint::ButtonVariant,
 };
+use std::time::Duration;
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
@@ -24,6 +26,11 @@ pub struct SegmentedControlView {
     space_armed: Option<usize>,
     window_active: bool,
     disabled: bool,
+    thumb_x: ProgressTransition,
+    thumb_width: ProgressTransition,
+    thumb_motion_initialized: bool,
+    last_selected: Option<usize>,
+    motion_now: Duration,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SegmentedActionSnapshot {
@@ -228,6 +235,11 @@ impl SegmentedControlView {
             space_armed: None,
             window_active: true,
             disabled: false,
+            thumb_x: ProgressTransition::default(),
+            thumb_width: ProgressTransition::default(),
+            thumb_motion_initialized: false,
+            last_selected: None,
+            motion_now: Duration::default(),
         }
     }
     pub(crate) fn measure(
@@ -435,7 +447,51 @@ impl SegmentedControlView {
                 .visible
                 .is_some_and(has_area)
         {
-            let thumb_rect = self.layout.items[model.selected].frame;
+            let target = self.layout.items[model.selected].frame;
+            let thumb_rect = if let Some(context) = text.motion_context() {
+                self.motion_now = self.motion_now.max(context.now);
+                let tx = f64::from(target.min_x());
+                let tw = f64::from(target.size.width);
+                if !self.thumb_motion_initialized || context.reduced_motion {
+                    let _ = self.thumb_x.snap(tx, self.motion_now);
+                    let _ = self.thumb_width.snap(tw, self.motion_now);
+                    self.thumb_motion_initialized = true;
+                    self.last_selected = Some(model.selected);
+                } else if self.last_selected != Some(model.selected)
+                    || self.thumb_x.needs_animation()
+                    || self.thumb_width.needs_animation()
+                {
+                    let motion = motion_for("switch_thumb");
+                    let _ = self.thumb_x.retarget(tx, motion, self.motion_now, false);
+                    let _ = self
+                        .thumb_width
+                        .retarget(tw, motion, self.motion_now, false);
+                    self.last_selected = Some(model.selected);
+                } else {
+                    let _ = self.thumb_x.snap(tx, self.motion_now);
+                    let _ = self.thumb_width.snap(tw, self.motion_now);
+                }
+                if self.thumb_x.needs_animation() || self.thumb_width.needs_animation() {
+                    text.request_animation_frame();
+                }
+                Rect::new(
+                    self.thumb_x.value() as f32,
+                    target.min_y(),
+                    (self.thumb_width.value() as f32).max(0.),
+                    target.size.height,
+                )
+            } else if self.thumb_x.needs_animation() || self.thumb_width.needs_animation() {
+                let _ = self
+                    .thumb_x
+                    .snap(f64::from(target.min_x()), self.motion_now);
+                let _ = self
+                    .thumb_width
+                    .snap(f64::from(target.size.width), self.motion_now);
+                self.last_selected = Some(model.selected);
+                target
+            } else {
+                target
+            };
             let thumb_fill = palette
                 .color("segmented-thumb")
                 .expect("segmented-thumb token");
@@ -655,10 +711,19 @@ impl SegmentedControlView {
             self.hovered = None;
         }
     }
+    pub fn needs_animation(&self) -> bool {
+        self.thumb_x.needs_animation()
+            || self.thumb_width.needs_animation()
+            || self.buttons.iter().any(ButtonModel::needs_animation)
+    }
     pub fn set_window_active(&mut self, v: bool) {
         self.window_active = v;
         if !v {
             self.blur();
+            let tx = self.thumb_x.target();
+            let tw = self.thumb_width.target();
+            let _ = self.thumb_x.snap(tx, self.motion_now);
+            let _ = self.thumb_width.snap(tw, self.motion_now);
         }
     }
     /// The current roving-focus item, independent of controlled selection.

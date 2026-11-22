@@ -1,7 +1,7 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "7be9e12394ddc7ab023e518e88541e31d8599ab3",
+  "source_commit": "57833f2750ceae3590ecaa9d929298256c08b2e8",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
     "design/behavior/reference-alignment.json": "81c6c5af11e92e6bd4cf79c1aa15692517a14977659fd8823618231a7f100a9b",
@@ -30,7 +30,7 @@
     "design/source/layout.json": "43630b9b5f498605291e50060c075a798017bffc5afded4f2599ee7a6220923f",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
-    "design/tokens.json": "131f944a994f814dc94d6db74097a0387bc9e4fe6e6b99857e8d853070660c77",
+    "design/tokens.json": "ff8af9c1e6528eaa0d2deb2a9c9506ab59ec7b92fa76612bf665e55ec8d713a8",
     "docs/archive/design-logs/reference-alignment-20261016.md": "7d3da18b3656794b1025966ecd1a71dce943eca58aaa26e5bf6e567f14561cb8",
     "scripts/check-reference-alignment.py": "e2c7cab2392143136ec0b3a1df958b6bd09884aa596ce89d956d90a349b6125a",
     "scripts/tekesui_design/__init__.py": "d4f549768dce0cad51bdf939603ebf822990d35846044c6a65eb06fa1d626713",

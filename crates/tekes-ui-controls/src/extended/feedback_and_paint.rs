@@ -609,24 +609,21 @@ pub fn radio_with_state(
     }
 }
 
-pub(crate) fn radio_on_surface(
+pub(crate) fn radio_on_surface_with_progress(
     scene: &mut Scene,
     rect: Rect,
     palette: Palette,
     state: ControlState,
     surface: &str,
+    select_progress: f32,
 ) {
-    let checked = state.selected;
-    let colors = crate::paint::check_surface_colors(
-        palette,
-        surface,
-        state,
-        if checked {
-            crate::CheckState::Checked
-        } else {
-            crate::CheckState::Unchecked
-        },
-    );
+    let progress = if select_progress.is_finite() {
+        select_progress.clamp(0., 1.)
+    } else if state.selected {
+        1.
+    } else {
+        0.
+    };
     let size = rect.size.width.min(rect.size.height).max(0.);
     let frame = Rect::new(
         rect.center().x - size * 0.5,
@@ -634,27 +631,83 @@ pub(crate) fn radio_on_surface(
         size,
         size,
     );
-    // The original Radio indicator uses surface-0 while unchecked at rest.
-    // Checkbox's check-unchecked packet uses surface-2 for that channel.
-    let background = if !checked && !state.disabled && !state.hovered && !state.pressed {
-        paint_color(palette, "surface-0")
-    } else {
-        colors.background
-    };
-    let mut quad = Quad::new(frame, background).with_corner_radius(size * 0.5);
-    // Radio's established disabled boundary/mark role differs from Checkbox.
-    // Keep that component contract while the Surface packet owns other channels.
     let disabled_ink = state
         .disabled
         .then(|| paint_color(palette, "disabled-text"));
     let focused = state.focused && state.focus_visible && !state.disabled;
-    let boundary = if state.error {
-        colors.boundary
-    } else if focused {
-        colors.focus
-    } else {
-        disabled_ink.or(colors.boundary)
+    let boundary_for = |st: ControlState, checked: crate::CheckState| {
+        let colors = crate::paint::check_surface_colors(palette, surface, st, checked);
+        let bg = if checked == crate::CheckState::Unchecked
+            && !st.disabled
+            && !st.hovered
+            && !st.pressed
+        {
+            paint_color(palette, "surface-0")
+        } else {
+            colors.background
+        };
+        let boundary = if st.error {
+            colors.boundary
+        } else if focused {
+            colors.focus
+        } else {
+            disabled_ink.or(colors.boundary)
+        };
+        (bg, boundary, disabled_ink.or(colors.marker))
     };
+
+    let (background, boundary, marker) = if progress <= 0. {
+        let (bg, bd, _) = boundary_for(
+            ControlState {
+                selected: false,
+                ..state
+            },
+            crate::CheckState::Unchecked,
+        );
+        (bg, bd, None)
+    } else if progress >= 1. {
+        boundary_for(
+            ControlState {
+                selected: true,
+                ..state
+            },
+            crate::CheckState::Checked,
+        )
+    } else {
+        let (bg0, bd0, _) = boundary_for(
+            ControlState {
+                selected: false,
+                ..state
+            },
+            crate::CheckState::Unchecked,
+        );
+        let (bg1, bd1, m1) = boundary_for(
+            ControlState {
+                selected: true,
+                ..state
+            },
+            crate::CheckState::Checked,
+        );
+        let bg = crate::paint::mix_rgba_linear(bg0, bg1, progress);
+        let bd = match (bd0, bd1) {
+            (Some(a), Some(b)) => Some(crate::paint::mix_rgba_linear(a, b, progress)),
+            (Some(a), None) => Some(crate::paint::mix_rgba_linear(
+                a,
+                Rgba::new(a.r, a.g, a.b, 0.),
+                progress,
+            )),
+            (None, Some(b)) => Some(crate::paint::mix_rgba_linear(
+                Rgba::new(b.r, b.g, b.b, 0.),
+                b,
+                progress,
+            )),
+            (None, None) => None,
+        };
+        let marker = m1.map(|m| Rgba::new(m.r, m.g, m.b, (m.a * progress).clamp(0., 1.)));
+        (bg, bd, marker)
+    };
+
+    let mut quad = Quad::new(frame, background).with_corner_radius(size * 0.5);
     if let Some(boundary) = boundary {
         quad = quad.with_border(
             proposal::metric(
@@ -670,8 +723,21 @@ pub(crate) fn radio_on_surface(
         );
     }
     scene.push_quad(quad);
-    if checked && let Some(marker) = disabled_ink.or(colors.marker) {
-        scene.push_quad(Quad::new(frame.inset(size * 0.28), marker).with_corner_radius(size * 0.5));
+    if progress > 0.
+        && let Some(marker) = marker
+    {
+        let dot_rect = if progress >= 1. {
+            frame.inset(size * 0.28)
+        } else {
+            let dot_size = (size * 0.44 * progress).max(0.);
+            Rect::new(
+                frame.center().x - dot_size * 0.5,
+                frame.center().y - dot_size * 0.5,
+                dot_size,
+                dot_size,
+            )
+        };
+        scene.push_quad(Quad::new(dot_rect, marker).with_corner_radius(size * 0.5));
     }
 }
 

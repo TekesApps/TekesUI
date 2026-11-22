@@ -30,6 +30,10 @@ pub struct ButtonModel {
     )>,
     pub(super) motion_now: Duration,
     pub(super) motion_suspended: bool,
+    pub(super) check_progress: ProgressTransition,
+    pub(super) check_motion_initialized: bool,
+    pub(super) last_active_check: Option<super::CheckState>,
+    pub(super) selection_progress_override: Option<f32>,
     // Effective parent Surface supplied by the original feedback View.
     pub(super) surface: Option<&'static str>,
     // Menu/Tab selection uses fill; ordinary actions retain their own boundary.
@@ -94,19 +98,72 @@ impl ButtonModel {
     pub(crate) fn set_selection_fill_only(&mut self, fill_only: bool) {
         self.selection_fill_only = fill_only;
     }
+    pub(crate) fn set_selection_progress(&mut self, progress: Option<f32>) {
+        self.selection_progress_override = progress;
+    }
+    pub(crate) fn update_check_motion(
+        &mut self,
+        checked: super::CheckState,
+        text: &mut impl ButtonTextRenderer,
+    ) -> (f32, super::CheckState) {
+        let target = if checked == super::CheckState::Unchecked {
+            0.0
+        } else {
+            1.0
+        };
+        let Some(context) = text.motion_context() else {
+            let active = if checked == super::CheckState::Unchecked {
+                self.last_active_check.unwrap_or(super::CheckState::Checked)
+            } else {
+                checked
+            };
+            if !self.check_progress.needs_animation() {
+                return (target as f32, active);
+            }
+            let value = self
+                .check_progress
+                .snap(target, self.motion_now)
+                .unwrap_or(target);
+            return (value.clamp(0., 1.) as f32, active);
+        };
+        self.motion_now = self.motion_now.max(context.now);
+        if checked != super::CheckState::Unchecked {
+            self.last_active_check = Some(checked);
+        }
+        let value = if !self.check_motion_initialized {
+            self.check_motion_initialized = true;
+            self.check_progress.snap(target, self.motion_now)
+        } else {
+            self.check_progress.retarget(
+                target,
+                motion_for("switch_thumb"),
+                self.motion_now,
+                context.reduced_motion,
+            )
+        }
+        .unwrap_or(target);
+        if self.check_progress.needs_animation() {
+            text.request_animation_frame();
+        }
+        (
+            value.clamp(0., 1.) as f32,
+            self.last_active_check.unwrap_or(super::CheckState::Checked),
+        )
+    }
     pub(crate) fn surface_colors(
         &self,
         palette: Palette,
         variant: crate::paint::ButtonVariant,
         surface: &str,
     ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-        crate::paint::button_surface_colors(
+        crate::paint::button_surface_colors_with_selection_progress(
             palette,
             surface,
             self.state,
             variant,
             self.hover_transition.value() as f32,
             self.press_transition.value() as f32,
+            self.selection_progress_override,
         )
     }
     pub(crate) fn synchronize_activation(&mut self) {
@@ -554,7 +611,7 @@ impl ButtonModel {
                     self.hover_transition.value() as f32,
                     self.press_transition.value() as f32,
                 ));
-                crate::paint::button_variant_on_surface(
+                crate::paint::button_variant_on_surface_with_selection_progress(
                     scene,
                     chrome,
                     palette,
@@ -566,6 +623,7 @@ impl ButtonModel {
                     surface,
                     self.selection_fill_only,
                     transparent_background,
+                    self.selection_progress_override,
                 )
                 .text
             } else {
@@ -804,7 +862,9 @@ impl ButtonModel {
 
     /// Whether this component currently needs a host-driven animation frame.
     pub fn needs_animation(&self) -> bool {
-        self.hover_transition.needs_animation() || self.press_transition.needs_animation()
+        self.hover_transition.needs_animation()
+            || self.press_transition.needs_animation()
+            || self.check_progress.needs_animation()
     }
 
     /// Advance component-owned presentation state using the host monotonic clock.

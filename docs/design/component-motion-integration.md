@@ -93,3 +93,14 @@ Gallery `TextEngine` 实现可选 `ButtonTextRenderer::motion_context` 与帧请
 真实 Button/Switch/Disclosure 的组件测试检查中途改目标、终点、Reduced Motion、可见几何和失活；`gallery/quality_effects.rs` 使用真实 CoreText 适配器与 GPU 比较三者起始/中间/结束帧，验证像素确实变化且命中框固定。生产浮层 GPU 检查另覆盖三种浮层、四主题与 1×/2×；截图、最终源码与日志绑定在 Gold7 本轮收据。它们不是性能/持续120Hz测试，也不能代替真实输入法或读屏验收。
 
 后续浮层接线已完成 Menu/Dialog/Popover 的共享 `OverlayPresence`，由 JSON `overlay_presence` 的 150ms 标量过渡驱动。语义关闭即刻移除命中并恢复焦点，退场帧重建当前 atlas 字形；反向重开、Reduced Motion、上下文失效和卸载分别处理。当前逐图元 alpha 并非离屏图层合成，静止几何和 elevation 不变。Select/过滤菜单复用这一生命周期；四主题 GPU 及有限原生样本见 [Gold7 第三批收据](../../design/reviews/gold7-20261017/alignment-pass3/receipt.json)。剩余完整组件状态覆盖仍需逐项核对，不能扩大解释为全部 Gold7 或全部组件体验验收通过。
+
+## 2026-11-22 时长表统一与组件 ProgressTransition 扩展（Issue #394）
+
+1. **统一 `motion.json` 双轨时长表**：将 `control_duration.press_feedback` 与 `duration.press` 统一为 `0.07`（70ms），将 `control_duration.hover_feedback` 与 `duration.stateChange` 统一为 `0.15`（150ms），消除基础规范与生产控件之间的数值分叉。
+2. **补齐生产控件 `ProgressTransition`（`switch_thumb` 120ms）**：
+   - `Checkbox`（状态持久化在 `ButtonModel`，不改变公开字段构造）：按选中/混合/未选进度在线性 RGB 混合背景/边框并平滑渐变勾选/混合标记不透明度。
+   - `RadioGroupView`：按选项索引维护选择进度，在线性 RGB 混合外环颜色并平滑缩放内圆点尺寸与不透明度。
+   - `SegmentedControlView`：对选中 `segmented-thumb` 的水平位置 `x` 与 `width` 使用 `ProgressTransition` 滑动过渡；未提供时钟或窗口容器缩放且未处于动画中时保持瞬时吸附。
+   - `TabsView`：按页签索引维护选中态颜色过渡进度，通过 `mix_button_colors` 在非选中与选中态之间平滑插值，非 Tabs 普通按钮保持零开销直通路径。
+3. **无时钟与 Reduced Motion 护栏**：未提供宿主时钟（`motion_context() == None`）且未在动画中时，以上控件仅按离散语义终态绘制且不写入内部动画状态；开启 Reduced Motion 时单帧瞬时完成且不请求额外动画帧。
+4. **浮层扩展**：`ToastView`（Issue #389）与 `TooltipView`（Issue #390）已接入共享 `OverlayPresence`（150ms）；其中宿主经由 `ContentHost::render_help` 在 500ms 悬停驻留到期触发 tooltip 时先行 settle 入场，避免触发多余驻留帧。本节只记录代码与 CPU 单元测试核验，原生显示/性能仍单独验收。

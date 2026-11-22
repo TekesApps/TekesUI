@@ -1115,4 +1115,163 @@ mod overlay_presence_tests {
             .unwrap();
         assert_eq!(bounded.modal.size.width, 460.0);
     }
+
+    #[test]
+    fn tabs_selection_progress_animates_under_clock_and_snaps_when_reduced_or_static() {
+        let frame = Rect::new(20., 20., 260., 40.);
+        let palette = Palette::from(Theme::LIGHT);
+        let mut view = TabsView::new(2);
+        let mut text = ClockText::new();
+
+        view.render(
+            &mut Scene::new(),
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(!view.needs_animation());
+
+        assert!(view.select(1));
+        text.millis = 10;
+        text.requested = false;
+        view.render(
+            &mut Scene::new(),
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(view.needs_animation());
+        assert!(text.requested);
+
+        text.millis = 70;
+        let mut s_mid = Scene::new();
+        let layout = view.render(
+            &mut s_mid,
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        let tab1_quad = s_mid
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q) if q.rect == layout.items[1].frame => Some(*q),
+                _ => None,
+            })
+            .unwrap();
+        let rest_bg = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "canvas",
+            "action-quiet",
+            "rest",
+        )
+        .unwrap()
+        .background;
+        let selected_bg = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "canvas",
+            "action-quiet",
+            "selected",
+        )
+        .unwrap()
+        .background;
+        assert_ne!(tab1_quad.fill, rest_bg);
+        assert_ne!(tab1_quad.fill, selected_bg);
+
+        text.millis = 200;
+        let mut s_end = Scene::new();
+        view.render(
+            &mut s_end,
+            &mut text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(!view.needs_animation());
+        let end_quad = s_end
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q) if q.rect == layout.items[1].frame => Some(*q),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(end_quad.fill, selected_bg);
+
+        // Reduced motion snaps on selection change with no extra frame requests.
+        let mut rm_view = TabsView::new(2);
+        let mut rm_text = ClockText::new();
+        rm_text.reduced = true;
+        rm_view.render(
+            &mut Scene::new(),
+            &mut rm_text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(rm_view.select(1));
+        rm_text.millis = 10;
+        rm_text.requested = false;
+        rm_view.render(
+            &mut Scene::new(),
+            &mut rm_text,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(!rm_view.needs_animation());
+        assert!(!rm_text.requested);
+
+        // No clock snaps immediately.
+        struct StaticText;
+        impl ButtonTextRenderer for StaticText {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+                ClockText::new().measure(value, role, max)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        let mut static_view = TabsView::new(2);
+        static_view.select(1);
+        static_view.render(
+            &mut Scene::new(),
+            &mut StaticText,
+            &["One", "Two"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert!(!static_view.needs_animation());
+    }
 }

@@ -3,6 +3,8 @@ use super::{
     empty_button_layout, focus_reveal_outset, paint, row_height, safe_rect, set_button_state,
     size_role,
 };
+use crate::control_motion::{ProgressTransition, motion_for};
+use std::time::Duration;
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
@@ -40,6 +42,9 @@ pub struct TabsView {
     pub(super) compact: bool,
     pub(super) press_target: Option<usize>,
     pub(super) surface: &'static str,
+    pub(super) selection_progress: Vec<ProgressTransition>,
+    pub(super) selection_motion_initialized: bool,
+    pub(super) motion_now: Duration,
 }
 
 impl TabsView {
@@ -81,6 +86,9 @@ impl TabsView {
             compact: false,
             press_target: None,
             surface: "canvas",
+            selection_progress: Vec::new(),
+            selection_motion_initialized: false,
+            motion_now: Duration::default(),
         }
     }
 
@@ -332,6 +340,13 @@ impl TabsView {
             })
     }
 
+    pub fn needs_animation(&self) -> bool {
+        self.selection_progress
+            .iter()
+            .any(ProgressTransition::needs_animation)
+            || self.buttons.iter().any(ButtonModel::needs_animation)
+    }
+
     pub fn set_window_active(&mut self, active: bool) {
         self.window_active = active;
         if !active {
@@ -344,6 +359,10 @@ impl TabsView {
             }
             for button in &mut self.close_buttons {
                 button.blur();
+            }
+            for transition in &mut self.selection_progress {
+                let target = transition.target();
+                let _ = transition.snap(target, self.motion_now);
             }
             self.sync_focus_buttons();
         }
@@ -518,11 +537,61 @@ impl TabsView {
         );
         let component_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
         let visible = clip_rect(component_frame, clip);
+        let selection_progresses: Vec<Option<f32>> = if let Some(context) = text.motion_context() {
+            self.motion_now = self.motion_now.max(context.now);
+            let prev_len = self.selection_progress.len();
+            self.selection_progress
+                .resize_with(self.model.count, ProgressTransition::default);
+            let motion = motion_for("switch_thumb");
+            let mut values = Vec::with_capacity(self.model.count);
+            for (index, transition) in self.selection_progress.iter_mut().enumerate() {
+                let target = if self.model.selected == index {
+                    1.0
+                } else {
+                    0.0
+                };
+                let value = if !self.selection_motion_initialized || index >= prev_len {
+                    transition.snap(target, self.motion_now)
+                } else {
+                    transition.retarget(target, motion, self.motion_now, context.reduced_motion)
+                }
+                .unwrap_or(target);
+                values.push(Some(value.clamp(0., 1.) as f32));
+            }
+            self.selection_motion_initialized = true;
+            if self
+                .selection_progress
+                .iter()
+                .any(ProgressTransition::needs_animation)
+            {
+                text.request_animation_frame();
+            }
+            values
+        } else if self
+            .selection_progress
+            .iter()
+            .any(ProgressTransition::needs_animation)
+        {
+            self.selection_progress
+                .resize_with(self.model.count, ProgressTransition::default);
+            for (index, transition) in self.selection_progress.iter_mut().enumerate() {
+                let target = if self.model.selected == index {
+                    1.0
+                } else {
+                    0.0
+                };
+                let _ = transition.snap(target, self.motion_now);
+            }
+            vec![None; self.model.count]
+        } else {
+            vec![None; self.model.count]
+        };
         let mut items = Vec::with_capacity(self.model.count);
         let mut close_layouts = Vec::with_capacity(self.model.count);
         let mut x = frame.min_x();
         for (index, measured_height) in measured_heights.iter().copied().enumerate() {
             if !self.visible_items[index] {
+                self.buttons[index].set_selection_progress(None);
                 self.buttons[index].clear_layout();
                 self.close_buttons[index].clear_layout();
                 self.close_resources[index] = None;
@@ -542,6 +611,7 @@ impl TabsView {
             let item_clip = clip;
             let button = &mut self.buttons[index];
             button.set_surface(self.surface);
+            button.set_selection_progress(selection_progresses[index]);
             button.frame_policy = if self.toolbar {
                 crate::ButtonFramePolicy::Exact
             } else {

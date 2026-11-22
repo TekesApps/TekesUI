@@ -532,15 +532,52 @@ pub(crate) fn choice_label_color(palette: Palette, surface: &str, state: Control
     .unwrap_or_else(|_| color(palette, "primary-text"))
 }
 
-pub(crate) fn checkbox_on_surface(
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn checkbox_on_surface_with_progress(
     scene: &mut Scene,
     rect: Rect,
     palette: Palette,
     state: ControlState,
     checked: CheckState,
     surface: &str,
+    check_progress: f32,
+    mark_state: CheckState,
 ) -> Rgba {
-    let colors = check_surface_colors(palette, surface, state, checked);
+    let progress = if check_progress.is_finite() {
+        check_progress.clamp(0., 1.)
+    } else if checked == CheckState::Unchecked {
+        0.
+    } else {
+        1.
+    };
+    let active_mark = if mark_state == CheckState::Unchecked {
+        CheckState::Checked
+    } else {
+        mark_state
+    };
+    let (colors, draw_mark) = if progress <= 0. {
+        (
+            check_surface_colors(palette, surface, state, CheckState::Unchecked),
+            None,
+        )
+    } else if progress >= 1. {
+        let resolved = if checked == CheckState::Unchecked {
+            active_mark
+        } else {
+            checked
+        };
+        (
+            check_surface_colors(palette, surface, state, resolved),
+            Some(resolved),
+        )
+    } else {
+        let unchecked = check_surface_colors(palette, surface, state, CheckState::Unchecked);
+        let target_checked = check_surface_colors(palette, surface, state, active_mark);
+        (
+            mix_button_colors(unchecked, target_checked, progress),
+            Some(active_mark),
+        )
+    };
     let radius = metric("radius", "c-checkbox-radius", 4.0);
     let ink = colors.marker.unwrap_or(colors.icon);
     let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
@@ -548,7 +585,7 @@ pub(crate) fn checkbox_on_surface(
         quad = quad.with_border(metric("stroke", "stroke-rule", 1.0), boundary);
     }
     scene.push_quad(quad);
-    if checked == CheckState::Mixed {
+    if draw_mark == Some(CheckState::Mixed) {
         scene.push_quad(
             Quad::new(
                 Rect::new(
@@ -561,7 +598,7 @@ pub(crate) fn checkbox_on_surface(
             )
             .with_corner_radius(1.),
         );
-    } else if checked == CheckState::Checked {
+    } else if draw_mark == Some(CheckState::Checked) {
         let stroke = metric("size", "size-icon-artboard-stroke", 1.5);
         for (a, b) in [((0.20, 0.50), (0.42, 0.72)), ((0.42, 0.72), (0.80, 0.28))] {
             let ax = rect.min_x() + rect.size.width * a.0;
@@ -890,8 +927,72 @@ pub(crate) fn mix_button_colors(
     }
 }
 
+pub(crate) fn button_surface_colors_with_selection_progress(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    variant: ButtonVariant,
+    hover: f32,
+    pressed: f32,
+    selection_progress: Option<f32>,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    let Some(progress) = selection_progress.filter(|value| value.is_finite()) else {
+        return button_surface_colors(palette, surface, state, variant, hover, pressed);
+    };
+    let progress = progress.clamp(0., 1.);
+    if progress <= 0. {
+        return button_surface_colors(
+            palette,
+            surface,
+            ControlState {
+                selected: false,
+                ..state
+            },
+            variant,
+            hover,
+            pressed,
+        );
+    }
+    if progress >= 1. {
+        return button_surface_colors(
+            palette,
+            surface,
+            ControlState {
+                selected: true,
+                ..state
+            },
+            variant,
+            hover,
+            pressed,
+        );
+    }
+    let unselected = button_surface_colors(
+        palette,
+        surface,
+        ControlState {
+            selected: false,
+            ..state
+        },
+        variant,
+        hover,
+        pressed,
+    );
+    let selected = button_surface_colors(
+        palette,
+        surface,
+        ControlState {
+            selected: true,
+            ..state
+        },
+        variant,
+        hover,
+        pressed,
+    );
+    mix_button_colors(unselected, selected, progress)
+}
+
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn button_variant_on_surface(
+pub(crate) fn button_variant_on_surface_with_selection_progress(
     scene: &mut Scene,
     rect: Rect,
     palette: Palette,
@@ -903,8 +1004,17 @@ pub(crate) fn button_variant_on_surface(
     surface: &str,
     selection_fill_only: bool,
     transparent_background: bool,
+    selection_progress: Option<f32>,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-    let mut colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    let mut colors = button_surface_colors_with_selection_progress(
+        palette,
+        surface,
+        state,
+        variant,
+        hover,
+        pressed,
+        selection_progress,
+    );
     if selection_fill_only && state.selected && !state.error {
         colors.boundary = None;
     }
@@ -1245,7 +1355,7 @@ mod focus_tests {
             let palette = Palette::from(theme);
             for (fill_only, error) in [(false, false), (true, false), (true, true)] {
                 let mut scene = Scene::new();
-                let colors = button_variant_on_surface(
+                let colors = button_variant_on_surface_with_selection_progress(
                     &mut scene,
                     Rect::new(10., 10., 120., 36.),
                     palette,
@@ -1261,6 +1371,7 @@ mod focus_tests {
                     "popover",
                     fill_only,
                     false,
+                    None,
                 );
                 assert_eq!(colors.boundary.is_none(), fill_only && !error);
                 if error {

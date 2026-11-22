@@ -1602,3 +1602,183 @@ fn segmented_control_uses_dedicated_track_thumb_inset_and_concentric_radii() {
         );
     }
 }
+
+#[test]
+fn segmented_control_thumb_slides_under_clock_and_snaps_when_reduced_or_static() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            Some(ControlMotionContext {
+                now: Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            FixedText.measure(text, role, max_width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let frame = Rect::new(10., 20., 360., 38.);
+    let palette = Palette::from(Theme::LIGHT);
+    let mut model = SegmentedControl::new(3);
+    let mut view = SegmentedControlView::new(3);
+    let mut text = ClockText::default();
+
+    let l0 = view.render(
+        &mut Scene::new(),
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!view.needs_animation());
+    assert_eq!(text.requests, 0);
+
+    model.select(2);
+    text.ms = 10;
+    let mut s_start = Scene::new();
+    view.render(
+        &mut s_start,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    text.ms = 70;
+    let mut s_mid = Scene::new();
+    let l_mid = view.render(
+        &mut s_mid,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    let mid_thumb = s_mid
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            tekes_ui_scene::Primitive::Quad(q)
+                if q.fill == palette.color("segmented-thumb").unwrap() =>
+            {
+                Some(*q)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!(mid_thumb.rect.min_x() > l0.items[0].frame.min_x());
+    assert!(mid_thumb.rect.min_x() < l_mid.items[2].frame.min_x());
+
+    text.ms = 200;
+    let mut s_end = Scene::new();
+    view.render(
+        &mut s_end,
+        &mut text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!view.needs_animation());
+    let end_thumb = s_end
+        .primitives()
+        .iter()
+        .find_map(|p| match p {
+            tekes_ui_scene::Primitive::Quad(q)
+                if q.fill == palette.color("segmented-thumb").unwrap() =>
+            {
+                Some(*q)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!((end_thumb.rect.min_x() - l_mid.items[2].frame.min_x()).abs() < 0.01);
+
+    // Reduced motion snaps on selection change.
+    let mut rm_model = SegmentedControl::new(3);
+    let mut rm_view = SegmentedControlView::new(3);
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    rm_view.render(
+        &mut Scene::new(),
+        &mut rm_text,
+        &mut rm_model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    rm_model.select(2);
+    rm_text.ms = 10;
+    rm_text.requests = 0;
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &mut rm_model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+
+    // No clock snaps immediately without mutation.
+    let mut static_view = SegmentedControlView::new(3);
+    let mut static_text = FixedText;
+    static_view.render(
+        &mut Scene::new(),
+        &mut static_text,
+        &mut model,
+        &["Day", "Week", "Month"],
+        frame,
+        None,
+        palette,
+        proposal::TextRole::UiBody,
+        false,
+    );
+    assert!(!static_view.needs_animation());
+}
