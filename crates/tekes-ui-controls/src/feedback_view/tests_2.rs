@@ -1,6 +1,6 @@
 use super::tests_1::{
-    assert_background_clip, palette, role, FixedText, RecordingText, ScaledText, TallText,
-    WrappingText,
+    FixedText, RecordingText, ScaledText, TallText, WrappingText, assert_background_clip, palette,
+    role,
 };
 use super::*;
 use crate::extended::{Banner, EmptyState, NoticeTone, Popover, Toast, Tooltip};
@@ -218,9 +218,11 @@ fn empty_state_wrap_measure_matches_draw_and_action_stays_after_text() {
         })
         .collect();
     assert!(!title_measurements.is_empty());
-    assert!(title_measurements
-        .iter()
-        .all(|(_, _, width)| *width == title_width));
+    assert!(
+        title_measurements
+            .iter()
+            .all(|(_, _, width)| *width == title_width)
+    );
     let title_draw = text
         .draws
         .iter()
@@ -345,6 +347,30 @@ fn tooltip_render_consumes_theme_surface_and_text_roles() {
             proposal::TextRole::UiBody,
         );
         assert_eq!(layout.visible, Some(layout.frame), "{theme:?}");
+        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            "hint",
+            "surface-frame",
+            "rest",
+        )
+        .expect("validated Tooltip frame packet");
+        let text_colors =
+            tekes_ui_tokens::surface_palette::resolve_surface(palette, "hint", "content", "rest")
+                .expect("validated Tooltip content packet");
+        let shadows = scene
+            .primitives()
+            .iter()
+            .filter(|primitive| matches!(primitive, Primitive::Shadow(_)))
+            .count();
+        if theme.is_increased() {
+            assert_eq!(shadows, 0, "{theme:?} IC tooltip should remain shadow-free");
+        } else {
+            let expected_layers = proposal::elevation("popover", theme).len();
+            assert_eq!(
+                shadows, expected_layers,
+                "{theme:?} ordinary tooltip should use popover elevation layers"
+            );
+        }
         let background = scene
             .primitives()
             .iter()
@@ -353,21 +379,18 @@ fn tooltip_render_consumes_theme_surface_and_text_roles() {
                 _ => None,
             })
             .expect("public Tooltip consumer paints its background");
+        assert_eq!(background.fill, frame_colors.background, "{theme:?}");
+        let expected_stroke = crate::paint::decorative_border(palette, text.backing_scale()).0;
+        assert_eq!(background.border_width, expected_stroke, "{theme:?}");
         assert_eq!(
-            background.fill,
-            palette
-                .color("surface-3")
-                .expect("generated Tooltip surface role"),
+            Some(background.border_color),
+            frame_colors.boundary,
             "{theme:?}"
         );
         let radius =
             proposal::metric("radius", "radius-floating").expect("generated Tooltip radius");
         assert_eq!(background.corner_radii.top_left, radius, "{theme:?}");
-        assert_eq!(
-            text.0,
-            vec![palette.color("primary-text").expect("semantic text role")],
-            "{theme:?}"
-        );
+        assert_eq!(text.0, vec![text_colors.text], "{theme:?}");
     }
 }
 #[test]
@@ -381,8 +404,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
         visible: false,
         text: "Helpful detail".into(),
     };
-    assert!(view
-        .render(
+    assert!(
+        view.render(
             &mut scene,
             &mut text,
             &model,
@@ -394,10 +417,11 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none());
+        .is_none()
+    );
     view.pointer_move(anchor.center());
-    assert!(view
-        .render(
+    assert!(
+        view.render(
             &mut scene,
             &mut text,
             &model,
@@ -409,10 +433,11 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_some());
+        .is_some()
+    );
     assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
-    assert!(view
-        .render(
+    assert!(
+        view.render(
             &mut scene,
             &mut text,
             &model,
@@ -424,7 +449,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none());
+        .is_none()
+    );
     view.pointer_move(Point::new(230., 150.));
     view.render(
         &mut scene,
@@ -438,8 +464,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
         role(),
     );
     view.pointer_move(anchor.center());
-    assert!(view
-        .render(
+    assert!(
+        view.render(
             &mut scene,
             &mut text,
             &model,
@@ -451,13 +477,14 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_some());
+        .is_some()
+    );
     view.set_focus(true, true);
     assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
     view.pointer_move(Point::new(230., 150.));
     view.set_focus(false, false);
-    assert!(view
-        .render(
+    assert!(
+        view.render(
             &mut scene,
             &mut text,
             &model,
@@ -469,7 +496,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none());
+        .is_none()
+    );
 }
 
 #[test]
@@ -499,9 +527,11 @@ fn popover_content_slot_uses_component_bounds_and_deactivation_restores_focus() 
     );
     let content = slot.expect("open popover calls its content slot");
     assert_eq!(content, layout.content);
-    assert!(layout
-        .visible
-        .is_some_and(|visible| visible.contains(content.center())));
+    assert!(
+        layout
+            .visible
+            .is_some_and(|visible| visible.contains(content.center()))
+    );
     assert!(layout.frame.max_x() <= 230.);
     assert!(layout.frame.max_y() <= 150.);
     let dismiss = view.dismiss_layout.unwrap().frame.center();
@@ -1368,4 +1398,194 @@ fn toast_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_motio
     );
     assert!(!rm_view.is_presented());
     assert!(s_rm_closed.primitives().is_empty());
+}
+
+#[test]
+fn tooltip_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_motion() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: std::time::Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+            FixedText.measure(value, role, max)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let anchor = Rect::new(24., 24., 120., 32.);
+    let viewport = Rect::new(0., 0., 360., 220.);
+    let mut view = TooltipView::default();
+    let mut model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut text = ClockText::default();
+
+    let mut s0 = Scene::new();
+    let l0 = view.render(
+        &mut s0,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(l0.visible.is_some());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    text.ms = 200;
+    let mut s_full = Scene::new();
+    view.render(
+        &mut s_full,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.needs_animation());
+
+    // Dismissing triggers exit fade while layout.visible is None and is_presented is true.
+    model.visible = false;
+    text.ms = 250;
+    text.requests = 0;
+    let mut s_exit = Scene::new();
+    let l_exit = view.render(
+        &mut s_exit,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert_eq!(l_exit.visible, None);
+    assert!(view.is_presented());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+    assert!(!s_exit.primitives().is_empty());
+
+    // After duration completes, exit settles cleanly.
+    text.ms = 500;
+    let mut s_done = Scene::new();
+    view.render(
+        &mut s_done,
+        &mut text,
+        &model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.is_presented());
+    assert!(!view.needs_animation());
+    assert!(s_done.primitives().is_empty());
+
+    // Reduced motion snaps enter & exit immediately with zero frame requests.
+    let mut rm_view = TooltipView::default();
+    let mut rm_model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &rm_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+    rm_model.visible = false;
+    rm_text.ms = 16;
+    let mut s_rm_closed = Scene::new();
+    rm_view.render(
+        &mut s_rm_closed,
+        &mut rm_text,
+        &rm_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.is_presented());
+    assert!(s_rm_closed.primitives().is_empty());
+
+    // Window deactivation immediately clears presentation.
+    let mut active_view = TooltipView::default();
+    let active_model = Tooltip {
+        visible: true,
+        text: "Helpful detail".into(),
+    };
+    let mut active_text = ClockText::default();
+    active_view.render(
+        &mut Scene::new(),
+        &mut active_text,
+        &active_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    active_text.ms = 200;
+    active_view.render(
+        &mut Scene::new(),
+        &mut active_text,
+        &active_model,
+        anchor,
+        Size::new(160., 44.),
+        viewport,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(active_view.is_presented());
+    active_view.set_window_active(false);
+    assert!(!active_view.is_presented());
 }
