@@ -625,4 +625,19 @@ class ThemeSystemTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'solid status foreground contrast: light/info'):
                 g.generate()
 
+    def test_elevated_interactive_fills_and_dark_ic_text_hierarchy_stay_distinct(self):
+        default = next(
+            i for i in json.loads(g.generate()['design/theme/generated/instances.json'])['instances']
+            if i['id'] == 'default'
+        )
+        for mode in g.MODES:
+            roles = default['compiled_color_roles'][mode]
+            self.assertNotEqual(roles['button-hover'], roles['surface-popover'], mode)
+            self.assertNotEqual(roles['button-pressed'], roles['button-hover'], mode)
+            self.assertNotEqual(roles['row-selection'], roles['surface-popover'], mode)
+            self.assertNotEqual(roles['segmented-thumb'], roles['segmented-track'], mode)
+        dark_ic = default['compiled_color_roles']['dark-ic']
+        self.assertNotEqual(dark_ic['secondary-text'], dark_ic['tertiary-text'])
+        self.assertGreaterEqual(g.contrast(dark_ic['secondary-text'], dark_ic['surface-1']), 7.0)
+
 if __name__=='__main__':unittest.main()
