@@ -110,6 +110,7 @@ pub use combobox::{ComboBoxContent, ComboBoxSelection, ComboBoxUpdateError};
 mod chart_content;
 pub use chart_content::{ChartContent, ChartContentError};
 mod button;
+pub use crate::paint::ButtonTone;
 pub use button::{Button, ButtonActivationPhase, ButtonContents, ButtonImagePosition};
 use button::{action_child_theme, measure_action_slot, resolve_action_slot};
 mod content_reading;
@@ -194,7 +195,7 @@ use std::{
 use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
 pub use text_query::{ContentTextInput, ContentTextLayout};
-pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarPlacement};
+pub use toolbar_content::{ToolbarContent, ToolbarGroup, ToolbarGroupChrome, ToolbarPlacement};
 pub use toolbar_host::{
     ToolbarAccessibilityTarget, ToolbarButtonDeclaration, ToolbarCommandBinding,
     ToolbarGroupOverflow, ToolbarHost, ToolbarInvocation, ToolbarRegion, ToolbarRegionScope,

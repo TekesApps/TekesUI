@@ -273,8 +273,7 @@ impl Panel {
     }
 
     pub(super) fn ensure_local_toolbar_slots(&mut self) {
-        for item in &self.local_toolbar {
-            let id = item.id();
+        let mut alloc = |id: u64| {
             if !self.local_toolbar_slots.contains_key(&id) {
                 self.local_toolbar_slots
                     .insert(id, self.local_toolbar_next_slot);
@@ -282,6 +281,14 @@ impl Panel {
                     .local_toolbar_next_slot
                     .checked_add(1)
                     .expect("local toolbar slot exhausted");
+            }
+        };
+        for item in &self.local_toolbar {
+            alloc(item.id());
+            if let crate::LocalToolbarItem::Group(group) = item {
+                for member in &group.items {
+                    alloc(member.id());
+                }
             }
         }
     }
@@ -303,13 +310,7 @@ impl Panel {
         {
             crate::local_toolbar::validate_unique_ids(&self.module_id, &items)?;
             if self.local_toolbar != items {
-                self.toolbar = items
-                    .iter()
-                    .filter_map(|item| match item {
-                        crate::LocalToolbarItem::Button(button) => Some(button.to_protocol_item()),
-                        crate::LocalToolbarItem::Menu(_) => None,
-                    })
-                    .collect();
+                self.toolbar = crate::local_toolbar::collect_protocol_buttons(&items);
                 self.local_toolbar = items;
             }
         }
@@ -322,11 +323,7 @@ impl Panel {
             return Ok(());
         }
         if self.local.is_some() {
-            match self
-                .local_toolbar
-                .iter()
-                .find(|item| item.id() == action.id)
-            {
+            match crate::local_toolbar::find_member(&self.local_toolbar, action.id) {
                 Some(crate::LocalToolbarItem::Button(button)) => {
                     if !button.enabled
                         || (button.geometry_dependent && self.frame_viewport != self.viewport)
@@ -357,7 +354,7 @@ impl Panel {
                     self.seq += 1;
                     return Ok(());
                 }
-                None => return self.command(action.id),
+                Some(crate::LocalToolbarItem::Group(_)) | None => return self.command(action.id),
             }
         }
         self.command(action.id)

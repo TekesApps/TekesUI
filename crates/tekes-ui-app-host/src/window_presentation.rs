@@ -3,7 +3,10 @@
 use super::*;
 use crate::{
     OthersTab, PresentationState,
-    window_toolbar::{Contents, Declaration, MenuDeclaration, Source, build_menu_content},
+    window_toolbar::{
+        ButtonDeclaration, CapsuleGroupDeclaration, CapsuleGroupMember, Contents, Declaration,
+        MenuDeclaration, Source, build_capsule_group_content, build_menu_content,
+    },
 };
 use std::collections::BTreeMap;
 use tekes_ui_controls::composition::{
@@ -192,37 +195,119 @@ fn local_menu_declaration(
         tooltip: menu.tooltip.clone(),
         enabled,
         selected: menu.selected,
+        tone: menu.tone.into(),
         entries: menu.entries.clone(),
+    }
+}
+fn local_button_declaration(
+    button: &crate::LocalToolbarButton,
+    enabled: bool,
+    title: &str,
+    hint: &str,
+    icon: Option<&str>,
+    selected: bool,
+) -> ButtonDeclaration {
+    let icon_slot = icon.is_some() && title.trim().is_empty();
+    let accessible_name = if icon_slot {
+        button
+            .tooltip
+            .clone()
+            .or_else(|| (!hint.trim().is_empty()).then(|| hint.to_owned()))
+            .or_else(|| Some("Action".to_owned()))
+    } else {
+        None
+    };
+    let resolved_title = if icon.is_some() {
+        title.to_owned()
+    } else {
+        non_empty_menu_label(title, button.tooltip.as_deref().unwrap_or("Action"))
+    };
+    ButtonDeclaration {
+        id: button.id,
+        title: resolved_title,
+        accessible_name,
+        icon: icon.map(str::to_owned),
+        tooltip: (!hint.trim().is_empty()).then(|| hint.to_owned()),
+        enabled,
+        selected,
+        tone: button.tone.into(),
+    }
+}
+fn overflow_leaf_entry(item: &crate::LocalToolbarItem, enabled: bool, title: &str) -> MenuEntry {
+    match item {
+        crate::LocalToolbarItem::Button(button) => MenuEntry::Item {
+            value: format!("cmd:{}", button.id),
+            label: non_empty_menu_label(title, button.tooltip.as_deref().unwrap_or("Action")),
+            checked: button.selected.then_some(true),
+            disabled: !enabled,
+        },
+        crate::LocalToolbarItem::Menu(menu) if menu.entries.is_empty() => MenuEntry::Item {
+            value: format!("noop:{}", menu.id),
+            label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
+            checked: menu.selected.then_some(true),
+            disabled: true,
+        },
+        crate::LocalToolbarItem::Menu(menu) => MenuEntry::Submenu {
+            value: format!("menu:{}", menu.id),
+            label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
+            disabled: !enabled,
+            entries: menu.entries.clone(),
+        },
+        crate::LocalToolbarItem::Group(_) => unreachable!("nested group rejected by validation"),
     }
 }
 fn overflow_menu_declaration(
     id: u64,
-    items: &[(crate::LocalToolbarItem, bool, String)],
+    items: &[LocalOverflowEntry],
     include_icons: bool,
 ) -> MenuDeclaration {
-    let entries = items
-        .iter()
-        .map(|(item, enabled, title)| match item {
-            crate::LocalToolbarItem::Button(button) => MenuEntry::Item {
-                value: format!("cmd:{}", button.id),
-                label: non_empty_menu_label(title, button.tooltip.as_deref().unwrap_or("Action")),
-                checked: button.selected.then_some(true),
-                disabled: !*enabled,
-            },
-            crate::LocalToolbarItem::Menu(menu) if menu.entries.is_empty() => MenuEntry::Item {
-                value: format!("noop:{}", menu.id),
-                label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
-                checked: menu.selected.then_some(true),
-                disabled: true,
-            },
-            crate::LocalToolbarItem::Menu(menu) => MenuEntry::Submenu {
-                value: format!("menu:{}", menu.id),
-                label: non_empty_menu_label(&menu.title, menu.tooltip.as_deref().unwrap_or("Menu")),
-                disabled: !*enabled,
-                entries: menu.entries.clone(),
-            },
-        })
-        .collect();
+    let mut entries: Vec<MenuEntry> = Vec::new();
+    for entry in items {
+        match &entry.item {
+            crate::LocalToolbarItem::Button(_) | crate::LocalToolbarItem::Menu(_) => {
+                entries.push(overflow_leaf_entry(
+                    &entry.item,
+                    entry.enabled,
+                    &entry.title,
+                ));
+            }
+            crate::LocalToolbarItem::Group(group) => {
+                if entry.sub_entries.is_empty() {
+                    continue;
+                }
+                let member_entries: Vec<MenuEntry> = entry
+                    .sub_entries
+                    .iter()
+                    .map(|member| overflow_leaf_entry(&member.item, member.enabled, &member.title))
+                    .collect();
+                let group_label = group
+                    .label
+                    .as_deref()
+                    .or(group.tooltip.as_deref())
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty());
+                if let Some(label) = group_label {
+                    let any_enabled = entry.sub_entries.iter().any(|m| m.enabled);
+                    entries.push(MenuEntry::Submenu {
+                        value: format!("group:{}", group.id),
+                        label: label.to_owned(),
+                        disabled: !any_enabled,
+                        entries: member_entries,
+                    });
+                } else {
+                    if !entries.is_empty() && !matches!(entries.last(), Some(MenuEntry::Separator))
+                    {
+                        entries.push(MenuEntry::Separator);
+                    }
+                    entries.extend(member_entries);
+                    entries.push(MenuEntry::Separator);
+                }
+            }
+        }
+    }
+    if matches!(entries.last(), Some(MenuEntry::Separator)) {
+        entries.pop();
+    }
     MenuDeclaration {
         id,
         title: if include_icons {
@@ -237,8 +322,46 @@ fn overflow_menu_declaration(
         tooltip: Some("More actions".to_owned()),
         enabled: true,
         selected: false,
+        tone: tekes_ui_controls::composition::ButtonTone::Default,
         entries,
     }
+}
+fn capsule_member_component_id(base: u64, slot: u64, is_menu: bool) -> ComponentId {
+    ComponentId(base + 500_000 + slot * 4 + u64::from(is_menu))
+}
+fn build_capsule_members(
+    panel: &window_panels::Panel,
+    base: u64,
+    sub_entries: &[LocalBucketEntry],
+    include_icons: bool,
+) -> Vec<CapsuleGroupMember> {
+    sub_entries
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, member)| {
+            let slot = panel
+                .slot_for_local_item(member.item.id())
+                .unwrap_or(idx as u64);
+            match &member.item {
+                crate::LocalToolbarItem::Button(button) => Some(CapsuleGroupMember::Button {
+                    component_id: capsule_member_component_id(base, slot, false),
+                    decl: local_button_declaration(
+                        button,
+                        member.enabled,
+                        &member.title,
+                        &member.hint,
+                        member.icon.as_deref(),
+                        member.selected,
+                    ),
+                }),
+                crate::LocalToolbarItem::Menu(menu) => Some(CapsuleGroupMember::Menu {
+                    component_id: capsule_member_component_id(base, slot, true),
+                    decl: local_menu_declaration(menu, member.enabled, include_icons),
+                }),
+                crate::LocalToolbarItem::Group(_) => None,
+            }
+        })
+        .collect()
 }
 type LocalButtonPart = (ToolbarButtonDeclaration, Option<(u64, String)>, Option<u64>);
 fn local_button_contents(
@@ -277,6 +400,13 @@ fn measure_menu_width(text: &mut Text, decl: &MenuDeclaration) -> f32 {
 fn measure_contents_width(text: &mut Text, contents: &Contents) -> f32 {
     match contents {
         Contents::Menu(decl) => measure_menu_width(text, decl),
+        Contents::CapsuleGroup(decl) => {
+            let mut group =
+                build_capsule_group_content(ToolbarPlacement::PrimaryAction, decl, Rect::default());
+            Component::measure(&mut group, text, tekes_ui_scene::Size::new(100_000., 64.))
+                .size
+                .width
+        }
         Contents::Title(title) => {
             let mut label = TextContent::label(title.clone());
             Component::measure(&mut label, text, tekes_ui_scene::Size::new(100_000., 64.))
@@ -449,6 +579,14 @@ fn build_navigation_toolbar_declaration(
         },
     )
 }
+#[derive(Clone)]
+struct LocalOverflowEntry {
+    item: crate::LocalToolbarItem,
+    enabled: bool,
+    title: String,
+    sub_entries: Vec<LocalBucketEntry>,
+}
+#[derive(Clone)]
 struct LocalBucketEntry {
     item: crate::LocalToolbarItem,
     enabled: bool,
@@ -456,6 +594,13 @@ struct LocalBucketEntry {
     hint: String,
     icon: Option<String>,
     selected: bool,
+    sub_entries: Vec<LocalBucketEntry>,
+}
+fn is_rich_local_item(item: &crate::LocalToolbarItem) -> bool {
+    matches!(
+        item,
+        crate::LocalToolbarItem::Menu(_) | crate::LocalToolbarItem::Group(_)
+    )
 }
 impl LocalBucketEntry {
     fn from_panel_item(
@@ -470,6 +615,16 @@ impl LocalBucketEntry {
         let switch_target = is_switch
             .then(|| state.and_then(|s| s.focus_switch_target(&panel.module_id)))
             .flatten();
+        let sub_entries = match item {
+            crate::LocalToolbarItem::Group(group) => group
+                .items
+                .iter()
+                .map(|member| {
+                    Self::from_panel_item(panel, member, state, visible, open, include_icons)
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
         let enabled = open
             && (!is_switch || switch_target.is_some())
             && panel.failed.is_none()
@@ -480,6 +635,9 @@ impl LocalBucketEntry {
                         || (visible && panel.frame_viewport == panel.viewport)
                 }
                 crate::LocalToolbarItem::Menu(_) => true,
+                crate::LocalToolbarItem::Group(_) => {
+                    sub_entries.iter().any(|member| member.enabled)
+                }
             };
         let (title, hint, icon, selected) = match item {
             crate::LocalToolbarItem::Button(button) => {
@@ -517,6 +675,20 @@ impl LocalBucketEntry {
                 menu.icon.clone().filter(|_| include_icons),
                 menu.selected,
             ),
+            crate::LocalToolbarItem::Group(group) => (
+                group
+                    .label
+                    .clone()
+                    .or_else(|| group.tooltip.clone())
+                    .unwrap_or_default(),
+                group
+                    .tooltip
+                    .clone()
+                    .or_else(|| group.label.clone())
+                    .unwrap_or_default(),
+                None,
+                false,
+            ),
         };
         Self {
             item: item.clone(),
@@ -525,9 +697,15 @@ impl LocalBucketEntry {
             hint,
             icon,
             selected,
+            sub_entries,
         }
     }
-    fn to_single_contents(&self, include_icons: bool) -> Contents {
+    fn to_single_contents(
+        &self,
+        panel: &window_panels::Panel,
+        base: u64,
+        include_icons: bool,
+    ) -> Contents {
         match &self.item {
             crate::LocalToolbarItem::Button(button) => local_button_contents(
                 vec![(
@@ -546,10 +724,23 @@ impl LocalBucketEntry {
             crate::LocalToolbarItem::Menu(menu) => {
                 Contents::Menu(local_menu_declaration(menu, self.enabled, include_icons))
             }
+            crate::LocalToolbarItem::Group(group) => {
+                Contents::CapsuleGroup(CapsuleGroupDeclaration {
+                    divided: group.divided,
+                    label: group.label.clone(),
+                    tooltip: group.tooltip.clone(),
+                    members: build_capsule_members(panel, base, &self.sub_entries, include_icons),
+                })
+            }
         }
     }
-    fn to_overflow_tuple(&self) -> (crate::LocalToolbarItem, bool, String) {
-        (self.item.clone(), self.enabled, self.title.clone())
+    fn to_overflow_entry(&self) -> LocalOverflowEntry {
+        LocalOverflowEntry {
+            item: self.item.clone(),
+            enabled: self.enabled,
+            title: self.title.clone(),
+            sub_entries: self.sub_entries.clone(),
+        }
     }
 }
 #[allow(clippy::too_many_arguments)]
@@ -577,10 +768,8 @@ fn emit_local_bucket_declarations(
         pid: panel.pid,
         generation: panel.toolbar_generation,
     };
-    let has_menu = entries
-        .iter()
-        .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
-    if !has_menu {
+    let has_rich = entries.iter().any(|entry| is_rich_local_item(&entry.item));
+    if !has_rich {
         let parts = entries
             .iter()
             .filter_map(|entry| match &entry.item {
@@ -595,7 +784,7 @@ fn emit_local_bucket_declarations(
                     entry.icon.clone().map(|name| (button.id, name)),
                     entry.selected.then_some(button.id),
                 )),
-                crate::LocalToolbarItem::Menu(_) => None,
+                _ => None,
             })
             .collect();
         out.push(Declaration {
@@ -620,9 +809,19 @@ fn emit_local_bucket_declarations(
         return;
     }
     let base = 100_000_000u64 + (panel.instance & 0xFFFF_FFFF) * 1_000_000;
-    let overflow_entries: Vec<_> = entries
+    let visible_entries: Vec<&LocalBucketEntry> = entries
         .iter()
-        .map(LocalBucketEntry::to_overflow_tuple)
+        .filter(|entry| {
+            !matches!(entry.item, crate::LocalToolbarItem::Group(_))
+                || !entry.sub_entries.is_empty()
+        })
+        .collect();
+    if visible_entries.is_empty() {
+        return;
+    }
+    let overflow_entries: Vec<_> = visible_entries
+        .iter()
+        .map(|entry| entry.to_overflow_entry())
         .collect();
     if secondary {
         out.push(Declaration {
@@ -645,11 +844,11 @@ fn emit_local_bucket_declarations(
         });
         return;
     }
-    let item_contents: Vec<_> = entries
+    let item_contents: Vec<_> = visible_entries
         .iter()
-        .map(|entry| entry.to_single_contents(include_icons))
+        .map(|entry| entry.to_single_contents(panel, base, include_icons))
         .collect();
-    let k = if let Some((text, available)) = budget {
+    let (k, split_capsule) = if let Some((text, available)) = budget {
         let gap = toolbar_spacing(
             text,
             if matches!(primary_placement, ToolbarPlacement::Navigation) {
@@ -664,11 +863,66 @@ fn emit_local_bucket_declarations(
             .collect();
         let overflow_decl = overflow_menu_declaration(0, &overflow_entries, include_icons);
         let overflow_width = measure_menu_width(text, &overflow_decl);
-        fitting_prefix_count(&item_widths, overflow_width, available, gap)
+        let k = fitting_prefix_count(&item_widths, overflow_width, available, gap);
+        let mut split_choice: Option<(Contents, LocalOverflowEntry)> = None;
+        if let Some(boundary) = visible_entries.get(k)
+            && let crate::LocalToolbarItem::Group(group) = &boundary.item
+            && group.overflow == crate::LocalToolbarGroupOverflow::Split
+            && boundary.sub_entries.len() > 1
+        {
+            let prefix_used: f32 =
+                item_widths[..k].iter().sum::<f32>() + if k > 0 { gap * k as f32 } else { 0. };
+            for keep in (1..boundary.sub_entries.len()).rev() {
+                let prefix_contents = Contents::CapsuleGroup(CapsuleGroupDeclaration {
+                    divided: group.divided,
+                    label: group.label.clone(),
+                    tooltip: group.tooltip.clone(),
+                    members: build_capsule_members(
+                        panel,
+                        base,
+                        &boundary.sub_entries[..keep],
+                        include_icons,
+                    ),
+                });
+                let prefix_w = measure_contents_width(text, &prefix_contents);
+                let tail_subs = boundary.sub_entries[keep..].to_vec();
+                let tail_entry = LocalOverflowEntry {
+                    item: crate::LocalToolbarItem::Group(crate::LocalToolbarGroup {
+                        id: group.id,
+                        items: tail_subs.iter().map(|s| s.item.clone()).collect(),
+                        divided: group.divided,
+                        label: group.label.clone(),
+                        tooltip: group.tooltip.clone(),
+                        overflow: group.overflow,
+                    }),
+                    enabled: tail_subs.iter().any(|s| s.enabled),
+                    title: boundary.title.clone(),
+                    sub_entries: tail_subs,
+                };
+                let mut split_overflow = vec![tail_entry.clone()];
+                split_overflow.extend(
+                    visible_entries[k + 1..]
+                        .iter()
+                        .map(|entry| entry.to_overflow_entry()),
+                );
+                let split_decl = overflow_menu_declaration(0, &split_overflow, include_icons);
+                let split_overflow_w = measure_menu_width(text, &split_decl);
+                if prefix_used + prefix_w + gap + split_overflow_w <= available {
+                    split_choice = Some((prefix_contents, tail_entry));
+                    break;
+                }
+            }
+        }
+        (k, split_choice)
     } else {
-        item_contents.len()
+        (item_contents.len(), None)
     };
-    for (idx, (entry, contents)) in entries.iter().zip(item_contents).take(k).enumerate() {
+    for (idx, (entry, contents)) in visible_entries
+        .iter()
+        .zip(item_contents)
+        .take(k)
+        .enumerate()
+    {
         let slot_idx = panel
             .slot_for_local_item(entry.item.id())
             .unwrap_or(idx as u64);
@@ -681,7 +935,41 @@ fn emit_local_bucket_declarations(
             source: source_panel(),
         });
     }
-    if k < entries.len() {
+    let tail_start = if let Some((prefix_contents, _)) = &split_capsule {
+        let entry = visible_entries[k];
+        let slot_idx = panel
+            .slot_for_local_item(entry.item.id())
+            .unwrap_or(k as u64);
+        out.push(Declaration {
+            id: ComponentId(base + 100 + slot_idx * 10),
+            region,
+            placement: primary_placement,
+            order: -10_000 + (index as i32) * 256 + (k as i32),
+            contents: prefix_contents.clone(),
+            source: source_panel(),
+        });
+        k + 1
+    } else {
+        k
+    };
+    if let Some((_, tail_group)) = split_capsule {
+        let mut combined = vec![tail_group];
+        combined.extend(overflow_entries.into_iter().skip(tail_start));
+        out.push(Declaration {
+            id: ComponentId(base + overflow_role * 10),
+            region,
+            placement: primary_placement,
+            order: -10_000 + (index as i32) * 256 + 250,
+            contents: Contents::Menu(overflow_menu_declaration(0, &combined, include_icons)),
+            source: Source::PanelOverflow {
+                instance: panel.instance,
+                index,
+                module: panel.module_id.clone(),
+                pid: panel.pid,
+                generation: panel.toolbar_generation,
+            },
+        });
+    } else if k < visible_entries.len() {
         out.push(Declaration {
             id: ComponentId(base + overflow_role * 10),
             region,
@@ -1715,9 +2003,7 @@ impl Host {
             if entries.is_empty() {
                 continue;
             }
-            let has_menu = entries
-                .iter()
-                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let has_menu = entries.iter().any(|entry| is_rich_local_item(&entry.item));
             if !has_menu {
                 let parts = entries
                     .iter()
@@ -1733,7 +2019,7 @@ impl Host {
                             entry.icon.clone().map(|name| (button.id, name)),
                             entry.selected.then_some(button.id),
                         )),
-                        crate::LocalToolbarItem::Menu(_) => None,
+                        _ => None,
                     })
                     .collect();
                 out.push(local_button_contents(
@@ -1747,7 +2033,7 @@ impl Host {
             } else if secondary {
                 let overflow_entries: Vec<_> = entries
                     .iter()
-                    .map(LocalBucketEntry::to_overflow_tuple)
+                    .map(LocalBucketEntry::to_overflow_entry)
                     .collect();
                 out.push(Contents::Menu(overflow_menu_declaration(
                     0,
@@ -1755,8 +2041,9 @@ impl Host {
                     include_icons,
                 )));
             } else {
+                let base = 100_000_000u64 + (panel.instance & 0xFFFF_FFFF) * 1_000_000;
                 for entry in &entries {
-                    out.push(entry.to_single_contents(include_icons));
+                    out.push(entry.to_single_contents(panel, base, include_icons));
                 }
             }
         }
@@ -1807,9 +2094,7 @@ impl Host {
             if entries.is_empty() {
                 continue;
             }
-            let has_menu = entries
-                .iter()
-                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let has_menu = entries.iter().any(|entry| is_rich_local_item(&entry.item));
             let budget_ctx = if !secondary && !is_vertical && has_menu {
                 budget.map(|usable_w| {
                     let used = {
@@ -2491,9 +2776,7 @@ impl Host {
             }
         }
         local_buckets.sort_by_key(|(index, _, _, secondary, _, entries)| {
-            let has_menu = entries
-                .iter()
-                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let has_menu = entries.iter().any(|entry| is_rich_local_item(&entry.item));
             (!*secondary, has_menu, *index)
         });
         for (index, target_presenter, region, secondary, retained_target, entries) in local_buckets
@@ -2526,9 +2809,7 @@ impl Host {
             } else {
                 3 + u64::from(retained_target)
             };
-            let has_menu = entries
-                .iter()
-                .any(|entry| matches!(entry.item, crate::LocalToolbarItem::Menu(_)));
+            let has_menu = entries.iter().any(|entry| is_rich_local_item(&entry.item));
             let budget = if !secondary && has_menu {
                 match &mut budget_ctx {
                     Some((text, budgets)) => budgets.get(&ComponentId(region)).map(|&usable_w| {
@@ -6440,6 +6721,1178 @@ mod input_regressions {
                         focus_panel_frames[i],
                         focus_panel_frames[j]
                     );
+                }
+            }
+        }
+
+        #[test]
+        fn capsule_group_mixed_segments_pointer_keyboard_ax_and_action_parity() {
+            use crate::{LocalToolbarGroup, LocalToolbarTone};
+            use tekes_ui_controls::ControlKey;
+            use tekes_ui_controls::composition::ContentActionSource;
+            use tekes_ui_controls::composition::ContentKeyEvent;
+            use tekes_ui_controls::composition::ToolbarGroup;
+            use tekes_ui_platform_macos::AccessibilityRole;
+
+            let actions: Rc<RefCell<Vec<LocalToolbarAction>>> = Rc::new(RefCell::new(Vec::new()));
+            let actions_cb = actions.clone();
+
+            let access_entries = vec![
+                MenuEntry::Item {
+                    value: "ws".into(),
+                    label: "Workspace".into(),
+                    checked: Some(true),
+                    disabled: false,
+                },
+                MenuEntry::Item {
+                    value: "full".into(),
+                    label: "Full Access".into(),
+                    checked: Some(false),
+                    disabled: false,
+                },
+            ];
+            let model_entries = vec![
+                MenuEntry::Item {
+                    value: "claude-sonnet-4".into(),
+                    label: "claude-sonnet-4".into(),
+                    checked: Some(true),
+                    disabled: false,
+                },
+                MenuEntry::Item {
+                    value: "claude-opus-4".into(),
+                    label: "claude-opus-4".into(),
+                    checked: Some(false),
+                    disabled: false,
+                },
+            ];
+
+            let focus_items = vec![
+                LocalToolbarItem::Group(
+                    LocalToolbarGroup::new(
+                        300,
+                        vec![
+                            LocalToolbarItem::Button(
+                                LocalToolbarButton::new(301, "")
+                                    .icon("tekes-back")
+                                    .tooltip("Back"),
+                            ),
+                            LocalToolbarItem::Button(
+                                LocalToolbarButton::new(302, "")
+                                    .icon("tekes-forward")
+                                    .tooltip("Forward"),
+                            ),
+                        ],
+                    )
+                    .divided(false)
+                    .label("History"),
+                ),
+                LocalToolbarItem::Group(
+                    LocalToolbarGroup::new(
+                        100,
+                        vec![
+                            LocalToolbarItem::Menu(
+                                LocalToolbarMenu::new(101, "", access_entries)
+                                    .icon("tekes-access-workspace")
+                                    .tooltip("Access")
+                                    .dropdown_indicator(false),
+                            ),
+                            LocalToolbarItem::Menu(
+                                LocalToolbarMenu::new(102, "claude-sonnet-4", model_entries)
+                                    .tooltip("Model")
+                                    .dropdown_indicator(false),
+                            ),
+                            LocalToolbarItem::Button(
+                                LocalToolbarButton::new(103, "High")
+                                    .tooltip("Reasoning effort")
+                                    .tone(LocalToolbarTone::Secondary),
+                            ),
+                        ],
+                    )
+                    .label("Session controls")
+                    .tooltip("Session controls"),
+                ),
+                LocalToolbarItem::Button(LocalToolbarButton::new(201, "Run")),
+            ];
+
+            let members: Vec<Container> = vec![
+                LocalContainer::new(
+                    "focus",
+                    Content::new(ComponentId(1), TextContent::new("Main body")),
+                )
+                .unwrap()
+                .title("Focus")
+                .toolbar_items(focus_items)
+                .on_toolbar_action(move |_, act| {
+                    actions_cb.borrow_mut().push(act.clone());
+                    Ok(())
+                })
+                .into(),
+                LocalContainer::new(
+                    "other",
+                    Content::new(ComponentId(1), TextContent::new("Side body")),
+                )
+                .unwrap()
+                .title("Other")
+                .into(),
+            ];
+            let options =
+                PresentationOptions::new("focus").others(OthersOptions::new(vec!["other".into()]));
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+
+            let whole = Rect::new(0., 0., 1280., 760.);
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let focus = focus_index(&host);
+
+            let capsule_group_cid = |cmd_title_or_id: &str| -> ComponentId {
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .semantics()
+                    .into_iter()
+                    .find_map(|n| (n.semantics.name == cmd_title_or_id).then_some(n.id))
+                    .unwrap()
+            };
+            let g100_cid = capsule_group_cid("Session controls");
+            let seg_ids_and_frames = |host: &Host| -> (Rect, Vec<(ComponentId, Rect)>) {
+                let ch = host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host();
+                let group = ch
+                    .get(g100_cid)
+                    .unwrap()
+                    .component::<ToolbarGroup>()
+                    .unwrap();
+                let frames = group
+                    .children
+                    .iter()
+                    .map(|c| (c.id(), c.frame()))
+                    .collect::<Vec<_>>();
+                (ch.get(g100_cid).unwrap().frame(), frames)
+            };
+            let (g_frame, segs) = seg_ids_and_frames(&host);
+            assert_eq!(segs.len(), 3);
+            assert!(segs[0].1.size.width < g_frame.size.width);
+            assert!((segs[0].1.max_x() - segs[1].1.min_x()).abs() < 0.01);
+            assert!((segs[1].1.max_x() - segs[2].1.min_x()).abs() < 0.01);
+
+            // 1. Pointer activation on each segment + anchor check for menus + action parity for button.
+            let click_point = |host: &mut Host, pt: Point| {
+                let target = host
+                    .toolbar_target_at(pt)
+                    .expect("toolbar target at segment");
+                host.dispatch_toolbar(target, &ContentEvent::PointerMove(pt))
+                    .unwrap();
+                host.dispatch_toolbar(target, &ContentEvent::PointerDown(pt))
+                    .unwrap();
+                host.dispatch_toolbar(target, &ContentEvent::PointerUp(pt))
+                    .unwrap();
+            };
+
+            // Click icon-only menu 101 -> anchor equals seg[0] (not full group), choose "Full Access".
+            click_point(&mut host, segs[0].1.center());
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let m101 = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(segs[0].0)
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap();
+            assert!(m101.is_open());
+            assert_eq!(m101.popup_layout().unwrap().anchor, segs[0].1);
+            let (full_key, _) = find_ax_part(&mut host, "Full Access").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, full_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert_eq!(actions.borrow().last().unwrap().id, 101);
+            assert_eq!(actions.borrow().last().unwrap().menu_value(), Some("full"));
+
+            // Click compact text menu 102 -> anchor equals seg[1], choose "claude-opus-4".
+            click_point(&mut host, segs[1].1.center());
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let m102 = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(segs[1].0)
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap();
+            assert!(m102.is_open());
+            assert_eq!(m102.popup_layout().unwrap().anchor, segs[1].1);
+            let (opus_key, _) = find_ax_part(&mut host, "claude-opus-4").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, opus_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert_eq!(actions.borrow().last().unwrap().id, 102);
+            assert_eq!(
+                actions.borrow().last().unwrap().menu_value(),
+                Some("claude-opus-4")
+            );
+
+            // Click grouped button 103 and standalone button 201 -> identical ToolbarCommand payload parity.
+            click_point(&mut host, segs[2].1.center());
+            let act103 = actions.borrow().last().unwrap().clone();
+            assert_eq!(act103.id, 103);
+            assert_eq!(act103.source, ContentActionSource::Pointer);
+            assert!(matches!(
+                act103.payload,
+                Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(103))
+            ));
+
+            let run_frame = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .semantics()
+                .into_iter()
+                .find_map(|n| {
+                    if n.node.semantics.name == "Run" {
+                        Some(n.node.frame)
+                    } else {
+                        n.parts
+                            .iter()
+                            .find_map(|(_, p)| (p.semantics.name == "Run").then_some(p.frame))
+                    }
+                })
+                .unwrap();
+            click_point(&mut host, run_frame.center());
+            let act201 = actions.borrow().last().unwrap().clone();
+            assert_eq!(act201.id, 201);
+            assert_eq!(act201.source, ContentActionSource::Pointer);
+            assert!(matches!(
+                act201.payload,
+                Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(201))
+            ));
+
+            // 2. Keyboard navigation: Tab/Left/Right traverses individual segments and activates cleanly.
+            let key_ev = |key: ControlKey, down: bool| ContentKeyEvent {
+                key: Some(key),
+                down,
+                repeat: false,
+                modifiers: Default::default(),
+                native_code: 0,
+                characters: String::new(),
+                characters_ignoring_modifiers: String::new(),
+            };
+            host.set_toolbar_focus(None, false);
+            // Focus group 100 directly via Tab until segs[0] owns focus, then Right -> segs[1] -> segs[2].
+            let mut reached = false;
+            for _ in 0..8 {
+                assert!(
+                    host.toolbar_key_input(key_ev(ControlKey::Tab { reverse: false }, true))
+                        .unwrap()
+                );
+                if host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused()
+                    == Some(segs[0].0)
+                {
+                    reached = true;
+                    break;
+                }
+            }
+            assert!(
+                reached,
+                "Tab must reach first segment of Session controls capsule"
+            );
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Right, true))
+                    .unwrap()
+            );
+            assert_eq!(
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused(),
+                Some(segs[1].0)
+            );
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Right, true))
+                    .unwrap()
+            );
+            assert_eq!(
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused(),
+                Some(segs[2].0)
+            );
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Space, true))
+                    .unwrap()
+            );
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Space, false))
+                    .unwrap()
+            );
+            let kb103 = actions.borrow().last().unwrap().clone();
+            assert_eq!(kb103.id, 103);
+            assert_eq!(kb103.source, ContentActionSource::Keyboard);
+            assert!(matches!(
+                kb103.payload,
+                Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(103))
+            ));
+            // ArrowLeft returns to middle segment, and Shift+Tab moves cleanly back.
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Left, true))
+                    .unwrap()
+            );
+            assert_eq!(
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused(),
+                Some(segs[1].0)
+            );
+            assert!(
+                host.toolbar_key_input(key_ev(ControlKey::Tab { reverse: true }, true))
+                    .unwrap()
+            );
+            assert_ne!(
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .focused(),
+                Some(segs[1].0)
+            );
+
+            // 3. AX Group label & segment roles + Press activation.
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let ax_nodes = host.toolbar_accessibility_nodes(true);
+            let group_ax = ax_nodes
+                .iter()
+                .find(|n| n.label == "Session controls")
+                .expect("AX Group node");
+            assert_eq!(group_ax.role, AccessibilityRole::Group);
+            let access_ax = ax_nodes
+                .iter()
+                .find(|n| n.label == "Access")
+                .expect("Access segment AX");
+            let model_ax = ax_nodes
+                .iter()
+                .find(|n| n.label == "claude-sonnet-4")
+                .expect("Model segment AX");
+            let high_ax = ax_nodes
+                .iter()
+                .find(|n| n.label == "High")
+                .expect("High segment AX");
+            assert_eq!(access_ax.parent, Some(group_ax.key));
+            assert_eq!(model_ax.parent, Some(group_ax.key));
+            assert_eq!(high_ax.parent, Some(group_ax.key));
+
+            assert!(
+                host.toolbar_accessibility_action(true, high_ax.key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            let ax103 = actions.borrow().last().unwrap().clone();
+            assert_eq!(ax103.id, 103);
+            assert_eq!(ax103.source, ContentActionSource::Accessibility);
+
+            let access_key = access_ax.key;
+            assert!(
+                host.toolbar_accessibility_action(true, access_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let m101_ax = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(segs[0].0)
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap();
+            assert!(m101_ax.is_open());
+            assert_eq!(m101_ax.popup_layout().unwrap().anchor, segs[0].1);
+            let (ws_key, _) = find_ax_part(&mut host, "Workspace").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, ws_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(actions.borrow().last().unwrap().id, 101);
+            assert_eq!(
+                actions.borrow().last().unwrap().source,
+                ContentActionSource::Accessibility
+            );
+        }
+
+        #[test]
+        fn capsule_group_dynamic_updates_and_invalid_declaration_rejection() {
+            use crate::{AppWindow, LocalToolbarGroup, LocalToolbarTone};
+            use tekes_ui_controls::composition::ToolbarGroup;
+
+            struct DynVm {
+                icon: String,
+                model: String,
+                tone: LocalToolbarTone,
+                include_fourth: bool,
+                include_second: bool,
+                inject_invalid: Option<Vec<LocalToolbarItem>>,
+                actions: Vec<LocalToolbarAction>,
+            }
+            struct DynSource {
+                host: ContentHost,
+                vm: Rc<RefCell<DynVm>>,
+            }
+            impl DynSource {
+                fn items_for(vm: &DynVm) -> Vec<LocalToolbarItem> {
+                    if let Some(bad) = &vm.inject_invalid {
+                        return bad.clone();
+                    }
+                    let mut group_items = vec![LocalToolbarItem::Menu(
+                        LocalToolbarMenu::new(
+                            101,
+                            "",
+                            vec![MenuEntry::Item {
+                                value: "ws".into(),
+                                label: "Workspace".into(),
+                                checked: Some(true),
+                                disabled: false,
+                            }],
+                        )
+                        .icon(&vm.icon)
+                        .tooltip("Access")
+                        .dropdown_indicator(false),
+                    )];
+                    if vm.include_second {
+                        group_items.push(LocalToolbarItem::Menu(
+                            LocalToolbarMenu::new(
+                                102,
+                                &vm.model,
+                                vec![MenuEntry::Item {
+                                    value: "m".into(),
+                                    label: vm.model.clone(),
+                                    checked: Some(true),
+                                    disabled: false,
+                                }],
+                            )
+                            .tooltip("Model")
+                            .dropdown_indicator(false)
+                            .tone(vm.tone),
+                        ));
+                    }
+                    if vm.include_fourth {
+                        group_items.push(LocalToolbarItem::Button(
+                            LocalToolbarButton::new(104, "Fast").tone(LocalToolbarTone::Warning),
+                        ));
+                    }
+                    group_items.push(LocalToolbarItem::Button(LocalToolbarButton::new(
+                        103, "High",
+                    )));
+                    vec![
+                        LocalToolbarItem::Group(
+                            LocalToolbarGroup::new(100, group_items).label("Session controls"),
+                        ),
+                        LocalToolbarItem::Menu(LocalToolbarMenu::new(
+                            202,
+                            "Mode",
+                            vec![MenuEntry::Item {
+                                value: "auto".into(),
+                                label: "Auto".into(),
+                                checked: Some(true),
+                                disabled: false,
+                            }],
+                        )),
+                    ]
+                }
+            }
+            impl ContainerContent for DynSource {
+                fn with_host(&mut self, visit: &mut dyn FnMut(&mut ContentHost)) {
+                    visit(&mut self.host);
+                }
+                fn toolbar_items(&mut self) -> Option<Vec<LocalToolbarItem>> {
+                    Some(Self::items_for(&self.vm.borrow()))
+                }
+                fn on_toolbar_action(&mut self, action: &LocalToolbarAction) -> Result<bool> {
+                    self.vm.borrow_mut().actions.push(action.clone());
+                    Ok(true)
+                }
+            }
+
+            let vm = Rc::new(RefCell::new(DynVm {
+                icon: "tekes-access-workspace".into(),
+                model: "claude-sonnet-4".into(),
+                tone: LocalToolbarTone::Secondary,
+                include_fourth: false,
+                include_second: true,
+                inject_invalid: None,
+                actions: Vec::new(),
+            }));
+            let members: Vec<Container> = vec![
+                LocalContainer::from_source(
+                    "dyn",
+                    DynSource {
+                        host: ContentHost::new(Content::new(
+                            ComponentId(1),
+                            TextContent::new("Dyn body"),
+                        ))
+                        .unwrap(),
+                        vm: vm.clone(),
+                    },
+                )
+                .title("Dyn")
+                .into(),
+                LocalContainer::new(
+                    "other",
+                    Content::new(ComponentId(1), TextContent::new("Other")),
+                )
+                .unwrap()
+                .title("Other")
+                .into(),
+            ];
+            let options =
+                PresentationOptions::new("dyn").others(OthersOptions::new(vec!["other".into()]));
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+            let whole = Rect::new(0., 0., 1280., 720.);
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+
+            let seg_ids = |host: &Host| -> Vec<(ComponentId, Rect, u64)> {
+                let ch = host.panel_mgr.panels[0].mounted_toolbar.host.content_host();
+                let group_cid = ch
+                    .semantics()
+                    .into_iter()
+                    .find_map(|n| (n.semantics.name == "Session controls").then_some(n.id))
+                    .unwrap();
+                ch.get(group_cid)
+                    .unwrap()
+                    .component::<ToolbarGroup>()
+                    .unwrap()
+                    .children
+                    .iter()
+                    .map(|c| (c.id(), c.frame(), c.mount_identity()))
+                    .collect()
+            };
+
+            let before = seg_ids(&host);
+            assert_eq!(before.len(), 3);
+            let (m101_id, f101, mount101) = before[0];
+            let (m102_id, _, mount102) = before[1];
+            let (m103_id, _, mount103) = before[2];
+            let (mode_cid, mode_frame, _) = find_trigger_frame_and_id(&host, "Mode").unwrap();
+            let mode_mount = host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .get(mode_cid)
+                .unwrap()
+                .mount_identity();
+
+            // Open standalone Mode menu (and keep it open across property + structural updates? Actually open 101 first!).
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(f101.center()));
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(f101.center()));
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert!(
+                host.panel_mgr.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(m101_id)
+                    .unwrap()
+                    .component::<MenuContent>()
+                    .unwrap()
+                    .is_open()
+            );
+
+            // Sibling property update (model + tone) while 101 open -> all mounts preserved, 101 stays open.
+            {
+                let mut state = vm.borrow_mut();
+                state.model = "claude-opus-4".into();
+                state.tone = LocalToolbarTone::Error;
+            }
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let after_prop = seg_ids(&host);
+            assert_eq!(after_prop.len(), 3);
+            assert_eq!(after_prop[0].0, m101_id);
+            assert_eq!(after_prop[0].2, mount101);
+            assert_eq!(after_prop[1].0, m102_id);
+            assert_eq!(after_prop[1].2, mount102);
+            assert_eq!(after_prop[2].0, m103_id);
+            assert_eq!(after_prop[2].2, mount103);
+            assert_eq!(
+                host.panel_mgr.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(mode_cid)
+                    .unwrap()
+                    .mount_identity(),
+                mode_mount
+            );
+            assert!(
+                host.panel_mgr.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(m101_id)
+                    .unwrap()
+                    .component::<MenuContent>()
+                    .unwrap()
+                    .is_open(),
+                "updating sibling segment must keep 101 popup open"
+            );
+
+            // Updating 101's own icon also updates in place without rebuilding mount identity.
+            vm.borrow_mut().icon = "tekes-access-full".into();
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert_eq!(seg_ids(&host)[0].2, mount101);
+
+            // Dismiss 101, open Mode, then mutate 3 -> 4 segments (insert 104) -> all unchanged stay mounted and Mode stays open.
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(Point::new(10., 10.)));
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(Point::new(10., 10.)));
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(mode_frame.center()));
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(mode_frame.center()));
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            assert!(
+                host.panel_mgr.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(mode_cid)
+                    .unwrap()
+                    .component::<MenuContent>()
+                    .unwrap()
+                    .is_open()
+            );
+
+            vm.borrow_mut().include_fourth = true;
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let four = seg_ids(&host);
+            assert_eq!(four.len(), 4);
+            assert_eq!(four[0].2, mount101);
+            assert_eq!(four[1].2, mount102);
+            assert_eq!(four[3].2, mount103);
+            assert!(
+                host.panel_mgr.panels[0]
+                    .mounted_toolbar
+                    .host
+                    .content_host()
+                    .get(mode_cid)
+                    .unwrap()
+                    .component::<MenuContent>()
+                    .unwrap()
+                    .is_open(),
+                "unrelated Mode menu must stay open across 3 -> 4 segment change"
+            );
+
+            // Dismiss Mode, click newly added segment 104 -> action 104 arrives.
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerDown(Point::new(10., 10.)));
+            host.panel_mgr.panels[0]
+                .mounted_toolbar
+                .host
+                .event(&ContentEvent::PointerUp(Point::new(10., 10.)));
+            let target104 = host.toolbar_target_at(four[2].1.center()).unwrap();
+            host.dispatch_toolbar(target104, &ContentEvent::PointerDown(four[2].1.center()))
+                .unwrap();
+            host.dispatch_toolbar(target104, &ContentEvent::PointerUp(four[2].1.center()))
+                .unwrap();
+            assert_eq!(vm.borrow().actions.last().unwrap().id, 104);
+
+            // Shrink 4 -> 3 removing 102.
+            vm.borrow_mut().include_second = false;
+            render_presentation_cycle(&mut host, whole, Theme::LIGHT);
+            let three = seg_ids(&host);
+            assert_eq!(three.len(), 3);
+            assert_eq!(three[0].2, mount101);
+            assert_eq!(three[1].2, four[2].2);
+            assert_eq!(three[2].2, mount103);
+
+            // Invalid dynamic update rejection (duplicate ID, 0, nested group).
+            for bad in [
+                vec![LocalToolbarItem::Group(LocalToolbarGroup::new(
+                    100,
+                    vec![
+                        LocalToolbarItem::button(100, "DupGroup"),
+                        LocalToolbarItem::button(103, "High"),
+                    ],
+                ))],
+                vec![LocalToolbarItem::Group(LocalToolbarGroup::new(
+                    100,
+                    vec![LocalToolbarItem::button(0, "Zero")],
+                ))],
+                vec![LocalToolbarItem::Group(LocalToolbarGroup::new(
+                    100,
+                    vec![LocalToolbarItem::group(
+                        101,
+                        vec![LocalToolbarItem::button(102, "Nested")],
+                    )],
+                ))],
+            ] {
+                vm.borrow_mut().inject_invalid = Some(bad.clone());
+                assert!(host.sync_local_toolbars().is_err());
+                // Static validation via AppWindow::from_containers also rejects invalid declarations.
+                let bad_container: Container = LocalContainer::new(
+                    "bad",
+                    Content::new(ComponentId(1), TextContent::new("Bad")),
+                )
+                .unwrap()
+                .toolbar_items(bad)
+                .into();
+                assert!(
+                    AppWindow::from_containers(
+                        vec![bad_container],
+                        PresentationOptions::new("bad"),
+                    )
+                    .is_err()
+                );
+            }
+            vm.borrow_mut().inject_invalid = None;
+        }
+
+        #[test]
+        fn capsule_group_narrow_others_overflow_together_and_split() {
+            use crate::{LocalToolbarGroup, LocalToolbarGroupOverflow, LocalToolbarTone};
+            use tekes_ui_controls::composition::ToolbarGroup;
+
+            let actions: Rc<RefCell<Vec<LocalToolbarAction>>> = Rc::new(RefCell::new(Vec::new()));
+            let overflow_mode = Rc::new(Cell::new(LocalToolbarGroupOverflow::Together));
+            let mode_read = overflow_mode.clone();
+            let actions_cb = actions.clone();
+
+            let build_other_items = move || {
+                vec![LocalToolbarItem::Group(
+                    LocalToolbarGroup::new(
+                        500,
+                        vec![
+                            LocalToolbarItem::Menu(
+                                LocalToolbarMenu::new(
+                                    501,
+                                    "",
+                                    vec![MenuEntry::Item {
+                                        value: "ws".into(),
+                                        label: "Workspace".into(),
+                                        checked: Some(true),
+                                        disabled: false,
+                                    }],
+                                )
+                                .icon("tekes-access-workspace")
+                                .tooltip("Access")
+                                .dropdown_indicator(false),
+                            ),
+                            LocalToolbarItem::Menu(
+                                LocalToolbarMenu::new(
+                                    502,
+                                    "claude-sonnet-4",
+                                    vec![
+                                        MenuEntry::Item {
+                                            value: "claude-sonnet-4".into(),
+                                            label: "claude-sonnet-4".into(),
+                                            checked: Some(true),
+                                            disabled: false,
+                                        },
+                                        MenuEntry::Item {
+                                            value: "claude-opus-4".into(),
+                                            label: "claude-opus-4".into(),
+                                            checked: Some(false),
+                                            disabled: false,
+                                        },
+                                    ],
+                                )
+                                .tooltip("Model")
+                                .dropdown_indicator(false)
+                                .tone(LocalToolbarTone::Secondary),
+                            ),
+                            LocalToolbarItem::Button(
+                                LocalToolbarButton::new(503, "High").tooltip("Reasoning effort"),
+                            ),
+                        ],
+                    )
+                    .label("Model controls")
+                    .overflow(mode_read.get()),
+                )]
+            };
+
+            let members: Vec<Container> = vec![
+                LocalContainer::new(
+                    "focus",
+                    Content::new(ComponentId(1), TextContent::new("Focus")),
+                )
+                .unwrap()
+                .title("Focus")
+                .into(),
+                LocalContainer::new(
+                    "other",
+                    Content::new(ComponentId(1), TextContent::new("Other")),
+                )
+                .unwrap()
+                .title("Other")
+                .dynamic_toolbar(move |_| build_other_items())
+                .on_toolbar_action(move |_, act| {
+                    actions_cb.borrow_mut().push(act.clone());
+                    Ok(())
+                })
+                .into(),
+            ];
+            let options =
+                PresentationOptions::new("focus").others(OthersOptions::new(vec!["other".into()]));
+            let mut host = Host::from_containers(members, false, None, Some(options));
+            assert!(host.mount_columns());
+
+            // Width where Others (~35% of 840 = ~294 minus tabs/inset) fits icon+More or overflows full capsule (~220pt).
+            let narrow = Rect::new(0., 0., 760., 760.);
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+
+            let tabs_frame = host.presentation_switcher_frame().unwrap();
+            let focus = focus_index(&host);
+            assert!(
+                host.panel_mgr.panels[focus].mounted_toolbar.sources().any(
+                    |s| matches!(s, Source::PanelOverflow { module, .. } if module == "other")
+                ),
+                "Together policy in narrow Others must fold group into Source::PanelOverflow"
+            );
+            assert!(
+                !host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .sources()
+                    .any(|s| matches!(s, Source::Panel { module, .. } if module == "other")),
+                "Together policy must keep zero partial capsule groups on narrow toolbar"
+            );
+            for occ in host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .occupied_frames()
+            {
+                assert!(!rects_overlap(occ, tabs_frame));
+            }
+
+            // Open More -> Model controls -> High button AND Model -> claude-opus-4 deliver exact member_ids.
+            let (_, more_frame, _) = find_trigger_frame_and_id(&host, "More").unwrap();
+            let more_target = host.toolbar_target_at(more_frame.center()).unwrap();
+            host.dispatch_toolbar(more_target, &ContentEvent::PointerDown(more_frame.center()))
+                .unwrap();
+            host.dispatch_toolbar(more_target, &ContentEvent::PointerUp(more_frame.center()))
+                .unwrap();
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+
+            let (ctrl_key, _) = find_ax_part(&mut host, "Model controls").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, ctrl_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+            let (high_key, _) = find_ax_part(&mut host, "High").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, high_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(actions.borrow().last().unwrap().id, 503);
+            assert!(matches!(
+                actions.borrow().last().unwrap().payload,
+                Some(tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(503))
+            ));
+
+            // Re-open More -> Model controls -> Model -> claude-opus-4.
+            host.dispatch_toolbar(more_target, &ContentEvent::PointerDown(more_frame.center()))
+                .unwrap();
+            host.dispatch_toolbar(more_target, &ContentEvent::PointerUp(more_frame.center()))
+                .unwrap();
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+            let (ctrl_key, _) = find_ax_part(&mut host, "Model controls").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, ctrl_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+            let (model_key, _) = find_ax_part(&mut host, "claude-sonnet-4").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, model_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            render_presentation_cycle(&mut host, narrow, Theme::LIGHT);
+            let (opus_key, _) = find_ax_part(&mut host, "claude-opus-4").unwrap();
+            assert!(
+                host.toolbar_accessibility_action(true, opus_key, AccessibilityAction::Press)
+                    .unwrap()
+            );
+            assert_eq!(actions.borrow().last().unwrap().id, 502);
+            assert_eq!(
+                actions.borrow().last().unwrap().menu_value(),
+                Some("claude-opus-4")
+            );
+
+            // Switch to Split at a width fitting prefix (501) + More (~920pt window -> ~320pt Others minus tabs ~80pt).
+            overflow_mode.set(LocalToolbarGroupOverflow::Split);
+            let mid = Rect::new(0., 0., 860., 760.);
+            render_presentation_cycle(&mut host, mid, Theme::LIGHT);
+            assert!(
+                host.panel_mgr.panels[focus]
+                    .mounted_toolbar
+                    .sources()
+                    .any(|s| matches!(s, Source::Panel { module, .. } if module == "other")),
+                "Split policy must keep fitting capsule prefix directly on toolbar"
+            );
+            assert!(
+                host.panel_mgr.panels[focus].mounted_toolbar.sources().any(
+                    |s| matches!(s, Source::PanelOverflow { module, .. } if module == "other")
+                ),
+                "Split policy must send remaining segments to overflow"
+            );
+            let group_seg_count = host.panel_mgr.panels[focus]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .semantics()
+                .into_iter()
+                .find_map(|n| {
+                    (n.semantics.name == "Model controls").then(|| {
+                        host.panel_mgr.panels[focus]
+                            .mounted_toolbar
+                            .host
+                            .content_host()
+                            .get(n.id)
+                            .unwrap()
+                            .component::<ToolbarGroup>()
+                            .unwrap()
+                            .children
+                            .len()
+                    })
+                })
+                .unwrap();
+            assert!((1..3).contains(&group_seg_count));
+        }
+
+        fn write_rgba8_png(path: &std::path::Path, width: u32, height: u32, rgba: &[u8]) {
+            fn crc32(bytes: &[u8]) -> u32 {
+                let mut crc = 0xFFFF_FFFFu32;
+                for &b in bytes {
+                    crc ^= u32::from(b);
+                    for _ in 0..8 {
+                        crc = if crc & 1 != 0 {
+                            (crc >> 1) ^ 0xEDB8_8320
+                        } else {
+                            crc >> 1
+                        };
+                    }
+                }
+                !crc
+            }
+            fn push_chunk(out: &mut Vec<u8>, tag: &[u8; 4], data: &[u8]) {
+                out.extend_from_slice(&(data.len() as u32).to_be_bytes());
+                out.extend_from_slice(tag);
+                out.extend_from_slice(data);
+                let mut crc_input = Vec::with_capacity(4 + data.len());
+                crc_input.extend_from_slice(tag);
+                crc_input.extend_from_slice(data);
+                out.extend_from_slice(&crc32(&crc_input).to_be_bytes());
+            }
+            let row_bytes = width as usize * 4;
+            let mut raw = Vec::with_capacity((row_bytes + 1) * height as usize);
+            for y in 0..height as usize {
+                raw.push(0);
+                raw.extend_from_slice(&rgba[y * row_bytes..(y + 1) * row_bytes]);
+            }
+            let mut adler_a = 1u32;
+            let mut adler_b = 0u32;
+            for &b in &raw {
+                adler_a = (adler_a + u32::from(b)) % 65521;
+                adler_b = (adler_b + adler_a) % 65521;
+            }
+            let mut zlib = Vec::with_capacity(raw.len() + 6 + (raw.len() / 65535 + 1) * 5);
+            zlib.push(0x78);
+            zlib.push(0x01);
+            for (i, chunk) in raw.chunks(65535).enumerate() {
+                let last = (i + 1) * 65535 >= raw.len();
+                zlib.push(u8::from(last));
+                let len = chunk.len() as u16;
+                zlib.extend_from_slice(&len.to_le_bytes());
+                zlib.extend_from_slice(&(!len).to_le_bytes());
+                zlib.extend_from_slice(chunk);
+            }
+            zlib.extend_from_slice(&((adler_b << 16) | adler_a).to_be_bytes());
+
+            let mut png = vec![137, 80, 78, 71, 13, 10, 26, 10];
+            let mut ihdr = Vec::with_capacity(13);
+            ihdr.extend_from_slice(&width.to_be_bytes());
+            ihdr.extend_from_slice(&height.to_be_bytes());
+            ihdr.extend_from_slice(&[8, 6, 0, 0, 0]);
+            push_chunk(&mut png, b"IHDR", &ihdr);
+            push_chunk(&mut png, b"IDAT", &zlib);
+            push_chunk(&mut png, b"IEND", &[]);
+            std::fs::write(path, png).unwrap();
+        }
+
+        #[test]
+        fn capsule_group_retina_visual_snapshots() {
+            use crate::{AppWindow, LocalToolbarGroup, LocalToolbarTone};
+
+            let out_dir =
+                std::env::var_os("TEKESUI_CAPSULE_SCREENSHOT_DIR").map(std::path::PathBuf::from);
+            let Ok(mut renderer) = tekes_ui_render::Renderer::new_headless() else {
+                if out_dir.is_some() {
+                    panic!("headless GPU renderer required to write screenshots");
+                }
+                return;
+            };
+            if let Some(dir) = &out_dir {
+                std::fs::create_dir_all(dir).unwrap();
+            }
+
+            let build_window = || {
+                let access_entries = vec![MenuEntry::Item {
+                    value: "ws".into(),
+                    label: "Workspace".into(),
+                    checked: Some(true),
+                    disabled: false,
+                }];
+                let model_entries = vec![MenuEntry::Item {
+                    value: "claude-sonnet-4".into(),
+                    label: "claude-sonnet-4".into(),
+                    checked: Some(true),
+                    disabled: false,
+                }];
+                let containers: Vec<Container> = vec![
+                    LocalContainer::new(
+                        "focus",
+                        Content::new(ComponentId(1), TextContent::new("Focused container body")),
+                    )
+                    .unwrap()
+                    .title("Workspace")
+                    .toolbar_items(vec![
+                        LocalToolbarItem::Group(
+                            LocalToolbarGroup::new(
+                                10,
+                                vec![
+                                    LocalToolbarItem::Button(
+                                        LocalToolbarButton::new(11, "")
+                                            .icon("tekes-back")
+                                            .tooltip("Back"),
+                                    ),
+                                    LocalToolbarItem::Button(
+                                        LocalToolbarButton::new(12, "")
+                                            .icon("tekes-forward")
+                                            .tooltip("Forward"),
+                                    ),
+                                ],
+                            )
+                            .divided(false)
+                            .label("Navigation"),
+                        ),
+                        LocalToolbarItem::Group(
+                            LocalToolbarGroup::new(
+                                20,
+                                vec![
+                                    LocalToolbarItem::Menu(
+                                        LocalToolbarMenu::new(21, "", access_entries.clone())
+                                            .icon("tekes-access-workspace")
+                                            .tooltip("Access")
+                                            .dropdown_indicator(false),
+                                    ),
+                                    LocalToolbarItem::Menu(
+                                        LocalToolbarMenu::new(
+                                            22,
+                                            "claude-sonnet-4",
+                                            model_entries.clone(),
+                                        )
+                                        .tooltip("Model")
+                                        .dropdown_indicator(false)
+                                        .tone(LocalToolbarTone::Secondary),
+                                    ),
+                                    LocalToolbarItem::Button(
+                                        LocalToolbarButton::new(23, "High").tooltip("Effort"),
+                                    ),
+                                ],
+                            )
+                            .label("Controls"),
+                        ),
+                        LocalToolbarItem::Button(LocalToolbarButton::new(30, "Run").tooltip("Run")),
+                    ])
+                    .into(),
+                    LocalContainer::new(
+                        "other",
+                        Content::new(ComponentId(1), TextContent::new("Secondary inspector body")),
+                    )
+                    .unwrap()
+                    .title("Inspector")
+                    .toolbar_items(vec![LocalToolbarItem::Group(
+                        LocalToolbarGroup::new(
+                            40,
+                            vec![
+                                LocalToolbarItem::Menu(
+                                    LocalToolbarMenu::new(41, "", access_entries)
+                                        .icon("tekes-access-workspace")
+                                        .tooltip("Access")
+                                        .dropdown_indicator(false),
+                                ),
+                                LocalToolbarItem::Menu(
+                                    LocalToolbarMenu::new(42, "claude-sonnet-4", model_entries)
+                                        .tooltip("Model")
+                                        .dropdown_indicator(false),
+                                ),
+                                LocalToolbarItem::Button(LocalToolbarButton::new(43, "High")),
+                            ],
+                        )
+                        .label("Inspector controls"),
+                    )])
+                    .into(),
+                ];
+                let options = PresentationOptions::new("focus")
+                    .others(OthersOptions::new(vec!["other".into()]));
+                AppWindow::from_containers(containers, options)
+                    .unwrap()
+                    .into_window_handler()
+                    .unwrap()
+                    .1
+            };
+
+            for (name, size_pt, theme) in [
+                ("capsule_focus_light_2x.png", (1340, 240), Theme::LIGHT),
+                ("capsule_focus_dark_2x.png", (1340, 240), Theme::DARK),
+                (
+                    "capsule_others_overflow_light_2x.png",
+                    (760, 240),
+                    Theme::LIGHT,
+                ),
+                (
+                    "capsule_others_overflow_dark_2x.png",
+                    (760, 240),
+                    Theme::DARK,
+                ),
+            ] {
+                let mut win = build_window();
+                win.set_theme(theme);
+                let rgba = win
+                    .render_headless_rgba8(&mut renderer, size_pt, 2)
+                    .unwrap();
+                let w_px = size_pt.0 * 2;
+                let h_px = size_pt.1 * 2;
+                assert_eq!(rgba.len(), (w_px * h_px * 4) as usize);
+                assert!(rgba.windows(4).any(|px| px != &rgba[0..4]));
+                if let Some(dir) = &out_dir {
+                    write_rgba8_png(&dir.join(name), w_px, h_px, &rgba);
                 }
             }
         }

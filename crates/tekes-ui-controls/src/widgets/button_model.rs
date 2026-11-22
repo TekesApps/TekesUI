@@ -6,7 +6,7 @@ use super::{
 use crate::ContainerLayout;
 use crate::control_motion::{ProgressTransition, motion_for};
 use std::time::Duration;
-use tekes_ui_scene::{Point, Rect, Scene, Size};
+use tekes_ui_scene::{CornerRadii, Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
 #[derive(Clone, Debug, Default)]
@@ -34,6 +34,10 @@ pub struct ButtonModel {
     pub(super) surface: Option<&'static str>,
     // Menu/Tab selection uses fill; ordinary actions retain their own boundary.
     pub(super) selection_fill_only: bool,
+    pub(crate) corner_radii: Option<CornerRadii>,
+    pub(crate) transparent_rest: bool,
+    pub(crate) horizontal_inset_override: Option<(f32, f32)>,
+    pub(crate) tone: crate::paint::ButtonTone,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum ButtonArm {
@@ -91,19 +95,36 @@ impl ButtonModel {
     pub(crate) fn set_selection_fill_only(&mut self, fill_only: bool) {
         self.selection_fill_only = fill_only;
     }
+    pub(crate) fn set_corner_radii(&mut self, radii: Option<CornerRadii>) {
+        self.corner_radii = radii;
+    }
+    pub(crate) fn set_transparent_rest(&mut self, transparent: bool) {
+        self.transparent_rest = transparent;
+    }
+    pub(crate) fn set_horizontal_inset_override(&mut self, insets: Option<(f32, f32)>) {
+        self.horizontal_inset_override = insets;
+    }
+    pub(crate) fn set_tone(&mut self, tone: crate::paint::ButtonTone) {
+        self.tone = tone;
+    }
+    pub(crate) fn tone(&self) -> crate::paint::ButtonTone {
+        self.tone
+    }
     pub(crate) fn surface_colors(
         &self,
         palette: Palette,
         variant: crate::paint::ButtonVariant,
         surface: &str,
     ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-        crate::paint::button_surface_colors(
+        crate::paint::button_surface_colors_with_tone(
             palette,
             surface,
             self.state,
             variant,
             self.hover_transition.value() as f32,
             self.press_transition.value() as f32,
+            self.tone,
+            self.transparent_rest,
         )
     }
     pub(crate) fn synchronize_activation(&mut self) {
@@ -157,9 +178,24 @@ impl ButtonModel {
         size: ButtonSize,
         role: proposal::TextRole,
     ) -> Size {
+        Self::measure_content_with_insets(text, content, max_width, size, role, None)
+    }
+
+    pub(crate) fn measure_content_with_insets(
+        text: &mut dyn ButtonTextRenderer,
+        content: Size,
+        max_width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        horizontal_insets: Option<(f32, f32)>,
+    ) -> Size {
         let scale = button_typography_scale(text, role);
+        let (leading, trailing) = horizontal_insets.unwrap_or_else(|| {
+            let inset = size.inset() * scale;
+            (inset, inset)
+        });
         Size::new(
-            (finite_nonnegative(content.width) + size.inset() * scale * 2.).min(max_width),
+            (finite_nonnegative(content.width) + leading + trailing).min(max_width),
             (size.minimum_height() * scale)
                 .max(finite_nonnegative(content.height) + size.vertical_inset(role) * scale * 2.),
         )
@@ -397,12 +433,15 @@ impl ButtonModel {
         }
         let palette = palette.into();
         let scale = button_typography_scale(text, role);
-        let inset = if self.frame_policy == ButtonFramePolicy::Exact {
-            0.
+        let (leading_inset, trailing_inset) = if self.frame_policy == ButtonFramePolicy::Exact {
+            (0., 0.)
         } else {
-            size.inset() * scale
+            self.horizontal_inset_override.unwrap_or_else(|| {
+                let inset = size.inset() * scale;
+                (inset, inset)
+            })
         };
-        let max_width = (frame.size.width - inset * 2.0).max(0.0);
+        let max_width = (frame.size.width - leading_inset - trailing_inset).max(0.0);
         let layout = prepared.unwrap_or_else(|| {
             let label_size = measured_content.unwrap_or_else(|| {
                 if label.is_empty() {
@@ -411,7 +450,7 @@ impl ButtonModel {
                     text.measure(label, role, max_width)
                 }
             });
-            ButtonLayout::resolve_scaled(
+            ButtonLayout::resolve_scaled_with_insets(
                 frame,
                 clip,
                 label_size,
@@ -420,6 +459,7 @@ impl ButtonModel {
                 align,
                 self.frame_policy,
                 scale,
+                self.horizontal_inset_override,
             )
         });
         self.placement = Some(layout);
@@ -523,18 +563,23 @@ impl ButtonModel {
                     self.hover_transition.value() as f32,
                     self.press_transition.value() as f32,
                 ));
-                crate::paint::button_variant_on_surface(
+                let radii = self.corner_radii.unwrap_or_else(|| {
+                    CornerRadii::uniform(radius.unwrap_or_else(|| size.radius() * scale))
+                });
+                crate::paint::button_variant_on_surface_styled(
                     scene,
                     chrome,
                     palette,
                     self.state,
                     variant,
-                    radius.unwrap_or_else(|| size.radius() * scale),
+                    radii,
                     hover,
                     pressed,
                     surface,
                     self.selection_fill_only,
                     transparent_background,
+                    self.transparent_rest,
+                    self.tone,
                 )
                 .text
             } else {

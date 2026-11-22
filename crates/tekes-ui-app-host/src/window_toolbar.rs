@@ -42,6 +42,17 @@ impl Source {
     }
 }
 #[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ButtonDeclaration {
+    pub id: u64,
+    pub title: String,
+    pub accessible_name: Option<String>,
+    pub icon: Option<String>,
+    pub tooltip: Option<String>,
+    pub enabled: bool,
+    pub selected: bool,
+    pub tone: ButtonTone,
+}
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct MenuDeclaration {
     pub id: u64,
     pub title: String,
@@ -52,7 +63,42 @@ pub(crate) struct MenuDeclaration {
     pub tooltip: Option<String>,
     pub enabled: bool,
     pub selected: bool,
+    pub tone: ButtonTone,
     pub entries: Vec<MenuEntry>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum CapsuleGroupMember {
+    Button {
+        component_id: ComponentId,
+        decl: ButtonDeclaration,
+    },
+    Menu {
+        component_id: ComponentId,
+        decl: MenuDeclaration,
+    },
+}
+impl CapsuleGroupMember {
+    pub(crate) fn component_id(&self) -> ComponentId {
+        match self {
+            Self::Button { component_id, .. } | Self::Menu { component_id, .. } => *component_id,
+        }
+    }
+    pub(crate) fn command_id(&self) -> u64 {
+        match self {
+            Self::Button { decl, .. } => decl.id,
+            Self::Menu { decl, .. } => decl.id,
+        }
+    }
+    pub(crate) fn is_menu(&self) -> bool {
+        matches!(self, Self::Menu { .. })
+    }
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct CapsuleGroupDeclaration {
+    pub divided: bool,
+    pub label: Option<String>,
+    pub tooltip: Option<String>,
+    pub members: Vec<CapsuleGroupMember>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Contents {
@@ -69,6 +115,7 @@ pub(crate) enum Contents {
         selected: Vec<u64>,
     },
     Menu(MenuDeclaration),
+    CapsuleGroup(CapsuleGroupDeclaration),
     Title(String),
 }
 impl Contents {
@@ -123,6 +170,29 @@ fn validate_menu_entries(entries: &[MenuEntry]) -> Result<()> {
     }
     Ok(())
 }
+pub(crate) fn apply_button_declaration(button: &mut Button, decl: &ButtonDeclaration) {
+    button.set_variant(tekes_ui_controls::ButtonVariant::Toolbar);
+    button.set_selection_fill_only(true);
+    let icon_slot = decl.icon.is_some() && decl.title.trim().is_empty();
+    button.set_toolbar_icon_slot(icon_slot);
+    if let Some(icon) = &decl.icon {
+        button
+            .set_icon_label(icon, decl.title.clone())
+            .expect("button icon validated before sync");
+    } else {
+        button.set_contents(decl.title.clone());
+    }
+    button.set_accessible_name(decl.accessible_name.clone());
+    button.set_help(decl.tooltip.clone());
+    button.set_disabled(!decl.enabled);
+    button.set_selected(decl.selected);
+    button.set_tone(decl.tone);
+}
+pub(crate) fn build_button_content(decl: &ButtonDeclaration) -> Button {
+    let mut button = Button::new(decl.title.clone());
+    apply_button_declaration(&mut button, decl);
+    button
+}
 pub(crate) fn apply_menu_declaration(
     menu: &mut MenuContent,
     decl: &MenuDeclaration,
@@ -143,6 +213,7 @@ pub(crate) fn apply_menu_declaration(
     menu.set_trigger_help(decl.tooltip.clone());
     menu.set_disabled(!decl.enabled);
     menu.set_trigger_selected(decl.selected);
+    menu.set_trigger_tone(decl.tone);
     menu.set_entries(decl.entries.clone())
         .expect("menu entries validated before sync");
 }
@@ -150,6 +221,31 @@ pub(crate) fn build_menu_content(decl: &MenuDeclaration, viewport: Rect) -> Menu
     let mut menu = MenuContent::new(decl.title.clone(), Vec::new());
     apply_menu_declaration(&mut menu, decl, viewport);
     menu
+}
+pub(crate) fn build_capsule_group_content(
+    placement: ToolbarPlacement,
+    decl: &CapsuleGroupDeclaration,
+    viewport: Rect,
+) -> ToolbarGroup {
+    let children = decl
+        .members
+        .iter()
+        .map(|member| match member {
+            CapsuleGroupMember::Button { component_id, decl } => {
+                Content::new(*component_id, build_button_content(decl))
+            }
+            CapsuleGroupMember::Menu { component_id, decl } => {
+                Content::new(*component_id, build_menu_content(decl, viewport))
+            }
+        })
+        .collect();
+    let mut group =
+        ToolbarGroup::new(placement, children).with_chrome(ToolbarGroupChrome::Capsule {
+            divided: decl.divided,
+        });
+    group.set_label(decl.label.clone());
+    group.set_help(decl.tooltip.clone());
+    group
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Declaration {
@@ -203,6 +299,26 @@ impl MountedToolbar {
             .find(|d| d.id == group)
             .map(|d| &d.source)
     }
+    pub(crate) fn group_for_descendant(&self, id: ComponentId) -> Option<ComponentId> {
+        for d in &self.declarations {
+            if d.id == id {
+                return Some(d.id);
+            }
+            match &d.contents {
+                Contents::CapsuleGroup(group) => {
+                    if group.members.iter().any(|m| m.component_id() == id) {
+                        return Some(d.id);
+                    }
+                }
+                _ => {
+                    if ComponentId(d.id.0 + 1) == id {
+                        return Some(d.id);
+                    }
+                }
+            }
+        }
+        None
+    }
     pub fn sync(
         &mut self,
         viewport: Rect,
@@ -213,11 +329,33 @@ impl MountedToolbar {
             for (_, name) in declaration.contents.templates() {
                 tekes_ui_icons::Glyph::named(name).context("unknown toolkit template icon")?;
             }
-            if let Contents::Menu(menu) = &declaration.contents {
-                if let Some(name) = &menu.icon {
-                    tekes_ui_icons::Glyph::named(name).context("unknown toolkit menu icon")?;
+            match &declaration.contents {
+                Contents::Menu(menu) => {
+                    if let Some(name) = &menu.icon {
+                        tekes_ui_icons::Glyph::named(name).context("unknown toolkit menu icon")?;
+                    }
+                    validate_menu_entries(&menu.entries)?;
                 }
-                validate_menu_entries(&menu.entries)?;
+                Contents::CapsuleGroup(group) => {
+                    for member in &group.members {
+                        match member {
+                            CapsuleGroupMember::Button { decl, .. } => {
+                                if let Some(name) = &decl.icon {
+                                    tekes_ui_icons::Glyph::named(name)
+                                        .context("unknown toolkit button icon")?;
+                                }
+                            }
+                            CapsuleGroupMember::Menu { decl, .. } => {
+                                if let Some(name) = &decl.icon {
+                                    tekes_ui_icons::Glyph::named(name)
+                                        .context("unknown toolkit menu icon")?;
+                                }
+                                validate_menu_entries(&decl.entries)?;
+                            }
+                        }
+                    }
+                }
+                _ => {}
             }
         }
         let viewport_changed = self.viewport != viewport;
@@ -235,13 +373,33 @@ impl MountedToolbar {
         }
         for d in &declarations {
             if self.declarations.iter().any(|old| old == d) {
-                if viewport_changed && matches!(d.contents, Contents::Menu(_)) {
-                    let target = ComponentId(d.id.0 + 1);
-                    self.host
-                        .update_component::<MenuContent>(d.id, target, |menu| {
-                            menu.set_popup_viewport(Some(viewport));
-                        })
-                        .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                if viewport_changed {
+                    match &d.contents {
+                        Contents::Menu(_) => {
+                            let target = ComponentId(d.id.0 + 1);
+                            self.host
+                                .update_component::<MenuContent>(d.id, target, |menu| {
+                                    menu.set_popup_viewport(Some(viewport));
+                                })
+                                .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                        }
+                        Contents::CapsuleGroup(group) => {
+                            for member in &group.members {
+                                if let CapsuleGroupMember::Menu { component_id, .. } = member {
+                                    self.host
+                                        .update_component::<MenuContent>(
+                                            d.id,
+                                            *component_id,
+                                            |menu| {
+                                                menu.set_popup_viewport(Some(viewport));
+                                            },
+                                        )
+                                        .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
                 }
                 continue;
             }
@@ -260,6 +418,7 @@ impl MountedToolbar {
                         | Contents::SelectedTemplateCommands { buttons: b, .. },
                     ) => a.iter().map(|b| b.id).eq(b.iter().map(|b| b.id)),
                     (Contents::Menu(a), Contents::Menu(b)) => a.id == b.id,
+                    (Contents::CapsuleGroup(_), Contents::CapsuleGroup(_)) => true,
                     (Contents::Title(_), Contents::Title(_)) => true,
                     _ => false,
                 };
@@ -273,12 +432,15 @@ impl MountedToolbar {
                             .map_err(|e| anyhow::anyhow!("toolbar move: {e:?}"))?;
                     }
                     if old.contents != d.contents {
-                        let result = match &d.contents {
-                            Contents::Commands(buttons, overflow)
-                            | Contents::TemplateCommands(buttons, overflow, _)
-                            | Contents::SelectedTemplateCommands {
-                                buttons, overflow, ..
-                            } => {
+                        match (&old.contents, &d.contents) {
+                            (
+                                _,
+                                Contents::Commands(buttons, overflow)
+                                | Contents::TemplateCommands(buttons, overflow, _)
+                                | Contents::SelectedTemplateCommands {
+                                    buttons, overflow, ..
+                                },
+                            ) => {
                                 let selected = match &d.contents {
                                     Contents::SelectedTemplateCommands { selected, .. } => {
                                         selected.as_slice()
@@ -318,47 +480,209 @@ impl MountedToolbar {
                                             }
                                         },
                                     )
+                                    .map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                             }
-                            Contents::Menu(decl) => {
+                            (_, Contents::Menu(decl)) => {
                                 self.host
                                     .update_component::<MenuContent>(d.id, target, |menu| {
                                         apply_menu_declaration(menu, decl, viewport)
                                     })
+                                    .map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                             }
-                            Contents::Title(title) => {
+                            (_, Contents::Title(title)) => {
                                 self.host
                                     .update_component::<TextContent>(d.id, target, |label| {
                                         label.set_text(title.clone())
                                     })
+                                    .map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                             }
-                        };
-                        result.map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
-                    } else if viewport_changed && matches!(d.contents, Contents::Menu(_)) {
-                        self.host
-                            .update_component::<MenuContent>(d.id, target, |menu| {
-                                menu.set_popup_viewport(Some(viewport));
-                            })
-                            .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                            (Contents::CapsuleGroup(old_g), Contents::CapsuleGroup(new_g)) => {
+                                if old_g.divided != new_g.divided
+                                    || old_g.label != new_g.label
+                                    || old_g.tooltip != new_g.tooltip
+                                {
+                                    self.host
+                                        .update_component::<ToolbarGroup>(d.id, d.id, |group| {
+                                            group.set_chrome(ToolbarGroupChrome::Capsule {
+                                                divided: new_g.divided,
+                                            });
+                                            group.set_label(new_g.label.clone());
+                                            group.set_help(new_g.tooltip.clone());
+                                        })
+                                        .map_err(|e| {
+                                            anyhow::anyhow!("toolbar capsule group: {e:?}")
+                                        })?;
+                                }
+                                let structure_changed = old_g
+                                    .members
+                                    .iter()
+                                    .map(|m| (m.component_id(), m.is_menu()))
+                                    .ne(new_g
+                                        .members
+                                        .iter()
+                                        .map(|m| (m.component_id(), m.is_menu())));
+                                if structure_changed {
+                                    let added: Vec<Content> = new_g
+                                        .members
+                                        .iter()
+                                        .filter(|new_m| {
+                                            !old_g.members.iter().any(|old_m| {
+                                                old_m.component_id() == new_m.component_id()
+                                                    && old_m.is_menu() == new_m.is_menu()
+                                            })
+                                        })
+                                        .map(|member| match member {
+                                            CapsuleGroupMember::Button { component_id, decl } => {
+                                                Content::new(
+                                                    *component_id,
+                                                    build_button_content(decl),
+                                                )
+                                            }
+                                            CapsuleGroupMember::Menu { component_id, decl } => {
+                                                Content::new(
+                                                    *component_id,
+                                                    build_menu_content(decl, viewport),
+                                                )
+                                            }
+                                        })
+                                        .collect();
+                                    let order: Vec<ComponentId> = new_g
+                                        .members
+                                        .iter()
+                                        .map(CapsuleGroupMember::component_id)
+                                        .collect();
+                                    let bindings: Vec<ToolbarCommandBinding<Source>> = new_g
+                                        .members
+                                        .iter()
+                                        .map(|member| ToolbarCommandBinding {
+                                            target: member.component_id(),
+                                            action: None,
+                                            command: member.command_id(),
+                                            source: d.source.clone(),
+                                        })
+                                        .collect();
+                                    self.host
+                                        .update_group_children(d.id, added, order, bindings)
+                                        .map_err(|e| {
+                                            anyhow::anyhow!("toolbar capsule children: {e:?}")
+                                        })?;
+                                }
+                                for new_m in &new_g.members {
+                                    let Some(old_m) = old_g.members.iter().find(|old_m| {
+                                        old_m.component_id() == new_m.component_id()
+                                            && old_m.is_menu() == new_m.is_menu()
+                                    }) else {
+                                        continue;
+                                    };
+                                    match (old_m, new_m) {
+                                        (
+                                            CapsuleGroupMember::Button { decl: a, .. },
+                                            CapsuleGroupMember::Button {
+                                                component_id,
+                                                decl: b,
+                                            },
+                                        ) if a != b => {
+                                            self.host
+                                                .update_component::<Button>(
+                                                    d.id,
+                                                    *component_id,
+                                                    |button| apply_button_declaration(button, b),
+                                                )
+                                                .map_err(|e| {
+                                                    anyhow::anyhow!("toolbar button values: {e:?}")
+                                                })?;
+                                        }
+                                        (
+                                            CapsuleGroupMember::Menu { decl: a, .. },
+                                            CapsuleGroupMember::Menu {
+                                                component_id,
+                                                decl: b,
+                                            },
+                                        ) if a != b => {
+                                            self.host
+                                                .update_component::<MenuContent>(
+                                                    d.id,
+                                                    *component_id,
+                                                    |menu| {
+                                                        apply_menu_declaration(menu, b, viewport)
+                                                    },
+                                                )
+                                                .map_err(|e| {
+                                                    anyhow::anyhow!("toolbar menu values: {e:?}")
+                                                })?;
+                                        }
+                                        (
+                                            CapsuleGroupMember::Menu { .. },
+                                            CapsuleGroupMember::Menu { component_id, .. },
+                                        ) if viewport_changed => {
+                                            self.host
+                                                .update_component::<MenuContent>(
+                                                    d.id,
+                                                    *component_id,
+                                                    |menu| menu.set_popup_viewport(Some(viewport)),
+                                                )
+                                                .map_err(|e| {
+                                                    anyhow::anyhow!("toolbar viewport: {e:?}")
+                                                })?;
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                            _ => unreachable!("compatible check guards matched variants"),
+                        }
+                    } else if viewport_changed {
+                        match &d.contents {
+                            Contents::Menu(_) => {
+                                self.host
+                                    .update_component::<MenuContent>(d.id, target, |menu| {
+                                        menu.set_popup_viewport(Some(viewport));
+                                    })
+                                    .map_err(|e| anyhow::anyhow!("toolbar viewport: {e:?}"))?;
+                            }
+                            Contents::CapsuleGroup(group) => {
+                                for member in &group.members {
+                                    if let CapsuleGroupMember::Menu { component_id, .. } = member {
+                                        self.host
+                                            .update_component::<MenuContent>(
+                                                d.id,
+                                                *component_id,
+                                                |menu| menu.set_popup_viewport(Some(viewport)),
+                                            )
+                                            .map_err(|e| {
+                                                anyhow::anyhow!("toolbar viewport: {e:?}")
+                                            })?;
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     continue;
                 }
             }
             let target = ComponentId(d.id.0 + 1);
-            let (mut child, bindings) = match &d.contents {
+            let (group_content, bindings) = match &d.contents {
                 Contents::Commands(buttons, overflow)
                 | Contents::TemplateCommands(buttons, overflow, _)
                 | Contents::SelectedTemplateCommands {
                     buttons, overflow, ..
                 } => {
                     let mut content = toolbar_commands(target, buttons.clone(), *overflow);
-                    if let Contents::SelectedTemplateCommands { selected, .. } = &d.contents
-                        && let Some(control) =
-                            content.component_mut::<tekes_ui_controls::ToolbarControl>()
+                    if let Some(control) =
+                        content.component_mut::<tekes_ui_controls::ToolbarControl>()
                     {
-                        control.set_selected_ids(selected);
+                        if let Contents::SelectedTemplateCommands { selected, .. } = &d.contents {
+                            control.set_selected_ids(selected);
+                        }
+                        for (id, name) in d.contents.templates() {
+                            control
+                                .set_action_template_icon(*id, Some(name))
+                                .expect("template names validated before sync");
+                        }
                     }
                     (
-                        content,
+                        Content::new(d.id, ToolbarGroup::new(d.placement, vec![content])),
                         buttons
                             .iter()
                             .map(|b| ToolbarCommandBinding {
@@ -371,7 +695,13 @@ impl MountedToolbar {
                     )
                 }
                 Contents::Menu(decl) => (
-                    Content::new(target, build_menu_content(decl, viewport)),
+                    Content::new(
+                        d.id,
+                        ToolbarGroup::new(
+                            d.placement,
+                            vec![Content::new(target, build_menu_content(decl, viewport))],
+                        ),
+                    ),
                     vec![ToolbarCommandBinding {
                         target,
                         action: None,
@@ -379,23 +709,41 @@ impl MountedToolbar {
                         source: d.source.clone(),
                     }],
                 ),
+                Contents::CapsuleGroup(decl) => {
+                    let bindings = decl
+                        .members
+                        .iter()
+                        .map(|member| ToolbarCommandBinding {
+                            target: member.component_id(),
+                            action: None,
+                            command: member.command_id(),
+                            source: d.source.clone(),
+                        })
+                        .collect();
+                    (
+                        Content::new(
+                            d.id,
+                            build_capsule_group_content(d.placement, decl, viewport),
+                        ),
+                        bindings,
+                    )
+                }
                 Contents::Title(title) => (
-                    Content::new(target, TextContent::label(title.clone())),
+                    Content::new(
+                        d.id,
+                        ToolbarGroup::new(
+                            d.placement,
+                            vec![Content::new(target, TextContent::label(title.clone()))],
+                        ),
+                    ),
                     vec![],
                 ),
             };
-            if let Some(control) = child.component_mut::<tekes_ui_controls::ToolbarControl>() {
-                for (id, name) in d.contents.templates() {
-                    control
-                        .set_action_template_icon(*id, Some(name))
-                        .expect("template names validated before sync");
-                }
-            }
             self.host
                 .register(ToolbarRegistration {
                     region: d.region,
                     order: d.order,
-                    group: Content::new(d.id, ToolbarGroup::new(d.placement, vec![child])),
+                    group: group_content,
                     bindings,
                 })
                 .map_err(|e| anyhow::anyhow!("toolbar registration: {e:?}"))?;
@@ -695,6 +1043,7 @@ mod tests {
             tooltip: Some(tooltip.into()),
             enabled,
             selected,
+            tone: ButtonTone::Default,
             entries,
         }
     }
@@ -1107,6 +1456,417 @@ mod tests {
             }
             other => panic!("expected MenuSelection payload, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn capsule_group_sync_preserves_siblings_and_routes_descendant_lookup() {
+        struct Icons;
+        impl tekes_ui_controls::layout_view::IconRenderer for Icons {
+            fn prepare_icon(
+                &mut self,
+                name: &str,
+                _: f32,
+                _: f32,
+                _: tekes_ui_tokens::Rgba,
+            ) -> Result<
+                tekes_ui_controls::composition::IconImage,
+                tekes_ui_controls::composition::IconRenderError,
+            > {
+                assert!(tekes_ui_icons::Glyph::named(name).is_some());
+                Ok(tekes_ui_controls::composition::IconImage::new(
+                    tekes_ui_scene::ImageId(99),
+                    std::rc::Rc::new(()),
+                ))
+            }
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: tekes_ui_tokens::Rgba) {}
+        }
+        let render_icons =
+            |toolbar: &mut MountedToolbar, text: &mut Text, theme: tekes_ui_tokens::Theme| {
+                let mut icons = Icons;
+                let mut with_icons =
+                    tekes_ui_controls::composition::WithIconRenderer::new(text, &mut icons);
+                toolbar
+                    .host
+                    .render(&mut Scene::new(), &mut with_icons, theme.into())
+                    .unwrap();
+            };
+
+        let mut toolbar = MountedToolbar::new();
+        let mut text = Text::new();
+        let rect = Rect::new(0., 0., 720., 260.);
+        let region = ToolbarRegion::new(ComponentId(20), Rect::new(0., 0., 700., 44.));
+        let region_id = region.id;
+        let nav_group = Declaration {
+            id: ComponentId(200),
+            region: region_id,
+            placement: ToolbarPlacement::Navigation,
+            order: 0,
+            contents: Contents::CapsuleGroup(CapsuleGroupDeclaration {
+                divided: false,
+                label: Some("History".into()),
+                tooltip: None,
+                members: vec![
+                    CapsuleGroupMember::Button {
+                        component_id: ComponentId(2001),
+                        decl: ButtonDeclaration {
+                            id: 201,
+                            title: String::new(),
+                            accessible_name: Some("Back".into()),
+                            icon: Some("tekes-back".into()),
+                            tooltip: Some("Back".into()),
+                            enabled: true,
+                            selected: false,
+                            tone: tekes_ui_controls::ButtonTone::Default,
+                        },
+                    },
+                    CapsuleGroupMember::Button {
+                        component_id: ComponentId(2002),
+                        decl: ButtonDeclaration {
+                            id: 202,
+                            title: String::new(),
+                            accessible_name: Some("Forward".into()),
+                            icon: Some("tekes-forward".into()),
+                            tooltip: Some("Forward".into()),
+                            enabled: true,
+                            selected: false,
+                            tone: tekes_ui_controls::ButtonTone::Default,
+                        },
+                    },
+                ],
+            }),
+            source: Source::Panel {
+                instance: 1,
+                index: 0,
+                module: "main".into(),
+                pid: None,
+                generation: 1,
+            },
+        };
+        let make_primary_group = |members: Vec<CapsuleGroupMember>| Declaration {
+            id: ComponentId(100),
+            region: region_id,
+            placement: ToolbarPlacement::PrimaryAction,
+            order: 1,
+            contents: Contents::CapsuleGroup(CapsuleGroupDeclaration {
+                divided: true,
+                label: Some("Session".into()),
+                tooltip: None,
+                members,
+            }),
+            source: Source::Panel {
+                instance: 1,
+                index: 0,
+                module: "main".into(),
+                pid: None,
+                generation: 1,
+            },
+        };
+        let m1001 = CapsuleGroupMember::Menu {
+            component_id: ComponentId(1001),
+            decl: MenuDeclaration {
+                id: 101,
+                title: String::new(),
+                accessible_name: Some("Access".into()),
+                icon: Some("tekes-access-workspace".into()),
+                icon_position: ButtonImagePosition::Leading,
+                icon_slot: true,
+                tooltip: Some("Access".into()),
+                enabled: true,
+                selected: false,
+                tone: tekes_ui_controls::ButtonTone::Default,
+                entries: vec![MenuEntry::Item {
+                    value: "ws".into(),
+                    label: "Workspace".into(),
+                    checked: Some(true),
+                    disabled: false,
+                }],
+            },
+        };
+        let m1002 = |title: &str, tone: tekes_ui_controls::ButtonTone| CapsuleGroupMember::Menu {
+            component_id: ComponentId(1002),
+            decl: MenuDeclaration {
+                id: 102,
+                title: title.into(),
+                accessible_name: None,
+                icon: None,
+                icon_position: ButtonImagePosition::Leading,
+                icon_slot: false,
+                tooltip: Some("Model".into()),
+                enabled: true,
+                selected: false,
+                tone,
+                entries: vec![MenuEntry::Item {
+                    value: "sonnet".into(),
+                    label: "claude-sonnet-4".into(),
+                    checked: Some(true),
+                    disabled: false,
+                }],
+            },
+        };
+        let m1003 = |selected: bool| CapsuleGroupMember::Button {
+            component_id: ComponentId(1003),
+            decl: ButtonDeclaration {
+                id: 103,
+                title: "High".into(),
+                accessible_name: None,
+                icon: None,
+                tooltip: Some("Effort".into()),
+                enabled: true,
+                selected,
+                tone: tekes_ui_controls::ButtonTone::Default,
+            },
+        };
+        let m1004 = CapsuleGroupMember::Button {
+            component_id: ComponentId(1004),
+            decl: ButtonDeclaration {
+                id: 104,
+                title: "Fast".into(),
+                accessible_name: None,
+                icon: None,
+                tooltip: Some("Fast mode".into()),
+                enabled: true,
+                selected: false,
+                tone: tekes_ui_controls::ButtonTone::Warning,
+            },
+        };
+
+        toolbar
+            .sync(
+                rect,
+                vec![region.clone()],
+                vec![
+                    nav_group.clone(),
+                    make_primary_group(vec![
+                        m1001.clone(),
+                        m1002("claude-sonnet-4", tekes_ui_controls::ButtonTone::Default),
+                        m1003(false),
+                    ]),
+                ],
+            )
+            .unwrap();
+        render_icons(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+
+        assert_eq!(
+            toolbar.group_for_descendant(ComponentId(1001)),
+            Some(ComponentId(100))
+        );
+        assert_eq!(
+            toolbar.group_for_descendant(ComponentId(2002)),
+            Some(ComponentId(200))
+        );
+
+        let id1001 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(1001))
+            .unwrap()
+            .mount_identity();
+        let id1002 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(1002))
+            .unwrap()
+            .mount_identity();
+        let id1003 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(1003))
+            .unwrap()
+            .mount_identity();
+        let id2001 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(2001))
+            .unwrap()
+            .mount_identity();
+
+        // Open 1001 popup and verify anchor == segment frame.
+        let frame1001 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(1001))
+            .unwrap()
+            .frame();
+        toolbar
+            .host
+            .event(&ContentEvent::PointerDown(frame1001.center()));
+        toolbar
+            .host
+            .event(&ContentEvent::PointerUp(frame1001.center()));
+        render_icons(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        let menu1001 = toolbar
+            .host
+            .content_host()
+            .get(ComponentId(1001))
+            .unwrap()
+            .component::<MenuContent>()
+            .unwrap();
+        assert!(menu1001.is_open());
+        assert_eq!(menu1001.popup_layout().unwrap().anchor, frame1001);
+
+        // Property update preserves every mount and keeps 1001 open.
+        toolbar
+            .sync(
+                rect,
+                vec![region.clone()],
+                vec![
+                    nav_group.clone(),
+                    make_primary_group(vec![
+                        m1001.clone(),
+                        m1002("claude-opus-4", tekes_ui_controls::ButtonTone::Secondary),
+                        m1003(true),
+                    ]),
+                ],
+            )
+            .unwrap();
+        render_icons(&mut toolbar, &mut text, tekes_ui_tokens::Theme::DARK);
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1001))
+                .unwrap()
+                .mount_identity(),
+            id1001
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1002))
+                .unwrap()
+                .mount_identity(),
+            id1002
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1003))
+                .unwrap()
+                .mount_identity(),
+            id1003
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(2001))
+                .unwrap()
+                .mount_identity(),
+            id2001
+        );
+        assert!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1001))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+
+        // Structural 3 -> 4 update preserves unchanged siblings & open 1001.
+        toolbar
+            .sync(
+                rect,
+                vec![region.clone()],
+                vec![
+                    nav_group.clone(),
+                    make_primary_group(vec![
+                        m1001.clone(),
+                        m1002("claude-opus-4", tekes_ui_controls::ButtonTone::Secondary),
+                        m1004.clone(),
+                        m1003(true),
+                    ]),
+                ],
+            )
+            .unwrap();
+        render_icons(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert_eq!(
+            toolbar.group_for_descendant(ComponentId(1004)),
+            Some(ComponentId(100))
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1001))
+                .unwrap()
+                .mount_identity(),
+            id1001
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1002))
+                .unwrap()
+                .mount_identity(),
+            id1002
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1003))
+                .unwrap()
+                .mount_identity(),
+            id1003
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(2001))
+                .unwrap()
+                .mount_identity(),
+            id2001
+        );
+        assert!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1001))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+
+        // Structural 4 -> 3 removing 1002 cleanly unmounts 1002 while preserving 1001, 1004, 1003.
+        toolbar
+            .sync(
+                rect,
+                vec![region],
+                vec![
+                    nav_group,
+                    make_primary_group(vec![m1001, m1004, m1003(false)]),
+                ],
+            )
+            .unwrap();
+        render_icons(&mut toolbar, &mut text, tekes_ui_tokens::Theme::LIGHT);
+        assert!(toolbar.host.content_host().get(ComponentId(1002)).is_none());
+        assert!(toolbar.group_for_descendant(ComponentId(1002)).is_none());
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1001))
+                .unwrap()
+                .mount_identity(),
+            id1001
+        );
+        assert_eq!(
+            toolbar
+                .host
+                .content_host()
+                .get(ComponentId(1003))
+                .unwrap()
+                .mount_identity(),
+            id1003
+        );
     }
 }
 

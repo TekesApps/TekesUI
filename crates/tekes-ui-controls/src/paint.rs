@@ -1,7 +1,17 @@
 //! Shared token-driven control geometry; clients supply text shaping via their adapter.
 use crate::{CheckState, ControlState};
-use tekes_ui_scene::{Point, Quad, Rect, Scene, ShadowQuad};
+use tekes_ui_scene::{CornerRadii, Point, Quad, Rect, Scene, ShadowQuad};
 use tekes_ui_tokens::{Palette, Rgba, proposal};
+
+/// Semantic foreground tone for quiet/toolbar actions.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ButtonTone {
+    #[default]
+    Default,
+    Secondary,
+    Warning,
+    Error,
+}
 
 /// Semantic surface roles mapped directly to the JSON Design System tokens.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -349,13 +359,106 @@ pub(crate) fn focus_ring(scene: &mut Scene, rect: Rect, theme: impl Into<Palette
 }
 
 pub(crate) fn focus_ring_with_color(scene: &mut Scene, rect: Rect, ink: Rgba, radius: f32) {
+    focus_ring_with_radii(scene, rect, ink, CornerRadii::uniform(radius));
+}
+
+pub(crate) fn focus_ring_with_radii(scene: &mut Scene, rect: Rect, ink: Rgba, radii: CornerRadii) {
     let metrics = crate::extended::FocusRingMetrics::new(1.0);
     let outset = metrics.outset();
+    let expand = |r: f32| if r > 0.0 { r + outset } else { 0.0 };
+    let outer_radii = CornerRadii {
+        top_left: expand(radii.top_left),
+        top_right: expand(radii.top_right),
+        bottom_right: expand(radii.bottom_right),
+        bottom_left: expand(radii.bottom_left),
+    };
     scene.push_quad(
         Quad::new(rect.inset(-outset), Rgba::new(0., 0., 0., 0.))
-            .with_corner_radius(radius + outset)
+            .with_corner_radii(outer_radii)
             .with_border(metrics.width, ink),
     );
+}
+
+/// Elevated grouped-capsule surface over a flat toolbar ground.
+pub(crate) fn toolbar_capsule_background(
+    scene: &mut Scene,
+    rect: Rect,
+    clip: Option<Rect>,
+    palette: Palette,
+    radius: f32,
+) {
+    if rect.size.width <= 0. || rect.size.height <= 0. {
+        return;
+    }
+    let fill = tekes_ui_tokens::surface_palette::resolve_surface(
+        palette,
+        "panel",
+        "surface-frame",
+        "rest",
+    )
+    .unwrap_or_else(|_| fallback_surface_colors(palette))
+    .background;
+    if let Some(clip) = clip {
+        scene.push_clip(clip);
+    }
+    scene.push_quad(Quad::new(rect, fill).with_corner_radius(radius));
+    if clip.is_some() {
+        scene.pop_clip();
+    }
+}
+
+/// Crisp hairline capsule perimeter and pixel-aligned internal segment dividers.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn toolbar_capsule_boundary(
+    scene: &mut Scene,
+    rect: Rect,
+    clip: Option<Rect>,
+    palette: Palette,
+    backing_scale: f32,
+    radius: f32,
+    horizontal: bool,
+    divider_positions: &[f32],
+) {
+    if rect.size.width <= 0. || rect.size.height <= 0. {
+        return;
+    }
+    let (stroke, ink) = decorative_border(palette, backing_scale);
+    let scale = if backing_scale.is_finite() && backing_scale > 0.0 {
+        backing_scale
+    } else {
+        1.0
+    };
+    let snap = |v: f32| (v * scale).round() / scale;
+    let cross_len = if horizontal {
+        rect.size.height
+    } else {
+        rect.size.width
+    };
+    let inset = snap(metric("spacing", "space-tight", 4.0).min((cross_len * 0.25).max(stroke)));
+    if let Some(clip) = clip {
+        scene.push_clip(clip);
+    }
+    for &pos in divider_positions {
+        let min_pos = snap(pos - stroke * 0.5);
+        let divider = if horizontal {
+            let h = (rect.size.height - inset * 2.0).max(0.0);
+            Rect::new(min_pos, snap(rect.min_y() + inset), stroke, h)
+        } else {
+            let w = (rect.size.width - inset * 2.0).max(0.0);
+            Rect::new(snap(rect.min_x() + inset), min_pos, w, stroke)
+        };
+        if divider.size.width > 0.0 && divider.size.height > 0.0 {
+            scene.push_quad(Quad::new(divider, ink));
+        }
+    }
+    scene.push_quad(
+        Quad::new(rect, Rgba::new(0., 0., 0., 0.))
+            .with_corner_radius(radius)
+            .with_border(stroke, ink),
+    );
+    if clip.is_some() {
+        scene.pop_clip();
+    }
 }
 
 #[cfg(test)]
@@ -811,6 +914,49 @@ pub(crate) fn button_surface_colors(
     hover: f32,
     pressed: f32,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    button_surface_colors_with_tone(
+        palette,
+        surface,
+        state,
+        variant,
+        hover,
+        pressed,
+        ButtonTone::Default,
+        false,
+    )
+}
+
+fn resolve_tone_foreground(
+    palette: Palette,
+    surface: &str,
+    tone: ButtonTone,
+    disabled: bool,
+) -> Option<Rgba> {
+    if disabled {
+        return None;
+    }
+    let usage = match tone {
+        ButtonTone::Default => return None,
+        ButtonTone::Secondary => "data-category-label",
+        ButtonTone::Warning => "content-status-running",
+        ButtonTone::Error => "content-status-failed",
+    };
+    tekes_ui_tokens::surface_palette::resolve_surface(palette, surface, usage, "rest")
+        .ok()
+        .map(|colors| colors.text)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_surface_colors_with_tone(
+    palette: Palette,
+    surface: &str,
+    state: ControlState,
+    variant: ButtonVariant,
+    hover: f32,
+    pressed: f32,
+    tone: ButtonTone,
+    transparent_rest: bool,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
     use tekes_ui_tokens::surface_palette::{SurfaceOptions, resolve_surface_with_options};
     let usage = if variant == ButtonVariant::Primary {
         "action-primary"
@@ -829,17 +975,29 @@ pub(crate) fn button_surface_colors(
             (true, "disabled") => "selected-disabled",
             (_, name) => name,
         };
-        resolve_surface_with_options(palette, surface, usage, name, options)
-            .unwrap_or_else(|_| fallback_surface_colors(palette))
+        let mut colors = resolve_surface_with_options(palette, surface, usage, name, options)
+            .unwrap_or_else(|_| fallback_surface_colors(palette));
+        if transparent_rest && suffix == "rest" && !state.selected {
+            colors.background.a = 0.0;
+        }
+        colors
     };
-    if state.disabled {
-        return endpoint("disabled");
+    let mut colors = if state.disabled {
+        endpoint("disabled")
+    } else {
+        mix_button_colors(
+            mix_button_colors(endpoint("rest"), endpoint("hover"), hover),
+            endpoint("pressed"),
+            pressed,
+        )
+    };
+    if variant != ButtonVariant::Primary
+        && let Some(ink) = resolve_tone_foreground(palette, surface, tone, state.disabled)
+    {
+        colors.text = ink;
+        colors.icon = ink;
     }
-    mix_button_colors(
-        mix_button_colors(endpoint("rest"), endpoint("hover"), hover),
-        endpoint("pressed"),
-        pressed,
-    )
+    colors
 }
 
 fn mix_button_colors(
@@ -884,6 +1042,7 @@ fn mix_button_colors(
     }
 }
 
+#[cfg(test)]
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn button_variant_on_surface(
     scene: &mut Scene,
@@ -898,15 +1057,59 @@ pub(crate) fn button_variant_on_surface(
     selection_fill_only: bool,
     transparent_background: bool,
 ) -> tekes_ui_tokens::surface_palette::SurfaceColors {
-    let mut colors = button_surface_colors(palette, surface, state, variant, hover, pressed);
+    button_variant_on_surface_styled(
+        scene,
+        rect,
+        palette,
+        state,
+        variant,
+        CornerRadii::uniform(radius),
+        hover,
+        pressed,
+        surface,
+        selection_fill_only,
+        transparent_background,
+        false,
+        ButtonTone::Default,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn button_variant_on_surface_styled(
+    scene: &mut Scene,
+    rect: Rect,
+    palette: Palette,
+    state: ControlState,
+    variant: ButtonVariant,
+    radii: CornerRadii,
+    hover: f32,
+    pressed: f32,
+    surface: &str,
+    selection_fill_only: bool,
+    transparent_background: bool,
+    transparent_rest: bool,
+    tone: ButtonTone,
+) -> tekes_ui_tokens::surface_palette::SurfaceColors {
+    let mut colors = button_surface_colors_with_tone(
+        palette,
+        surface,
+        state,
+        variant,
+        hover,
+        pressed,
+        tone,
+        transparent_rest,
+    );
     if selection_fill_only && state.selected && !state.error {
         colors.boundary = None;
     }
-    let mut quad = Quad::new(rect, colors.background).with_corner_radius(radius);
+    let mut quad = Quad::new(rect, colors.background).with_corner_radii(radii);
     if let Some(boundary) = colors.boundary {
         quad = quad.with_border(metric("stroke", "stroke-rule", 1.0), boundary);
     }
-    if !transparent_background {
+    if !transparent_background
+        && (!transparent_rest || colors.background.a > 0.0 || colors.boundary.is_some())
+    {
         scene.push_quad(quad);
     }
     if state.focused
@@ -914,7 +1117,7 @@ pub(crate) fn button_variant_on_surface(
         && !state.disabled
         && let Some(focus) = colors.focus
     {
-        focus_ring_with_color(scene, rect, focus, radius);
+        focus_ring_with_radii(scene, rect, focus, radii);
     }
     colors
 }

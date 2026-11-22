@@ -3,8 +3,29 @@ use anyhow::Result;
 use std::collections::BTreeSet;
 use tekes_ui_app_protocol::ToolbarItem;
 use tekes_ui_controls::composition::{
-    ContentActionPayload, ContentActionSource, MenuEntry, MenuSelection,
+    ButtonTone, ContentActionPayload, ContentActionSource, MenuEntry, MenuSelection,
 };
+
+/// Semantic foreground tone for a local toolbar button or menu trigger.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LocalToolbarTone {
+    #[default]
+    Default,
+    Secondary,
+    Warning,
+    Error,
+}
+
+impl From<LocalToolbarTone> for ButtonTone {
+    fn from(tone: LocalToolbarTone) -> Self {
+        match tone {
+            LocalToolbarTone::Default => Self::Default,
+            LocalToolbarTone::Secondary => Self::Secondary,
+            LocalToolbarTone::Warning => Self::Warning,
+            LocalToolbarTone::Error => Self::Error,
+        }
+    }
+}
 
 /// A button item declared by a [`crate::LocalContainer`] for the window or container toolbar.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -16,6 +37,7 @@ pub struct LocalToolbarButton {
     pub enabled: bool,
     pub selected: bool,
     pub geometry_dependent: bool,
+    pub tone: LocalToolbarTone,
 }
 
 impl LocalToolbarButton {
@@ -29,6 +51,7 @@ impl LocalToolbarButton {
             enabled: true,
             selected: false,
             geometry_dependent: false,
+            tone: LocalToolbarTone::Default,
         }
     }
 
@@ -62,6 +85,12 @@ impl LocalToolbarButton {
         self
     }
 
+    /// Set an optional semantic foreground tone for this button.
+    pub fn tone(mut self, tone: LocalToolbarTone) -> Self {
+        self.tone = tone;
+        self
+    }
+
     pub(crate) fn to_protocol_item(&self) -> ToolbarItem {
         ToolbarItem {
             id: self.id,
@@ -82,6 +111,7 @@ impl From<ToolbarItem> for LocalToolbarButton {
             enabled: item.enabled,
             selected: false,
             geometry_dependent: item.geometry_dependent,
+            tone: LocalToolbarTone::Default,
         }
     }
 }
@@ -97,6 +127,7 @@ pub struct LocalToolbarMenu {
     pub selected: bool,
     pub dropdown_indicator: bool,
     pub entries: Vec<MenuEntry>,
+    pub tone: LocalToolbarTone,
 }
 
 impl LocalToolbarMenu {
@@ -111,6 +142,7 @@ impl LocalToolbarMenu {
             selected: false,
             dropdown_indicator: true,
             entries,
+            tone: LocalToolbarTone::Default,
         }
     }
 
@@ -150,13 +182,81 @@ impl LocalToolbarMenu {
         self.entries = entries;
         self
     }
+
+    /// Set an optional semantic foreground tone for the trigger button.
+    pub fn tone(mut self, tone: LocalToolbarTone) -> Self {
+        self.tone = tone;
+        self
+    }
 }
 
-/// A button or dropdown menu item contributed by a [`crate::LocalContainer`].
+/// Narrow-width overflow policy for a [`LocalToolbarGroup`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LocalToolbarGroupOverflow {
+    /// Fold the entire group atomically into the column overflow menu when it does not fit.
+    #[default]
+    Together,
+    /// Keep a fitting prefix in the toolbar and move the remaining segments to overflow.
+    Split,
+}
+
+/// Integrated capsule segmented group of related [`LocalToolbarItem`] buttons and menus.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LocalToolbarGroup {
+    pub id: u64,
+    pub items: Vec<LocalToolbarItem>,
+    pub divided: bool,
+    pub label: Option<String>,
+    pub tooltip: Option<String>,
+    pub overflow: LocalToolbarGroupOverflow,
+}
+
+impl LocalToolbarGroup {
+    /// Construct a divided capsule toolbar group whose members overflow together by default.
+    pub fn new(id: u64, items: Vec<LocalToolbarItem>) -> Self {
+        Self {
+            id,
+            items,
+            divided: true,
+            label: None,
+            tooltip: None,
+            overflow: LocalToolbarGroupOverflow::Together,
+        }
+    }
+
+    /// Control whether 1px dividers are painted between adjacent segments (`true` by default).
+    pub fn divided(mut self, divided: bool) -> Self {
+        self.divided = divided;
+        self
+    }
+
+    /// Set the accessible group label and overflow submenu title.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        let label = label.into();
+        self.label = (!label.trim().is_empty()).then_some(label);
+        self
+    }
+
+    /// Set an optional descriptive tooltip for the group.
+    pub fn tooltip(mut self, tooltip: impl Into<String>) -> Self {
+        let tooltip = tooltip.into();
+        self.tooltip = (!tooltip.trim().is_empty()).then_some(tooltip);
+        self
+    }
+
+    /// Configure how the group participates in narrow-toolbar overflow.
+    pub fn overflow(mut self, overflow: LocalToolbarGroupOverflow) -> Self {
+        self.overflow = overflow;
+        self
+    }
+}
+
+/// A button, dropdown menu, or grouped capsule contributed by a [`crate::LocalContainer`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LocalToolbarItem {
     Button(LocalToolbarButton),
     Menu(LocalToolbarMenu),
+    Group(LocalToolbarGroup),
 }
 
 impl LocalToolbarItem {
@@ -170,19 +270,30 @@ impl LocalToolbarItem {
         Self::Menu(LocalToolbarMenu::new(id, title, entries))
     }
 
+    /// Shorthand for constructing a [`LocalToolbarItem::Group`].
+    pub fn group(id: u64, items: Vec<LocalToolbarItem>) -> Self {
+        Self::Group(LocalToolbarGroup::new(id, items))
+    }
+
     /// Return the stable item identifier within the owning container.
     pub fn id(&self) -> u64 {
         match self {
             Self::Button(button) => button.id,
             Self::Menu(menu) => menu.id,
+            Self::Group(group) => group.id,
         }
     }
 
-    /// Return the trigger title.
+    /// Return the trigger or group title.
     pub fn title(&self) -> &str {
         match self {
             Self::Button(button) => &button.title,
             Self::Menu(menu) => &menu.title,
+            Self::Group(group) => group
+                .label
+                .as_deref()
+                .or(group.tooltip.as_deref())
+                .unwrap_or(""),
         }
     }
 
@@ -191,6 +302,7 @@ impl LocalToolbarItem {
         match self {
             Self::Button(button) => button.enabled,
             Self::Menu(menu) => menu.enabled,
+            Self::Group(group) => group.items.iter().any(Self::enabled),
         }
     }
 }
@@ -210,6 +322,12 @@ impl From<LocalToolbarButton> for LocalToolbarItem {
 impl From<LocalToolbarMenu> for LocalToolbarItem {
     fn from(menu: LocalToolbarMenu) -> Self {
         Self::Menu(menu)
+    }
+}
+
+impl From<LocalToolbarGroup> for LocalToolbarItem {
+    fn from(group: LocalToolbarGroup) -> Self {
+        Self::Group(group)
     }
 }
 
@@ -246,11 +364,71 @@ pub(crate) fn validate_unique_ids(container_id: &str, items: &[LocalToolbarItem]
     for item in items {
         let id = item.id();
         anyhow::ensure!(
+            id != 0,
+            "invalid toolbar item id 0 for container {container_id}"
+        );
+        anyhow::ensure!(
             ids.insert(id),
             "duplicate toolbar item id {id} for container {container_id}"
         );
+        if let LocalToolbarItem::Group(group) = item {
+            for member in &group.items {
+                anyhow::ensure!(
+                    !matches!(member, LocalToolbarItem::Group(_)),
+                    "nested toolbar group {} inside group {id} is not allowed for container {container_id}",
+                    member.id()
+                );
+                let member_id = member.id();
+                anyhow::ensure!(
+                    member_id != 0,
+                    "invalid toolbar item id 0 in group {id} for container {container_id}"
+                );
+                anyhow::ensure!(
+                    ids.insert(member_id),
+                    "duplicate toolbar item id {member_id} for container {container_id}"
+                );
+            }
+        }
     }
     Ok(())
+}
+
+pub(crate) fn find_member(items: &[LocalToolbarItem], id: u64) -> Option<&LocalToolbarItem> {
+    for item in items {
+        match item {
+            LocalToolbarItem::Button(b) if b.id == id => return Some(item),
+            LocalToolbarItem::Menu(m) if m.id == id => return Some(item),
+            LocalToolbarItem::Group(group) => {
+                for member in &group.items {
+                    match member {
+                        LocalToolbarItem::Button(b) if b.id == id => return Some(member),
+                        LocalToolbarItem::Menu(m) if m.id == id => return Some(member),
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+pub(crate) fn collect_protocol_buttons(items: &[LocalToolbarItem]) -> Vec<ToolbarItem> {
+    let mut out = Vec::new();
+    for item in items {
+        match item {
+            LocalToolbarItem::Button(button) => out.push(button.to_protocol_item()),
+            LocalToolbarItem::Menu(_) => {}
+            LocalToolbarItem::Group(group) => {
+                for member in &group.items {
+                    if let LocalToolbarItem::Button(button) = member {
+                        out.push(button.to_protocol_item());
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 pub(crate) fn entry_enabled(entries: &[MenuEntry], value_path: &[String]) -> bool {
@@ -276,4 +454,164 @@ pub(crate) fn entry_enabled(entries: &[MenuEntry], value_path: &[String]) -> boo
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn group_defaults_builders_and_tones() {
+        let group = LocalToolbarGroup::new(
+            10,
+            vec![
+                LocalToolbarItem::menu(101, "", vec![MenuEntry::item("a", "A")]),
+                LocalToolbarItem::button(102, "Go"),
+            ],
+        );
+        assert!(group.divided);
+        assert_eq!(group.overflow, LocalToolbarGroupOverflow::Together);
+        assert_eq!(group.label, None);
+        assert_eq!(group.tooltip, None);
+
+        let configured = group
+            .divided(false)
+            .label("  ")
+            .label("Controls")
+            .tooltip("Session controls")
+            .overflow(LocalToolbarGroupOverflow::Split);
+        assert!(!configured.divided);
+        assert_eq!(configured.label.as_deref(), Some("Controls"));
+        assert_eq!(configured.tooltip.as_deref(), Some("Session controls"));
+        assert_eq!(configured.overflow, LocalToolbarGroupOverflow::Split);
+
+        let item = LocalToolbarItem::from(configured);
+        assert_eq!(item.id(), 10);
+        assert_eq!(item.title(), "Controls");
+        assert!(item.enabled());
+
+        assert_eq!(
+            ButtonTone::from(LocalToolbarTone::Default),
+            ButtonTone::Default
+        );
+        assert_eq!(
+            ButtonTone::from(LocalToolbarTone::Secondary),
+            ButtonTone::Secondary
+        );
+        assert_eq!(
+            ButtonTone::from(LocalToolbarTone::Warning),
+            ButtonTone::Warning
+        );
+        assert_eq!(ButtonTone::from(LocalToolbarTone::Error), ButtonTone::Error);
+    }
+
+    #[test]
+    fn validate_rejects_zero_duplicate_and_nested_group_ids() {
+        assert!(validate_unique_ids("c", &[LocalToolbarItem::button(0, "Zero")]).is_err());
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[LocalToolbarItem::group(
+                    0,
+                    vec![LocalToolbarItem::button(1, "Ok")]
+                )]
+            )
+            .is_err()
+        );
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[LocalToolbarItem::group(
+                    10,
+                    vec![LocalToolbarItem::button(0, "Zero")]
+                )]
+            )
+            .is_err()
+        );
+        // Top-level collides with group ID.
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[
+                    LocalToolbarItem::button(10, "Top"),
+                    LocalToolbarItem::group(10, vec![LocalToolbarItem::button(11, "Member")])
+                ]
+            )
+            .is_err()
+        );
+        // Top-level collides with member ID.
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[
+                    LocalToolbarItem::button(11, "Top"),
+                    LocalToolbarItem::group(10, vec![LocalToolbarItem::button(11, "Member")])
+                ]
+            )
+            .is_err()
+        );
+        // Group ID collides with its own member.
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[LocalToolbarItem::group(
+                    10,
+                    vec![LocalToolbarItem::button(10, "Self")]
+                )]
+            )
+            .is_err()
+        );
+        // Member ID collides across two groups.
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[
+                    LocalToolbarItem::group(10, vec![LocalToolbarItem::button(99, "A")]),
+                    LocalToolbarItem::group(20, vec![LocalToolbarItem::button(99, "B")]),
+                ]
+            )
+            .is_err()
+        );
+        // Nested group rejected.
+        assert!(
+            validate_unique_ids(
+                "c",
+                &[LocalToolbarItem::group(
+                    10,
+                    vec![LocalToolbarItem::group(
+                        20,
+                        vec![LocalToolbarItem::button(21, "Nested")]
+                    )]
+                )]
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn find_member_and_collect_protocol_buttons_cover_group_members() {
+        let items = vec![
+            LocalToolbarItem::button(1, "Top"),
+            LocalToolbarItem::group(
+                10,
+                vec![
+                    LocalToolbarItem::Menu(LocalToolbarMenu::new(
+                        101,
+                        "Model",
+                        vec![MenuEntry::item("m1", "M1")],
+                    )),
+                    LocalToolbarItem::button(102, "Apply"),
+                ],
+            ),
+        ];
+        assert!(validate_unique_ids("c", &items).is_ok());
+        assert_eq!(find_member(&items, 1).unwrap().id(), 1);
+        assert_eq!(find_member(&items, 101).unwrap().id(), 101);
+        assert_eq!(find_member(&items, 102).unwrap().id(), 102);
+        assert!(find_member(&items, 10).is_none());
+
+        let proto = collect_protocol_buttons(&items);
+        let ids: Vec<u64> = proto.into_iter().map(|b| b.id).collect();
+        assert_eq!(ids, vec![1, 102]);
+    }
 }

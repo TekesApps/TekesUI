@@ -268,6 +268,19 @@ impl MenuContent {
     pub fn trigger(&self) -> &Button {
         &self.trigger
     }
+    pub(super) fn trigger_mut(&mut self) -> &mut Button {
+        &mut self.trigger
+    }
+    pub fn with_trigger_tone(mut self, tone: crate::paint::ButtonTone) -> Self {
+        self.set_trigger_tone(tone);
+        self
+    }
+    pub fn set_trigger_tone(&mut self, tone: crate::paint::ButtonTone) {
+        self.trigger.set_tone(tone);
+    }
+    pub fn trigger_tone(&self) -> crate::paint::ButtonTone {
+        self.trigger.tone()
+    }
     pub fn set_trigger_label(&mut self, label: impl Into<String>) {
         self.trigger.set_label(label);
     }

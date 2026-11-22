@@ -40,7 +40,7 @@ pub use widgets::{
     Field, Menu, NumberField, Select, Tabs,
 };
 mod paint;
-pub use paint::{ButtonVariant, SurfaceKind};
+pub use paint::{ButtonTone, ButtonVariant, SurfaceKind};
 pub use widgets::Toolbar;
 mod chart;
 pub mod extended;

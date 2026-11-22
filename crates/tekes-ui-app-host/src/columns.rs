@@ -215,15 +215,9 @@ impl LocalContainer {
         self.toolbar = items;
         self
     }
-    /// Declare rich local toolbar buttons and dropdown menus (`MenuContent`).
+    /// Declare rich local toolbar buttons, dropdown menus, and capsule groups.
     pub fn toolbar_items(mut self, items: Vec<crate::LocalToolbarItem>) -> Self {
-        self.toolbar = items
-            .iter()
-            .filter_map(|item| match item {
-                crate::LocalToolbarItem::Button(button) => Some(button.to_protocol_item()),
-                crate::LocalToolbarItem::Menu(_) => None,
-            })
-            .collect();
+        self.toolbar = crate::local_toolbar::collect_protocol_buttons(&items);
         self.toolbar_items = items;
         self
     }

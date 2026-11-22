@@ -94,6 +94,12 @@
       "reason": "Shared layout, event/state and host rendering contracts reused by multiple controls; public implementation support, not private and not separate Gallery components."
     },
     {
+      "api": "tekes_ui_controls::ButtonTone",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared semantic foreground tone configuration; this value does not own layout, events or state."
+    },
+    {
       "api": "tekes_ui_controls::ButtonVariant",
       "category": "shared-support",
       "components": [],
@@ -709,6 +715,12 @@
       "category": "composition",
       "components": [],
       "reason": "Relative image/text arrangement on the same Button, using existing DS measurement."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ButtonTone",
+      "category": "shared-support",
+      "components": [],
+      "reason": "Shared semantic foreground tone re-export for composition Button and MenuContent triggers."
     },
     {
       "api": "tekes_ui_controls::composition::ChartContent",
@@ -2276,6 +2288,14 @@
         "tui.toolbar"
       ],
       "reason": "Stable original Content group declaring toolbar placement while retaining child control and semantic ownership."
+    },
+    {
+      "api": "tekes_ui_controls::composition::ToolbarGroupChrome",
+      "category": "component-support",
+      "components": [
+        "tui.toolbar"
+      ],
+      "reason": "Visual chrome configuration (Plain or Capsule) on the existing ToolbarGroup without creating a separate component."
     },
     {
       "api": "tekes_ui_controls::composition::ToolbarGroupOverflow",
