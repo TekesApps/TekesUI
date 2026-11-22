@@ -601,8 +601,8 @@ pub use feedback_and_paint::{
     switch_with_state, switch_with_state_and_thumb_progress,
 };
 pub(crate) use feedback_and_paint::{
-    ComboSelectionDecision, link_underline_with_content_on_surface,
-    radio_on_surface_with_progress, status_badge_usage,
+    ComboSelectionDecision, link_underline_with_content_on_surface, radio_on_surface_with_progress,
+    status_badge_usage,
 };
 pub(crate) use list_tree::ListStage;
 pub use list_tree::{

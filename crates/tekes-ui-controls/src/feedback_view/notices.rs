@@ -282,9 +282,9 @@ impl ToastView {
             )
             .expect("validated notice frame packet");
             self.dismiss.set_surface(surface);
-            let _action = self
-                .dismiss
-                .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
+            let _action =
+                self.dismiss
+                    .surface_colors(palette, paint::ButtonVariant::Quiet, surface);
             paint_notice_background(
                 &mut overlay_scene,
                 self.layout.frame,
