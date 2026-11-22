@@ -1,10 +1,10 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "57833f2750ceae3590ecaa9d929298256c08b2e8",
+  "source_commit": "ac3b26d8adb4769a4335738ebdf320f37d7e26ad",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
-    "design/behavior/reference-alignment.json": "81c6c5af11e92e6bd4cf79c1aa15692517a14977659fd8823618231a7f100a9b",
+    "design/behavior/reference-alignment.json": "b1449690ebcd239c3f3e57c0b3d5bedac6e137b7305e6556efb82578a74a315e",
     "design/brand/apricot.json": "07442028268d7673e89fd1287b9b235e9765418610d73205650f627a049d12ce",
     "design/brand/brand.schema.json": "4bb4dfec082ac9e204c9fbd55136c3b4ad617ee2dba69df58982dda6b73020d9",
     "design/brand/config.json": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
@@ -429,7 +429,7 @@
         "zooming",
         "closed"
       ],
-      "implementation": "missing-runtime",
+      "implementation": "model-and-composition",
       "native_acceptance": "unverified",
       "color_roles": [
         "surface-popover",

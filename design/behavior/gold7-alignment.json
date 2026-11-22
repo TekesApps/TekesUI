@@ -1,6 +1,7 @@
 {
   "format": "tekesui-gold7-alignment-worklist/1",
   "date": "2026-10-17",
+  "last_reconciled": "2026-11-22",
   "catalog": "./gold7.json",
   "scope": "All 23 Gold7 requirements, current pure Rust project; no new public components; performance acceptance remains deferred.",
   "status_policy": "Implemented code and deterministic tests do not establish native experience. Missing is never not-applicable. A requirement stays partial until all its child gaps are closed.",
@@ -306,7 +307,7 @@
       "requirement_ref": "./gold7.json#/items/1/requirements/1",
       "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Menu/Popover/Dialog consume JSON two-layer Gaussian elevation through shared production surface paint; panels remain flat and IC has explicit boundaries without shadow.",
+      "observation": "Menu/Popover/Dialog/ToastView/TooltipView consume shared elevation (SurfaceKind::Floating/Modal), dark elevated tiers preserve surface separation, panels remain flat, and IC has explicit 1pt borders without shadow.",
       "next_action": "Review physical screen appearance and overlay edge placement; GPU raster checks cover 4 themes at 1x/2x.",
       "repairs": [
         "semantic-gaussian-elevation"
@@ -317,7 +318,7 @@
       "requirement_ref": "./gold7.json#/items/2/requirements/0",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Independent 2pt + 2pt neutral focus ring preserves error/required boundaries; scoped focus gutter and true ancestor clips are implemented.",
+      "observation": "Independent 2pt + 2pt neutral focus ring preserves error/required boundaries (TextField uses single-edge 2pt border-focused contract); scoped focus gutter and true ancestor clips are implemented.",
       "next_action": "Finish page-by-page physical boundary/focus review without changing required-control contrast.",
       "repairs": [
         "independent-focus-ring",
@@ -329,7 +330,7 @@
       "requirement_ref": "./gold7.json#/items/2/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Button sizes consume component aliases; shared Canvas/Panel/Floating/Dialog/Code surfaces use semantic roles. Row and Column remain separate tokens; no confirmed misuse found. Historical Showcase is calibration, not a duplicate live component.",
+      "observation": "Button sizes consume component aliases, SegmentedControlView consumes dedicated c-segmented-radius/space-segmented-inset tokens, and shared Canvas/Panel/Floating/Dialog/Code surfaces use semantic roles. Row and Column remain separate tokens; no confirmed misuse found.",
       "next_action": "Finish native semantic radius review; do not replace historical calibration fixtures or force Column onto unrelated surfaces.",
       "repairs": [
         "button-size-radius-roles"
@@ -340,7 +341,7 @@
       "requirement_ref": "./gold7.json#/items/2/requirements/2",
       "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Concentric formula is corrected and tested; real nested component coverage remains incomplete.",
+      "observation": "Concentric formula is corrected and tested; Switch and SegmentedControlView now compute inner thumb radii via CornerRadius::concentric, while full nested component review remains open.",
       "next_action": "Add real concentric fixtures where actually applicable; do not force the rule onto unrelated adjacent shapes.",
       "repairs": []
     },
@@ -362,7 +363,7 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/0",
       "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Explicit JSON production bindings: Button press60/hover200ms, Switch thumb120ms, Disclosure reveal300ms; legacy recipes preserved.",
+      "observation": "motion.json durations are unified (press_feedback 70ms, hover_feedback 150ms, thumb_snap 120ms, list_expansion 300ms); Button, Switch, Disclosure, Checkbox, RadioGroupView, SegmentedControlView, and TabsView wire shared StateTransition/ProgressTransition with legacy recipes preserved.",
       "next_action": "Review timing on real interactions before any shared visual tuning; no performance acceptance in this phase.",
       "repairs": [
         "production-control-state-transitions",
@@ -376,7 +377,7 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Button/Switch/Disclosure production channels plus Menu/Dialog/Popover paint-only presence lifecycle and shared menu consumers are wired; remaining component state channels are not universally animated.",
+      "observation": "Button/Switch/Disclosure/Checkbox/RadioGroupView/SegmentedControlView/TabsView wire shared StateTransition/ProgressTransition with linear-RGB state interpolation, and Menu/Dialog/Popover/ToastView/TooltipView wire paint-only OverlayPresence; remaining component state channels stay separate.",
       "next_action": "Review real intermediate frames and complete remaining per-component applicable state coverage.",
       "repairs": [
         "production-control-state-transitions",
@@ -408,7 +409,7 @@
       "requirement_ref": "./gold7.json#/items/3/requirements/3",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Existing control and overlay presence paths consume renderer/system Reduced Motion; transitions finish without replay; menu scroll remains independently adapted.",
+      "observation": "Existing control StateTransition/ProgressTransition and overlay presence paths (including ToastView and TooltipView) consume renderer/system Reduced Motion and finish without replay; menu scroll remains independently adapted.",
       "next_action": "Audit remaining applicable component motion channels and native system preference/VoiceOver paths.",
       "repairs": [
         "owned-popup-scroll-clock",
@@ -468,19 +469,19 @@
     {
       "id": "G6/zoom-preserves-reading-anchor",
       "requirement_ref": "./gold7.json#/items/5/requirements/0",
-      "implementation": "missing",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Media viewer contract is specified-not-implemented.",
-      "next_action": "Requires media capability outside current no-new-component phase; retain explicit missing status and required zoom/pan/resize tests.",
+      "observation": "MediaViewerContent and Geometry (crates/tekes-ui-controls/src/composition/media_viewer/{content.rs,geometry.rs}, bitmap-images feature) implement fit-to-viewport relative zoom (1x-8x) with pointer/anchor preservation, pan clamping, and resize refit.",
+      "next_action": "Verify MediaViewer zoom, pan clamping, and resize refit on physical macOS input and displays.",
       "repairs": []
     },
     {
       "id": "G6/bounded-split-and-pan-geometry",
       "requirement_ref": "./gold7.json#/items/5/requirements/1",
-      "implementation": "partial",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Split minima and keyboard restore after constrained resize are implemented; media pan remains missing.",
-      "next_action": "Review existing keyboard/double-click two-pane recovery on physical input; media pan remains separately missing.",
+      "observation": "Split minima and keyboard restore after constrained resize are implemented, and MediaViewerContent/Geometry clamp image pan within declared viewport/content bounds.",
+      "next_action": "Review existing keyboard/double-click two-pane recovery and MediaViewer pan bounds on physical input.",
       "repairs": [
         "split-keyboard-restore"
       ]
@@ -488,10 +489,10 @@
     {
       "id": "G6/cancel-and-non-gesture-alternatives",
       "requirement_ref": "./gold7.json#/items/5/requirements/2",
-      "implementation": "partial",
+      "implementation": "implemented-unverified",
       "experience": "unverified",
-      "observation": "Existing Split consumes native Dragged across sidebar, cancels lost release/invalid layout/focus loss, resets through double-click and Enter/Space. Media alternatives remain missing.",
-      "next_action": "Complete native split reset/cancel checks and retain missing media scope separately.",
+      "observation": "Split consumes native Dragged across sidebar, cancels lost release/invalid layout/focus loss, and resets via double-click and Enter/Space; MediaViewerContent provides capture cancellation and non-gesture MediaViewerCommand keyboard/control alternatives.",
+      "next_action": "Complete native Split and MediaViewer cancel/reset/non-gesture checks on physical input.",
       "repairs": [
         "split-native-capture-and-reset"
       ]
@@ -501,8 +502,8 @@
       "requirement_ref": "./gold7.json#/items/6/requirements/0",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Production views own state, layout and interaction; complete logical layout frames now support ordinary offscreen Tab/reveal with shell and leaf scope handoff. Native samples verify pointer/input ownership, modal restore and text viewport fill. Per-control AX projection and comprehensive native acceptance remain missing.",
-      "next_action": "Continue full per-component native keyboard/IME/assistive-technology acceptance; do not infer it from state matrices or sampled screenshots.",
+      "observation": "Production views own state, layout and interaction; complete logical layout frames support ordinary offscreen Tab/reveal with shell and leaf scope handoff, and per-control macOS NSAccessibility projection is implemented via tekes-ui-macos-bridge/src/content_accessibility.rs and tekes-ui-platform-macos/src/accessibility.rs. VoiceOver, physical IME, and comprehensive native acceptance remain unverified.",
+      "next_action": "Continue full per-component native keyboard/IME/VoiceOver acceptance; do not infer it from state matrices, unit snapshots, or sampled screenshots.",
       "repairs": [
         "standalone-button-content-center",
         "existing-control-state-lifecycle",
@@ -521,8 +522,8 @@
       "requirement_ref": "./gold7.json#/items/6/requirements/1",
       "implementation": "partial",
       "experience": "unverified",
-      "observation": "Applicable production state and variant stories now cover remaining existing models with isolated fixtures. Every implemented advertised state/variant route is GPU captured at three actual scroll positions across four themes and two window/text-size combinations. Native samples are recorded separately; the AX bridge remains missing.",
-      "next_action": "Continue comprehensive native interaction, physical IME and AX bridge/VoiceOver acceptance. Revisit new or changed component contracts without treating passive models as interactive states.",
+      "observation": "Applicable production state and variant stories cover existing models with isolated fixtures across advertised routes, and the macOS AX bridge is implemented in content_accessibility.rs + accessibility.rs. Native interaction, physical IME, and VoiceOver screen-reader checks remain unverified.",
+      "next_action": "Continue comprehensive native interaction, physical IME, and VoiceOver acceptance against the implemented AX bridge.",
       "repairs": [
         "actual-component-state-stories",
         "measured-canonical-page-composition",
@@ -553,20 +554,22 @@
   "next_implementation_order": [
     "native component/page interaction and visual review against per-component records",
     "extend applicable state comparisons where currently absent using real views",
-    "native per-control macOS accessibility bridge and physical IME/VoiceOver acceptance",
-    "media capability after explicit no-new-component scope changes"
+    "native VoiceOver verification over the implemented macOS AX bridge and physical IME acceptance",
+    "native gesture/keyboard verification for MediaViewer and optional capabilities when enabled"
   ],
   "cross_component_gaps": [
     {
       "id": "macos-control-accessibility-bridge",
-      "implementation": "missing",
-      "observation": "The platform installs one TekesView implementing NSTextInputClient but no per-control NSAccessibility role/name/value/children/focus projection is present. System accessibility preferences are separate from exposing control semantics.",
+      "implementation": "implemented-unverified",
+      "observation": "Per-control accessibility snapshots, roles, values, focus, and actions are projected via crates/tekes-ui-macos-bridge/src/content_accessibility.rs and exposed on macOS by NativeAccessibilityElement (NSAccessibilityElement / NSAccessibility*Role) in crates/tekes-ui-platform-macos/src/accessibility.rs alongside TekesView; physical VoiceOver screen-reader behavior remains unverified.",
       "source_refs": [
+        "../../crates/tekes-ui-macos-bridge/src/content_accessibility.rs",
+        "../../crates/tekes-ui-platform-macos/src/accessibility.rs",
         "../../crates/tekes-ui-platform-macos/src/app.rs",
         "../../crates/tekes-ui-platform-macos/src/view.rs"
       ],
       "experience": "unverified",
-      "next_action": "Implement consumer/control semantics to macOS AX tree, then run native VoiceOver checks; do not present keyboard or IME support as AX acceptance."
+      "next_action": "Run native VoiceOver and AX inspector verification on physical macOS hardware; do not treat unit projection tests or keyboard focus checks as VoiceOver acceptance."
     },
     {
       "id": "offscreen-general-tab-order",

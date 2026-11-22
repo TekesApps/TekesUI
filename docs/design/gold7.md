@@ -191,3 +191,21 @@ Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页
 3. 调优普通 `light`/`dark` 表面阶梯、四级文字、边界/焦点、状态色及品牌派生 `targets`，并刷新对应锁定投影。
 
 本段仅覆盖静态 Token 契约、品牌生成校验、Rust export/workspace 与离线 consumer CPU 场景测试；不声明新增真实物理 IME、VoiceOver 或性能验收。
+
+## 2026-11-22 常规 UI 与 Gold7 全面审计基线（Issues #388–#395）
+
+对 TekesUI (`v0.4.7`) 进行常规 UI 与 Gold7 全面审计（Figma 审计交付件：`https://www.figma.com/design/pU278AMFuXUVHTp5aupWI0`），并在独立分支 `token_table_gold7_audit` 上依次收敛以下 8 项 Issue：
+
+1. **Issue #388 (P0)**：补齐 `dark` elevated 填充阶梯与 `dark-ic` 四级文字对比梯度（`surface-card`、`action-quiet-disabled`、`text-muted` / `placeholder-text`），保持普通主题低干扰带通与高对比单调性。
+2. **Issue #389 (P0)**：Toast `Warning` 变体对齐 `status-running` 语义，并经由共享 `paint_notice_background` 与 `SurfaceKind::Floating`、`OverlayPresence` 纳入统一浮层投影与入退场寿命控制。
+3. **Issue #390 (P0)**：`TooltipView` 通过 `"hint"` surface/text 角色解析与 `SurfaceKind::Floating` 获得统一浮层阴影（普通主题两层、IC 无阴影 + `border`）及 `OverlayPresence`；`ContentHost` 的 dwell-gated tooltip 调用 `settle_presentation(true)` 避免额外动画帧。
+4. **Issue #391 (P1)**：对齐 `design/source/interaction-contracts.json`、本文档与 `text_surface.rs` 对 `TextField` 获得焦点单边框的 2pt `c-focus-width`（`border-focused`）契约，消除 1pt 过期描述。
+5. **Issue #392 (P1)**：在 `paint.rs` 引入线性 RGB 颜色插值 `mix_rgba_linear`，将 `DialogView` 默认按钮归属 `"popover"` surface，并将 `DisclosureView` 标签与图标统一切换至 `"panel"` surface ink。
+6. **Issue #393 (P1)**：为 `SegmentedControlView` 接入专用 `segmented-track`、`segmented-thumb`、`space-segmented-inset`、`c-segmented-radius` 与线性 RGB hover/press，并在 `Switch` 与 `SegmentedControlView` 上使用 `CornerRadius::concentric`。
+7. **Issue #394 (P1)**：将 `design/source/motion.json` 的 `control_duration` 收敛为与 Gold7 动效表一致的 `press_feedback = 0.07`、`hover_feedback = 0.15`，并将 `ProgressTransition` 接入 `Checkbox`、`RadioGroupView`、`SegmentedControlView` 与 `TabsView`。
+8. **Issue #395 (P2)**：校准 `design/behavior/reference-alignment.json`、`design/behavior/gold7.json` 与 `design/behavior/gold7-alignment.json` 中自 2026-10-17 起滞后的代码实现状态——G6 已有 `MediaViewerContent`/`Geometry`（`bitmap-images` feature）、G7 已有 `tekes-ui-macos-bridge/src/content_accessibility.rs` + `tekes-ui-platform-macos/src/accessibility.rs`（`NativeAccessibilityElement`）按控件 AX 投影，同步将治理记录如实更新为 `implemented-unverified` / `unverified`（而非陈旧的 `missing`/`fail` 或无冻结清单的 `pass`），并为 `test-check-gold7.py` 补全独立夹具隔离。
+
+### 未启用提案与边界说明
+
+- `design/behavior/reference-alignment.json` 中仍声明了尚为设计提案或未接入主线运行时的项目：planned consumer recipes（`chat-thread`/`diff` 等组合配方）、`density_profiles`（`conversation`/`workbench` composer 圆角提案）以及 `optional_capabilities`（`audio`、`scroll_fade`）。字体排版尺度与中性品牌在真实多页面下的阅读观感、以及未列入本轮 8 个 Issue 的控件细节，仍需真实物理屏幕评审。
+- 本轮不声称任何物理显示器目视、真实 GPU 逐帧体验、物理 IME 组合输入、VoiceOver 实机读屏或 120Hz/8.33ms 性能已通过；全部 `experience` 与 `native_acceptance` 状态维持 `unverified`，作为独立后续验收阶段保留。
