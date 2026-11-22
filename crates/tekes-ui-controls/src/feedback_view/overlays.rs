@@ -1,5 +1,5 @@
 use super::{
-    clipped, draw_text, effective_viewport, finite_rect, paint_surface_background, safe_inset,
+    clipped, effective_viewport, finite_rect, paint_surface_background, safe_inset,
     valid_logical_target,
 };
 use crate::control_motion::OverlayPresence;
@@ -8,7 +8,7 @@ use crate::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
     Insets, paint,
 };
-use tekes_ui_scene::{Point, Quad, Rect, Scene, Size};
+use tekes_ui_scene::{Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
 /// Tooltip positioning is anchored and clamped to the visible preview bounds.
@@ -23,6 +23,7 @@ pub struct TooltipView {
     controlled_visible: bool,
     anchor_visible: Option<Rect>,
     inactive: bool,
+    presence: OverlayPresence,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct OverlayLayout {
@@ -123,11 +124,24 @@ impl TooltipView {
             self.blur();
             self.hovered = false;
             self.dismissed_until_leave = false;
+            self.presence.clear();
             // Availability ends at deactivation, before any later redraw or
             // input. Old anchor/overlay geometry cannot re-arm after restore.
             self.anchor_visible = None;
             self.layout.visible = None;
         }
+    }
+    pub fn is_presented(&self) -> bool {
+        self.presence.is_presented()
+    }
+    pub fn needs_animation(&self) -> bool {
+        self.presence.needs_animation()
+    }
+    pub fn clear_presentation(&mut self) {
+        self.presence.clear();
+    }
+    pub(crate) fn settle_presentation(&mut self, open: bool) {
+        self.presence.settle(open);
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render(
@@ -166,30 +180,59 @@ impl TooltipView {
             anchor,
             requested_size: size,
         };
-        if showing
-            && !self.dismissed_until_leave
-            && let Some(v) = self.layout.visible
+        let open = self.layout.visible.is_some();
+        if !open
+            && (self.inactive
+                || !self.presence.is_presented()
+                || text.motion_context().is_none_or(|c| c.reduced_motion))
         {
-            scene.push_clip(v);
-            scene.push_quad(
-                Quad::new(
-                    r,
-                    palette
-                        .color("surface-3")
-                        .unwrap_or_else(|| palette.color("surface-2").expect("surface token")),
-                )
-                .with_corner_radius(proposal::metric("radius", "radius-floating").unwrap_or(12.)),
+            self.presence.clear();
+            return self.layout;
+        }
+        let paint_visible = self.layout.visible.or_else(|| clipped(r, Some(viewport)));
+        if let Some(v) = paint_visible {
+            let paint_context = format!(
+                "{r:?}{viewport:?}{palette:?}{}{}{role:?}",
+                text.backing_scale(),
+                model.text
             );
-            draw_text(
-                scene,
+            let mut overlay_scene = scene.fragment();
+            let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                "hint",
+                "surface-frame",
+                "rest",
+            )
+            .expect("validated Tooltip frame");
+            let text_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette, "hint", "content", "rest",
+            )
+            .expect("validated Tooltip content");
+            super::paint_notice_background(
+                &mut overlay_scene,
+                r,
+                Some(viewport),
+                Some(v),
+                palette,
+                paint::SurfaceKind::Floating,
+                text.backing_scale(),
+                frame_colors,
+            );
+            overlay_scene.push_clip(v);
+            super::draw_text_with_color(
+                &mut overlay_scene,
                 text,
                 &model.text,
                 role,
                 content,
-                palette,
+                text_colors.text,
                 ButtonTextAlign::Leading,
             );
-            scene.pop_clip();
+            overlay_scene.pop_clip();
+            self.presence
+                .paint(scene, text, open, paint_context, Some(overlay_scene));
+        } else {
+            self.presence.clear();
         }
         self.layout
     }

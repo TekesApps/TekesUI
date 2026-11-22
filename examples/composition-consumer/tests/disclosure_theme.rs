@@ -92,13 +92,14 @@ fn retained_disclosure_themes_keep_header_states_open_body_and_real_input() {
                         proposal::metric("radius", "radius-row").unwrap()
                     )
                 );
-                let ink = palette
-                    .color(if model.disabled {
-                        "tertiary-text"
-                    } else {
-                        "primary-text"
-                    })
-                    .unwrap();
+                let ink = tekes_ui_tokens::surface_palette::resolve_surface(
+                    palette,
+                    "panel",
+                    "action-quiet",
+                    state,
+                )
+                .unwrap()
+                .text;
                 let labels: Vec<_> = scene
                     .primitives()
                     .iter()

@@ -232,6 +232,7 @@ impl Component for ToastContent {
             let mut o = self.owner.borrow_mut();
             o.runnable = false;
             o.revoke();
+            o.view.clear_presentation();
         }
     }
     fn event(&mut self, event: &ContentEvent) -> ContentResponse {

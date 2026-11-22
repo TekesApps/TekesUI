@@ -55,7 +55,7 @@
     "design/brand/wheat.json": "a998867d0ea6926465d7f82a3e0e03239ac358b93a76e5edadc51a8ad672b11a",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
     "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-    "design/source/base.tokens.json": "c2e36ebaf4030c7443656435220f5aa34113507c345e2ff5ab6e9414c44e5582",
+    "design/source/base.tokens.json": "10a7b667a89d187348181e701ba90fe00acdb07aa3cda4a57533e6d01f151750",
     "design/source/contrast-pairs.json": "b2b35b235bd562fd548780d25e5d6acb980c7d9ded0aa0119f76054c21f587cd",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
@@ -126,7 +126,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -185,7 +185,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -200,7 +200,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -215,7 +215,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -230,7 +230,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -735,7 +735,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -750,7 +750,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -1207,7 +1207,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -1266,7 +1266,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -1281,7 +1281,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -1296,7 +1296,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -1311,7 +1311,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -1816,7 +1816,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -1831,7 +1831,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -2288,7 +2288,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -2347,7 +2347,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -2362,7 +2362,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -2377,7 +2377,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -2392,7 +2392,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -2897,7 +2897,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -2912,7 +2912,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -3369,7 +3369,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -3428,7 +3428,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -3443,7 +3443,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -3458,7 +3458,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -3473,7 +3473,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -3978,7 +3978,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -3993,7 +3993,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -4450,7 +4450,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -4509,7 +4509,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -4524,7 +4524,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -4539,7 +4539,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -4554,7 +4554,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -5059,7 +5059,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -5074,7 +5074,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -5531,7 +5531,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -5590,7 +5590,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -5605,7 +5605,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -5620,7 +5620,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -5635,7 +5635,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -6140,7 +6140,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -6155,7 +6155,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -6612,7 +6612,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -6671,7 +6671,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -6686,7 +6686,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -6701,7 +6701,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -6716,7 +6716,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -7221,7 +7221,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -7236,7 +7236,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -7695,7 +7695,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -7754,7 +7754,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -7769,7 +7769,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -7784,7 +7784,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -7799,7 +7799,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -8304,7 +8304,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -8319,7 +8319,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -8778,7 +8778,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -8837,7 +8837,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -8852,7 +8852,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -8867,7 +8867,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -8882,7 +8882,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -9387,7 +9387,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -9402,7 +9402,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -9861,7 +9861,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -9920,7 +9920,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -9935,7 +9935,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -9950,7 +9950,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -9965,7 +9965,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -10470,7 +10470,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -10485,7 +10485,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -10944,7 +10944,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -11003,7 +11003,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -11018,7 +11018,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -11033,7 +11033,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -11048,7 +11048,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -11553,7 +11553,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -11568,7 +11568,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -12027,7 +12027,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -12086,7 +12086,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -12101,7 +12101,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -12116,7 +12116,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -12131,7 +12131,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -12636,7 +12636,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -12651,7 +12651,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"
@@ -13110,7 +13110,7 @@
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
               "dark": "#97948C",
-              "dark-ic": "#F4EEE2",
+              "dark-ic": "#FAF6EE",
               "light": "#615E58",
               "light-ic": "#2F2D29"
             }
@@ -13169,7 +13169,7 @@
             "name": "p-row-selection",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#262623",
+              "dark": "#282825",
               "dark-ic": "#414C4C",
               "light": "#ECEAE5",
               "light-ic": "#D8DEDE"
@@ -13184,7 +13184,7 @@
             "name": "p-row-selection-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#465151",
               "light": "#E7E5E0",
               "light-ic": "#CCD5D5"
@@ -13199,7 +13199,7 @@
             "name": "p-button-hover",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#242421",
+              "dark": "#2A2A27",
               "dark-ic": "#36332D",
               "light": "#EDEBE6",
               "light-ic": "#DEDDD7"
@@ -13214,7 +13214,7 @@
             "name": "p-button-pressed",
             "usage": "普通主题对齐中性表面；辅助文字与必要边界经过可读性适配",
             "value": {
-              "dark": "#292926",
+              "dark": "#2D2D29",
               "dark-ic": "#4C4740",
               "light": "#E7E5E0",
               "light-ic": "#D0CEC8"
@@ -13719,7 +13719,7 @@
             "name": "p-segmented-track",
             "usage": "分段控件轨道；为确定性渲染给出已合成不透明值",
             "value": {
-              "dark": "#252522",
+              "dark": "#20201D",
               "dark-ic": "#252523",
               "light": "#EAE8E3",
               "light-ic": "#E3E3DE"
@@ -13734,7 +13734,7 @@
             "name": "p-segmented-thumb",
             "usage": "分段控件滑块；选中项另有可访问selected/value和可见标记",
             "value": {
-              "dark": "#2A2A27",
+              "dark": "#2D2D29",
               "dark-ic": "#3C3C37",
               "light": "#FFFFFF",
               "light-ic": "#FFFFFF"

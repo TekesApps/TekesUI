@@ -908,7 +908,7 @@
         "icon": "primary-text",
         "boundary": null,
         "focus": null,
-        "marker": "status-failed",
+        "marker": "status-running",
         "helper": null
       }
     },

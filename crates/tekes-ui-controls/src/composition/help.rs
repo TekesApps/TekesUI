@@ -449,6 +449,7 @@ impl ContentHost {
             let mut renderer = label::LabelRenderer::new(text, &mut self.help.label, viewport);
             let size = TooltipView::fitted_size(&mut renderer, &model, viewport, role);
             if !renderer.failed() {
+                self.help.view.settle_presentation(true);
                 self.help.view.render(
                     scene,
                     &mut renderer,
@@ -478,6 +479,7 @@ impl ContentHost {
             }
             let size = TooltipView::fitted_size(text, &model, viewport, role);
             let mut renderer = text;
+            self.help.view.settle_presentation(true);
             self.help.view.render(
                 scene,
                 &mut renderer,

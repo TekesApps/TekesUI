@@ -586,7 +586,7 @@ mod notice_marker_tests {
                         ("info", "status-info"),
                         ("success", "status-succeeded"),
                         ("error", "status-failed"),
-                        ("toast-warning", "status-failed"),
+                        ("toast-warning", "status-running"),
                         ("banner-warning", "status-running"),
                     ] {
                         let u = format!("notice-marker-{tone}");

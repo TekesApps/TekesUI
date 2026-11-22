@@ -74,13 +74,18 @@ pub(super) fn paint_notice_background(
     if let Some(clip) = layout.background_paint_clip() {
         scene.push_clip(clip);
     }
+    let elevation_role = match kind {
+        paint::SurfaceKind::Floating => "popover",
+        paint::SurfaceKind::Dialog => "dialog",
+        _ => "panel",
+    };
     paint::surface_kind_with_elevation_colors_at_scale(
         scene,
         frame,
         palette,
         kind,
         backing_scale,
-        "panel",
+        elevation_role,
         colors,
     );
     if layout.background_paint_clip().is_some() {
@@ -110,13 +115,13 @@ pub(super) fn safe_inset(r: Rect, x: f32, y: f32) -> Rect {
         (r.size.height - 2. * y).max(0.),
     )
 }
-pub(super) fn draw_text(
+pub(super) fn draw_text_with_color(
     scene: &mut Scene,
     renderer: &mut impl ButtonTextRenderer,
     text: &str,
     role: proposal::TextRole,
     rect: Rect,
-    palette: Palette,
+    ink: Rgba,
     align: ButtonTextAlign,
 ) {
     if text.is_empty() || rect.is_empty() {
@@ -135,7 +140,6 @@ pub(super) fn draw_text(
     if draw_rect.is_empty() {
         return;
     }
-    let ink = palette.color("primary-text").expect("semantic text token");
     renderer.draw(scene, text, role, draw_rect, align, ink);
 }
 /// Align notice markers to the first shaped line, including wrapped messages
