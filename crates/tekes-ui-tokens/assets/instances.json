@@ -11,15 +11,15 @@
     "design/source/contrast-pairs.json": "b2b35b235bd562fd548780d25e5d6acb980c7d9ded0aa0119f76054c21f587cd",
     "design/source/token-metadata.json": "88c7ca5bbf033c3abd39425fe220b06cdd137904ee812517c5119608d2d54cd9",
     "design/source/tokens.schema.json": "629e8e76a0a7c1cfddae735c6af6806e846eb32026009a9c20e902b207346429",
-    "design/system.json": "a44a93fd545ba410de3bff18586c35e70358329b4b656766d79028c9bc68786a",
+    "design/system.json": "b0cdd74b7c41db747694f14c656ba80b8f34a286a49cc99ba340e3bc7e9f5c55",
     "design/system.schema.json": "f21ca873c5b035d2e09da924bc1cb20e73e76e54987edff66d58a6cdb598001c",
     "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
     "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-    "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
+    "design/theme/rules.json": "81ee0785ddeec3aca183ab437cbd9bb3fe34ec33cf06204d2660a79eb8bc7b69",
     "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
     "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
     "design/theme/themes.json": "4b43f832f75825e6714d14a4f052948a67c5df78f5926fc62d22fd14e33b7df3",
-    "scripts/generate-theme-system.py": "bd09f0d8f4621ebba957a5d9255f373b65741e0faecadd18b3617c8d59cf51fb",
+    "scripts/generate-theme-system.py": "bfd2879ec799be78393a6ff413e75a1c861f72a98c82696e25f44c8ce53e76ba",
     "scripts/merge-design-system.py": "01b36f8d61156aa001fb3bb50ab9689489040ad939b00973ee0858accc71cfd2",
     "scripts/requirements-design.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "scripts/tekesui_design/__init__.py": "d4f549768dce0cad51bdf939603ebf822990d35846044c6a65eb06fa1d626713",
@@ -2040,7 +2040,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -3939,7 +3939,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -5838,7 +5838,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -7737,7 +7737,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -9636,7 +9636,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -11535,7 +11535,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -13434,7 +13434,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -15335,7 +15335,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -17234,7 +17234,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -19133,7 +19133,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -21032,7 +21032,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -22931,7 +22931,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -24830,7 +24830,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -26729,7 +26729,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -28630,7 +28630,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -30529,7 +30529,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -32428,7 +32428,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -34327,7 +34327,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -36226,7 +36226,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -38125,7 +38125,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -40024,7 +40024,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -41925,7 +41925,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -43824,7 +43824,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -45723,7 +45723,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -47622,7 +47622,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -49521,7 +49521,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -51420,7 +51420,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -53319,7 +53319,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -53881,7 +53881,7 @@
       "provenance": {
         "brand_config": "design/brand/config.json",
         "brand_config_sha256": "155eceec64c3aa33f4bc6b58a6ef7a1b071384b1dbbb55075a223e460d16e8a8",
-        "contract_sha256": "0a0addf60c066b3e9277cce5bc54a6abb736f06a8c813d7b2a60c21425e9ade6",
+        "contract_sha256": "07dc8a0f8d10741c97f48d51f83bb43e65493311f4f37d1c72f464be0bb495e1",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -55903,7 +55903,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -57802,7 +57802,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -59701,7 +59701,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -61600,7 +61600,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -63499,7 +63499,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -65398,7 +65398,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -67297,7 +67297,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -69198,7 +69198,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -71097,7 +71097,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -72996,7 +72996,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -74895,7 +74895,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -76794,7 +76794,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -78693,7 +78693,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -80592,7 +80592,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -82493,7 +82493,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -84392,7 +84392,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -86291,7 +86291,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -88190,7 +88190,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -90089,7 +90089,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -91988,7 +91988,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -93887,7 +93887,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -95788,7 +95788,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -97687,7 +97687,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -99586,7 +99586,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -101485,7 +101485,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -103384,7 +103384,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -105283,7 +105283,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -107182,7 +107182,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -107744,7 +107744,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "0a0addf60c066b3e9277cce5bc54a6abb736f06a8c813d7b2a60c21425e9ade6",
+        "contract_sha256": "07dc8a0f8d10741c97f48d51f83bb43e65493311f4f37d1c72f464be0bb495e1",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -109766,7 +109766,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -111665,7 +111665,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -113564,7 +113564,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -115463,7 +115463,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -117362,7 +117362,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -119261,7 +119261,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -121160,7 +121160,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#D4D1C9",
-                "marker": "#D48E8E",
+                "marker": "#CC9B5E",
                 "text": "#D4D1C9"
               }
             },
@@ -123061,7 +123061,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -124960,7 +124960,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -126859,7 +126859,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -128758,7 +128758,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -130657,7 +130657,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -132556,7 +132556,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -134455,7 +134455,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#FFFFFF",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#FFFFFF"
               }
             },
@@ -136356,7 +136356,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -138255,7 +138255,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -140154,7 +140154,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -142053,7 +142053,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -143952,7 +143952,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -145851,7 +145851,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -147750,7 +147750,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#34322F",
-                "marker": "#9E3B3E",
+                "marker": "#8A5214",
                 "text": "#34322F"
               }
             },
@@ -149651,7 +149651,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -151550,7 +151550,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -153449,7 +153449,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -155348,7 +155348,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -157247,7 +157247,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -159146,7 +159146,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -161045,7 +161045,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#141412",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#141412"
               }
             },
@@ -161607,7 +161607,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-clay.json",
         "brand_config_sha256": "c5a2160d582d90e0488810e66a6b7185c6bb3ff84876eed468c84a1d7e85ca52",
-        "contract_sha256": "0a0addf60c066b3e9277cce5bc54a6abb736f06a8c813d7b2a60c21425e9ade6",
+        "contract_sha256": "07dc8a0f8d10741c97f48d51f83bb43e65493311f4f37d1c72f464be0bb495e1",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {},
@@ -163721,7 +163721,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -165620,7 +165620,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -167519,7 +167519,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -169418,7 +169418,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -171317,7 +171317,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -173216,7 +173216,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -175115,7 +175115,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#E7E7E7",
-                "marker": "#FFB1B1",
+                "marker": "#F5BE74",
                 "text": "#E7E7E7"
               }
             },
@@ -177016,7 +177016,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -178915,7 +178915,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -180814,7 +180814,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -182713,7 +182713,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -184612,7 +184612,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -186511,7 +186511,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -188410,7 +188410,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#EEEEEE",
-                "marker": "#FFD0D4",
+                "marker": "#FFE1B8",
                 "text": "#EEEEEE"
               }
             },
@@ -203606,7 +203606,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -205505,7 +205505,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -207404,7 +207404,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -209303,7 +209303,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -211202,7 +211202,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -213101,7 +213101,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -215000,7 +215000,7 @@
                 "focus": null,
                 "helper": null,
                 "icon": "#111111",
-                "marker": "#7D1421",
+                "marker": "#663400",
                 "text": "#111111"
               }
             },
@@ -215562,7 +215562,7 @@
       "provenance": {
         "brand_config": "design/imports/v0.3.0-proposal1/upstream/TekesUI-Design-System-v0.3.0-proposal1/design/brand/examples/example-blue.json",
         "brand_config_sha256": "e89eb95c16e4e2c964588b2a7eab7e24364e183b493cf3859f7bc7da7ab230bd",
-        "contract_sha256": "0a0addf60c066b3e9277cce5bc54a6abb736f06a8c813d7b2a60c21425e9ade6",
+        "contract_sha256": "07dc8a0f8d10741c97f48d51f83bb43e65493311f4f37d1c72f464be0bb495e1",
         "contract_version": "1.0.0",
         "overrides": {
           "neutral_base": {
@@ -215707,10 +215707,10 @@
       "design/system.schema.json": "f21ca873c5b035d2e09da924bc1cb20e73e76e54987edff66d58a6cdb598001c",
       "design/theme/artifact-lock.schema.json": "642653ddc482c053402ad6abe2f14c6d836ea282e16c709ca85792f8a435b32a",
       "design/theme/data-plot-pairs.json": "b75e6e57c155d596ba60a086406aa91cfa087009e6200847db1bbd25c2d442c7",
-      "design/theme/rules.json": "50b9f24026584e0c8e28c85c31a57e435bb71d22b3c939e3727cc6ea36bddf1a",
+      "design/theme/rules.json": "81ee0785ddeec3aca183ab437cbd9bb3fe34ec33cf06204d2660a79eb8bc7b69",
       "design/theme/rules.schema.json": "01c7c08a6ebd48db78e3e0a59f2f67b5f978b80b4acf8fcd00680cb254718dd6",
       "design/theme/theme.schema.json": "4c7d0f7195088487c4bf02b4b01a500baf1958caf6f6f62a436d9b5b37ea8f68",
-      "scripts/generate-theme-system.py": "bd09f0d8f4621ebba957a5d9255f373b65741e0faecadd18b3617c8d59cf51fb",
+      "scripts/generate-theme-system.py": "bfd2879ec799be78393a6ff413e75a1c861f72a98c82696e25f44c8ce53e76ba",
       "scripts/merge-design-system.py": "01b36f8d61156aa001fb3bb50ab9689489040ad939b00973ee0858accc71cfd2",
       "scripts/requirements-design.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
       "scripts/tekesui_design/__init__.py": "d4f549768dce0cad51bdf939603ebf822990d35846044c6a65eb06fa1d626713",

@@ -74,13 +74,18 @@ pub(super) fn paint_notice_background(
     if let Some(clip) = layout.background_paint_clip() {
         scene.push_clip(clip);
     }
+    let elevation_role = match kind {
+        paint::SurfaceKind::Floating => "popover",
+        paint::SurfaceKind::Dialog => "dialog",
+        _ => "panel",
+    };
     paint::surface_kind_with_elevation_colors_at_scale(
         scene,
         frame,
         palette,
         kind,
         backing_scale,
-        "panel",
+        elevation_role,
         colors,
     );
     if layout.background_paint_clip().is_some() {

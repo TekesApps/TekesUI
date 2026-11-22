@@ -34,7 +34,7 @@ for _use in STATUS_CONTENT_USES: USES[_use] = ['rest','disabled']
 BADGE_USES = {'status-badge-' + tone for tone in ['info','running','succeeded','failed']}
 PASSIVE_USES = BADGE_USES | {'skeleton'}
 for _use in PASSIVE_USES: USES[_use] = ['rest']
-NOTICE_MARKERS = {'notice-marker-info': 'status-info', 'notice-marker-success': 'status-succeeded', 'notice-marker-error': 'status-failed', 'notice-marker-toast-warning': 'status-failed', 'notice-marker-banner-warning': 'status-running'}
+NOTICE_MARKERS = {'notice-marker-info': 'status-info', 'notice-marker-success': 'status-succeeded', 'notice-marker-error': 'status-failed', 'notice-marker-toast-warning': 'status-running', 'notice-marker-banner-warning': 'status-running'}
 for _use in NOTICE_MARKERS: USES[_use] = ['rest']
 FOCUS_FREE_USES = set(NOTICE_MARKERS) | PASSIVE_USES | STATUS_CONTENT_USES | {'content','text-selection','control-label','toggle-thumb','range-track','surface-frame','progress-track','data-category-label'}
 

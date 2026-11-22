@@ -1,6 +1,6 @@
 use super::tests_1::{
-    FixedText, RecordingText, ScaledText, TallText, WrappingText, assert_background_clip, palette,
-    role,
+    assert_background_clip, palette, role, FixedText, RecordingText, ScaledText, TallText,
+    WrappingText,
 };
 use super::*;
 use crate::extended::{Banner, EmptyState, NoticeTone, Popover, Toast, Tooltip};
@@ -218,11 +218,9 @@ fn empty_state_wrap_measure_matches_draw_and_action_stays_after_text() {
         })
         .collect();
     assert!(!title_measurements.is_empty());
-    assert!(
-        title_measurements
-            .iter()
-            .all(|(_, _, width)| *width == title_width)
-    );
+    assert!(title_measurements
+        .iter()
+        .all(|(_, _, width)| *width == title_width));
     let title_draw = text
         .draws
         .iter()
@@ -383,8 +381,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
         visible: false,
         text: "Helpful detail".into(),
     };
-    assert!(
-        view.render(
+    assert!(view
+        .render(
             &mut scene,
             &mut text,
             &model,
@@ -396,11 +394,10 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none()
-    );
+        .is_none());
     view.pointer_move(anchor.center());
-    assert!(
-        view.render(
+    assert!(view
+        .render(
             &mut scene,
             &mut text,
             &model,
@@ -412,11 +409,10 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_some()
-    );
+        .is_some());
     assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
-    assert!(
-        view.render(
+    assert!(view
+        .render(
             &mut scene,
             &mut text,
             &model,
@@ -428,8 +424,7 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none()
-    );
+        .is_none());
     view.pointer_move(Point::new(230., 150.));
     view.render(
         &mut scene,
@@ -443,8 +438,8 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
         role(),
     );
     view.pointer_move(anchor.center());
-    assert!(
-        view.render(
+    assert!(view
+        .render(
             &mut scene,
             &mut text,
             &model,
@@ -456,14 +451,13 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_some()
-    );
+        .is_some());
     view.set_focus(true, true);
     assert_eq!(view.key(ControlKey::Escape), TooltipEvent::Dismissed);
     view.pointer_move(Point::new(230., 150.));
     view.set_focus(false, false);
-    assert!(
-        view.render(
+    assert!(view
+        .render(
             &mut scene,
             &mut text,
             &model,
@@ -475,8 +469,7 @@ fn tooltip_owns_hover_focus_escape_and_leave_state() {
             role(),
         )
         .visible
-        .is_none()
-    );
+        .is_none());
 }
 
 #[test]
@@ -506,11 +499,9 @@ fn popover_content_slot_uses_component_bounds_and_deactivation_restores_focus() 
     );
     let content = slot.expect("open popover calls its content slot");
     assert_eq!(content, layout.content);
-    assert!(
-        layout
-            .visible
-            .is_some_and(|visible| visible.contains(content.center()))
-    );
+    assert!(layout
+        .visible
+        .is_some_and(|visible| visible.contains(content.center())));
     assert!(layout.frame.max_x() <= 230.);
     assert!(layout.frame.max_y() <= 150.);
     let dismiss = view.dismiss_layout.unwrap().frame.center();
@@ -1173,4 +1164,208 @@ fn popover_uses_symmetric_token_insets_and_empty_state_detail_uses_muted_ink() {
     let detail_ink = text.0.iter().find(|(s, _)| s == &emodel.detail).unwrap().1;
     assert_eq!(title_ink, primary);
     assert_eq!(detail_ink, muted);
+}
+
+#[test]
+fn toast_warning_marker_matches_banner_warning_and_differs_from_error_across_all_themes() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        for surface in tekes_ui_tokens::surface_palette::surface_names() {
+            let toast_warn = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-toast-warning",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            let banner_warn = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-banner-warning",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            let toast_err = tekes_ui_tokens::surface_palette::resolve_surface(
+                palette,
+                surface,
+                "notice-marker-error",
+                "rest",
+            )
+            .unwrap()
+            .marker
+            .unwrap();
+            assert_eq!(toast_warn, banner_warn, "{theme:?}/{surface}");
+            assert_ne!(toast_warn, toast_err, "{theme:?}/{surface}");
+        }
+    }
+}
+
+#[test]
+fn toast_view_paints_floating_elevation_in_ordinary_modes_and_shadow_free_in_ic() {
+    for theme in tekes_ui_tokens::Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut view = ToastView::default();
+        let model = Toast::new("Check configuration", NoticeTone::Warning, 5000);
+        let mut text = FixedText;
+        let frame = Rect::new(20., 20., 320., 64.);
+        let mut scene = Scene::new();
+        view.render(&mut scene, &mut text, &model, frame, None, palette, role());
+        let shadows = scene
+            .primitives()
+            .iter()
+            .filter(|p| matches!(p, Primitive::Shadow(_)))
+            .count();
+        if theme.is_increased() {
+            assert_eq!(shadows, 0, "{theme:?} IC toast should remain shadow-free");
+        } else {
+            let expected_layers = proposal::elevation("popover", theme).len();
+            assert_eq!(
+                shadows, expected_layers,
+                "{theme:?} ordinary toast should use popover elevation layers"
+            );
+        }
+        let surface_quad = scene
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                Primitive::Quad(q) if q.rect == frame => Some(*q),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            surface_quad.corner_radii.top_left,
+            proposal::metric("radius", "radius-floating").unwrap()
+        );
+    }
+}
+
+#[test]
+fn toast_view_overlay_presence_animates_enter_exit_and_snaps_under_reduced_motion() {
+    #[derive(Default)]
+    struct ClockText {
+        ms: u64,
+        reduced: bool,
+        requests: usize,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+            Some(crate::ControlMotionContext {
+                now: std::time::Duration::from_millis(self.ms),
+                reduced_motion: self.reduced,
+            })
+        }
+        fn request_animation_frame(&mut self) {
+            self.requests += 1;
+        }
+        fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+            FixedText.measure(value, role, max)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let mut view = ToastView::default();
+    let mut model = Toast::new("Saved", NoticeTone::Warning, 5000);
+    let mut text = ClockText::default();
+    let frame = Rect::new(20., 20., 300., 60.);
+
+    // Frame 0: visible -> enters from 0 -> 1 via overlay_presence.
+    let mut s0 = Scene::new();
+    view.render(&mut s0, &mut text, &model, frame, None, palette(), role());
+    assert!(view.needs_animation());
+    assert!(text.requests > 0);
+
+    // Mid-exit after dismissal while animated.
+    text.ms = 200;
+    let mut s_full = Scene::new();
+    view.render(
+        &mut s_full,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.needs_animation());
+
+    model.dismiss();
+    text.ms = 250;
+    text.requests = 0;
+    let mut s_exit = Scene::new();
+    view.render(
+        &mut s_exit,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(view.is_presented());
+    assert!(view.needs_animation());
+    assert!(!s_exit.primitives().is_empty());
+
+    // After duration completes, exit completes and stops painting.
+    text.ms = 500;
+    let mut s_done = Scene::new();
+    view.render(
+        &mut s_done,
+        &mut text,
+        &model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!view.is_presented());
+    assert!(!view.needs_animation());
+    assert!(s_done.primitives().is_empty());
+
+    // Reduced motion snaps immediately with no animation frame requested.
+    let mut rm_view = ToastView::default();
+    let mut rm_model = Toast::new("Saved", NoticeTone::Warning, 5000);
+    let mut rm_text = ClockText {
+        ms: 0,
+        reduced: true,
+        requests: 0,
+    };
+    let mut s_rm = Scene::new();
+    rm_view.render(
+        &mut s_rm,
+        &mut rm_text,
+        &rm_model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.needs_animation());
+    assert_eq!(rm_text.requests, 0);
+    rm_model.dismiss();
+    rm_text.ms = 16;
+    let mut s_rm_closed = Scene::new();
+    rm_view.render(
+        &mut s_rm_closed,
+        &mut rm_text,
+        &rm_model,
+        frame,
+        None,
+        palette(),
+        role(),
+    );
+    assert!(!rm_view.is_presented());
+    assert!(s_rm_closed.primitives().is_empty());
 }

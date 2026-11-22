@@ -1,7 +1,7 @@
 {
   "format": "tekesui-reference-alignment-report/1",
   "date": "2026-10-16",
-  "source_commit": "563c2a505fe8bbf149930b1e3ae39778900c2d7f",
+  "source_commit": "184467a923844d1deb9906cb6606e19999d5739a",
   "source_state": "working-tree; hashes identify audited inputs, not a clean commit",
   "inputs_sha256": {
     "design/behavior/reference-alignment.json": "81c6c5af11e92e6bd4cf79c1aa15692517a14977659fd8823618231a7f100a9b",

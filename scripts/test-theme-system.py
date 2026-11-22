@@ -83,7 +83,7 @@ class ThemeSystemTests(unittest.TestCase):
             for state in ['hover','pressed','disabled','selected','focus','selected-hover','selected-disabled','selected-pressed']:
                 bad=copy.deepcopy(r);bad['profiles'][u][state]=copy.deepcopy(expected)
                 with self.assertRaises(Exception):g.bindings(bad)
-        for u,wrong in [('notice-marker-toast-warning','status-running'),('notice-marker-banner-warning','status-failed')]:
+        for u,wrong in [('notice-marker-toast-warning','status-failed'),('notice-marker-banner-warning','status-failed')]:
             bad=copy.deepcopy(r);bad['profiles'][u]['rest']['marker']=wrong
             with self.assertRaisesRegex(ValueError,'invalid notice marker packet binding'):g.bindings(bad)
         bad=copy.deepcopy(r);bad['profiles']['notice-marker-info']={'extends':'notice-marker-info'}
