@@ -480,7 +480,9 @@ pub fn switch_on_surface_with_thumb_progress(
             .with_corner_radius(radius)
             .with_border(stroke, boundary),
     );
-    let d = (rect.size.height - 4.).max(0.);
+    let pad = 2.;
+    let d = (rect.size.height - pad * 2.).max(0.);
+    let thumb_radius = tekes_ui_tokens::CornerRadius::concentric(radius, pad);
     let progress = if thumb_progress.is_finite() {
         thumb_progress.clamp(0., 1.)
     } else if checked {
@@ -488,13 +490,13 @@ pub fn switch_on_surface_with_thumb_progress(
     } else {
         0.
     };
-    let x = rect.min_x() + 2. + (rect.size.width - d - 4.).max(0.) * progress;
+    let x = rect.min_x() + pad + (rect.size.width - d - pad * 2.).max(0.) * progress;
     scene.push_quad(
         Quad::new(
-            Rect::new(x, rect.min_y() + 2., d, d),
+            Rect::new(x, rect.min_y() + pad, d, d),
             toggle.thumb.background,
         )
-        .with_corner_radius(d * 0.5)
+        .with_corner_radius(thumb_radius)
         .with_border(
             stroke,
             toggle

@@ -2481,6 +2481,15 @@ mod tests {
                     expected_toggle.track.boundary.unwrap_or(sw_quads[0].fill)
                 );
                 assert_eq!(sw_quads[1].fill, expected_toggle.thumb.background);
+                assert_eq!(
+                    sw_quads[1].corner_radii,
+                    tekes_ui_scene::CornerRadii::uniform(
+                        tekes_ui_tokens::CornerRadius::concentric(
+                            sw_quads[0].rect.size.height * 0.5,
+                            2.0
+                        )
+                    )
+                );
             }
         }
     }

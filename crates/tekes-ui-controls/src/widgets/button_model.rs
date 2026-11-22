@@ -370,6 +370,98 @@ impl ButtonModel {
         )
     }
 
+    fn update_hover_press_transitions(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        palette: Palette,
+        context: Option<ControlMotionContext>,
+    ) -> Option<(f32, f32)> {
+        if let Some(context) = context {
+            self.motion_now = context.now;
+            let palette_key = (palette.theme, palette.source());
+            let palette_changed = self
+                .motion_palette
+                .is_some_and(|previous| previous != palette_key);
+            self.motion_palette = Some(palette_key);
+            let interaction_enabled =
+                !self.motion_suspended && !self.state.disabled && !self.state.loading;
+            let hover_target = if interaction_enabled && self.state.hovered {
+                1.0
+            } else {
+                0.0
+            };
+            let press_target = if interaction_enabled && self.state.pressed {
+                1.0
+            } else {
+                0.0
+            };
+            let snap = palette_changed || !interaction_enabled;
+            let hover = if snap {
+                self.hover_transition.snap(hover_target, context.now)
+            } else {
+                self.hover_transition.retarget(
+                    hover_target,
+                    motion_for("button_hover"),
+                    context.now,
+                    context.reduced_motion,
+                )
+            }
+            .unwrap_or_else(|_| self.hover_transition.value());
+            let pressed = if snap {
+                self.press_transition.snap(press_target, context.now)
+            } else {
+                self.press_transition.retarget(
+                    press_target,
+                    motion_for("button_press"),
+                    context.now,
+                    context.reduced_motion,
+                )
+            }
+            .unwrap_or_else(|_| self.press_transition.value());
+            if self.needs_animation() {
+                text.request_animation_frame();
+            }
+            Some((hover as f32, pressed as f32))
+        } else {
+            let _ = self.hover_transition.snap(
+                if self.state.hovered && !self.state.disabled && !self.state.loading {
+                    1.0
+                } else {
+                    0.0
+                },
+                self.motion_now,
+            );
+            let _ = self.press_transition.snap(
+                if self.state.pressed && !self.state.disabled && !self.state.loading {
+                    1.0
+                } else {
+                    0.0
+                },
+                self.motion_now,
+            );
+            None
+        }
+    }
+    pub(crate) fn update_segment_motion(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        palette: Palette,
+    ) -> (f32, f32) {
+        let context = text.motion_context();
+        self.update_hover_press_transitions(text, palette, context)
+            .unwrap_or((
+                if self.state.hovered && !self.state.disabled && !self.state.loading {
+                    1.
+                } else {
+                    0.
+                },
+                if self.state.pressed && !self.state.disabled && !self.state.loading {
+                    1.
+                } else {
+                    0.
+                },
+            ))
+    }
     #[allow(clippy::too_many_arguments)]
     fn render_with_motion_context(
         &mut self,
@@ -445,71 +537,7 @@ impl ButtonModel {
         }
         self.refresh_pointer_state();
 
-        let transition_progress = if let Some(context) = context {
-            self.motion_now = context.now;
-            let palette_key = (palette.theme, palette.source());
-            let palette_changed = self
-                .motion_palette
-                .is_some_and(|previous| previous != palette_key);
-            self.motion_palette = Some(palette_key);
-            let interaction_enabled =
-                !self.motion_suspended && !self.state.disabled && !self.state.loading;
-            let hover_target = if interaction_enabled && self.state.hovered {
-                1.0
-            } else {
-                0.0
-            };
-            let press_target = if interaction_enabled && self.state.pressed {
-                1.0
-            } else {
-                0.0
-            };
-            let snap = palette_changed || !interaction_enabled;
-            let hover = if snap {
-                self.hover_transition.snap(hover_target, context.now)
-            } else {
-                self.hover_transition.retarget(
-                    hover_target,
-                    motion_for("button_hover"),
-                    context.now,
-                    context.reduced_motion,
-                )
-            }
-            .unwrap_or_else(|_| self.hover_transition.value());
-            let pressed = if snap {
-                self.press_transition.snap(press_target, context.now)
-            } else {
-                self.press_transition.retarget(
-                    press_target,
-                    motion_for("button_press"),
-                    context.now,
-                    context.reduced_motion,
-                )
-            }
-            .unwrap_or_else(|_| self.press_transition.value());
-            if self.needs_animation() {
-                text.request_animation_frame();
-            }
-            Some((hover as f32, pressed as f32))
-        } else {
-            let _ = self.hover_transition.snap(
-                if self.state.hovered && !self.state.disabled && !self.state.loading {
-                    1.0
-                } else {
-                    0.0
-                },
-                self.motion_now,
-            );
-            let _ = self.press_transition.snap(
-                if self.state.pressed && !self.state.disabled && !self.state.loading {
-                    1.0
-                } else {
-                    0.0
-                },
-                self.motion_now,
-            );
-            None
-        };
+        let transition_progress = self.update_hover_press_transitions(text, palette, context);
 
         if let Some(visible) = layout.visible {
             let background_clip =

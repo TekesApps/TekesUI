@@ -1549,3 +1549,56 @@ fn disclosure_view_label_and_icon_resolve_via_surface_contract() {
     assert_eq!(text2.inks, vec![expected_sidebar_hover.text]);
     assert_eq!(icons2.tints, vec![expected_sidebar_hover.icon]);
 }
+
+#[test]
+fn segmented_control_uses_dedicated_track_thumb_inset_and_concentric_radii() {
+    let mut model = SegmentedControl::new(3);
+    let mut view = SegmentedControlView::new(3);
+    let mut text = FixedText;
+    let frame = Rect::new(10., 20., 360., 38.);
+    let inset = proposal::metric("spacing", "space-segmented-inset").unwrap();
+    let expected_outer = proposal::metric("radius", "c-segmented-radius")
+        .unwrap()
+        .min(frame.size.height * 0.5)
+        .min(frame.size.width * 0.5);
+    let expected_thumb = tekes_ui_tokens::CornerRadius::concentric(expected_outer, inset);
+
+    for theme in Theme::ALL {
+        let palette = Palette::from(theme);
+        let mut scene = Scene::new();
+        let layout = view.render(
+            &mut scene,
+            &mut text,
+            &mut model,
+            &["Day", "Week", "Month"],
+            frame,
+            None,
+            palette,
+            proposal::TextRole::UiBody,
+            false,
+        );
+        let quads: Vec<_> = scene
+            .primitives()
+            .iter()
+            .filter_map(|p| match p {
+                tekes_ui_scene::Primitive::Quad(q) => Some(*q),
+                _ => None,
+            })
+            .collect();
+        let track = quads.iter().find(|q| q.rect == layout.frame).unwrap();
+        assert_eq!(track.fill, palette.color("segmented-track").unwrap());
+        assert_eq!(
+            track.corner_radii,
+            tekes_ui_scene::CornerRadii::uniform(expected_outer)
+        );
+        let thumb = quads
+            .iter()
+            .find(|q| q.rect == layout.items[0].frame)
+            .unwrap();
+        assert_eq!(thumb.fill, palette.color("segmented-thumb").unwrap());
+        assert_eq!(
+            thumb.corner_radii,
+            tekes_ui_scene::CornerRadii::uniform(expected_thumb)
+        );
+    }
+}

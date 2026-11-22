@@ -16,6 +16,7 @@ pub struct SegmentedLayout {
 pub struct SegmentedControlView {
     buttons: Vec<ButtonModel>,
     layout: SegmentedLayout,
+    surface: &'static str,
     focused: Option<usize>,
     focus_visible: bool,
     hovered: Option<usize>,
@@ -205,15 +206,21 @@ impl SegmentedControlView {
         surface: &str,
     ) -> Result<(), tekes_ui_tokens::surface_palette::SurfaceError> {
         let surface = tekes_ui_tokens::surface_palette::canonical_surface(surface)?;
+        self.surface = surface;
         for button in &mut self.buttons {
             button.set_surface(surface);
         }
         Ok(())
     }
     pub fn new(count: usize) -> Self {
+        let mut buttons = vec![ButtonModel::default(); count];
+        for button in &mut buttons {
+            button.set_surface("canvas");
+        }
         Self {
-            buttons: vec![ButtonModel::default(); count],
+            buttons,
             layout: SegmentedLayout::default(),
+            surface: "canvas",
             focused: None,
             focus_visible: false,
             hovered: None,
@@ -239,14 +246,16 @@ impl SegmentedControlView {
         } else {
             ButtonSize::Md
         };
-        let width = (available.width / count as f32).max(0.);
+        let inset = proposal::metric("spacing", "space-segmented-inset").unwrap_or(2.0);
+        let width = ((available.width - inset * 2.0).max(0.) / count as f32).max(0.);
         let mut result = Size::default();
         for label in labels {
             let measured = ButtonModel::measure(text, label, width, size, role);
             result.width = result.width.max(measured.width);
             result.height = result.height.max(measured.height);
         }
-        result.width *= count as f32;
+        result.width = result.width * count as f32 + inset * 2.0;
+        result.height += inset * 2.0;
         result
     }
     #[allow(clippy::too_many_arguments)]
@@ -283,7 +292,16 @@ impl SegmentedControlView {
         {
             self.focused = (0..count).find(|i| model.is_enabled(*i));
         }
-        let cells = Stack::new(Axis::Horizontal).layout(frame, count);
+        let inset = proposal::metric("spacing", "space-segmented-inset").unwrap_or(2.0);
+        let inset_x = inset.min(frame.size.width * 0.5).max(0.0);
+        let inset_y = inset.min(frame.size.height * 0.5).max(0.0);
+        let inner = Rect::new(
+            frame.min_x() + inset_x,
+            frame.min_y() + inset_y,
+            (frame.size.width - inset_x * 2.0).max(0.0),
+            (frame.size.height - inset_y * 2.0).max(0.0),
+        );
+        let cells = Stack::new(Axis::Horizontal).layout(inner, count);
         let mut items = Vec::with_capacity(count);
         for i in 0..count {
             let button = &mut self.buttons[i];
@@ -310,7 +328,15 @@ impl SegmentedControlView {
                 None,
             ));
         }
-        self.layout = SegmentedLayout { frame, items };
+        let track_height = items
+            .iter()
+            .map(|item| item.frame.max_y() - frame.min_y() + inset_y)
+            .fold(frame.size.height, f32::max);
+        let track_frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, track_height);
+        self.layout = SegmentedLayout {
+            frame: track_frame,
+            items,
+        };
         if !self
             .layout
             .items
@@ -333,9 +359,12 @@ impl SegmentedControlView {
         clip: Option<Rect>,
         palette: Palette,
         role: proposal::TextRole,
-        compact: bool,
+        _compact: bool,
     ) {
         let count = self.layout.items.len();
+        if count == 0 {
+            return;
+        }
         let focus_last = self.focused.filter(|&index| {
             index < count
                 && self.focus_visible
@@ -344,27 +373,133 @@ impl SegmentedControlView {
                 && model.is_enabled(index)
         });
         let clipped = safe_clip(scene, clip);
-        let size = if compact {
-            ButtonSize::Sm
-        } else {
-            ButtonSize::Md
-        };
-        for i in (0..count)
-            .filter(|i| Some(*i) != focus_last)
-            .chain(focus_last)
-        {
-            self.buttons[i].paint_prepared_segment(
-                scene,
-                text,
-                labels[i],
-                self.layout.items[i],
-                clip,
-                palette,
-                size,
-                role,
-                false,
+        let frame = self.layout.frame;
+        let inset = proposal::metric("spacing", "space-segmented-inset").unwrap_or(2.0);
+        let effective_inset = inset
+            .min(frame.size.width * 0.5)
+            .min(frame.size.height * 0.5)
+            .max(0.0);
+        let outer_radius = proposal::metric("radius", "c-segmented-radius")
+            .unwrap_or(9999.0)
+            .min(frame.size.height * 0.5)
+            .min(frame.size.width * 0.5)
+            .max(0.0);
+        let thumb_radius = tekes_ui_tokens::CornerRadius::concentric(outer_radius, effective_inset);
+
+        let track_fill = palette
+            .color("segmented-track")
+            .expect("segmented-track token");
+        let frame_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+            palette,
+            self.surface,
+            "surface-frame",
+            "rest",
+        )
+        .expect("validated Segmented frame");
+        let (border_width, _) = crate::paint::decorative_border(palette, text.backing_scale());
+        let mut track_quad =
+            tekes_ui_scene::Quad::new(frame, track_fill).with_corner_radius(outer_radius);
+        if let Some(boundary) = frame_colors.boundary {
+            track_quad = track_quad.with_border(border_width, boundary);
+        }
+        scene.push_quad(track_quad);
+
+        let motions: Vec<(f32, f32)> = (0..count)
+            .map(|i| self.buttons[i].update_segment_motion(text, palette))
+            .collect();
+
+        let hover_color = palette.color("button-hover").expect("button-hover token");
+        let pressed_color = palette
+            .color("button-pressed")
+            .expect("button-pressed token");
+        for (i, &(hover, pressed)) in motions.iter().enumerate() {
+            if i == model.selected || self.buttons[i].state.disabled {
+                continue;
+            }
+            if !self.layout.items[i].visible.is_some_and(has_area) {
+                continue;
+            }
+            if hover <= 0. && pressed <= 0. {
+                continue;
+            }
+            let hover_fill = crate::paint::mix_rgba_linear(track_fill, hover_color, hover);
+            let fill = crate::paint::mix_rgba_linear(hover_fill, pressed_color, pressed);
+            scene.push_quad(
+                tekes_ui_scene::Quad::new(self.layout.items[i].frame, fill)
+                    .with_corner_radius(thumb_radius),
             );
         }
+
+        if model.selected < count
+            && self.layout.items[model.selected]
+                .visible
+                .is_some_and(has_area)
+        {
+            let thumb_rect = self.layout.items[model.selected].frame;
+            let thumb_fill = palette
+                .color("segmented-thumb")
+                .expect("segmented-thumb token");
+            let mut thumb_quad =
+                tekes_ui_scene::Quad::new(thumb_rect, thumb_fill).with_corner_radius(thumb_radius);
+            let thumb_disabled = self.disabled || !model.is_enabled(model.selected);
+            if !thumb_disabled {
+                if palette.theme.is_increased() {
+                    let selection_colors = tekes_ui_tokens::surface_palette::resolve_surface(
+                        palette,
+                        self.surface,
+                        "selection",
+                        "selected",
+                    )
+                    .expect("validated Segmented selection");
+                    let stroke = proposal::metric("stroke", "stroke-rule").unwrap_or(1.0);
+                    if let Some(boundary) = selection_colors.boundary {
+                        thumb_quad = thumb_quad.with_border(stroke, boundary);
+                    }
+                } else if let Some(boundary) = frame_colors.boundary {
+                    thumb_quad = thumb_quad.with_border(border_width, boundary);
+                }
+            }
+            scene.push_quad(thumb_quad);
+        }
+
+        for i in 0..count {
+            let item = self.layout.items[i];
+            let Some(visible) = item.visible.filter(|v| has_area(*v)) else {
+                continue;
+            };
+            let label = labels.get(i).copied().unwrap_or("");
+            if !label.is_empty() && !item.content.is_empty() {
+                let ink = self.buttons[i]
+                    .surface_colors(palette, ButtonVariant::Quiet, self.surface)
+                    .text;
+                scene.push_clip(visible);
+                text.draw(
+                    scene,
+                    label,
+                    role,
+                    item.content,
+                    ButtonTextAlign::Leading,
+                    ink,
+                );
+                scene.pop_clip();
+            }
+        }
+
+        if let Some(i) = focus_last
+            && self.layout.items[i].visible.is_some_and(has_area)
+        {
+            let colors =
+                self.buttons[i].surface_colors(palette, ButtonVariant::Quiet, self.surface);
+            if let Some(focus) = colors.focus {
+                crate::paint::focus_ring_with_color(
+                    scene,
+                    self.layout.items[i].frame,
+                    focus,
+                    thumb_radius,
+                );
+            }
+        }
+
         if clipped {
             scene.pop_clip();
         }
