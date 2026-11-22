@@ -607,7 +607,7 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         )
     }
     /// Update values on an original descendant, retaining its mounted identity.
-    /// Structural child changes use register/remove, so lifecycle is not bypassed.
+    /// Structural child changes use `register`, `update_group_children`, or `remove`.
     pub fn update_component<C: Component>(
         &mut self,
         group: ComponentId,
@@ -629,7 +629,9 @@ impl<B: Clone + Debug> ToolbarHost<B> {
         // Retire stale hits if this value changes width; unrelated original
         // editors retain focus and native text sessions during button refreshes.
         self.host.cancel_pointer_capture();
-        self.host.cancel_subtree(target);
+        if target != group {
+            self.host.cancel_subtree(target);
+        }
         update(
             self.host
                 .get_mut(target)
@@ -638,6 +640,130 @@ impl<B: Clone + Debug> ToolbarHost<B> {
                 .unwrap(),
         );
         self.invocations.retain(|i| i.group != group);
+        self.invalidate();
+        Ok(())
+    }
+    /// Add, remove, or reorder direct children of a registered `ToolbarGroup` in
+    /// place, keeping mount identity and active interactions of unchanged siblings.
+    pub fn update_group_children(
+        &mut self,
+        group: ComponentId,
+        new_children: Vec<Content>,
+        child_order: Vec<ComponentId>,
+        bindings: Vec<ToolbarCommandBinding<B>>,
+    ) -> Result<(), CompositionError> {
+        let Some(region) = self.registrations.get(&group).map(|r| r.region) else {
+            return Err(CompositionError::MissingId(group));
+        };
+        let Some(group_node) = self.host.get(group) else {
+            return Err(CompositionError::MissingId(group));
+        };
+        if group_node.component::<ToolbarGroup>().is_none() {
+            return Err(CompositionError::NotContainer(group));
+        }
+        let old_direct: Vec<ComponentId> = group_node
+            .component
+            .children()
+            .iter()
+            .map(|c| c.id)
+            .collect();
+        let mut seen_order = BTreeSet::new();
+        for &id in &child_order {
+            if !seen_order.insert(id) {
+                return Err(CompositionError::DuplicateId(id));
+            }
+        }
+        let mut new_roots = BTreeSet::new();
+        for child in &new_children {
+            if !new_roots.insert(child.id) {
+                return Err(CompositionError::DuplicateId(child.id));
+            }
+            if !seen_order.contains(&child.id) {
+                return Err(CompositionError::InvalidOrder);
+            }
+        }
+        for &id in &child_order {
+            if !old_direct.contains(&id) && !new_roots.contains(&id) {
+                return Err(CompositionError::MissingId(id));
+            }
+        }
+        let removed: Vec<ComponentId> = old_direct
+            .iter()
+            .copied()
+            .filter(|id| !seen_order.contains(id))
+            .collect();
+        let mut all_new_ids = BTreeSet::new();
+        for child in &new_children {
+            let mut sub_ids = BTreeSet::new();
+            child.ids(&mut sub_ids)?;
+            for id in sub_ids {
+                if !all_new_ids.insert(id) {
+                    return Err(CompositionError::DuplicateId(id));
+                }
+                if self.host.get(id).is_some()
+                    && !removed
+                        .iter()
+                        .any(|rem| self.host.get(*rem).is_some_and(|n| n.find(id).is_some()))
+                {
+                    return Err(CompositionError::DuplicateId(id));
+                }
+            }
+        }
+        let retained: Vec<ComponentId> = old_direct
+            .iter()
+            .copied()
+            .filter(|id| seen_order.contains(id))
+            .collect();
+        let mut keys = BTreeSet::new();
+        for b in &bindings {
+            let found_in_retained = retained.iter().any(|child_id| {
+                self.host
+                    .get(*child_id)
+                    .is_some_and(|node| node.find(b.target).is_some())
+            });
+            let found_in_new = new_children
+                .iter()
+                .any(|node| node.find(b.target).is_some());
+            if !found_in_retained && !found_in_new {
+                return Err(CompositionError::MissingId(b.target));
+            }
+            if !keys.insert((b.target, b.action)) {
+                return Err(CompositionError::DuplicateId(b.target));
+            }
+        }
+        for id in &removed {
+            self.host.cancel_subtree(*id);
+            self.host.remove(*id)?;
+        }
+        for child in new_children {
+            self.host.insert(group, child)?;
+        }
+        self.host.reorder(group, &child_order)?;
+        let axis = self
+            .host
+            .get(self.root)
+            .unwrap()
+            .component::<Regions>()
+            .unwrap()
+            .allocations
+            .iter()
+            .find(|allocation| allocation.id == region)
+            .map_or(Axis::Horizontal, |allocation| allocation.axis);
+        if let Some(group_comp) = self
+            .host
+            .get_mut(group)
+            .and_then(|n| n.component_mut::<ToolbarGroup>())
+        {
+            group_comp.set_axis(axis);
+        }
+        self.registrations.get_mut(&group).unwrap().bindings = bindings;
+        self.invocations.retain(|i| {
+            i.group != group
+                || self.registrations[&group]
+                    .bindings
+                    .iter()
+                    .any(|b| b.command == i.command)
+        });
         self.invalidate();
         Ok(())
     }
@@ -1116,6 +1242,377 @@ mod inset_tests {
                 .unwrap()
                 .horizontal_inset,
             None
+        );
+    }
+
+    #[test]
+    fn update_group_children_preserves_unchanged_segments_and_validates_atomically() {
+        let viewport = Rect::new(0., 0., 600., 120.);
+        let region = ToolbarRegion::new(ComponentId(10), Rect::new(0., 0., 600., 44.));
+        let mut host: ToolbarHost<u64> = ToolbarHost::new(ComponentId(1), 1, viewport).unwrap();
+        host.set_regions(1, viewport, vec![region.clone()]).unwrap();
+
+        let make_menu = |label: &str| {
+            let mut m = MenuContent::new(label, Vec::new());
+            m.set_entries(vec![MenuEntry::item("a", "Alpha")]).unwrap();
+            m.set_trigger_variant(crate::paint::ButtonVariant::Toolbar);
+            m
+        };
+        let make_btn =
+            |label: &str| Button::new(label).with_variant(crate::paint::ButtonVariant::Toolbar);
+
+        host.register(ToolbarRegistration {
+            region: region.id,
+            order: 0,
+            group: Content::new(
+                ComponentId(20),
+                ToolbarGroup::new(
+                    ToolbarPlacement::PrimaryAction,
+                    vec![
+                        Content::new(ComponentId(101), make_menu("Mode")),
+                        Content::new(ComponentId(102), make_menu("Model")),
+                        Content::new(ComponentId(103), make_btn("Effort")),
+                    ],
+                )
+                .with_chrome(ToolbarGroupChrome::Capsule { divided: true }),
+            ),
+            bindings: vec![
+                ToolbarCommandBinding {
+                    target: ComponentId(101),
+                    action: None,
+                    command: 101,
+                    source: 101,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(102),
+                    action: None,
+                    command: 102,
+                    source: 102,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(103),
+                    action: None,
+                    command: 103,
+                    source: 103,
+                },
+            ],
+        })
+        .unwrap();
+        host.register(ToolbarRegistration {
+            region: region.id,
+            order: 1,
+            group: Content::new(
+                ComponentId(30),
+                ToolbarGroup::new(
+                    ToolbarPlacement::PrimaryAction,
+                    vec![
+                        Content::new(ComponentId(201), make_btn("Prev")),
+                        Content::new(ComponentId(202), make_btn("Next")),
+                    ],
+                )
+                .with_chrome(ToolbarGroupChrome::Capsule { divided: false }),
+            ),
+            bindings: vec![
+                ToolbarCommandBinding {
+                    target: ComponentId(201),
+                    action: None,
+                    command: 201,
+                    source: 201,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(202),
+                    action: None,
+                    command: 202,
+                    source: 202,
+                },
+            ],
+        })
+        .unwrap();
+
+        let mut text = Text;
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+
+        let m101 = host
+            .content_host()
+            .get(ComponentId(101))
+            .unwrap()
+            .mount_identity();
+        let m102 = host
+            .content_host()
+            .get(ComponentId(102))
+            .unwrap()
+            .mount_identity();
+        let m103 = host
+            .content_host()
+            .get(ComponentId(103))
+            .unwrap()
+            .mount_identity();
+        let m201 = host
+            .content_host()
+            .get(ComponentId(201))
+            .unwrap()
+            .mount_identity();
+        let m202 = host
+            .content_host()
+            .get(ComponentId(202))
+            .unwrap()
+            .mount_identity();
+
+        // Open segment 101 menu and verify popup remains open across 3 -> 4 structural update.
+        let p101 = host
+            .content_host()
+            .get(ComponentId(101))
+            .unwrap()
+            .frame()
+            .center();
+        assert!(host.event(&ContentEvent::PointerDown(p101)).consumed);
+        assert!(host.event(&ContentEvent::PointerUp(p101)).consumed);
+        assert!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+
+        // Atomic validation errors leave state and open menu untouched.
+        assert!(matches!(
+            host.update_group_children(ComponentId(999), vec![], vec![], vec![],),
+            Err(CompositionError::MissingId(ComponentId(999)))
+        ));
+        assert!(matches!(
+            host.update_group_children(
+                ComponentId(20),
+                vec![],
+                vec![ComponentId(101), ComponentId(101)],
+                vec![],
+            ),
+            Err(CompositionError::DuplicateId(ComponentId(101)))
+        ));
+        assert!(matches!(
+            host.update_group_children(
+                ComponentId(20),
+                vec![],
+                vec![ComponentId(101), ComponentId(102), ComponentId(888)],
+                vec![],
+            ),
+            Err(CompositionError::MissingId(ComponentId(888)))
+        ));
+        assert!(matches!(
+            host.update_group_children(
+                ComponentId(20),
+                vec![Content::new(ComponentId(201), make_btn("Dup"))],
+                vec![ComponentId(101), ComponentId(201)],
+                vec![],
+            ),
+            Err(CompositionError::DuplicateId(ComponentId(201)))
+        ));
+        assert!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+
+        // Expand 3 -> 4 segments: insert 104 between 102 and 103.
+        host.update_group_children(
+            ComponentId(20),
+            vec![Content::new(ComponentId(104), make_btn("Fast"))],
+            vec![
+                ComponentId(101),
+                ComponentId(102),
+                ComponentId(104),
+                ComponentId(103),
+            ],
+            vec![
+                ToolbarCommandBinding {
+                    target: ComponentId(101),
+                    action: None,
+                    command: 101,
+                    source: 101,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(102),
+                    action: None,
+                    command: 102,
+                    source: 102,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(104),
+                    action: None,
+                    command: 104,
+                    source: 104,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(103),
+                    action: None,
+                    command: 103,
+                    source: 103,
+                },
+            ],
+        )
+        .unwrap();
+
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .mount_identity(),
+            m101
+        );
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(102))
+                .unwrap()
+                .mount_identity(),
+            m102
+        );
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(103))
+                .unwrap()
+                .mount_identity(),
+            m103
+        );
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(201))
+                .unwrap()
+                .mount_identity(),
+            m201
+        );
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(202))
+                .unwrap()
+                .mount_identity(),
+            m202
+        );
+        assert!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open(),
+            "unaffected open menu must stay open across group child insertion"
+        );
+        let f102 = host.content_host().get(ComponentId(102)).unwrap().frame();
+        let f104 = host.content_host().get(ComponentId(104)).unwrap().frame();
+        let f103 = host.content_host().get(ComponentId(103)).unwrap().frame();
+        assert!((f102.max_x() - f104.min_x()).abs() < 0.001);
+        assert!((f104.max_x() - f103.min_x()).abs() < 0.001);
+
+        // Dismiss open menu 101 by clicking outside, then click new segment 104 -> fires binding 104.
+        assert!(
+            host.event(&ContentEvent::PointerDown(f104.center()))
+                .consumed
+        );
+        assert!(host.event(&ContentEvent::PointerUp(f104.center())).consumed);
+        assert!(
+            !host
+                .content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+        assert!(host.drain_commands().is_empty());
+        assert!(
+            host.event(&ContentEvent::PointerDown(f104.center()))
+                .consumed
+        );
+        assert!(host.event(&ContentEvent::PointerUp(f104.center())).consumed);
+        let cmds = host.drain_commands();
+        assert_eq!(cmds.len(), 1);
+        assert_eq!(cmds[0].command, 104);
+
+        // Shrink 4 -> 3 segments removing 102 while keeping 101 open again.
+        let p101_4 = host
+            .content_host()
+            .get(ComponentId(101))
+            .unwrap()
+            .frame()
+            .center();
+        assert!(host.event(&ContentEvent::PointerDown(p101_4)).consumed);
+        assert!(host.event(&ContentEvent::PointerUp(p101_4)).consumed);
+        assert!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
+        );
+        host.update_group_children(
+            ComponentId(20),
+            vec![],
+            vec![ComponentId(101), ComponentId(104), ComponentId(103)],
+            vec![
+                ToolbarCommandBinding {
+                    target: ComponentId(101),
+                    action: None,
+                    command: 101,
+                    source: 101,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(104),
+                    action: None,
+                    command: 104,
+                    source: 104,
+                },
+                ToolbarCommandBinding {
+                    target: ComponentId(103),
+                    action: None,
+                    command: 103,
+                    source: 103,
+                },
+            ],
+        )
+        .unwrap();
+        host.render(
+            &mut Scene::new(),
+            &mut text,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert!(host.content_host().get(ComponentId(102)).is_none());
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .mount_identity(),
+            m101
+        );
+        assert_eq!(
+            host.content_host()
+                .get(ComponentId(103))
+                .unwrap()
+                .mount_identity(),
+            m103
+        );
+        assert!(
+            host.content_host()
+                .get(ComponentId(101))
+                .unwrap()
+                .component::<MenuContent>()
+                .unwrap()
+                .is_open()
         );
     }
 }

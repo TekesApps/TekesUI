@@ -15,7 +15,7 @@
 //! ```
 use super::*;
 use crate::ButtonModel;
-use tekes_ui_scene::{ImageId, ImageQuad};
+use tekes_ui_scene::{CornerRadii, ImageId, ImageQuad};
 use tekes_ui_tokens::proposal::layout::MainAxisDistribution;
 
 /// Presentation data only. Every shape retains the same original action owner.
@@ -72,6 +72,13 @@ pub enum ButtonActivationPhase {
     Press,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct CapsuleSegmentSpec {
+    pub radii: CornerRadii,
+    pub leading_inset: f32,
+    pub trailing_inset: f32,
+}
+
 /// Text, image, image/text or original decorative Content; one action and AX identity.
 /// Pure images/custom content require `with_accessible_name` before mounting.
 /// Registered image resources remain host-owned; regular geometry comes from DS.
@@ -99,6 +106,7 @@ pub struct Button {
     toolbar_presentation: bool,
     transparent_chrome: bool,
     toolbar_icon_slot: bool,
+    capsule_segment: Option<CapsuleSegmentSpec>,
 }
 impl Button {
     pub fn new(contents: impl Into<ButtonContents>) -> Self {
@@ -122,12 +130,41 @@ impl Button {
             toolbar_presentation: false,
             transparent_chrome: false,
             toolbar_icon_slot: false,
+            capsule_segment: None,
         };
         button.set_contents(contents);
         button
     }
     pub(crate) fn set_toolbar_presentation(&mut self, toolbar: bool) {
         self.toolbar_presentation = toolbar;
+    }
+    pub(super) fn set_capsule_segment(&mut self, spec: Option<CapsuleSegmentSpec>) {
+        if self.capsule_segment == spec {
+            return;
+        }
+        let insets_before = self.button.horizontal_inset_override;
+        let insets_after = spec
+            .filter(|_| !self.toolbar_icon_slot)
+            .map(|s| (s.leading_inset, s.trailing_inset));
+        self.capsule_segment = spec;
+        self.button.set_transparent_rest(spec.is_some());
+        self.button.set_corner_radii(spec.map(|s| s.radii));
+        self.button.set_horizontal_inset_override(insets_after);
+        if insets_before != insets_after {
+            self.measured = Size::default();
+        }
+    }
+    #[cfg(test)]
+    pub(super) fn uses_capsule_segment(&self) -> bool {
+        self.capsule_segment.is_some()
+    }
+    pub(super) fn is_visually_active_in_capsule(&self) -> bool {
+        !self.button.state.disabled
+            && !self.button.state.loading
+            && (self.button.state.hovered
+                || self.button.state.pressed
+                || self.button.state.selected
+                || (self.button.state.focused && self.button.state.focus_visible))
     }
     pub(crate) fn set_toolbar_template_icon(&mut self, name: &str) {
         if self.content.first().is_some_and(|content| {
@@ -258,6 +295,22 @@ impl Button {
         } else {
             crate::ButtonFramePolicy::Minimum
         };
+        let insets = self
+            .capsule_segment
+            .filter(|_| !icon_slot)
+            .map(|s| (s.leading_inset, s.trailing_inset));
+        self.button.set_horizontal_inset_override(insets);
+        self.measured = Size::default();
+    }
+    pub fn with_tone(mut self, tone: crate::paint::ButtonTone) -> Self {
+        self.set_tone(tone);
+        self
+    }
+    pub fn set_tone(&mut self, tone: crate::paint::ButtonTone) {
+        self.button.set_tone(tone);
+    }
+    pub fn tone(&self) -> crate::paint::ButtonTone {
+        self.button.tone()
     }
     pub(super) fn uses_toolbar_icon_slot(&self) -> bool {
         self.toolbar_icon_slot
@@ -276,7 +329,8 @@ impl Button {
         variant: ButtonVariant,
     ) -> crate::ButtonLayout {
         let focus_visible = self.button.state.focus_visible;
-        let suppress_focus_ink = self.toolbar_presentation || self.toolbar_icon_slot;
+        let suppress_focus_ink =
+            (self.toolbar_presentation || self.toolbar_icon_slot) && self.capsule_segment.is_none();
         if suppress_focus_ink {
             self.button.state.focus_visible = false;
         }
@@ -616,7 +670,7 @@ impl Button {
         available: Size,
     ) -> MeasuredChild {
         let outer = Rect::from_origin_size(Point::default(), available);
-        let empty = crate::ButtonLayout::resolve_with_text(
+        let empty = crate::ButtonLayout::resolve_with_text_and_insets(
             text,
             outer,
             None,
@@ -625,6 +679,7 @@ impl Button {
             proposal::TextRole::UiBody,
             ButtonTextAlign::default(),
             self.button.frame_policy,
+            self.button.horizontal_inset_override,
         );
         // Empty-label layout supplies horizontal chrome, not a zero-height
         // constraint for arbitrary content. The actual receiving height is the
@@ -638,12 +693,13 @@ impl Button {
             if self.button.frame_policy == crate::ButtonFramePolicy::Exact {
                 self.measured
             } else {
-                ButtonModel::measure_content(
+                ButtonModel::measure_content_with_insets(
                     text,
                     self.measured,
                     available.width,
                     ButtonSize::Body,
                     proposal::TextRole::UiBody,
+                    self.button.horizontal_inset_override,
                 )
             },
         )
@@ -712,7 +768,7 @@ impl Component for Button {
     }
 
     fn focus_boundary_visible(&self) -> bool {
-        !(self.toolbar_presentation || self.toolbar_icon_slot)
+        (self.capsule_segment.is_some() || !(self.toolbar_presentation || self.toolbar_icon_slot))
             && self.button.state.focused
             && self.button.state.focus_visible
     }
@@ -729,8 +785,9 @@ impl Component for Button {
     }
 
     fn focus_decoration_above_siblings(&self) -> bool {
-        !(self.toolbar_presentation || self.toolbar_icon_slot)
-            && self.button.frame_policy == crate::ButtonFramePolicy::Exact
+        (self.capsule_segment.is_some()
+            || (!(self.toolbar_presentation || self.toolbar_icon_slot)
+                && self.button.frame_policy == crate::ButtonFramePolicy::Exact))
             && self.button.state.focused
             && self.button.state.focus_visible
             && !self.button.state.disabled
@@ -848,7 +905,8 @@ impl Component for Button {
             };
             if self.content_alignment != MainAxisDistribution::End {
                 let focus_visible = self.button.state.focus_visible;
-                let suppress_focus_ink = self.toolbar_presentation || self.toolbar_icon_slot;
+                let suppress_focus_ink = (self.toolbar_presentation || self.toolbar_icon_slot)
+                    && self.capsule_segment.is_none();
                 if suppress_focus_ink {
                     self.button.state.focus_visible = false;
                 }
@@ -1049,7 +1107,7 @@ pub(super) fn resolve_action_slot(
     clip: Rect,
     text: &mut dyn ButtonTextRenderer,
 ) -> crate::ButtonLayout {
-    crate::ButtonLayout::resolve_with_text(
+    crate::ButtonLayout::resolve_with_text_and_insets(
         text,
         frame,
         Some(clip),
@@ -1058,6 +1116,7 @@ pub(super) fn resolve_action_slot(
         proposal::TextRole::UiBody,
         ButtonTextAlign::Leading,
         action.button.frame_policy,
+        action.button.horizontal_inset_override,
     )
 }
 pub(super) fn measure_action_slot(

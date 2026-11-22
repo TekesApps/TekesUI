@@ -557,6 +557,11 @@ impl Content {
             panel.paint_boundary(scene, theme, descendant_focus);
             scene.pop_clip();
         }
+        if self.visible().is_some()
+            && let Some(group) = self.component::<ToolbarGroup>()
+        {
+            group.paint_boundary(scene, text, panel_clip, theme);
+        }
         for _ in 0..curve_scope {
             scene.pop_clip();
         }

@@ -230,6 +230,15 @@ impl Host {
                     ComponentId(1),
                     crate::window_toolbar::build_menu_content(&decl, Rect::default()),
                 ),
+                Contents::CapsuleGroup(decl) => {
+                    let mut group = crate::window_toolbar::build_capsule_group_content(
+                        tekes_ui_controls::composition::ToolbarPlacement::PrimaryAction,
+                        &decl,
+                        Rect::default(),
+                    );
+                    group.set_axis(axis);
+                    Content::new(ComponentId(1), group)
+                }
                 Contents::Title(title) => Content::new(
                     ComponentId(1),
                     tekes_ui_controls::composition::TextContent::label(title),

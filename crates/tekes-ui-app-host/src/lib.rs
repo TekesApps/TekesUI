@@ -41,7 +41,8 @@ pub use columns::{
 };
 #[cfg(target_os = "macos")]
 pub use local_toolbar::{
-    LocalToolbarAction, LocalToolbarButton, LocalToolbarItem, LocalToolbarMenu,
+    LocalToolbarAction, LocalToolbarButton, LocalToolbarGroup, LocalToolbarGroupOverflow,
+    LocalToolbarItem, LocalToolbarMenu, LocalToolbarTone,
 };
 #[cfg(target_os = "macos")]
 pub use presentation::{

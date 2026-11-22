@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.7` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.8` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 集成胶囊分段工具栏组（`v0.4.8`）
+
+- **控件层集成胶囊组**：`tekes-ui-controls::composition::ToolbarGroup` 新增 `ToolbarGroupChrome::{Plain, Capsule { divided: bool }}`（默认保持 `Plain` 完全兼容）、`.with_capsule(bool)` / `.with_divided(bool)` / `.with_label(...)` / `.with_help(...)`；启用 `Capsule` 后在所有可见分段外围绘制共享 `surface-2`（`"panel"/"surface-frame"/"rest"`）圆角胶囊与 `decorative_border` 外框线，组内零间距紧贴排布并按 `1/backing_scale` 像素网格对齐分段边界以消除亚像素舍入截断；`divided == true` 时在相邻静息分段间绘制 1px 分割线并在相邻段处于悬停/按下/选中/键盘聚焦/菜单打开时隐藏。
+- **语义前景与原地子组同步**：`ButtonTone::{Default, Secondary, Warning, Error}` 与 `ToolbarHost::update_group_children` 允许在不重建无关节点或打断未受影响弹出层的情况下，原地增删/重排胶囊分段并保持每个分段真实的 `ComponentId`、挂载身份、聚焦环、`MenuContent` 分段锚点及 macOS AX 语义树。
+- **AppHost 声明与溢出协同**：`tekes-ui-app-host` 新增 `LocalToolbarGroup`、`LocalToolbarItem::Group`、`LocalToolbarGroupOverflow::{Together, Split}` 与 `LocalToolbarTone`，校验顶层/组/成员 ID 非零且全局唯一并拒绝嵌套分组；支持仅图标触发器与无 `⌄` 紧凑触发器（`dropdown_indicator(false)`），并在窄栏时支持整组协同收折至 `"More actions"` 溢出子菜单或按前缀拆分，点击直达与溢出触发均投递一致的 `LocalToolbarAction { id: member_id, source, payload }`。
 
 ### 本地容器动态 Window Toolbar 与原生下拉菜单（`v0.4.7`）
 

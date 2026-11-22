@@ -20,6 +20,7 @@ pub(super) struct ToolbarMountState {
     )>,
     pub(super) toolbar_ax_next: u64,
     pub(super) toolbar_focus: Option<ToolbarTarget>,
+    pub(super) toolbar_focus_control: Option<ComponentId>,
     pub(super) toolbar_focus_visible: bool,
     pub(super) toolbar_focus_lease: Option<(u64, crate::window_toolbar::Source)>,
 }
@@ -31,6 +32,7 @@ impl ToolbarMountState {
             toolbar_ax: Vec::new(),
             toolbar_ax_next: 1 << 63,
             toolbar_focus: None,
+            toolbar_focus_control: None,
             toolbar_focus_visible: false,
             toolbar_focus_lease: None,
         }
@@ -422,7 +424,11 @@ impl Host {
                             self.panel_mgr.panels[index].toolbar_action(crate::LocalToolbarAction {
                                 id: invocation.command,
                                 source: invocation.input,
-                                payload: invocation.payload,
+                                payload: Some(invocation.payload.unwrap_or(
+                                    tekes_ui_controls::composition::ContentActionPayload::ToolbarCommand(
+                                        invocation.command,
+                                    ),
+                                )),
                             })
                         }
                     } else {
@@ -459,6 +465,19 @@ impl Host {
                                 .and_then(|path| path.first())
                                 .map(String::as_str)
                         {
+                            let (selection, tag) = if tag.starts_with("group:")
+                                && let Some(unwrapped) = selection.strip_value_prefix(tag)
+                                && let Some(inner_tag) = unwrapped
+                                    .value_path()
+                                    .and_then(|path| path.first())
+                                    .map(String::as_str)
+                            {
+                                let inner_tag = inner_tag.to_owned();
+                                (unwrapped, inner_tag)
+                            } else {
+                                (selection.clone(), tag.to_owned())
+                            };
+                            let tag = tag.as_str();
                             if let Some(raw) = tag.strip_prefix("cmd:")
                                 && let Ok(id) = raw.parse::<u64>()
                             {
@@ -916,18 +935,54 @@ impl Host {
         }
         groups
     }
-    pub(super) fn actual_toolbar_owner(&self) -> Option<ToolbarTarget> {
-        let focused = self
+    fn toolbar_group_focusable_controls(
+        &self,
+        presenter: usize,
+        group: ComponentId,
+    ) -> Vec<ComponentId> {
+        let Some(host) = self
             .panel_mgr
             .panels
-            .get(self.toolbar_mgr.toolbar_index)?
+            .get(presenter)
+            .map(|panel| panel.mounted_toolbar.host.content_host())
+        else {
+            return Vec::new();
+        };
+        let Some(group_node) = host.get(group) else {
+            return Vec::new();
+        };
+        let Some(children) = group_node
+            .component::<tekes_ui_controls::composition::ToolbarGroup>()
+            .map(|group| group.children.as_slice())
+        else {
+            return Vec::new();
+        };
+        children
+            .iter()
+            .filter(|child| {
+                child
+                    .component::<ToolbarControl>()
+                    .is_some_and(tekes_ui_controls::composition::Component::focusable)
+                    || child
+                        .component::<tekes_ui_controls::composition::MenuContent>()
+                        .is_some_and(tekes_ui_controls::composition::Component::focusable)
+                    || child
+                        .component::<tekes_ui_controls::composition::Button>()
+                        .is_some_and(tekes_ui_controls::composition::Component::focusable)
+            })
+            .map(|child| child.id())
+            .collect()
+    }
+    pub(super) fn actual_toolbar_owner(&self) -> Option<ToolbarTarget> {
+        let panel = self.panel_mgr.panels.get(self.toolbar_mgr.toolbar_index)?;
+        let focused = panel.mounted_toolbar.host.content_host().focused()?;
+        let group = panel
             .mounted_toolbar
-            .host
-            .content_host()
-            .focused()?;
+            .group_for_descendant(focused)
+            .unwrap_or_else(|| ComponentId(focused.0.saturating_sub(1)));
         self.toolbar_groups().into_iter().find(|&owner| {
             self.toolbar_container(owner) == Some(self.toolbar_mgr.toolbar_index)
-                && Self::toolbar_control(owner) == focused
+                && Self::toolbar_group(owner) == group
         })
     }
     pub(super) fn remember_toolbar_focus(&mut self, visible: Option<bool>) {
@@ -942,16 +997,19 @@ impl Host {
                 // Another actual shared group (e.g. config Undo) now owns focus.
                 // Old Panel return intent must not steal it on the next draw.
                 self.toolbar_mgr.toolbar_focus = None;
+                self.toolbar_mgr.toolbar_focus_control = None;
                 self.toolbar_mgr.toolbar_focus_lease = None;
             }
             return;
         };
-        let Some(mount) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+        let host = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
-            .content_host()
-            .semantic_mount(Self::toolbar_control(owner))
-        else {
+            .content_host();
+        let focused = host
+            .focused()
+            .unwrap_or_else(|| Self::toolbar_control(owner));
+        let Some(mount) = host.semantic_mount(focused) else {
             return;
         };
         let Some(source) = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
@@ -962,6 +1020,7 @@ impl Host {
             return;
         };
         self.toolbar_mgr.toolbar_focus = Some(owner);
+        self.toolbar_mgr.toolbar_focus_control = Some(focused);
         self.toolbar_mgr.toolbar_focus_lease = Some((mount, source));
         if let Some(visible) = visible {
             self.toolbar_mgr.toolbar_focus_visible = visible;
@@ -982,14 +1041,20 @@ impl Host {
                     .mounted_toolbar
                     .host
                     .content_host()
-                    .get(Self::toolbar_control(target))
+                    .get(Self::toolbar_group(target))
             })
-            .is_some_and(|node| {
-                node.frame().size.width > 0.
-                    && node.frame().size.height > 0.
-                    && node
-                        .visible()
-                        .is_some_and(|clip| clip.size.width > 0. && clip.size.height > 0.)
+            .is_some_and(|group| {
+                group
+                    .component::<tekes_ui_controls::composition::ToolbarGroup>()
+                    .is_some_and(|group| {
+                        group.children.iter().any(|node| {
+                            node.frame().size.width > 0.
+                                && node.frame().size.height > 0.
+                                && node.visible().is_some_and(|clip| {
+                                    clip.size.width > 0. && clip.size.height > 0.
+                                })
+                        })
+                    })
             })
     }
     pub(super) fn toolbar_available(&self, target: ToolbarTarget) -> bool {
@@ -1109,36 +1174,41 @@ impl Host {
             .filter(|&owner| {
                 self.toolbar_available(owner)
                     && self.toolbar_container(owner).is_some_and(|index| {
-                        self.panel_mgr.panels[index]
-                            .mounted_toolbar
-                            .host
-                            .content_host()
-                            .get(Self::toolbar_control(owner))
-                            .is_some_and(|n| {
-                                n.component::<ToolbarControl>().is_some_and(
-                                    tekes_ui_controls::composition::Component::focusable,
-                                ) || n
-                                    .component::<tekes_ui_controls::composition::MenuContent>()
-                                    .is_some_and(
-                                        tekes_ui_controls::composition::Component::focusable,
-                                    )
-                            })
+                        !self
+                            .toolbar_group_focusable_controls(index, Self::toolbar_group(owner))
+                            .is_empty()
                     })
             })
             .collect()
     }
     pub(super) fn set_toolbar_focus(&mut self, target: Option<ToolbarTarget>, visible: bool) {
+        self.set_toolbar_focus_at(target, None, visible);
+    }
+    fn set_toolbar_focus_at(
+        &mut self,
+        target: Option<ToolbarTarget>,
+        control: Option<ComponentId>,
+        visible: bool,
+    ) {
         let target = target.filter(|t| self.toolbar_focus_targets().contains(t));
         let Some(owner) = target else {
             for panel in &mut self.panel_mgr.panels {
                 panel.mounted_toolbar.host.blur();
             }
             self.toolbar_mgr.toolbar_focus = None;
+            self.toolbar_mgr.toolbar_focus_control = None;
             self.toolbar_mgr.toolbar_focus_lease = None;
             self.toolbar_mgr.toolbar_focus_visible = false;
             return;
         };
         let Some(index) = self.toolbar_container(owner) else {
+            return;
+        };
+        let controls = self.toolbar_group_focusable_controls(index, Self::toolbar_group(owner));
+        let Some(control_id) = control
+            .filter(|id| controls.contains(id))
+            .or_else(|| controls.first().copied())
+        else {
             return;
         };
         self.blur_other_toolbars(index);
@@ -1154,7 +1224,7 @@ impl Host {
             .host
             .semantics()
             .into_iter()
-            .find(|n| n.node.id == Self::toolbar_control(owner))
+            .find(|n| n.node.id == control_id)
             .map(|n| n.target)
         else {
             return;
@@ -1181,12 +1251,16 @@ impl Host {
         let Some((mount, source)) = self.toolbar_mgr.toolbar_focus_lease.as_ref() else {
             return;
         };
+        let control = self
+            .toolbar_mgr
+            .toolbar_focus_control
+            .unwrap_or_else(|| Self::toolbar_control(owner));
         // Never renew a lease from a reused numeric ID or a replaced source.
         let same = self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
             .content_host()
-            .semantic_mount(Self::toolbar_control(owner))
+            .semantic_mount(control)
             == Some(*mount)
             && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                 .mounted_toolbar
@@ -1210,7 +1284,11 @@ impl Host {
             .focused()
             .is_none()
         {
-            self.set_toolbar_focus(Some(owner), self.toolbar_mgr.toolbar_focus_visible);
+            self.set_toolbar_focus_at(
+                Some(owner),
+                Some(control),
+                self.toolbar_mgr.toolbar_focus_visible,
+            );
         }
     }
     pub(super) fn open_toolbar(&self) -> Option<ToolbarTarget> {
@@ -1225,19 +1303,21 @@ impl Host {
                     .content_host()
                     .input_overlay_owner()?
                     .0;
+                let group = panel
+                    .mounted_toolbar
+                    .group_for_descendant(owner)
+                    .or_else(|| owner.0.checked_sub(1).map(ComponentId))?;
                 self.toolbar_groups()
                     .into_iter()
                     .find(|&target| {
                         self.toolbar_container(target) == Some(index)
-                            && Self::toolbar_control(target) == owner
+                            && Self::toolbar_group(target) == group
                     })
                     .or_else(|| {
-                        owner
-                            .0
-                            .checked_sub(1)
-                            .map(ComponentId)
-                            .filter(|group| panel.mounted_toolbar.source(*group).is_some())
-                            .map(|group| ToolbarTarget::Contribution {
+                        panel
+                            .mounted_toolbar
+                            .source(group)
+                            .map(|_| ToolbarTarget::Contribution {
                                 presenter: index,
                                 group,
                             })
@@ -1396,6 +1476,35 @@ impl Host {
             let current = self
                 .actual_toolbar_owner()
                 .or(self.toolbar_mgr.toolbar_focus);
+            let focused_control = self
+                .panel_mgr
+                .panels
+                .get(self.toolbar_mgr.toolbar_index)
+                .and_then(|panel| panel.mounted_toolbar.host.content_host().focused())
+                .or(self.toolbar_mgr.toolbar_focus_control);
+            if let Some(current_owner) = current
+                && let Some(index) = self.toolbar_container(current_owner)
+                && let controls =
+                    self.toolbar_group_focusable_controls(index, Self::toolbar_group(current_owner))
+                && controls.len() > 1
+                && let Some(pos) =
+                    focused_control.and_then(|id| controls.iter().position(|c| *c == id))
+            {
+                let sibling = if reverse {
+                    pos.checked_sub(1)
+                } else {
+                    (pos + 1 < controls.len()).then_some(pos + 1)
+                };
+                if let Some(next_pos) = sibling {
+                    self.set_toolbar_focus_at(Some(current_owner), Some(controls[next_pos]), true);
+                    return Ok(self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
+                        .mounted_toolbar
+                        .host
+                        .content_host()
+                        .focused()
+                        == Some(controls[next_pos]));
+                }
+            }
             let crosses_header = self.layout.presentation_layout.tabs.is_some()
                 && (if reverse {
                     current.is_none() || current == targets.first().copied()
@@ -1428,7 +1537,17 @@ impl Host {
                         targets.first().copied()
                     }
                 });
-            self.set_toolbar_focus(next, true);
+            let next_control = next.and_then(|owner| {
+                let index = self.toolbar_container(owner)?;
+                let controls =
+                    self.toolbar_group_focusable_controls(index, Self::toolbar_group(owner));
+                if reverse {
+                    controls.last().copied()
+                } else {
+                    controls.first().copied()
+                }
+            });
+            self.set_toolbar_focus_at(next, next_control, true);
             return Ok(next.is_some()
                 && self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
                     .mounted_toolbar
@@ -1442,6 +1561,29 @@ impl Host {
         }
         if header_focused {
             return self.presentation_tab_input(&ContentEvent::KeyInput(key));
+        }
+        if key.down
+            && matches!(key.key, Some(ControlKey::Left | ControlKey::Right))
+            && self.open_toolbar().is_none()
+            && let Some(owner) = self.actual_toolbar_owner()
+            && let Some(index) = self.toolbar_container(owner)
+            && let controls =
+                self.toolbar_group_focusable_controls(index, Self::toolbar_group(owner))
+            && controls.len() > 1
+            && let Some(focused) = self.panel_mgr.panels[index]
+                .mounted_toolbar
+                .host
+                .content_host()
+                .focused()
+            && let Some(pos) = controls.iter().position(|c| *c == focused)
+        {
+            let next_pos = if key.key == Some(ControlKey::Left) {
+                (pos + controls.len() - 1) % controls.len()
+            } else {
+                (pos + 1) % controls.len()
+            };
+            self.set_toolbar_focus_at(Some(owner), Some(controls[next_pos]), true);
+            return Ok(true);
         }
         if key.down
             && key.key == Some(ControlKey::Escape)
@@ -1496,10 +1638,17 @@ impl Host {
                             .mounted_toolbar
                             .host
                             .content_host()
-                            .get(Self::toolbar_control(owner))
-                            .is_some_and(|n| {
-                                n.frame().contains(point)
-                                    && n.visible().is_some_and(|clip| clip.contains(point))
+                            .get(Self::toolbar_group(owner))
+                            .is_some_and(|group| {
+                                group
+                                    .component::<tekes_ui_controls::composition::ToolbarGroup>()
+                                    .is_some_and(|group| {
+                                        group.children.iter().any(|n| {
+                                            n.frame().contains(point)
+                                                && n.visible()
+                                                    .is_some_and(|clip| clip.contains(point))
+                                        })
+                                    })
                             })
                     })
             })
@@ -1520,16 +1669,18 @@ impl Host {
                                 if !node.node.visible.is_some_and(|clip| clip.contains(point)) {
                                     return None;
                                 }
-                                if !node
-                                    .parts
-                                    .iter()
-                                    .any(|(_, part)| part.frame.contains(point))
+                                if !node.node.frame.contains(point)
+                                    && !node
+                                        .parts
+                                        .iter()
+                                        .any(|(_, part)| part.frame.contains(point))
                                 {
                                     return None;
                                 }
-                                // MountedToolbar registers the original control at group+1,
-                                // the same declaration identity used by overlay routing.
-                                let group = ComponentId(node.node.id.0.checked_sub(1)?);
+                                let group = panel
+                                    .mounted_toolbar
+                                    .group_for_descendant(node.node.id)
+                                    .or_else(|| node.node.id.0.checked_sub(1).map(ComponentId))?;
                                 panel.mounted_toolbar.source(group)?;
                                 let target = ToolbarTarget::Contribution { presenter, group };
                                 self.toolbar_available(target).then_some(target)

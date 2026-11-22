@@ -265,8 +265,35 @@ impl ButtonLayout {
         align: ButtonTextAlign,
         policy: ButtonFramePolicy,
     ) -> Self {
+        Self::resolve_with_text_and_insets(
+            text, frame, clip, label_size, size, role, align, policy, None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn resolve_with_text_and_insets(
+        text: &mut (impl ButtonTextRenderer + ?Sized),
+        frame: Rect,
+        clip: Option<Rect>,
+        label_size: Size,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        policy: ButtonFramePolicy,
+        horizontal_insets: Option<(f32, f32)>,
+    ) -> Self {
         let scale = button_typography_scale(text, role);
-        Self::resolve_scaled(frame, clip, label_size, size, role, align, policy, scale)
+        Self::resolve_scaled_with_insets(
+            frame,
+            clip,
+            label_size,
+            size,
+            role,
+            align,
+            policy,
+            scale,
+            horizontal_insets,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -280,6 +307,23 @@ impl ButtonLayout {
         policy: ButtonFramePolicy,
         scale: f32,
     ) -> Self {
+        Self::resolve_scaled_with_insets(
+            frame, clip, label_size, size, role, align, policy, scale, None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn resolve_scaled_with_insets(
+        frame: Rect,
+        clip: Option<Rect>,
+        label_size: Size,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+        policy: ButtonFramePolicy,
+        scale: f32,
+        horizontal_insets: Option<(f32, f32)>,
+    ) -> Self {
         if policy == ButtonFramePolicy::Exact {
             return Self {
                 frame,
@@ -291,7 +335,10 @@ impl ButtonLayout {
                 ),
             };
         }
-        let horizontal_inset = size.inset() * scale;
+        let (leading_inset, trailing_inset) = horizontal_insets.unwrap_or_else(|| {
+            let inset = size.inset() * scale;
+            (inset, inset)
+        });
         let vertical_inset = size.vertical_inset(role) * scale;
         let label_size = Size::new(
             finite_nonnegative(label_size.width),
@@ -305,10 +352,10 @@ impl ButtonLayout {
             .max(min_height)
             .max(label_height + vertical_inset * 2.0);
         let frame = Rect::new(frame.min_x(), frame.min_y(), frame.size.width, height);
-        let content_width = (frame.size.width - horizontal_inset * 2.0).max(0.0);
+        let content_width = (frame.size.width - leading_inset - trailing_inset).max(0.0);
         let content_height = label_height.min((frame.size.height - vertical_inset * 2.0).max(0.0));
         let content_x = match align {
-            ButtonTextAlign::Leading | ButtonTextAlign::Center => frame.min_x() + horizontal_inset,
+            ButtonTextAlign::Leading | ButtonTextAlign::Center => frame.min_x() + leading_inset,
         };
         let content = Rect::new(
             content_x,
