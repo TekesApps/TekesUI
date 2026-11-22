@@ -172,9 +172,9 @@ Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页
 
 原生窗口抽查 720pt 宽、150% 字号：Settings 正反 Tab、真实输入后的屏外动作显露；侧栏末项完整焦点环；Search 点击的单一焦点；ComboBox 指针输入、方向键提交及 Tab 关闭与后继；Dialog Tab 约束与 Escape 恢复；Motion 屏外按钮显露及 Space 激活；恢复后的单/多行文本预览与文末内部滚动。最终修复文本焦点环后再次打包，核对 Cargo 与 app 除签名元数据外的可执行内容一致，并原生复查四边环与底部布局。Gallery 保持运行，未提交、推送或新增标签；其余 AX、物理 IME、VoiceOver 及完整原生组合验收仍明确未测。
 
-### Issue #245：文本框焦点边界与文本指针（2026-11-11）
+### Issue #245：文本框焦点边界与文本指针（2026-11-11；2026-11-22 契约对齐更新）
 
-文本框保持单一原边界。普通 Light/Dark 主题获得焦点时沿用 `border-focused` 语义色，线宽为 `Stroke::Rule`（1pt）；Increase Contrast 保留 `c-focus-width` 强调线。错误状态仍优先显示错误色，不额外叠加焦点外环。文本光标仅由实际可见文本视口发布；hover 不取得焦点或修改插入点、选区、marked text。共享控件与 AppKit 指针接线的代码核验、原生外观及 IME/输入保护分别验收；本段不升级未运行的原生或 Gold7 体验结论。
+文本框保持单一原边界。普通 Light/Dark 与 Increase Contrast 四个主题下获得焦点且非只读/错误时，均统一使用 `border-focused` 语义色与 `c-focus-width`（2pt）单边界线宽，与 `crates/tekes-ui-controls/src/text_surface.rs` 及 `design/source/interaction-contracts.json` 保持一致；不额外叠加第二层焦点外环。错误状态仍优先显示错误色，不额外叠加焦点外环。文本光标仅由实际可见文本视口发布；hover 不取得焦点或修改插入点、选区、marked text。共享控件与 AppKit 指针接线的代码核验、原生外观及 IME/输入保护分别验收；本段不升级未运行的原生或 Gold7 体验结论。
 
 
 ## 2026-11-15 普通主题焦点明度收敛
