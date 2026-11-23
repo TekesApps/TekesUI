@@ -419,7 +419,10 @@ impl MarkdownView {
         };
         let mut y = frame.min_y() + top_inset;
         let mut blocks = Vec::with_capacity(model.blocks.len());
+        let min_row = proposal::metric("size", "size-compact-row").expect("markdown row floor");
+        let code_pad = tekes_ui_tokens::Spacing::Relaxed.value();
         for (index, block) in model.blocks.iter().enumerate() {
+            let is_code = matches!(block, MarkdownBlock::Code { .. });
             let (value, role, indent, min_h) = match block {
                 MarkdownBlock::Heading { level: _, text } => (
                     text.as_str(),
@@ -447,19 +450,41 @@ impl MarkdownView {
                 ),
             };
             let max_width = (width - indent).max(0.);
+            let pad = if is_code { code_pad } else { 0. };
+            let text_width = (max_width - pad * 2.).max(0.);
             let rendered = if matches!(block, MarkdownBlock::Bullet(_)) {
                 format!("• {value}")
             } else {
                 value.to_owned()
             };
-            let measured = text.measure(&rendered, role, max_width);
+            let measured = text.measure(&rendered, role, text_width);
             // `measure` reflects the active host scale; only the token floor is
             // scaled here so the gallery does not apply its text scale twice.
-            let h = measured.height.max(min_h * scale).max(24.);
+            let h = (measured.height.max(min_h * scale) + pad * 2.).max(min_row);
             let rect = Rect::new(frame.min_x() + indent, y, max_width, h);
-            let draw_rect = Rect::new(rect.min_x(), rect.min_y(), rect.size.width, measured.height);
+            let draw_rect = Rect::new(
+                rect.min_x() + pad,
+                rect.min_y() + pad,
+                text_width,
+                measured.height,
+            );
             let v = visible(rect, own_clip);
             if let Some(v) = v {
+                if is_code {
+                    let container =
+                        ContainerLayout::new(rect, Insets::ZERO, Insets::ZERO, own_clip);
+                    if let Some(bg_clip) = container.background_paint_clip() {
+                        scene.push_clip(bg_clip);
+                        crate::paint::surface_kind_at_scale(
+                            scene,
+                            rect,
+                            palette,
+                            crate::paint::SurfaceKind::Code,
+                            text.backing_scale(),
+                        );
+                        scene.pop_clip();
+                    }
+                }
                 scene.push_clip(v);
                 let ink = palette
                     .color("primary-text")
@@ -557,7 +582,7 @@ impl CodeBlockView {
         let lh = role.style().line_height * scale;
         // The original Gallery code specimen uses a 14pt text inset from its
         // surface edge. Keep that visual contract while the view owns drawing.
-        let inset = proposal::metric("spacing", "space-button-md-inset").unwrap_or(14.);
+        let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
         let mut blocks = Vec::new();
         let mut y = frame.min_y() + inset;
         let x = frame.min_x() + inset;
@@ -653,10 +678,11 @@ impl DiffViewRuntime {
             1.
         };
         let role = proposal::TextRole::Code;
-        let line_floor = 28. * scale;
+        let line_floor =
+            proposal::metric("size", "size-compact-row").expect("diff row height") * scale;
         let mut blocks = Vec::with_capacity(model.lines.len());
-        let inset = 8.0;
-        let line_gap = 2.0 * scale;
+        let inset = tekes_ui_tokens::Spacing::Regular.value();
+        let line_gap = tekes_ui_tokens::Spacing::Micro.value() * scale;
         let mut y = frame.min_y();
         for (index, line) in model.lines.iter().enumerate() {
             let (prefix, color) = match line.kind {

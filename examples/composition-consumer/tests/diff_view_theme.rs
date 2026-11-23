@@ -234,7 +234,7 @@ fn diff_view_retained_themes_keep_lcs_prefixes_line_identity_real_ink_and_passiv
         &mut text,
         Theme::DARK_INCREASED,
         frame,
-        Some(Rect::new(20., 30., 460., 28.)),
+        Some(Rect::new(20., 30., 460., 24.)),
     );
     assert_eq!(
         clipped

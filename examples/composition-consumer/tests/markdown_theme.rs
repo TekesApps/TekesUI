@@ -61,19 +61,30 @@ fn retained_markdown_themes_preserve_subset_wrap_clip_and_caller_ground_contrast
             } else {
                 original_layouts[slot] = Some(layout.clone());
             }
+            let quads: Vec<_> = scene
+                .primitives()
+                .iter()
+                .filter_map(|p| match p {
+                    Primitive::Quad(q) => Some(q),
+                    _ => None,
+                })
+                .collect();
             assert_eq!(
-                scene
-                    .primitives()
-                    .iter()
-                    .filter(|p| matches!(p, Primitive::Quad(_)))
-                    .count(),
-                1,
-                "only caller background; no invented Markdown surface"
+                quads.len(),
+                2,
+                "caller background plus the single MarkdownBlock::Code surface; prose blocks stay surface-free"
             );
-            let Primitive::Quad(ground) = &scene.primitives()[0] else {
-                panic!("caller ground")
-            };
-            for block in &layout.blocks {
+            let ground = quads[0];
+            assert_eq!(ground.rect, frame);
+            let code_ground = quads[1];
+            assert_eq!(code_ground.rect, layout.blocks[3].frame);
+            assert_eq!(code_ground.fill, palette.color("code-surface").unwrap());
+            for (index, block) in layout.blocks.iter().enumerate() {
+                let block_ground = if index == 3 {
+                    code_ground.fill
+                } else {
+                    ground.fill
+                };
                 let labels: Vec<_> = scene
                     .primitives()
                     .iter()
@@ -96,12 +107,12 @@ fn retained_markdown_themes_preserve_subset_wrap_clip_and_caller_ground_contrast
                         .iter()
                         .all(|run| run.color == palette.color("primary-text").unwrap())
                 );
-                assert_eq!((labels[0].color.a, ground.fill.a), (1., 1.));
+                assert_eq!((labels[0].color.a, block_ground.a), (1., 1.));
                 let luminance = |c: tekes_ui_tokens::Rgba| {
                     let c = c.to_linear();
                     0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
                 };
-                let (a, b) = (luminance(labels[0].color), luminance(ground.fill));
+                let (a, b) = (luminance(labels[0].color), luminance(block_ground));
                 assert!(
                     (a.max(b) + 0.05) / (a.min(b) + 0.05)
                         >= if theme.is_increased() { 7. } else { 4.5 }

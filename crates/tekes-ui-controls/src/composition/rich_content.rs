@@ -948,7 +948,13 @@ pub(super) fn shape_block_sequence(
         }
         y = result.lines.last().map_or(y, |line| line.top + line.height) + inset;
         if index + 1 < specs.len() && block.gap_after {
-            y += proposal::metric("spacing", "space-relaxed").unwrap_or(12.) as f64;
+            let is_diff_pair = matches!(block.kind, RichBlockKind::Diff { .. })
+                && matches!(specs[index + 1].kind, RichBlockKind::Diff { .. });
+            y += if is_diff_pair {
+                tekes_ui_tokens::Spacing::Micro.value() as f64 * f64::from(host.type_scale())
+            } else {
+                proposal::metric("spacing", "space-relaxed").unwrap_or(12.) as f64
+            };
         }
         byte_offset += value.len();
     }
@@ -959,7 +965,7 @@ pub(super) fn shape_block_sequence(
 // Match the existing CodeBlockView surface inset; it is part of text geometry.
 pub(super) fn code_inset(kind: RichBlockKind) -> f32 {
     if kind == RichBlockKind::Code {
-        proposal::metric("spacing", "space-button-md-inset").expect("code surface inset")
+        proposal::metric("spacing", "space-relaxed").expect("code surface inset")
     } else {
         0.
     }
@@ -1530,5 +1536,27 @@ mod tests {
             cached.paint_cache.as_ref().unwrap().batches.as_ptr(),
             first_cache_ptr
         );
+    }
+
+    #[test]
+    fn diff_blocks_use_micro_line_gap_and_code_blocks_use_relaxed_inset() {
+        for scale in [1.0, 2.0] {
+            let mut host = RecordingTextHost::new(scale);
+            let diff = RichDocument::from_diff(&crate::extended::DiffView::between(
+                "same\nold",
+                "same\nnew",
+            ));
+            let mut rich = RichContent::new("diff", 1, diff).unwrap();
+            let frame = Rect::new(0., 0., 320., 240.);
+            rich.arrange(&mut host, frame, frame);
+            let geom = rich.block_geometry();
+            assert!(geom.len() >= 2);
+            let gap = geom[1].frame.min_y() - geom[0].frame.max_y();
+            assert!(
+                (gap - 2.0 * scale).abs() < 0.01,
+                "expected 2.0 * {scale} inter-diff gap, got {gap}"
+            );
+        }
+        assert_eq!(code_inset(RichBlockKind::Code), 12.0);
     }
 }
