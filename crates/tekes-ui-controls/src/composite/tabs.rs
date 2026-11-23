@@ -1,7 +1,6 @@
 use super::{
     ButtonLayout, ButtonModel, ButtonTextAlign, ButtonTextRenderer, ControlKey, Tabs, clip_rect,
-    empty_button_layout, focus_reveal_outset, paint, row_height, safe_rect, set_button_state,
-    size_role,
+    empty_button_layout, paint, row_height, safe_rect, set_button_state, size_role,
 };
 use crate::control_motion::{ProgressTransition, motion_for};
 use std::time::Duration;
@@ -261,6 +260,21 @@ impl TabsView {
     // Natural original Content sizes decide only whether the existing lanes
     // can be rebalanced. When equal lanes fit, or natural demands cannot fit
     // within the original budget/cap, retain the established equal geometry.
+    pub(crate) fn lane_gap() -> f32 {
+        proposal::metric("spacing", "space-snug").expect("tab lane gap")
+    }
+    pub(crate) fn close_scale(text: &mut dyn ButtonTextRenderer, toolbar: bool) -> f32 {
+        let role = proposal::TextRole::UiBody;
+        let scale = crate::button_typography_scale(text, role);
+        if toolbar { scale } else { scale.max(1.) }
+    }
+    pub(crate) fn close_width_for(text: &mut dyn ButtonTextRenderer, toolbar: bool) -> f32 {
+        proposal::metric("size", "size-inline-action").expect("tab close width")
+            * Self::close_scale(text, toolbar)
+    }
+    pub(crate) fn close_gap_for(text: &mut dyn ButtonTextRenderer, toolbar: bool) -> f32 {
+        tekes_ui_tokens::Spacing::Tight.value() * Self::close_scale(text, toolbar)
+    }
     pub(crate) fn content_lanes(
         text: &mut dyn ButtonTextRenderer,
         natural: &[Size],
@@ -273,7 +287,7 @@ impl TabsView {
         }
         let count = natural.len();
         let equal = (width / count as f32).min(160.);
-        let gap = focus_reveal_outset(text.backing_scale()).max(4.);
+        let gap = Self::lane_gap();
         let wanted: Vec<_> = natural
             .iter()
             .map(|size| {
@@ -309,12 +323,11 @@ impl TabsView {
         }
         lanes
     }
-    pub(crate) fn content_lane_width(text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
-        (advance - focus_reveal_outset(text.backing_scale()).max(4.)).max(0.)
+    pub(crate) fn content_lane_width(_text: &mut dyn ButtonTextRenderer, advance: f32) -> f32 {
+        (advance - Self::lane_gap()).max(0.)
     }
     pub(crate) fn close_width(text: &mut dyn ButtonTextRenderer) -> f32 {
-        let role = proposal::TextRole::UiBody;
-        24. * (text.resolved_font_size(role) / role.style().size).max(1.)
+        Self::close_width_for(text, false)
     }
     pub(crate) fn content_height(
         text: &mut dyn ButtonTextRenderer,
@@ -322,7 +335,7 @@ impl TabsView {
         lanes: &[f32],
         compact: bool,
     ) -> f32 {
-        let gap = focus_reveal_outset(text.backing_scale()).max(4.);
+        let gap = Self::lane_gap();
         sizes
             .iter()
             .zip(lanes)
@@ -462,7 +475,8 @@ impl TabsView {
         let lanes = if let Some(lanes) = lane_advances {
             lanes.to_vec()
         } else {
-            let close_width = Self::close_width(text);
+            let close_width = Self::close_width_for(text, self.toolbar);
+            let close_gap = Self::close_gap_for(text, self.toolbar);
             let natural: Vec<_> = (0..self.model.count)
                 .filter(|&i| self.visible_items[i])
                 .map(|index| {
@@ -472,7 +486,7 @@ impl TabsView {
                         frame.size.width,
                     );
                     if self.closable[index] {
-                        size.width += close_width;
+                        size.width += close_width + close_gap;
                     }
                     size
                 })
@@ -492,17 +506,11 @@ impl TabsView {
                 .collect()
         };
         let toolbar_geometry = self.toolbar.then(|| crate::toolbar::tab_geometry(text));
-        let lane_gap = toolbar_geometry.map_or_else(
-            || focus_reveal_outset(text.backing_scale()).max(4.),
-            |(padding, _)| padding,
-        );
+        let lane_gap = toolbar_geometry.map_or_else(Self::lane_gap, |(padding, _)| padding);
         let body = proposal::TextRole::UiBody;
         let toolbar_scale = text.resolved_font_size(body) / body.style().size;
-        let close_width = if self.toolbar {
-            24. * toolbar_scale
-        } else {
-            Self::close_width(text)
-        };
+        let close_width = Self::close_width_for(text, self.toolbar);
+        let close_gap = Self::close_gap_for(text, self.toolbar);
         let base_height = row_height(compact);
         let mut measured_heights = Vec::with_capacity(self.model.count);
         for (index, lane) in lanes.iter().copied().enumerate().take(self.model.count) {
@@ -513,7 +521,7 @@ impl TabsView {
             let lane_width = (lane
                 - lane_gap
                 - if self.closable[index] {
-                    close_width
+                    close_width + close_gap
                 } else {
                     0.
                 })
@@ -644,7 +652,7 @@ impl TabsView {
                     role,
                 )
                 .width;
-                let width = (item.size.width - close_width - insets).max(0.);
+                let width = (item.size.width - close_width - close_gap - insets).max(0.);
                 let size = text.measure(label, role, width);
                 button.render_content_frame(
                     scene,
@@ -687,7 +695,8 @@ impl TabsView {
                 let width = close_width.min((item.size.width * 0.5).max(0.));
                 let close_frame =
                     Rect::new(item.max_x() - width, item.min_y(), width, item.size.height);
-                layout.content.size.width = (close_frame.min_x() - layout.content.min_x()).max(0.);
+                layout.content.size.width =
+                    (close_frame.min_x() - close_gap - layout.content.min_x()).max(0.);
                 let close = &mut self.close_buttons[index];
                 close.set_surface(self.surface);
                 close.frame_policy = crate::ButtonFramePolicy::Exact;
@@ -708,12 +717,7 @@ impl TabsView {
                     paint::ButtonVariant::Quiet,
                 );
                 if let Some(visible) = close_layout.visible {
-                    let body = proposal::TextRole::UiBody;
-                    let scale = if self.toolbar {
-                        toolbar_scale
-                    } else {
-                        (text.resolved_font_size(body) / body.style().size).max(1.)
-                    };
+                    let scale = Self::close_scale(text, self.toolbar);
                     let side = (proposal::metric("size", "size-icon-standard")
                         .expect("Tabs close icon size token")
                         * scale)

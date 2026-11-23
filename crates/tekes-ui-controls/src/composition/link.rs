@@ -67,22 +67,18 @@ impl Component for LinkContent {
         Ok(())
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        let inset = proposal::metric("spacing", "space-regular")
+        let role = proposal::TextRole::UiBody;
+        let scale = crate::button_typography_scale(text, role);
+        let inset = proposal::metric("spacing", "space-tight")
             .expect("Link inset token")
-            .max(0.);
-        let size = text.measure(
-            &self.label,
-            proposal::TextRole::UiBody,
-            (available.width - 2. * inset).max(0.),
-        );
-        // Reserve the original content inset and the largest underline stroke,
-        // including keyboard focus, without a focus-dependent layout jump.
-        let stroke = proposal::metric("stroke", "stroke-emphasis")
-            .expect("Link underline stroke")
-            .max(0.);
+            .max(0.)
+            * scale;
+        let size = text.measure(&self.label, role, (available.width - 2. * inset).max(0.));
+        let min_h =
+            proposal::metric("size", "size-action-button").expect("Link min height") * scale;
         MeasuredChild::new(Size::new(
             (size.width + 2. * inset).min(available.width.max(0.)),
-            size.height + 2. * (inset + stroke),
+            (size.height + 2. * inset).max(min_h),
         ))
     }
     fn paint(
@@ -167,5 +163,39 @@ impl Component for LinkContent {
             _ => {}
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ButtonTextAlign;
+    use tekes_ui_tokens::Rgba;
+
+    struct DummyText;
+    impl ButtonTextRenderer for DummyText {
+        fn measure(&mut self, s: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(
+                (s.chars().count() as f32 * 7.).min(max_width.max(0.)),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn link_content_measures_at_compact_24pt_single_line_height() {
+        let mut link = LinkContent::new("Details");
+        let measured = link.measure(&mut DummyText, Size::new(200., 100.)).size;
+        assert_eq!(measured.height, 24.0);
     }
 }

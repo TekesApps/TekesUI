@@ -922,18 +922,25 @@ pub(crate) fn link_underline_with_content_on_surface(
     // its bottom tangent where it crosses the independently offset focus ring.
     // The same content inset is used by LinkView; extreme short/narrow frames
     // are clamped without changing their hit or accessibility allocation.
-    let inset = proposal::metric("spacing", "space-regular")
+    let inset = proposal::metric("spacing", "space-tight")
         .expect("Link content inset")
         .max(0.)
         .min(radius);
     let dy = (radius - inset).max(0.);
     let arc_inset = radius - (radius * radius - dy * dy).max(0.).sqrt();
     let horizontal = inset.max(arc_inset).min(rect.size.width.max(0.) * 0.5);
-    let height = thickness.min((rect.size.height - inset * 2.).max(0.));
+    let height = thickness.min(rect.size.height.max(0.));
+    let underline_y = if let Some(tb) = text_bounds {
+        (tb.max_y() + tekes_ui_tokens::Spacing::Micro.value())
+            .min(rect.max_y() - height)
+            .max(rect.min_y())
+    } else {
+        (rect.max_y() - inset - height).max(rect.min_y())
+    };
     scene.push_quad(Quad::new(
         Rect::new(
             rect.min_x() + horizontal,
-            rect.max_y() - inset - height,
+            underline_y,
             (rect.size.width - horizontal * 2.).max(0.),
             height,
         ),

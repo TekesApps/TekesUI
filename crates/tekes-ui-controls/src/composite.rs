@@ -84,7 +84,15 @@ pub(super) fn size_role(compact: bool) -> ButtonSize {
 }
 
 pub(super) fn row_height(compact: bool) -> f32 {
-    if compact { 30.0 } else { 34.0 }
+    proposal::metric(
+        "size",
+        if compact {
+            "size-button-sm"
+        } else {
+            "size-row-height"
+        },
+    )
+    .expect("tab row height")
 }
 
 pub(super) fn menu_size_role(compact: bool) -> ButtonSize {

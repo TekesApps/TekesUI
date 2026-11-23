@@ -72,16 +72,19 @@ impl Trigger {
         self.last_intent = None;
     }
     fn title_measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> Size {
-        let (inset, side, row) = DisclosureView::content_insets(&mut TextAdapter(text));
+        let m = DisclosureView::content_insets(&mut TextAdapter(text));
         let width = if self.section_header_layout {
-            (available.width - 32.).max(0.)
+            (available.width - m.section_inset * 2.).max(0.)
         } else {
-            (available.width - inset * 3. - side).max(0.)
+            (available.width - m.inset * 2. - m.icon_side - m.icon_gap).max(0.)
         };
         self.size = self.title[0]
             .measure_intrinsic(text, Size::new(width, available.height))
             .size;
-        Size::new(available.width, row.max(self.size.height + inset))
+        Size::new(
+            available.width,
+            m.row_height.max(self.size.height + m.icon_gap * 2.),
+        )
     }
 }
 impl Component for Trigger {
@@ -527,15 +530,11 @@ impl DisclosureContent {
     pub fn body_layout(&self) -> crate::layout_view::DisclosureBodyLayout {
         self.body_layout
     }
-    fn focus_clearance(&self, header: Rect, backing: f32) -> f32 {
+    fn focus_clearance(&self, _header: Rect, _backing: f32) -> f32 {
         if self.trigger().section_header_layout && !self.trigger().trigger_focusable {
             return 0.;
         }
-        (crate::extended::ControlFrame::new(header, None)
-            .focus_bounds(backing)
-            .max_y()
-            - header.max_y())
-        .max(0.)
+        proposal::metric("spacing", "space-snug").expect("Disclosure body clearance")
     }
     fn reveal(
         &mut self,
