@@ -563,13 +563,13 @@ impl SelectView {
             text,
             Size::default(),
             frame.size.width,
-            ButtonSize::Body,
+            ButtonSize::Md,
             role,
         )
         .width;
         let label_width = (frame.size.width - insets - icon_side - gap).max(0.);
         let label_size = text.measure(title, role, label_width);
-        let mut trigger = self.trigger.render_content_frame_with_role(
+        let mut trigger = self.trigger.render_content_frame_with_size_and_role(
             scene,
             text,
             Size::new(
@@ -580,6 +580,7 @@ impl SelectView {
             clip,
             palette,
             ButtonVariant::Quiet,
+            ButtonSize::Md,
             role,
         );
         let icon_width = icon_side.min(trigger.content.size.width);
@@ -671,7 +672,13 @@ impl SelectView {
         let trigger = self.layout.trigger;
         self.menu.set_popup_width_bounds(
             Some(trigger.frame.size.width),
-            Some(trigger.frame.size.width.max(crate::composite::MENU_MAX_WIDTH)),
+            Some(
+                trigger
+                    .frame
+                    .size
+                    .width
+                    .max(crate::composite::MENU_MAX_WIDTH),
+            ),
         );
         if model.menu.open {
             let _ = self

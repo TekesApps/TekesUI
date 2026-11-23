@@ -822,7 +822,7 @@ pub fn slider_on_surface(
         Quad::new(thumb, range.thumb.background)
             .with_corner_radius(radius)
             .with_border(
-                1.,
+                proposal::metric("stroke", "stroke-rule").expect("slider thumb border stroke"),
                 range.thumb.boundary.expect("Slider thumb Surface boundary"),
             ),
     );

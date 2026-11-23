@@ -1412,7 +1412,7 @@
       {
         "name": "c-checkbox-row-min",
         "usage": "Checkbox 最小可交互行高组件角色",
-        "value": "{size-comfortable-row}"
+        "value": "{size-row-height}"
       },
       {
         "name": "p-size-40",

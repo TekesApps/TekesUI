@@ -318,6 +318,32 @@ impl ButtonModel {
         variant: crate::paint::ButtonVariant,
         role: proposal::TextRole,
     ) -> ButtonLayout {
+        self.render_content_frame_with_size_and_role(
+            scene,
+            text,
+            content_size,
+            frame,
+            clip,
+            palette,
+            variant,
+            ButtonSize::Body,
+            role,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_content_frame_with_size_and_role(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        content_size: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> ButtonLayout {
         let context = text.motion_context();
         self.render_with_motion_context(
             scene,
@@ -327,7 +353,7 @@ impl ButtonModel {
             clip,
             palette,
             variant,
-            ButtonSize::Body,
+            size,
             role,
             ButtonTextAlign::Leading,
             context,

@@ -382,11 +382,12 @@ impl RadioGroupView {
             return RadioGroupLayout::default();
         }
         let normalized = ControlFrame::new(bounds, clip).frame();
-        let minimum = proposal::metric("size", "size-comfortable-row")
-            .expect("design system comfortable row");
+        let minimum =
+            proposal::metric("size", "size-row-height").expect("design system control row height");
         let row_gap = tekes_ui_tokens::Spacing::Snug.value();
-        let pad_x = tekes_ui_tokens::Spacing::Regular.value();
-        let indicator_size_nominal = 18.0;
+        let pad_x = tekes_ui_tokens::Spacing::None.value();
+        let indicator_size_nominal =
+            proposal::metric("size", "size-icon-standard").expect("radio indicator size");
         let indicator_gap = tekes_ui_tokens::Spacing::Regular.value();
         let chrome_width = pad_x + indicator_size_nominal + indicator_gap + pad_x;
         let intrinsic_widths: Vec<f32> = if axis == Axis::Horizontal {
@@ -423,6 +424,7 @@ impl RadioGroupView {
             vec![normalized.size.width; model.len()]
         };
         let mut labels_metrics = Vec::with_capacity(model.len());
+        let pad_y = tekes_ui_tokens::Spacing::Tight.value() * 2.0;
         for (index, item_width) in item_widths.iter().enumerate() {
             let label = labels.get(index).copied().unwrap_or("");
             let width = (*item_width - chrome_width).max(0.);
@@ -431,7 +433,7 @@ impl RadioGroupView {
                 .height;
             let first_line = text.first_line_height(label, proposal::TextRole::UiBody, width);
             let measured = measured.max(first_line).max(0.0);
-            labels_metrics.push((minimum.max(measured + 8.), measured, first_line.max(0.0)));
+            labels_metrics.push((minimum.max(measured + pad_y), measured, first_line.max(0.0)));
         }
         let rows = match axis {
             Axis::Vertical => {
@@ -1020,6 +1022,35 @@ pub struct SwitchView {
 impl SwitchView {
     /// Intrinsic track width of the shared Switch control.
     pub const TRACK_WIDTH: f32 = 48.0;
+    pub(crate) const TRACK_HEIGHT: f32 = 26.0;
+
+    pub(crate) fn label_offset() -> f32 {
+        Self::TRACK_WIDTH + tekes_ui_tokens::Spacing::Regular.value()
+    }
+
+    pub(crate) fn measure_labeled(
+        text: &mut (impl ButtonTextRenderer + ?Sized),
+        label: &str,
+        max_width: f32,
+    ) -> Size {
+        let min_row = proposal::metric("size", "size-row-height").expect("switch row height");
+        if label.is_empty() {
+            let clamped_width = if max_width.is_nan() {
+                0.0
+            } else {
+                max_width.clamp(0.0, Self::TRACK_WIDTH)
+            };
+            return Size::new(clamped_width, min_row);
+        }
+        let pad_y = tekes_ui_tokens::Spacing::Tight.value() * 2.0;
+        let label_width = (max_width - Self::label_offset()).max(0.0);
+        let measured = text
+            .measure(label, proposal::TextRole::UiBody, label_width)
+            .height;
+        let first_line = text.first_line_height(label, proposal::TextRole::UiBody, label_width);
+        let row_height = min_row.max(measured.max(first_line).max(0.0) + pad_y);
+        Size::new(max_width.max(0.0), row_height)
+    }
 
     pub fn surface(&self) -> &'static str {
         self.surface
@@ -1270,26 +1301,38 @@ impl SwitchView {
         if model.disabled {
             self.blur();
         }
-        let label_width = (frame.size.width - 62.0).max(0.0);
-        let measured = text
-            .measure(label_text, proposal::TextRole::UiBody, label_width)
-            .height;
-        let first_line =
-            text.first_line_height(label_text, proposal::TextRole::UiBody, label_width);
-        let row_height = 32.0_f32.max(measured.max(first_line).max(0.0) + 8.0);
+        let min_row = proposal::metric("size", "size-row-height").expect("switch row height");
+        let pad_y = tekes_ui_tokens::Spacing::Tight.value() * 2.0;
+        let label_offset = Self::label_offset();
+        let label_width = (frame.size.width - label_offset).max(0.0);
+        let (measured, first_line) = if label_text.is_empty() {
+            (0.0, 0.0)
+        } else {
+            (
+                text.measure(label_text, proposal::TextRole::UiBody, label_width)
+                    .height,
+                text.first_line_height(label_text, proposal::TextRole::UiBody, label_width),
+            )
+        };
+        let row_height = min_row.max(measured.max(first_line).max(0.0) + pad_y);
         let outer = ControlFrame::new(
             Rect::new(frame.min_x(), frame.min_y(), frame.size.width, row_height),
             clip,
         );
         let normalized = outer.frame();
-        let first_line_center = normalized.min_y()
-            + (normalized.size.height - measured.max(first_line).max(0.0)) * 0.5
-            + first_line.max(0.0) * 0.5;
+        let first_line_center = if label_text.is_empty() {
+            normalized.center().y
+        } else {
+            normalized.min_y()
+                + (normalized.size.height - measured.max(first_line).max(0.0)) * 0.5
+                + first_line.max(0.0) * 0.5
+        };
+        let optical_y = if label_text.is_empty() { 0.0 } else { 1.0 };
         let toggle_frame = Rect::new(
             normalized.min_x(),
-            first_line_center + 1.0 - 13.0,
+            first_line_center + optical_y - Self::TRACK_HEIGHT * 0.5,
             Self::TRACK_WIDTH,
-            26.0,
+            Self::TRACK_HEIGHT,
         );
         let paint_clip = match (clip, outer.visible_frame()) {
             (_, None) => Some(Rect::default()),
@@ -1337,9 +1380,9 @@ impl SwitchView {
             }
         }
         let label = Rect::new(
-            normalized.min_x() + 62.0,
+            normalized.min_x() + label_offset,
             normalized.min_y(),
-            (normalized.size.width - 62.0).max(0.0),
+            (normalized.size.width - label_offset).max(0.0),
             normalized.size.height,
         );
         let label_visible = outer
@@ -2118,16 +2161,35 @@ mod tests {
             palette,
             &["A long label that wraps across several lines"],
         );
-        assert!(radio_layout.rows[0].frame().size.height > 36.0);
+        assert!(radio_layout.rows[0].frame().size.height > 32.0);
         let radio_measure = text.measure(
             "A long label that wraps across several lines",
             proposal::TextRole::UiBody,
-            48.0,
+            90.0 - proposal::metric("size", "size-icon-standard").unwrap()
+                - tekes_ui_tokens::Spacing::Regular.value(),
         );
         let first_line_center = radio_layout.rows[0].frame().min_y()
             + (radio_layout.rows[0].frame().size.height - radio_measure.height) * 0.5
             + 10.0;
         assert_eq!(radio_layout.indicators[0].center().y, first_line_center);
+        assert_eq!(radio_layout.indicators[0].size, Size::new(16.0, 16.0));
+
+        // Unlabeled switch centers symmetrically without +1pt optical label bias.
+        let mut unlabeled_switch = SwitchView::new();
+        let unlabeled_layout = unlabeled_switch.render_labeled(
+            &mut scene,
+            &mut text,
+            Switch::default(),
+            Rect::new(0., 60., 90., 32.),
+            None,
+            palette,
+            "",
+        );
+        assert_eq!(unlabeled_layout.frame.size.height, 32.0);
+        assert_eq!(
+            unlabeled_layout.toggle.frame().center().y,
+            unlabeled_layout.frame.center().y
+        );
 
         let switch = Switch::default();
         let mut switch_view = SwitchView::new();
@@ -2144,7 +2206,7 @@ mod tests {
         let label_measure = text.measure(
             "A long label that wraps across several lines",
             proposal::TextRole::UiBody,
-            28.0,
+            90.0 - SwitchView::label_offset(),
         );
         let expected_center = switch_layout.frame.min_y()
             + (switch_layout.frame.size.height - label_measure.height) * 0.5
@@ -2283,7 +2345,7 @@ mod tests {
             &mut scene,
             &mut text,
             &radio,
-            Rect::new(0., 0., 32., 0.),
+            Rect::new(0., 0., 24., 0.),
             None,
             palette,
             &["Too narrow"],
@@ -2295,7 +2357,7 @@ mod tests {
             &mut scene,
             &mut text,
             Switch::default(),
-            Rect::new(0., 40., 60., 32.),
+            Rect::new(0., 40., SwitchView::label_offset(), 32.),
             None,
             palette,
             "No label space",
@@ -2473,9 +2535,10 @@ mod tests {
         let indicator_gap = layout.labels[0].min_x() - layout.indicators[0].max_x();
         let right_inset = row.max_x() - layout.labels[0].max_x();
         let regular = tekes_ui_tokens::Spacing::Regular.value();
-        assert!((left_inset - regular).abs() <= 0.01);
+        let pad_x = tekes_ui_tokens::Spacing::None.value();
+        assert!((left_inset - pad_x).abs() <= 0.01);
         assert!((indicator_gap - regular).abs() <= 0.01);
-        assert!((right_inset - regular).abs() <= 0.01);
+        assert!((right_inset - pad_x).abs() <= 0.01);
     }
 
     #[test]

@@ -38,17 +38,17 @@ pub struct FieldPresentation {
     pub message_min_height: f32,
 }
 impl FieldPresentation {
-    /// Emphasized label, caption helper and legacy 36px form slots.
+    /// Emphasized heading label, caption helper and shared row-height form slots.
     pub fn emphasized_form() -> Self {
         Self {
             label_role: proposal::TextRole::UiHeading,
-            label_min_height: 36.,
+            label_min_height: 0.,
             message_role: Some(proposal::TextRole::UiCaption),
-            label_to_slot_gap: 4.,
-            slot_to_message_gap: 6.,
-            slot_min_height: 36.,
+            label_to_slot_gap: proposal::metric("spacing", "space-tight").unwrap_or(4.),
+            slot_to_message_gap: proposal::metric("spacing", "space-snug").unwrap_or(6.),
+            slot_min_height: proposal::metric("size", "size-row-height").unwrap_or(32.),
             slot_height: None,
-            message_min_height: 36.,
+            message_min_height: 0.,
         }
     }
 }
@@ -130,7 +130,7 @@ impl FieldView {
         };
         let measured_line = text.measure("M", role, f32::MAX).height.max(0.);
         let input_h = proposal::metric("size", "size-button-md")
-            .unwrap_or(36.)
+            .unwrap_or(32.)
             .max(measured_line + 2. * proposal::SCROLL_SINGLE_LINE_PADDING_Y)
             .max(presentation.slot_min_height.max(0.));
         let input_h = presentation
@@ -144,7 +144,12 @@ impl FieldView {
             frame.size.width.max(0.),
             input_h.max(0.),
         );
-        let msg_y = slot.max_y() + presentation.slot_to_message_gap.max(0.);
+        let msg_gap = if message.is_empty() {
+            0.
+        } else {
+            presentation.slot_to_message_gap.max(0.)
+        };
+        let msg_y = slot.max_y() + msg_gap;
         let message_rect = Rect::new(frame.min_x(), msg_y, frame.size.width.max(0.), message_h);
         let visible = clipped(frame, clip);
         let label_rect = Rect::new(frame.min_x(), frame.min_y(), label_width, label_h);

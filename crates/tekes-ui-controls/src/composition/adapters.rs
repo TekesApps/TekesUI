@@ -190,15 +190,7 @@ impl Component for SwitchContent {
     }
 
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        if self.label.is_empty() {
-            return MeasuredChild::new(Size::new(a.width.min(SwitchView::TRACK_WIDTH), 32.));
-        }
-        let s = t.measure(
-            &self.label,
-            proposal::TextRole::UiBody,
-            (a.width - 62.).max(0.),
-        );
-        MeasuredChild::new(Size::new(a.width, 32_f32.max(s.height + 8.)))
+        MeasuredChild::new(SwitchView::measure_labeled(t, &self.label, a.width))
     }
     fn paint(
         &mut self,

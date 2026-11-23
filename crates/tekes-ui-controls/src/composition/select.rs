@@ -470,7 +470,7 @@ impl Component for SelectContent {
             &mut TextAdapter(text),
             self.title(),
             (available.width - indicator).max(0.),
-            ButtonSize::Body,
+            ButtonSize::Md,
             role,
         );
         size.width = (size.width + indicator).min(available.width);

@@ -45,7 +45,7 @@ impl TextFieldContent {
                     *point,
                     pointer.is_some_and(|pointer| pointer.modifiers.shift),
                     pointer.map_or(1, |pointer| pointer.click_count),
-                    24.,
+                    proposal::metric("size", "size-row-height").expect("scrollbar minimum thumb"),
                 )?;
                 let response = ContentResponse {
                     consumed: decision.accepted,
@@ -357,6 +357,13 @@ impl Component for TextFieldContent {
         self.surface.trailing_action_width = if width > 0. { width + inset } else { 0. };
         self.editor_frame = self.effective_frame(text, frame);
         self.editor_arrange(text, frame, clip);
+        let clear_radius = tekes_ui_tokens::metrics::CornerRadius::concentric(
+            proposal::metric("radius", "radius-control").expect("input corner radius"),
+            inset,
+        );
+        self.clear
+            .button
+            .set_corner_radii(Some(tekes_ui_scene::CornerRadii::uniform(clear_radius)));
         self.clear.button.frame_policy = crate::ButtonFramePolicy::Exact;
         if self.clear_clip.is_some() {
             self.clear.arrange(text, self.clear_frame, clip);

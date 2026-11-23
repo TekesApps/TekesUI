@@ -97,7 +97,11 @@ impl Checkbox {
             finite_nonnegative(label_size.height),
             !label.is_empty() && label_width > 0.0,
         );
-        Size::new(width, checkbox_row_min_height().max(content_height + 12.0))
+        let row_pad_y = tekes_ui_tokens::Spacing::Tight.value() * 2.0;
+        Size::new(
+            width,
+            checkbox_row_min_height().max(content_height + row_pad_y),
+        )
     }
 
     /// Paint and place the complete checkbox row. Its outer placement is also
@@ -187,8 +191,9 @@ impl Checkbox {
         );
         let (content_height, control_content_top, label_content_top) =
             checkbox_content_geometry(first_line_height, measured.height, has_label);
+        let row_pad_y = tekes_ui_tokens::Spacing::Tight.value() * 2.0;
         let height = finite_nonnegative(frame.size.height)
-            .max(checkbox_row_min_height().max(content_height + 12.0));
+            .max(checkbox_row_min_height().max(content_height + row_pad_y));
         let content_top = (height - content_height).max(0.0) * 0.5;
         let container = ContainerLayout::new(
             Rect::new(frame.min_x(), frame.min_y(), frame_width, height),
@@ -403,9 +408,9 @@ impl CheckboxLayout {
         self.visible.is_some_and(|rect| rect.contains(point))
     }
 
-    /// Bounds including the Design System focus ring, for host focus reveal.
+    /// Bounds including the Design System focus ring around the interactive checkbox mark.
     pub fn focus_bounds(&self) -> Rect {
-        expand_for_focus(self.frame)
+        expand_for_focus(self.control)
     }
 }
 #[derive(Clone, Debug)]

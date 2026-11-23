@@ -291,12 +291,33 @@ fn field_emphasized_form_presentation_restores_label_and_spacing() {
         FieldPresentation::emphasized_form(),
     );
     assert_eq!(layout.label.min_y(), frame.min_y());
-    assert_eq!(layout.label.size.height, 36.);
+    assert_eq!(
+        layout.label.size.height,
+        proposal::TextRole::UiHeading.style().line_height
+    );
     assert_eq!(layout.slot.min_y(), layout.label.max_y() + 4.);
     assert_eq!(layout.message.min_y(), layout.slot.max_y() + 6.);
-    assert!(layout.slot.size.height >= 36.);
-    assert_eq!(layout.message.size.height, 36.);
+    assert!(layout.slot.size.height >= 32.);
+    assert_eq!(
+        layout.message.size.height,
+        proposal::TextRole::UiCaption.style().line_height
+    );
     assert!(layout.required_mark.is_none());
+
+    // Empty help/error omits slot_to_message_gap completely.
+    let no_msg = view.measure_with_presentation(
+        &mut text,
+        &Field {
+            label: "Workspace name".into(),
+            ..Field::default()
+        },
+        frame,
+        None,
+        role(),
+        FieldPresentation::emphasized_form(),
+    );
+    assert_eq!(no_msg.message.size.height, 0.);
+    assert_eq!(no_msg.message.min_y(), no_msg.slot.max_y());
 }
 #[test]
 fn toolbar_pointer_and_keyboard_activation_are_owned_by_child_buttons() {
