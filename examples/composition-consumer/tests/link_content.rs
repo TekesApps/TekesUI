@@ -205,7 +205,7 @@ fn natural_link_size_keeps_underline_below_the_shaped_text_line_at_each_type_sca
             .component::<LinkContent>()
             .unwrap()
             .label();
-        let inset = proposal::metric("spacing", "space-regular").unwrap();
+        let inset = proposal::metric("spacing", "space-tight").unwrap() * scale;
         let shaped = text.measure(
             label,
             proposal::TextRole::UiBody,

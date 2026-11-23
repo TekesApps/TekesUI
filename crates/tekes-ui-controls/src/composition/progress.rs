@@ -19,7 +19,7 @@ pub struct ProgressContent {
     indeterminate_label: Option<String>,
 }
 impl ProgressContent {
-    pub const DEFAULT_HEIGHT: f32 = tekes_ui_tokens::Spacing::Relaxed.value();
+    pub const DEFAULT_HEIGHT: f32 = 12.0;
 
     pub fn new(name: impl Into<String>, value: f32) -> Self {
         Self {
@@ -120,7 +120,9 @@ impl Component for ProgressContent {
         let target_h = self
             .height
             .filter(|h| h.is_finite() && *h >= 0.)
-            .unwrap_or(Self::DEFAULT_HEIGHT);
+            .unwrap_or_else(|| {
+                proposal::metric("size", "size-icon-small").unwrap_or(Self::DEFAULT_HEIGHT)
+            });
         let height = if avail.height > 0. {
             target_h.min(avail.height)
         } else {
@@ -223,10 +225,11 @@ mod accessibility_tests {
         }
         let mut bar = ProgressContent::new("Download", 0.5);
         let mut text = NoText;
+        assert_eq!(ProgressContent::DEFAULT_HEIGHT, 12.0);
         let measured = bar.measure(&mut text, Size::new(240., 1e8));
         assert_eq!(
             measured.size,
-            Size::new(240., ProgressContent::DEFAULT_HEIGHT)
+            Size::new(240., proposal::metric("size", "size-icon-small").unwrap())
         );
         assert_eq!(
             ProgressContent::new("Narrow", 0.5)

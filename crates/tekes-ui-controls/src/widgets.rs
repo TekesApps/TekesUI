@@ -184,7 +184,7 @@ impl<T: ButtonTextRenderer + ?Sized> ButtonTextRenderer for &mut T {
 
 // Shared logical geometry follows the resolved text role. A renderer that does
 // not opt into typography scaling retains the original DS metrics.
-pub(super) fn button_typography_scale(
+pub(crate) fn button_typography_scale(
     text: &mut (impl ButtonTextRenderer + ?Sized),
     role: proposal::TextRole,
 ) -> f32 {

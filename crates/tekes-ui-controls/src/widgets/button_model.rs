@@ -33,7 +33,7 @@ pub struct ButtonModel {
     pub(super) check_progress: ProgressTransition,
     pub(super) check_motion_initialized: bool,
     pub(super) last_active_check: Option<super::CheckState>,
-    pub(super) selection_progress_override: Option<f32>,
+    pub(crate) selection_progress_override: Option<f32>,
     // Effective parent Surface supplied by the original feedback View.
     pub(super) surface: Option<&'static str>,
     // Menu/Tab selection uses fill; ordinary actions retain their own boundary.
@@ -42,6 +42,7 @@ pub struct ButtonModel {
     pub(crate) transparent_rest: bool,
     pub(crate) horizontal_inset_override: Option<(f32, f32)>,
     pub(crate) tone: crate::paint::ButtonTone,
+    pub(crate) defer_focus_ring: bool,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum ButtonArm {
@@ -116,6 +117,9 @@ impl ButtonModel {
     }
     pub(crate) fn tone(&self) -> crate::paint::ButtonTone {
         self.tone
+    }
+    pub(crate) fn set_defer_focus_ring(&mut self, defer: bool) {
+        self.defer_focus_ring = defer;
     }
     pub(crate) fn set_selection_progress(&mut self, progress: Option<f32>) {
         self.selection_progress_override = progress;
@@ -207,8 +211,23 @@ impl ButtonModel {
         size: ButtonSize,
         role: proposal::TextRole,
     ) -> Size {
+        Self::measure_with_insets(text, label, max_width, size, role, None)
+    }
+
+    pub(crate) fn measure_with_insets(
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        max_width: f32,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        horizontal_insets: Option<(f32, f32)>,
+    ) -> Size {
         let scale = button_typography_scale(text, role);
-        let inset = size.inset() * scale;
+        let (leading, trailing) = horizontal_insets.unwrap_or_else(|| {
+            let inset = size.inset() * scale;
+            (inset, inset)
+        });
+        let horizontal_inset = leading + trailing;
         let vertical_inset = size.vertical_inset(role) * scale;
         let max_width = if max_width.is_finite() {
             max_width.max(0.0)
@@ -218,13 +237,13 @@ impl ButtonModel {
         let label_size = if label.is_empty() {
             Size::default()
         } else {
-            text.measure(label, role, (max_width - inset * 2.0).max(0.0))
+            text.measure(label, role, (max_width - horizontal_inset).max(0.0))
         };
         Size::new(
             if label.is_empty() {
-                (inset * 2.0).min(max_width)
+                horizontal_inset.min(max_width)
             } else {
-                (finite_nonnegative(label_size.width) + inset * 2.0).min(max_width)
+                (finite_nonnegative(label_size.width) + horizontal_inset).min(max_width)
             },
             (size.minimum_height() * scale)
                 .max(finite_nonnegative(label_size.height) + vertical_inset * 2.0),
@@ -299,6 +318,32 @@ impl ButtonModel {
         variant: crate::paint::ButtonVariant,
         role: proposal::TextRole,
     ) -> ButtonLayout {
+        self.render_content_frame_with_size_and_role(
+            scene,
+            text,
+            content_size,
+            frame,
+            clip,
+            palette,
+            variant,
+            ButtonSize::Body,
+            role,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_content_frame_with_size_and_role(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        content_size: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+    ) -> ButtonLayout {
         let context = text.motion_context();
         self.render_with_motion_context(
             scene,
@@ -308,7 +353,7 @@ impl ButtonModel {
             clip,
             palette,
             variant,
-            ButtonSize::Body,
+            size,
             role,
             ButtonTextAlign::Leading,
             context,
@@ -643,6 +688,10 @@ impl ButtonModel {
             if let Some(background_clip) = background_clip {
                 scene.push_clip(background_clip);
             }
+            let mut paint_state = self.state;
+            if self.defer_focus_ring {
+                paint_state.focus_visible = false;
+            }
             let ink = if let Some(surface) = self
                 .surface
                 .or((variant == crate::paint::ButtonVariant::Toolbar).then_some("toolbar"))
@@ -658,7 +707,7 @@ impl ButtonModel {
                     scene,
                     chrome,
                     palette,
-                    self.state,
+                    paint_state,
                     variant,
                     radii,
                     hover,
@@ -680,7 +729,7 @@ impl ButtonModel {
                     scene,
                     chrome,
                     palette,
-                    self.state,
+                    paint_state,
                     variant,
                     radius.unwrap_or_else(|| size.radius() * scale),
                     hover,

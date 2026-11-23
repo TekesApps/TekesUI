@@ -339,7 +339,7 @@ fn navigation_row_measurement_and_real_hits_use_gallery_tokens_without_changing_
         let (height, gap) = if navigation {
             (ControlSize::RowHeight.value(), Spacing::Micro.value())
         } else {
-            (36., 4.)
+            (ControlSize::RowHeight.value(), Spacing::Tight.value())
         };
         assert_eq!(layouts[0].frame.size.height, height);
         assert_eq!(layouts[1].frame.min_y() - layouts[0].frame.max_y(), gap);

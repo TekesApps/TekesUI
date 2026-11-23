@@ -681,28 +681,47 @@ impl Button {
             self.button.frame_policy,
             self.button.horizontal_inset_override,
         );
+        let body_max_w = if let Some(inset) = self.leading_content_inset {
+            let leading = (outer.min_x() + inset.max(0.)).min(empty.content.max_x());
+            (empty.content.max_x() - leading).max(0.)
+        } else {
+            empty.content.size.width
+        };
         // Empty-label layout supplies horizontal chrome, not a zero-height
         // constraint for arbitrary content. The actual receiving height is the
         // proposal; the measured body then determines the final Button slot.
-        self.measured =
-            self.measure_body(text, Size::new(empty.content.size.width, available.height));
+        self.measured = self.measure_body(text, Size::new(body_max_w, available.height));
         if self.toolbar_icon_slot {
             return MeasuredChild::new(self.toolbar_icon_size(text, self.measured, available));
         }
-        MeasuredChild::new(
-            if self.button.frame_policy == crate::ButtonFramePolicy::Exact {
-                self.measured
-            } else {
-                ButtonModel::measure_content_with_insets(
-                    text,
-                    self.measured,
-                    available.width,
-                    ButtonSize::Body,
-                    proposal::TextRole::UiBody,
-                    self.button.horizontal_inset_override,
+        if self.button.frame_policy == crate::ButtonFramePolicy::Exact {
+            return MeasuredChild::new(if let Some(inset) = self.leading_content_inset {
+                Size::new(
+                    (inset.max(0.) + self.measured.width).min(available.width),
+                    self.measured.height,
                 )
-            },
-        )
+            } else {
+                self.measured
+            });
+        }
+        let insets = self
+            .leading_content_inset
+            .map(|inset| {
+                let trailing = self.button.horizontal_inset_override.map_or_else(
+                    || ButtonSize::Body.scaled_horizontal_inset(text, proposal::TextRole::UiBody),
+                    |(_, trailing)| trailing.max(0.),
+                );
+                (inset.max(0.), trailing)
+            })
+            .or(self.button.horizontal_inset_override);
+        MeasuredChild::new(ButtonModel::measure_content_with_insets(
+            text,
+            self.measured,
+            available.width,
+            ButtonSize::Body,
+            proposal::TextRole::UiBody,
+            insets,
+        ))
     }
 }
 impl Button {
@@ -1721,5 +1740,33 @@ mod tests {
             .size
             .width;
         assert!(long > short);
+
+        let mut bare = Button::new("Open").with_frame_policy(crate::ButtonFramePolicy::Exact);
+        let bare_w = bare
+            .measure(&mut label_text, Size::new(300., 40.))
+            .size
+            .width;
+        let mut exact_leading = Button::new("Open")
+            .with_frame_policy(crate::ButtonFramePolicy::Exact)
+            .with_leading_content_inset(Some(22.0));
+        let exact_w = exact_leading
+            .measure(&mut label_text, Size::new(300., 40.))
+            .size
+            .width;
+        assert_eq!(exact_w, 22.0 + bare_w);
+
+        let mut min_default = Button::new("Open");
+        let default_w = min_default
+            .measure(&mut label_text, Size::new(300., 40.))
+            .size
+            .width;
+        let mut min_leading = Button::new("Open").with_leading_content_inset(Some(28.0));
+        let leading_w = min_leading
+            .measure(&mut label_text, Size::new(300., 40.))
+            .size
+            .width;
+        let regular_inset =
+            ButtonSize::Body.scaled_horizontal_inset(&mut label_text, proposal::TextRole::UiBody);
+        assert_eq!(leading_w, default_w - regular_inset + 28.0);
     }
 }

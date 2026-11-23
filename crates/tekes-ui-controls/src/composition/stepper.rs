@@ -246,25 +246,24 @@ impl Component for StepperContent {
 
     fn measure(&mut self, mut text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let state = self.state.borrow();
+        let btn_w = proposal::metric("size", "size-row-height").expect("stepper button width");
+        let gap = tekes_ui_tokens::Spacing::Regular.value();
         let action = ButtonModel::measure(
             &mut text,
             "+",
-            48.,
+            btn_w,
             ButtonSize::Body,
             proposal::TextRole::UiBody,
         );
         let max_sample = state.model.max().to_string();
         let min_sample = state.model.min().to_string();
-        let value_h = text
-            .measure(&max_sample, proposal::TextRole::UiHeading, 80.)
-            .height
-            .max(
-                text.measure(&min_sample, proposal::TextRole::UiHeading, 80.)
-                    .height,
-            );
-        let row = proposal::metric("size", "size-button-md").unwrap_or(36.);
-        let h = action.height.max(value_h).max(row);
-        MeasuredChild::new(Size::new(available.width.min(198.), h))
+        let max_m = text.measure(&max_sample, proposal::TextRole::UiHeading, f32::MAX);
+        let min_m = text.measure(&min_sample, proposal::TextRole::UiHeading, f32::MAX);
+        let value_w = max_m.width.max(min_m.width).max(btn_w);
+        let value_h = max_m.height.max(min_m.height);
+        let natural_w = btn_w * 2. + gap * 2. + value_w;
+        let h = action.height.max(value_h).max(btn_w);
+        MeasuredChild::new(Size::new(available.width.max(0.).min(natural_w), h))
     }
 
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
@@ -765,5 +764,23 @@ mod tests {
                 .any(|(label, ink)| label == "2" && *ink == expected_value_ink)
         );
         let _ = Primitive::Quad;
+    }
+
+    #[test]
+    fn stepper_fills_allocated_width_and_expands_for_wide_ranges() {
+        let model = NumberField::new(0., -1_000_000., 1_000_000., 1.).unwrap();
+        let mut stepper = StepperContent::new("Large range", model);
+        let mut text = Text(Vec::new());
+        let measured = stepper.measure(&mut text, Size::new(400., 64.)).size;
+        assert!(measured.width > 120.0);
+        assert!(measured.height >= 32.0);
+
+        let wide = Rect::new(10., 20., 320., 32.);
+        let (minus, value, plus) = NumberFieldView::slot_frames(wide);
+        assert_eq!(minus.size.width, 32.0);
+        assert_eq!(plus.size.width, 32.0);
+        assert_eq!(plus.max_x(), wide.max_x());
+        assert_eq!(value.min_x() - minus.max_x(), 8.0);
+        assert_eq!(plus.min_x() - value.max_x(), 8.0);
     }
 }

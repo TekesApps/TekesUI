@@ -83,7 +83,7 @@ impl PresentationOptions {
             nav_bar: None,
             focus: focus.into(),
             others: None,
-            nav_width: 220.,
+            nav_width: tekes_ui_tokens::proposal::SIDEBAR_MIN_WIDTH,
             nav_fraction: None,
             focus_fraction: 0.6,
             navigation_targets: Vec::new(),
@@ -1216,6 +1216,16 @@ mod tests {
                 PresentationOptions::new("bad")
             )
             .is_err()
+        );
+    }
+
+    #[test]
+    fn default_nav_width_matches_sidebar_min_width_token() {
+        let options = PresentationOptions::new("focus");
+        assert_eq!(options.nav_width, 224.0);
+        assert_eq!(
+            options.nav_width,
+            tekes_ui_tokens::proposal::SIDEBAR_MIN_WIDTH
         );
     }
 }

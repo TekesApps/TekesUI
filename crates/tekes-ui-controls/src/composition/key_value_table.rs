@@ -50,13 +50,22 @@ impl KeyValueTableContent {
             Content::new(table_id, Self::new(rows)),
         )
     }
+    fn padding_x(width: f32) -> f32 {
+        Spacing::Regular.value().min(width.max(0.) / 4.)
+    }
+    fn padding_y() -> f32 {
+        Spacing::Tight.value()
+    }
     fn columns(width: f32) -> (f32, f32, f32) {
-        let padding = Spacing::Micro.value().min(width / 4.);
+        let padding = Self::padding_x(width);
         let usable = (width - 4. * padding).max(0.);
         (padding, usable / 3., usable * 2. / 3.)
     }
     fn row_heights(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> Vec<f32> {
-        let (padding, key, value) = Self::columns(available.width);
+        let (_, key, value) = Self::columns(available.width);
+        let pad_y = Self::padding_y();
+        let min_row = tekes_ui_tokens::proposal::metric("size", "size-compact-row")
+            .expect("kv row min height");
         self.cells
             .chunks_exact_mut(2)
             .map(|row| {
@@ -68,7 +77,7 @@ impl KeyValueTableContent {
                     .measure(text, Size::new(value, available.height))
                     .size
                     .height;
-                key_height.max(value_height) + 2. * padding
+                (key_height.max(value_height) + 2. * pad_y).max(min_row)
             })
             .collect()
     }
@@ -139,7 +148,8 @@ impl Component for KeyValueTableContent {
         MeasuredChild::new(Size::new(available.width, total))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        let (padding, key, value) = Self::columns(frame.size.width);
+        let (pad_x, key, value) = Self::columns(frame.size.width);
+        let pad_y = Self::padding_y();
         let heights = match self.measured.take() {
             Some(m)
                 if (m.width - frame.size.width).abs() <= f32::EPSILON
@@ -157,15 +167,15 @@ impl Component for KeyValueTableContent {
         let child_clip = frame.intersection(&clip).unwrap_or_default();
         let mut y = frame.min_y();
         for (row, height) in self.cells.chunks_exact_mut(2).zip(heights) {
-            let h = height - 2. * padding;
+            let h = (height - 2. * pad_y).max(0.);
             row[0].arrange(
                 text,
-                Rect::new(frame.min_x() + padding, y + padding, key, h),
+                Rect::new(frame.min_x() + pad_x, y + pad_y, key, h),
                 child_clip,
             );
             row[1].arrange(
                 text,
-                Rect::new(frame.min_x() + key + 3. * padding, y + padding, value, h),
+                Rect::new(frame.min_x() + key + 3. * pad_x, y + pad_y, value, h),
                 child_clip,
             );
             y += height;
@@ -360,5 +370,31 @@ mod tests {
             StackContent::PANEL_SECTION_GAP
         );
         assert!(heading_b.min_y() - table_a.max_y() > table_a.min_y() - heading_a.max_y());
+    }
+
+    #[test]
+    fn key_value_table_uses_regular_horizontal_tight_vertical_padding_and_24pt_floor() {
+        let mut table = KeyValueTableContent::new([(
+            Content::new(ComponentId(1), TextContent::new("Key")),
+            Content::new(ComponentId(2), TextContent::new("Value")),
+        )]);
+        let mut text = DummyText;
+        let measured = table.measure(&mut text, Size::new(240., 200.)).size;
+        // DummyText line height 16 + Tight V-padding (4*2=8) = 24pt (floored at 24pt).
+        assert_eq!(measured, Size::new(240., 24.));
+
+        #[derive(Debug)]
+        struct ShortCell;
+        impl Component for ShortCell {
+            fn measure(&mut self, _: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
+                MeasuredChild::new(Size::new(a.width, 8.))
+            }
+        }
+        let mut short_table = KeyValueTableContent::new([(
+            Content::new(ComponentId(3), ShortCell),
+            Content::new(ComponentId(4), ShortCell),
+        )]);
+        let short_measured = short_table.measure(&mut text, Size::new(240., 200.)).size;
+        assert_eq!(short_measured.height, 24.);
     }
 }

@@ -40,11 +40,11 @@ fn raw_witness_and_paint_share_original_geometry() {
     let m = model(&[-4., 8.]);
     let b = Rect::new(0., 0., 240., 180.);
     let g = m.layout(b);
-    assert_eq!(g.plot, Rect::new(8., 8., 224., 144.));
-    assert_eq!(g.bars[0].value_label.min_y(), 152.);
+    assert_eq!(g.plot, Rect::new(8., 8., 224., 128.));
+    assert_eq!(g.bars[0].value_label.min_y(), 136.);
     assert_eq!(
         g.bars[0].category_label.min_y(),
-        if fixed() { 164. } else { 156. }
+        if fixed() { 156. } else { 140. }
     );
     assert_eq!(paint_bar_chart(&mut Scene::new(), b, Theme::LIGHT, &m), g);
     for scale in [1., 2., 8., f32::MAX, 0., -1., f32::NAN, f32::INFINITY] {

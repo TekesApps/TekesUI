@@ -336,7 +336,7 @@ impl SegmentedControlView {
                 clip,
                 size,
                 role,
-                ButtonTextAlign::Leading,
+                ButtonTextAlign::Center,
                 None,
             ));
         }
@@ -534,7 +534,7 @@ impl SegmentedControlView {
                     label,
                     role,
                     item.content,
-                    ButtonTextAlign::Leading,
+                    ButtonTextAlign::Center,
                     ink,
                 );
                 scene.pop_clip();
@@ -783,19 +783,19 @@ fn measure_breadcrumb(
         1.
     };
     let spacing = proposal::metric("spacing", "space-tight").expect("Breadcrumb spacing") * scale;
-    let focus = proposal::metric("spacing", "c-focus-offset").expect("focus offset")
-        + proposal::metric("stroke", "c-focus-width").expect("focus width");
+    let row_gap = proposal::metric("spacing", "space-regular").expect("Breadcrumb row gap") * scale;
     let slash = text.measure("/", role, width);
     let glyph_width = if slash.width.is_finite() {
         slash.width.max(0.).min(width)
     } else {
         0.
     };
-    let natural_gap = glyph_width + 2. * (spacing + focus.max(0.));
+    let natural_gap = glyph_width + 2. * spacing;
+    let insets = Some((spacing, spacing));
     let natural: Vec<_> = labels
         .iter()
         .map(|label| {
-            ButtonModel::measure(text, label, width, ButtonSize::Body, role)
+            ButtonModel::measure_with_insets(text, label, width, ButtonSize::Body, role, insets)
                 .width
                 .max(0.)
         })
@@ -829,8 +829,10 @@ fn measure_breadcrumb(
         // Only this already-wrapped row may omit its separator and its budget;
         // a full row that also has no content keeps the existing narrow fallback.
         if starts_new_row {
-            let insets = ButtonModel::measure(text, "", width, ButtonSize::Body, role).width;
-            if width > insets && (available - gap).max(0.) <= insets {
+            let empty_insets =
+                ButtonModel::measure_with_insets(text, "", width, ButtonSize::Body, role, insets)
+                    .width;
+            if width > empty_insets && (available - gap).max(0.) <= empty_insets {
                 gap = 0.;
             }
         }
@@ -840,9 +842,16 @@ fn measure_breadcrumb(
         } else {
             preferred.min((width - item_x).max(0.))
         };
-        let height = ButtonModel::measure(text, label, item_width, ButtonSize::Body, role)
-            .height
-            .max(0.);
+        let height = ButtonModel::measure_with_insets(
+            text,
+            label,
+            item_width,
+            ButtonSize::Body,
+            role,
+            insets,
+        )
+        .height
+        .max(0.);
         row_heights[row] = row_heights[row].max(height);
         placements.push((row, item_x, item_width, x, gap));
         x = item_x + item_width;
@@ -852,11 +861,11 @@ fn measure_breadcrumb(
         .iter()
         .map(|height| {
             let top = y;
-            y += height + spacing;
+            y += height + row_gap;
             top
         })
         .collect();
-    let height = (y - spacing).max(0.);
+    let height = (y - row_gap).max(0.);
     let mut items = Vec::with_capacity(labels.len());
     let mut separators = Vec::with_capacity(labels.len().saturating_sub(1));
     for (index, (row, x, width, separator_x, separator_width)) in placements.into_iter().enumerate()
@@ -864,7 +873,7 @@ fn measure_breadcrumb(
         let row_height = row_heights[row];
         items.push(Rect::new(x, row_tops[row], width, row_height));
         if index > 0 {
-            let fits = separator_width >= glyph_width + focus.max(0.) * 2.;
+            let fits = separator_width >= glyph_width + spacing;
             let glyph_height = slash.height.max(0.).min(row_height);
             separators.push(if fits {
                 Rect::new(
@@ -974,6 +983,9 @@ impl BreadcrumbView {
         }
         self.buttons.resize_with(n, ButtonModel::default);
         let measured = measure_breadcrumb(text, &labels[..n], frame.size.width, role);
+        let scale = crate::button_typography_scale(text, role);
+        let item_inset =
+            proposal::metric("spacing", "space-tight").expect("Breadcrumb spacing") * scale;
         let frame = Rect::new(
             frame.min_x(),
             frame.min_y(),
@@ -985,6 +997,7 @@ impl BreadcrumbView {
         for (i, label) in labels[..n].iter().enumerate() {
             let b = &mut self.buttons[i];
             b.set_surface(self.surface);
+            b.set_horizontal_inset_override(Some((item_inset, item_inset)));
             b.state.disabled = self.disabled || i + 1 == n;
             b.state.selected = i + 1 == n;
             b.state.focused = self.window_active && self.focused == Some(i);

@@ -627,8 +627,8 @@ fn code_diff_and_chart_keep_gallery_text_insets_and_alignment() {
         Theme::LIGHT.into(),
         1.,
     );
-    assert_eq!(text.draw_rects[0].min_x(), 14.);
-    assert_eq!(text.draw_rects[0].min_y(), 14.);
+    assert_eq!(text.draw_rects[0].min_x(), 12.);
+    assert_eq!(text.draw_rects[0].min_y(), 12.);
     assert_eq!(text.draw_rects[0].size.width, 650.);
 
     let mut diff_view = DiffViewRuntime::new().with_max_width(Some(700.));
@@ -644,8 +644,8 @@ fn code_diff_and_chart_keep_gallery_text_insets_and_alignment() {
     );
     assert_eq!(text.draw_rects[1].min_x(), 8.);
     assert_eq!(text.draw_rects[1].size.width, 700.);
-    assert_eq!(text.draw_rects[1].size.height, 28.);
-    assert_eq!(diff_view.layout.blocks[0].frame.size.height, 28.);
+    assert_eq!(text.draw_rects[1].size.height, 24.);
+    assert_eq!(diff_view.layout.blocks[0].frame.size.height, 24.);
 
     for (scale, label, value) in [(1., "A", 4.), (2., "Long release label", 123456.)] {
         let mut chart_view = ChartView::new();
@@ -698,10 +698,10 @@ fn code_and_diff_wrapped_lines_reserve_both_horizontal_insets() {
         Theme::LIGHT.into(),
         1.5,
     );
-    assert!(text.measured.iter().any(|(_, width)| *width == 92.));
-    assert_eq!(text.draw_rects[0].min_x(), code_frame.min_x() + 14.);
-    assert_eq!(text.draw_rects[0].max_x(), code_frame.max_x() - 14.);
-    assert!(code_layout.blocks[0].frame.max_x() <= code_frame.max_x() - 14.);
+    assert!(text.measured.iter().any(|(_, width)| *width == 96.));
+    assert_eq!(text.draw_rects[0].min_x(), code_frame.min_x() + 12.);
+    assert_eq!(text.draw_rects[0].max_x(), code_frame.max_x() - 12.);
+    assert!(code_layout.blocks[0].frame.max_x() <= code_frame.max_x() - 12.);
 
     text.measured.clear();
     text.draw_rects.clear();
@@ -879,7 +879,7 @@ fn document_views_follow_parent_width_and_default_zero_top_inset() {
         Theme::LIGHT.into(),
         1.,
     );
-    assert_eq!(code_layout.blocks[0].frame.size.width, 900. - 28.);
+    assert_eq!(code_layout.blocks[0].frame.size.width, 900. - 24.);
 
     let diff = DiffView::between("same", "same");
     let mut diff_view = DiffViewRuntime::new();
@@ -893,4 +893,28 @@ fn document_views_follow_parent_width_and_default_zero_top_inset() {
         1.,
     );
     assert_eq!(diff_layout.blocks[0].frame.size.width, 960. - 16.);
+
+    let mut md_code_text = RecordingText::default();
+    let mut md_code_scene = Scene::new();
+    let mut md_code = MarkdownView::new();
+    let md_model = Markdown::parse("```rs\nfn ok() {}\n```");
+    let md_layout = md_code.render(
+        &mut md_code_scene,
+        &mut md_code_text,
+        &md_model,
+        Rect::new(0., 0., 200., 120.),
+        None,
+        Theme::LIGHT.into(),
+        1.0,
+    );
+    assert_eq!(md_code_text.draw_rects[0].min_x(), 12.);
+    assert_eq!(md_code_text.draw_rects[0].min_y(), 12.);
+    assert_eq!(md_layout.blocks[0].frame.size.height, 42.);
+    assert!(
+        md_code_scene
+            .primitives()
+            .iter()
+            .any(|p| matches!(p, Primitive::Quad(_))),
+        "Markdown code block must paint Code surface quad"
+    );
 }

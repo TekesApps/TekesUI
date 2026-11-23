@@ -1782,3 +1782,39 @@ fn segmented_control_thumb_slides_under_clock_and_snaps_when_reduced_or_static()
     );
     assert!(!static_view.needs_animation());
 }
+
+#[test]
+fn icon_view_default_size_and_split_view_divider_hit_use_tokens() {
+    #[derive(Default)]
+    struct Capture(Option<Rect>);
+    impl IconRenderer for Capture {
+        fn draw_icon(&mut self, _: &mut Scene, _: &str, frame: Rect, _: tekes_ui_tokens::Rgba) {
+            self.0 = Some(frame);
+        }
+    }
+    let bounds = Rect::new(0., 0., 48., 48.);
+    let layout = IconView::default().render(
+        &mut Scene::new(),
+        &mut Capture::default(),
+        "plus",
+        bounds,
+        0.,
+        None,
+        Palette::from(Theme::LIGHT),
+    );
+    let expected = proposal::metric("size", "size-icon-standard").unwrap();
+    assert_eq!(layout.artboard.size, Size::new(expected, expected));
+
+    let mut split = crate::extended::SplitView::new(0.5);
+    let mut split_view = SplitViewView::new(crate::extended::Axis::Horizontal);
+    let split_layout = split_view.render(
+        &mut Scene::new(),
+        &mut split,
+        Rect::new(0., 0., 201., 100.),
+        None,
+        Palette::from(Theme::LIGHT),
+    );
+    let hit = split_layout.divider_hit.unwrap();
+    let div = split_layout.divider.frame();
+    assert_eq!(hit, div.inset(-tekes_ui_tokens::Spacing::Tight.value()));
+}

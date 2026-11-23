@@ -152,6 +152,10 @@ impl ComboBoxView {
         let map = self.options.mapping_for_model(model);
         let filtered: Vec<String> = map.iter().map(|i| model.items[*i].clone()).collect();
         let active = model.active.and_then(|i| map.iter().position(|x| *x == i));
+        self.options.menu_view.set_popup_width_bounds(
+            Some(anchor.size.width),
+            Some(anchor.size.width.max(crate::composite::MENU_MAX_WIDTH)),
+        );
         self.options.render(
             scene, text, &filtered, &map, active, model.open, anchor, visible, clip, palette, role,
             compact,
@@ -509,20 +513,22 @@ impl CommandPaletteView {
         header: Size,
         anchor: Rect,
         viewport: Rect,
+        compact: bool,
     ) -> Rect {
         let map = self.options.mapping_for_model(&model.combo);
         let labels: Vec<&str> = map
             .iter()
             .map(|index| model.combo.items[*index].as_str())
             .collect();
-        crate::feedback_view::MenuView::header_frame(
+        crate::feedback_view::MenuView::header_frame_bounded(
             text,
             &labels,
             header,
             anchor,
             viewport,
             proposal::TextRole::UiBody,
-            false,
+            compact,
+            Some(crate::composite::command_palette_max_width()),
         )
     }
     fn render_inner(
@@ -544,6 +550,9 @@ impl CommandPaletteView {
             .combo
             .active
             .and_then(|i| map.iter().position(|x| *x == i));
+        self.options
+            .menu_view
+            .set_popup_width_bounds(None, Some(crate::composite::command_palette_max_width()));
         self.options
             .render_inner(context, &items, &map, active, model.combo.open, header)
     }

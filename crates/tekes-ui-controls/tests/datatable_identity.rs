@@ -452,9 +452,9 @@ fn keyed_layout_matches_legacy_geometry_and_default_measurement() {
     let mut v = DataTableView::new();
     render(&mut v, &t);
     let l = v.layout_keyed(&t).unwrap();
-    assert_eq!(l.headers[0].frame.size.height, 34.);
-    assert_eq!(l.rows[0].frame.min_y(), 40.);
-    assert_eq!(l.rows[1].frame.min_y(), 78.);
+    assert_eq!(l.headers[0].frame.size.height, 32.);
+    assert_eq!(l.rows[0].frame.min_y(), 38.);
+    assert_eq!(l.rows[1].frame.min_y(), 74.);
     assert_eq!(l.columns[0].size.width, 150.);
 }
 #[test]

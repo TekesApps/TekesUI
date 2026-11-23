@@ -678,8 +678,19 @@ mod placeholder_tests {
         let layout = emphasized.view().layout();
         assert_eq!(layout.slot.min_y(), layout.label.max_y() + 4.);
         assert_eq!(layout.message.min_y(), layout.slot.max_y() + 6.);
-        assert!(layout.slot.size.height >= 36.);
+        assert!(layout.slot.size.height >= 32.);
         assert_eq!(emphasized.surface().outer(), layout.slot);
+
+        // Message-free TextField omits slot-to-message phantom gap, and Clear inherits concentric 6pt radius.
+        let mut no_help = TextFieldContent::new("Workspace name", "Studio");
+        let no_help_size = no_help.measure(&mut text, Size::new(820., 400.)).size;
+        let no_help_frame = Rect::new(0., 0., 820., no_help_size.height);
+        no_help.arrange(&mut text, no_help_frame, no_help_frame);
+        assert_eq!(no_help_size.height, no_help.view().layout().slot.max_y());
+        assert_eq!(
+            emphasized.clear.button.corner_radii,
+            Some(tekes_ui_scene::CornerRadii::uniform(6.0))
+        );
 
         let panel_theme = ContentTheme {
             surface: "panel",

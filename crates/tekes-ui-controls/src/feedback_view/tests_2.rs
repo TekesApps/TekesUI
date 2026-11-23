@@ -13,8 +13,20 @@ fn toast_uses_symmetric_padding_and_centered_dismiss() {
     let model = Toast::new("Changes saved", NoticeTone::Success, 5000);
     let pad = tekes_ui_tokens::Spacing::Relaxed.value();
     let gap = tekes_ui_tokens::Spacing::Regular.value();
+    let dot = proposal::metric("size", "size-dot").unwrap();
+    let min_row = proposal::metric("size", "size-row-height").unwrap();
+    let dismiss_w = ButtonModel::measure(
+        &mut RecordingText::default(),
+        "Dismiss",
+        f32::MAX,
+        ButtonSize::Body,
+        role(),
+    )
+    .width;
+    let leading_inset = pad + dot + gap;
+    let content_width = 520. - leading_inset - gap - dismiss_w - pad;
     let measured = ToastView::measure(&mut RecordingText::default(), &model.message, 520., role());
-    assert_eq!(measured, Size::new(520., 58.));
+    assert_eq!(measured, Size::new(520., pad * 2. + min_row));
     let frame = Rect::new(40., 30., measured.width, measured.height);
     let mut scene = Scene::new();
     let mut text = RecordingText::default();
@@ -27,7 +39,10 @@ fn toast_uses_symmetric_padding_and_centered_dismiss() {
         palette(),
         role(),
     );
-    assert_eq!(layout.content, Rect::new(40. + 30., 30. + pad, 380., 34.));
+    assert_eq!(
+        layout.content,
+        Rect::new(40. + leading_inset, 30. + pad, content_width, min_row)
+    );
     let message = text
         .0
         .iter()
@@ -35,12 +50,22 @@ fn toast_uses_symmetric_padding_and_centered_dismiss() {
         .unwrap();
     assert_eq!(
         message.2,
-        Rect::new(40. + 30., 30. + pad, 380., role().style().line_height)
+        Rect::new(
+            40. + leading_inset,
+            30. + pad,
+            content_width,
+            role().style().line_height
+        )
     );
     let dismiss = view.dismiss_layout.unwrap().frame;
     assert_eq!(
         dismiss,
-        Rect::new(frame.max_x() - pad - 90., 30. + pad, 90., 34.)
+        Rect::new(
+            frame.max_x() - pad - dismiss_w,
+            30. + pad,
+            dismiss_w,
+            min_row
+        )
     );
     assert!((dismiss.min_x() - layout.content.max_x() - gap).abs() <= 0.01);
     assert!(((frame.max_x() - dismiss.max_x()) - pad).abs() <= 0.01);
@@ -48,7 +73,7 @@ fn toast_uses_symmetric_padding_and_centered_dismiss() {
         drawn == "Dismiss" && *align == ButtonTextAlign::default()
     }));
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - 10.) * 0.5, 10., 10.))
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - dot) * 0.5, dot, dot))
     }));
 }
 
@@ -78,7 +103,7 @@ fn toast_measure_matches_wrapped_message_and_dismiss_slot() {
     assert_eq!(layout.frame.size, measured);
     assert_eq!(layout.content.size.height, 48.0);
     assert!(dismiss.frame.max_y() <= frame.max_y());
-    assert!(dismiss.frame.size.height >= 34.0);
+    assert!(dismiss.frame.size.height >= proposal::metric("size", "size-row-height").unwrap());
     assert!(layout.content.max_y() <= frame.max_y());
     if frame.size.width < 280.0 {
         assert!(layout.content.max_y() + 8.0 <= dismiss.frame.min_y());
@@ -1637,4 +1662,65 @@ fn dialog_view_default_buttons_use_popover_surface_contract() {
             );
         }
     }
+}
+
+#[test]
+fn tooltip_popover_and_empty_state_views_use_tight_tokens_and_natural_dismiss_width() {
+    struct TinyText;
+    impl ButtonTextRenderer for TinyText {
+        fn measure(&mut self, value: &str, _: proposal::TextRole, max_width: f32) -> Size {
+            Size::new((value.chars().count() as f32 * 6.0).min(max_width), 10.0)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    let tip = Tooltip {
+        visible: true,
+        text: "Hi".into(),
+    };
+    let fitted = TooltipView::fitted_size(
+        &mut TinyText,
+        &tip,
+        Rect::new(0., 0., 200., 100.),
+        proposal::TextRole::UiCaption,
+    );
+    assert_eq!(fitted.width, 12.0 + 8.0 * 2.0);
+    assert_eq!(
+        fitted.height,
+        proposal::metric("size", "size-compact-row").unwrap()
+    );
+    let mut tip_view = TooltipView::default();
+    let tip_layout = tip_view.render(
+        &mut Scene::new(),
+        &mut TinyText,
+        &tip,
+        Rect::new(20., 20., 40., 24.),
+        fitted,
+        Rect::new(0., 0., 300., 200.),
+        None,
+        palette(),
+        proposal::TextRole::UiCaption,
+    );
+    assert_eq!(
+        tip_layout.frame.min_y() - 44.0,
+        tekes_ui_tokens::Spacing::Snug.value()
+    );
+
+    let pop_measured = PopoverView::measure(&mut TinyText, Size::new(60., 40.), role());
+    let natural_dismiss =
+        ButtonModel::measure(&mut TinyText, "Dismiss", f32::MAX, ButtonSize::Md, role()).width;
+    assert_eq!(
+        pop_measured.width,
+        (60.0_f32 + 12.0 * 2.0).max(natural_dismiss + 12.0 * 2.0)
+    );
+    assert!(pop_measured.width < 120.0 + 12.0 * 2.0);
 }

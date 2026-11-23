@@ -176,10 +176,10 @@ impl Component for GroupedFormRowContent {
             (available.height - padding.height * 2.).max(0.),
         );
         let ([labels, value], _) = self.measured(text, inner);
+        let min_content = proposal::metric("size", "c-row-min-height").expect("shared row minimum");
         MeasuredChild::new(Size::new(
             available.width,
-            (labels.height.max(value.height) + padding.height * 2.)
-                .max(proposal::metric("size", "c-row-min-height").expect("shared row minimum")),
+            labels.height.max(value.height).max(min_content) + padding.height * 2.,
         ))
     }
 
@@ -625,5 +625,84 @@ mod tests {
             .surface()
             .outer();
         assert!((label.center().y - surface_outer.center().y).abs() <= 0.01);
+
+        struct CanonicalText;
+        impl ButtonTextRenderer for CanonicalText {
+            fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+                Some(self)
+            }
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceTextRenderer for CanonicalText {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &tekes_ui_text::Paragraph,
+                _: Point,
+                _: Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceHost for CanonicalText {
+            fn shape_surface(
+                &mut self,
+                text: &str,
+                role: proposal::TextRole,
+                width: Option<f32>,
+            ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+                Text.shape_surface(text, role, width)
+            }
+        }
+
+        let checkbox = Content::new(
+            ComponentId(10),
+            CheckboxContent::new("", crate::CheckState::Unchecked),
+        );
+        let switch = Content::new(ComponentId(11), SwitchContent::new("", true));
+        let select = Content::new(
+            ComponentId(12),
+            SelectContent::new("Theme", vec!["Light".into(), "Dark".into()]),
+        );
+        let radio = Content::new(ComponentId(13), {
+            let mut r = RadioGroupContent::new("Density", vec!["Normal".into(), "Compact".into()]);
+            r.set_axis(Axis::Horizontal);
+            r
+        });
+        let field_val = Content::new(
+            ComponentId(14),
+            TextFieldContent::new("", "Mono")
+                .with_surface_presentation(TextSurfacePresentation::Content),
+        );
+        let menu_val = Content::new(
+            ComponentId(16),
+            crate::composition::MenuContent::new("System", vec!["System".into(), "Light".into()]),
+        );
+        for value in [checkbox, switch, select, radio, field_val, menu_val] {
+            let mut form_row = GroupedFormRowContent::new(
+                "Setting",
+                Content::new(ComponentId(15), TextContent::new("Setting")),
+                value,
+            );
+            let measured = form_row
+                .measure(&mut CanonicalText, Size::new(560., 400.))
+                .size;
+            assert_eq!(measured.height, 40.0);
+        }
     }
 }

@@ -2,7 +2,7 @@
 use super::{
     CollectionAction, CollectionEvent, CollectionInteraction, CollectionItemLayout,
     CollectionLayout, ListActionSnapshot, ListInput, control_state, mounted_bounds, own_clip,
-    paint_collection_focus, row_gap, row_height, row_key_target, visible,
+    paint_collection_focus, row_gap, row_height, row_height_for, row_key_target, visible,
 };
 use crate::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, extended::List,
@@ -25,6 +25,7 @@ pub struct ListView {
     pub(super) layout: CollectionLayout,
     pub(super) state: CollectionInteraction,
     pub(super) disabled: bool,
+    pub(super) compact: bool,
     pub(super) navigation_selection_fill_only: bool,
     pub(super) navigation_layout: bool,
     pub(super) buttons: Vec<ButtonModel>,
@@ -43,6 +44,7 @@ impl Default for ListView {
                 ..Default::default()
             },
             disabled: false,
+            compact: false,
             navigation_selection_fill_only: false,
             navigation_layout: false,
             buttons: Vec::new(),
@@ -78,6 +80,19 @@ impl ListView {
             self.navigation_layout = navigation;
         }
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        if self.compact != compact {
+            self.cancel();
+            self.compact = compact;
+        }
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
+    }
     fn metrics(&self) -> (f32, f32) {
         if self.navigation_layout {
             (
@@ -85,7 +100,7 @@ impl ListView {
                 tekes_ui_tokens::Spacing::Micro.value(),
             )
         } else {
-            (row_height(), row_gap())
+            (row_height_for(self.compact), row_gap())
         }
     }
     pub fn measure_rows(

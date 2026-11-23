@@ -38,17 +38,17 @@ pub struct FieldPresentation {
     pub message_min_height: f32,
 }
 impl FieldPresentation {
-    /// Emphasized label, caption helper and legacy 36px form slots.
+    /// Emphasized heading label, caption helper and shared row-height form slots.
     pub fn emphasized_form() -> Self {
         Self {
             label_role: proposal::TextRole::UiHeading,
-            label_min_height: 36.,
+            label_min_height: 0.,
             message_role: Some(proposal::TextRole::UiCaption),
-            label_to_slot_gap: 4.,
-            slot_to_message_gap: 6.,
-            slot_min_height: 36.,
+            label_to_slot_gap: proposal::metric("spacing", "space-tight").unwrap_or(4.),
+            slot_to_message_gap: proposal::metric("spacing", "space-snug").unwrap_or(6.),
+            slot_min_height: proposal::metric("size", "size-row-height").unwrap_or(32.),
             slot_height: None,
-            message_min_height: 36.,
+            message_min_height: 0.,
         }
     }
 }
@@ -130,7 +130,7 @@ impl FieldView {
         };
         let measured_line = text.measure("M", role, f32::MAX).height.max(0.);
         let input_h = proposal::metric("size", "size-button-md")
-            .unwrap_or(36.)
+            .unwrap_or(32.)
             .max(measured_line + 2. * proposal::SCROLL_SINGLE_LINE_PADDING_Y)
             .max(presentation.slot_min_height.max(0.));
         let input_h = presentation
@@ -144,7 +144,12 @@ impl FieldView {
             frame.size.width.max(0.),
             input_h.max(0.),
         );
-        let msg_y = slot.max_y() + presentation.slot_to_message_gap.max(0.);
+        let msg_gap = if message.is_empty() {
+            0.
+        } else {
+            presentation.slot_to_message_gap.max(0.)
+        };
+        let msg_y = slot.max_y() + msg_gap;
         let message_rect = Rect::new(frame.min_x(), msg_y, frame.size.width.max(0.), message_h);
         let visible = clipped(frame, clip);
         let label_rect = Rect::new(frame.min_x(), frame.min_y(), label_width, label_h);
@@ -341,33 +346,30 @@ impl NumberFieldView {
         Ok(())
     }
     pub(crate) fn slot_frames(frame: Rect) -> (Rect, Rect, Rect) {
-        let nominal_gap = tekes_ui_tokens::Spacing::Relaxed.value();
-        let button_nominal = 48.;
-        let value_nominal = 198. - button_nominal * 2. - nominal_gap * 2.;
-        let nominal = button_nominal + nominal_gap + value_nominal + nominal_gap + button_nominal;
-        let scale = (frame.size.width.max(0.) / nominal).min(1.);
-        let button_w = button_nominal * scale;
-        let first_gap = nominal_gap * scale;
-        let value_w = value_nominal * scale;
-        let second_gap = nominal_gap * scale;
-        let minus = Rect::new(
-            frame.min_x(),
-            frame.min_y(),
-            button_w,
-            frame.size.height.max(0.),
-        );
-        let value = Rect::new(
-            minus.max_x() + first_gap,
-            frame.min_y(),
-            value_w,
-            frame.size.height.max(0.),
-        );
-        let plus = Rect::new(
-            value.max_x() + second_gap,
-            frame.min_y(),
-            button_w,
-            frame.size.height.max(0.),
-        );
+        let nominal_gap = tekes_ui_tokens::Spacing::Regular.value();
+        let button_nominal =
+            proposal::metric("size", "size-row-height").expect("stepper button width");
+        let value_min = button_nominal;
+        let nominal = button_nominal * 2. + nominal_gap * 2. + value_min;
+        let width = frame.size.width.max(0.);
+        let (button_w, gap, value_w) = if width >= nominal {
+            (
+                button_nominal,
+                nominal_gap,
+                (width - button_nominal * 2. - nominal_gap * 2.).max(0.),
+            )
+        } else {
+            let scale = width / nominal;
+            (
+                button_nominal * scale,
+                nominal_gap * scale,
+                value_min * scale,
+            )
+        };
+        let height = frame.size.height.max(0.);
+        let minus = Rect::new(frame.min_x(), frame.min_y(), button_w, height);
+        let value = Rect::new(minus.max_x() + gap, frame.min_y(), value_w, height);
+        let plus = Rect::new(value.max_x() + gap, frame.min_y(), button_w, height);
         (minus, value, plus)
     }
     fn sync_model(&mut self, model: &NumberField) {

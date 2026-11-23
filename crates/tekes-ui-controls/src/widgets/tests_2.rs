@@ -469,21 +469,21 @@ fn checkbox_expands_for_large_text_and_cancels_stale_hit_when_disabled_or_cleare
         &mut Scene::new(),
         &mut text,
         "Large project notification label",
-        Rect::new(8.0, 12.0, 400.0, 36.0),
+        Rect::new(8.0, 12.0, 400.0, 32.0),
         None,
         Theme::LIGHT,
         proposal::TextRole::UiBody,
     );
-    assert_eq!(layout.frame.size.height, 60.0);
-    assert_eq!(layout.control, Rect::new(8.0, 34.0, 16.0, 16.0));
-    assert_eq!(layout.label, Rect::new(30.0, 18.0, 378.0, 48.0));
+    assert_eq!(layout.frame.size.height, 56.0);
+    assert_eq!(layout.control, Rect::new(8.0, 32.0, 16.0, 16.0));
+    assert_eq!(layout.label, Rect::new(30.0, 16.0, 378.0, 48.0));
     assert!(checkbox.pointer_down_at(Point::new(100.0, 20.0)));
     checkbox.button.state.disabled = true;
     checkbox.render(
         &mut Scene::new(),
         &mut text,
         "Large project notification label",
-        Rect::new(8.0, 12.0, 400.0, 36.0),
+        Rect::new(8.0, 12.0, 400.0, 32.0),
         None,
         Theme::LIGHT,
         proposal::TextRole::UiBody,
@@ -499,9 +499,9 @@ fn checkbox_expands_for_large_text_and_cancels_stale_hit_when_disabled_or_cleare
 fn checkbox_first_line_center_label_gap_and_row_height_scale_naturally() {
     for backing_scale in [1.0, 2.0] {
         for (type_scale, first_line, label_height, expected_row_height) in [
-            (1.0, 18.0, 18.0, 36.0),
-            (1.5, 27.0, 54.0, 66.0),
-            (2.0, 36.0, 108.0, 120.0),
+            (1.0, 18.0, 18.0, 32.0),
+            (1.5, 27.0, 54.0, 62.0),
+            (2.0, 36.0, 108.0, 116.0),
         ] {
             let mut checkbox = Checkbox::default();
             let mut text = CheckboxText {
@@ -510,7 +510,7 @@ fn checkbox_first_line_center_label_gap_and_row_height_scale_naturally() {
                 backing_scale,
                 drawn: None,
             };
-            let frame = Rect::new(12.0, 20.0, 220.0, 36.0);
+            let frame = Rect::new(12.0, 20.0, 220.0, 32.0);
             let layout = checkbox.render(
                 &mut Scene::new(),
                 &mut text,

@@ -48,6 +48,7 @@ pub struct DataTableView {
     pub(super) layout: DataTableLayout,
     pub(super) state: CollectionInteraction,
     pub(super) disabled: bool,
+    pub(super) compact: bool,
     pub(super) header_buttons: Vec<ButtonModel>,
     pub(super) row_buttons: Vec<ButtonModel>,
     pub(super) focused_header: Option<usize>,
@@ -64,6 +65,7 @@ impl Default for DataTableView {
                 ..Default::default()
             },
             disabled: false,
+            compact: false,
             header_buttons: Vec::new(),
             row_buttons: Vec::new(),
             focused_header: None,
@@ -89,6 +91,16 @@ impl DataTableView {
             self.focused_header = None;
             self.state.blur();
         }
+    }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
     }
     pub fn focus_row(&mut self, row: usize, keyboard: bool) {
         if self.keyed.is_some() {
@@ -129,6 +141,15 @@ impl DataTableView {
     }
     pub(crate) fn cell_horizontal_inset(text: &mut (impl ButtonTextRenderer + ?Sized)) -> f32 {
         ButtonSize::Body.scaled_horizontal_inset(text, proposal::TextRole::UiBody)
+    }
+    pub(crate) fn cell_vertical_padding(text: &mut (impl ButtonTextRenderer + ?Sized)) -> f32 {
+        tekes_ui_tokens::Spacing::Tight.value()
+            * 2.0
+            * crate::button_typography_scale(text, proposal::TextRole::UiBody)
+    }
+    pub(crate) fn cell_accessory_gap(text: &mut (impl ButtonTextRenderer + ?Sized)) -> f32 {
+        tekes_ui_tokens::Spacing::Tight.value()
+            * crate::button_typography_scale(text, proposal::TextRole::UiBody)
     }
 
     pub fn layout(&self) -> &DataTableLayout {
@@ -180,7 +201,7 @@ impl DataTableView {
         let minimum =
             ButtonModel::measure(text, "", cw, ButtonSize::Body, proposal::TextRole::UiBody)
                 .height
-                .max(34.0);
+                .max(super::row_height_for(self.compact));
         let header_h = minimum;
         let rh = minimum;
         let gap = row_gap();
@@ -213,6 +234,8 @@ impl DataTableView {
                 }
             })
             .collect::<Vec<_>>();
+        let cell_v_pad = Self::cell_vertical_padding(text);
+        let accessory_gap = Self::cell_accessory_gap(text);
         let header_heights = header_labels
             .iter()
             .enumerate()
@@ -224,7 +247,7 @@ impl DataTableView {
                     .copied()
                     .flatten()
                 {
-                    size.height.max(header_h)
+                    (size.height + cell_v_pad).max(header_h)
                 } else {
                     ButtonModel::measure(
                         text,
@@ -239,7 +262,7 @@ impl DataTableView {
             })
             .collect::<Vec<_>>();
         let header_band = header_heights.iter().copied().fold(header_h, f32::max);
-        let row_start = header_band + 6.0;
+        let row_start = header_band + tekes_ui_tokens::Spacing::Snug.value();
         let row_heights = valid_order
             .iter()
             .map(|id| {
@@ -253,16 +276,22 @@ impl DataTableView {
                             .copied()
                             .unwrap_or_default();
                         let aw = accessory.map_or(0., |a| a.width.min((cw - cell_chrome).max(0.)));
+                        let acc_gap = if accessory.is_some() {
+                            accessory_gap
+                        } else {
+                            0.
+                        };
                         custom
                             .unwrap_or_else(|| {
                                 text.measure(
                                     rows[*id].get(col).map(String::as_str).unwrap_or(""),
                                     proposal::TextRole::UiBody,
-                                    (cw - cell_chrome - aw).max(0.),
+                                    (cw - cell_chrome - acc_gap - aw).max(0.),
                                 )
                             })
                             .height
                             .max(accessory.map_or(0., |a| a.height))
+                            + cell_v_pad
                     })
                     .fold(rh, f32::max)
             })
@@ -407,10 +436,15 @@ impl DataTableView {
                     continue;
                 }
                 let aw = accessory.map_or(0., |a| a.width.min((cw - cell_chrome).max(0.)));
+                let acc_gap = if accessory.is_some() {
+                    accessory_gap
+                } else {
+                    0.
+                };
                 let cell = Rect::new(
                     frame.min_x() + col as f32 * cw + cell_inset,
                     y,
-                    (cw - cell_chrome - aw).max(0.),
+                    (cw - cell_chrome - acc_gap - aw).max(0.),
                     row_height,
                 );
                 if let Some(v) = visible(cell, row_layout.visible) {
