@@ -14,7 +14,7 @@ pub struct SkeletonContent {
     max_width: Option<f32>,
 }
 impl SkeletonContent {
-    pub const DEFAULT_HEIGHT: f32 = tekes_ui_tokens::Spacing::Loose.value();
+    pub const DEFAULT_HEIGHT: f32 = tekes_ui_tokens::ControlSize::InlineBadge.value();
 
     /// Override the intrinsic height when an embedding layout needs a custom placeholder height.
     pub fn with_height(mut self, height: f32) -> Self {
@@ -120,6 +120,10 @@ mod layout_tests {
         }
         let mut skel = SkeletonContent::default();
         let mut text = NoText;
+        assert_eq!(
+            SkeletonContent::DEFAULT_HEIGHT,
+            tekes_ui_tokens::ControlSize::InlineBadge.value()
+        );
         assert_eq!(
             skel.measure(&mut text, Size::new(240., 1e8)).size,
             Size::new(240., SkeletonContent::DEFAULT_HEIGHT)

@@ -24,6 +24,31 @@ fn notice_usage(tone: NoticeTone, toast: bool) -> &'static str {
         NoticeTone::Warning => "notice-marker-banner-warning",
     }
 }
+const NOTICE_STACK_WIDTH: f32 = 280.0;
+
+fn notice_marker_diameter() -> f32 {
+    proposal::metric("size", "size-dot").expect("notice marker dot size token")
+}
+
+fn notice_min_row_height() -> f32 {
+    proposal::metric("size", "size-row-height").expect("notice minimum row height token")
+}
+
+fn notice_dismiss_metrics(
+    text: &mut impl ButtonTextRenderer,
+    available_width: f32,
+    role: proposal::TextRole,
+    min_row: f32,
+) -> (f32, f32) {
+    let width = ButtonModel::measure(text, "Dismiss", f32::MAX, ButtonSize::Body, role)
+        .width
+        .min(available_width);
+    let height = ButtonModel::measure(text, "Dismiss", width, ButtonSize::Body, role)
+        .height
+        .max(min_row);
+    (width, height)
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ToastView {
     pub(super) layout: ViewLayout,
@@ -38,7 +63,7 @@ pub struct ToastView {
 }
 impl ToastView {
     fn stacked(frame: Rect) -> bool {
-        frame.size.width < 280.0
+        frame.size.width < NOTICE_STACK_WIDTH
     }
     /// Measures the toast's content and dismiss action using the same text backend
     /// and width constraint used by `render`. Hosts can size the outer frame before
@@ -50,34 +75,28 @@ impl ToastView {
         role: proposal::TextRole,
     ) -> Size {
         let width = width.max(0.0);
-        let stacked = width < 280.0;
+        let stacked = width < NOTICE_STACK_WIDTH;
         let pad = tekes_ui_tokens::Spacing::Relaxed.value();
         let gap = tekes_ui_tokens::Spacing::Regular.value();
-        let marker_diameter = 10.0;
+        let marker_diameter = notice_marker_diameter();
+        let min_row = notice_min_row_height();
         let leading_inset = pad + marker_diameter + gap;
         let available_action_width = if stacked {
             (width - pad * 2.0).max(0.0)
         } else {
             (width - leading_inset - gap - pad).max(0.0)
         };
-        let natural_action = ButtonModel::measure(
-            text,
-            "Dismiss",
-            available_action_width,
-            ButtonSize::Body,
-            role,
-        );
-        let action_width = natural_action.width.max(90.0).min(available_action_width);
-        let action_height =
-            ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
-                .height
-                .max(34.0);
+        let (action_width, action_height) =
+            notice_dismiss_metrics(text, available_action_width, role, min_row);
         let content_width = if stacked {
             (width - leading_inset - pad).max(0.0)
         } else {
             (width - leading_inset - gap - action_width - pad).max(0.0)
         };
-        let content_height = text.measure(message, role, content_width).height.max(34.0);
+        let content_height = text
+            .measure(message, role, content_width)
+            .height
+            .max(min_row);
         let height = if stacked {
             pad + content_height + gap + action_height + pad
         } else {
@@ -98,25 +117,17 @@ impl ToastView {
         let stacked = Self::stacked(frame);
         let pad = tekes_ui_tokens::Spacing::Relaxed.value();
         let gap = tekes_ui_tokens::Spacing::Regular.value();
-        let marker_diameter = 10.0;
+        let marker_diameter = notice_marker_diameter();
+        let min_row = notice_min_row_height();
         let leading_inset = pad + marker_diameter + gap;
         let available_action_width = if stacked {
             (frame.size.width - pad * 2.0).max(0.0)
         } else {
             (frame.size.width - leading_inset - gap - pad).max(0.0)
         };
-        let natural_action = ButtonModel::measure(
-            text,
-            "Dismiss",
-            available_action_width,
-            ButtonSize::Body,
-            role,
-        );
-        let dismiss_w = natural_action.width.max(90.0).min(available_action_width);
-        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
-            .height
-            .max(34.0)
-            .min(frame.size.height.max(0.));
+        let (dismiss_w, raw_dismiss_h) =
+            notice_dismiss_metrics(text, available_action_width, role, min_row);
+        let dismiss_h = raw_dismiss_h.min(frame.size.height.max(0.));
         let dismiss_x = if stacked {
             frame.min_x() + (frame.size.width - dismiss_w) * 0.5
         } else {
@@ -130,7 +141,7 @@ impl ToastView {
         let content_height = text
             .measure(&model.message, role, content_width)
             .height
-            .max(34.0);
+            .max(min_row);
         self.layout = ViewLayout {
             frame,
             content: Rect::new(
@@ -437,7 +448,7 @@ pub struct BannerView {
 }
 impl BannerView {
     fn stacked(width: f32, dismissible: bool) -> bool {
-        dismissible && width < 280.0
+        dismissible && width < NOTICE_STACK_WIDTH
     }
 
     /// Returns the banner's natural frame size for the supplied message and
@@ -453,39 +464,23 @@ impl BannerView {
         let width = width.max(0.0);
         let pad = tekes_ui_tokens::Spacing::Relaxed.value();
         let gap = tekes_ui_tokens::Spacing::Regular.value();
-        let marker_diameter = 12.0;
+        let marker_diameter = notice_marker_diameter();
+        let min_row = notice_min_row_height();
         let leading_inset = pad + marker_diameter + gap;
         if Self::stacked(width, dismissible) {
             let message_width = (width - leading_inset - pad).max(0.0);
-            let message_height = text.measure(message, role, message_width).height.max(34.0);
+            let message_height = text
+                .measure(message, role, message_width)
+                .height
+                .max(min_row);
             let available_action_width = (width - pad * 2.0).max(0.0);
-            let action_width = ButtonModel::measure(
-                text,
-                "Dismiss",
-                available_action_width,
-                ButtonSize::Body,
-                role,
-            )
-            .width
-            .max(92.0)
-            .min(available_action_width);
-            let action_height =
-                ButtonModel::measure(text, "Dismiss", action_width, ButtonSize::Body, role)
-                    .height
-                    .max(34.0);
+            let (_, action_height) =
+                notice_dismiss_metrics(text, available_action_width, role, min_row);
             Size::new(width, pad + message_height + gap + action_height + pad)
         } else {
             let action_size = if dismissible {
                 let available = (width - leading_inset - gap - pad).max(0.0);
-                let action_w =
-                    ButtonModel::measure(text, "Dismiss", available, ButtonSize::Body, role)
-                        .width
-                        .max(92.0)
-                        .min(available);
-                let action_h =
-                    ButtonModel::measure(text, "Dismiss", action_w, ButtonSize::Body, role)
-                        .height
-                        .max(34.0);
+                let (action_w, action_h) = notice_dismiss_metrics(text, available, role, min_row);
                 Size::new(action_w, action_h)
             } else {
                 Size::default()
@@ -495,7 +490,10 @@ impl BannerView {
             } else {
                 (width - leading_inset - pad).max(0.0)
             };
-            let message_height = text.measure(message, role, message_width).height.max(34.0);
+            let message_height = text
+                .measure(message, role, message_width)
+                .height
+                .max(min_row);
             Size::new(width, pad + message_height.max(action_size.height) + pad)
         }
     }
@@ -519,7 +517,8 @@ impl BannerView {
         let visible = clipped(frame, clip);
         let pad = tekes_ui_tokens::Spacing::Relaxed.value();
         let gap = tekes_ui_tokens::Spacing::Regular.value();
-        let marker_diameter = 12.0;
+        let marker_diameter = notice_marker_diameter();
+        let min_row = notice_min_row_height();
         let leading_inset = pad + marker_diameter + gap;
         self.layout = ViewLayout {
             frame,
@@ -532,20 +531,12 @@ impl BannerView {
         } else {
             (frame.size.width - leading_inset - gap - pad).max(0.0)
         };
-        let dismiss_w = ButtonModel::measure(
-            text,
-            "Dismiss",
-            available_action_width,
-            ButtonSize::Body,
-            role,
-        )
-        .width
-        .max(92.0)
-        .min(available_action_width);
-        let dismiss_h = ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Body, role)
-            .height
-            .max(34.0)
-            .min(frame.size.height.max(0.0));
+        let (dismiss_w, dismiss_h) = if model.dismissible {
+            let (w, h) = notice_dismiss_metrics(text, available_action_width, role, min_row);
+            (w, h.min(frame.size.height.max(0.0)))
+        } else {
+            (0.0, 0.0)
+        };
         let dismiss_x = if stacked {
             frame.min_x() + (frame.size.width - dismiss_w) * 0.5
         } else {
@@ -561,7 +552,7 @@ impl BannerView {
         let height = text
             .measure(&model.message, role, msg_width)
             .height
-            .max(34.0)
+            .max(min_row)
             .min((frame.size.height - pad * 2.0).max(0.0));
         let message = Rect::new(
             frame.min_x() + leading_inset,

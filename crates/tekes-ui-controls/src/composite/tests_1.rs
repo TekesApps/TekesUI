@@ -1031,10 +1031,12 @@ fn dialog_actions_use_design_system_centered_content_alignment() {
         )
         .expect("open dialog layout");
     assert_eq!(layout.focus, 1);
-    let focus_outset = focus_reveal_outset(text.backing_scale());
+    let logical_focus_outset = proposal::metric("stroke", "c-focus-width").unwrap()
+        + proposal::metric("spacing", "c-focus-offset").unwrap();
     let action_gap = layout.buttons[1].frame.min_x() - layout.buttons[0].frame.max_x();
+    assert_eq!(action_gap, tekes_ui_tokens::Spacing::Regular.value());
     assert!(
-        action_gap + f32::EPSILON >= 2.0 * focus_outset,
+        action_gap + f32::EPSILON >= 2.0 * logical_focus_outset,
         "dialog action focus rings need non-overlapping clearance"
     );
     for action in ["Cancel", "Confirm"] {
@@ -1165,9 +1167,18 @@ fn menu_geometry_converges_row_heights_zero_gap_separator_and_concentric_radii()
             assert_eq!(layout.items[2].frame.size.height, 9.0);
             assert_eq!(layout.items[3].frame.size.height, expected_height);
             assert_eq!(layout.items[0].frame.min_y() - layout.popup.min_y(), 6.0);
-            assert_eq!(layout.items[1].frame.min_y() - layout.items[0].frame.max_y(), 0.0);
-            assert_eq!(layout.items[2].frame.min_y() - layout.items[1].frame.max_y(), 0.0);
-            assert_eq!(layout.items[3].frame.min_y() - layout.items[2].frame.max_y(), 0.0);
+            assert_eq!(
+                layout.items[1].frame.min_y() - layout.items[0].frame.max_y(),
+                0.0
+            );
+            assert_eq!(
+                layout.items[2].frame.min_y() - layout.items[1].frame.max_y(),
+                0.0
+            );
+            assert_eq!(
+                layout.items[3].frame.min_y() - layout.items[2].frame.max_y(),
+                0.0
+            );
             let row_frame = layout.items[0].frame;
             assert!(scene.primitives().iter().any(|primitive| {
                 matches!(

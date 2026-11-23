@@ -60,7 +60,8 @@ fn original_view_content_geometry_packets_and_action_owner() {
                     let mut actual = Scene::new();
                     h.render(&mut actual, &mut t, f, clip, palette).unwrap();
                     let actual_frame = h.get(MESSAGE).unwrap().frame();
-                    let mut v = EmptyStateView::default();
+                    let mut v = EmptyStateView::default()
+                        .with_outer_padding(Some(tekes_ui_tokens::Spacing::None.value()));
                     v.set_surface(surface).unwrap();
                     let mut expected = Scene::new();
                     v.render(

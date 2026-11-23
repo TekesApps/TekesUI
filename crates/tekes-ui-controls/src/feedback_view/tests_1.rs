@@ -1047,7 +1047,7 @@ fn notices_align_status_marker_to_actual_first_line_at_each_text_scale() {
                     );
                 }
                 let message_rect = text.draws.iter().find(|(s, _)| s == message).unwrap().1;
-                let diameter = if banner { 12. } else { 10. };
+                let diameter = proposal::metric("size", "size-dot").unwrap();
                 let marker = scene
                     .primitives()
                     .iter()
@@ -1100,9 +1100,25 @@ fn banner_uses_symmetric_padding_and_quiet_dismiss_with_first_line_marker() {
         role(),
     );
     let dismiss = view.dismiss_layout.unwrap();
+    let dot = proposal::metric("size", "size-dot").unwrap();
+    let min_row = proposal::metric("size", "size-row-height").unwrap();
+    let dismiss_w = ButtonModel::measure(
+        &mut RecordingText::default(),
+        "Dismiss",
+        f32::MAX,
+        ButtonSize::Body,
+        role(),
+    )
+    .width;
+    let dismiss_y = frame.min_y() + (frame.size.height - min_row) * 0.5;
     assert_eq!(
         dismiss.frame,
-        Rect::new(frame.max_x() - pad - 92., 32., 92., 34.)
+        Rect::new(
+            frame.max_x() - pad - dismiss_w,
+            dismiss_y,
+            dismiss_w,
+            min_row
+        )
     );
     assert!(
         ((dismiss.frame.min_y() - frame.min_y()) - (frame.max_y() - dismiss.frame.max_y())).abs()
@@ -1113,11 +1129,11 @@ fn banner_uses_symmetric_padding_and_quiet_dismiss_with_first_line_marker() {
         .iter()
         .find(|(drawn, _, _, _)| drawn == &model.message)
         .unwrap();
-    assert_eq!(message.2.min_x(), frame.min_x() + pad + 12. + gap);
+    assert_eq!(message.2.min_x(), frame.min_x() + pad + dot + gap);
     assert_eq!(message.2.min_y(), frame.min_y() + pad);
     assert_eq!(message.2.size.height, role().style().line_height);
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - 12.) * 0.5, 12., 12.))
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - dot) * 0.5, dot, dot))
     }));
     let quiet_fill = tekes_ui_tokens::surface_palette::resolve_surface(
         palette(),

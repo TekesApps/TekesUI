@@ -51,6 +51,7 @@ pub(super) fn explicit_visible_clip(visible: Option<Rect>) -> Option<Rect> {
     Some(visible.unwrap_or_default())
 }
 
+#[cfg(test)]
 pub(crate) fn focus_reveal_outset(backing_scale: f32) -> f32 {
     let ring_width = proposal::metric("stroke", "c-focus-width").expect("focus width token");
     let ring_gap = proposal::metric("spacing", "c-focus-offset").expect("focus offset token");

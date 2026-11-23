@@ -46,8 +46,8 @@ pub enum TooltipEvent {
 }
 impl TooltipView {
     // One inset definition for the original fixed-size and fitted help paths.
-    const INSET_X: f32 = 12.;
-    const INSET_Y: f32 = 8.;
+    const INSET_X: f32 = tekes_ui_tokens::Spacing::Regular.value();
+    const INSET_Y: f32 = tekes_ui_tokens::Spacing::Tight.value();
     pub(crate) fn fitted_size(
         text: &mut dyn ButtonTextRenderer,
         model: &Tooltip,
@@ -56,9 +56,12 @@ impl TooltipView {
     ) -> Size {
         let width = (viewport.size.width - 2. * Self::INSET_X).max(0.);
         let measured = text.measure(&model.text, role, width);
+        let min_height = proposal::metric("size", "size-compact-row").unwrap_or(24.);
         Size::new(
             (measured.width + 2. * Self::INSET_X).min(viewport.size.width),
-            (measured.height + 2. * Self::INSET_Y).min(viewport.size.height),
+            (measured.height + 2. * Self::INSET_Y)
+                .max(min_height)
+                .min(viewport.size.height),
         )
     }
     pub(crate) fn content_size(viewport: Rect) -> Size {
@@ -168,7 +171,12 @@ impl TooltipView {
         let showing = !self.inactive
             && ((model.visible && !self.controlled_suppressed) || self.hovered || self.focused);
         let viewport = effective_viewport(viewport, clip);
-        let r = place_overlay(anchor, size, viewport, 8.);
+        let r = place_overlay(
+            anchor,
+            size,
+            viewport,
+            tekes_ui_tokens::Spacing::Snug.value(),
+        );
         let content = safe_inset(r, Self::INSET_X, Self::INSET_Y);
         self.anchor_visible = clipped(anchor, clip);
         self.layout = OverlayLayout {
@@ -283,7 +291,6 @@ struct PopoverSpacing {
     content_inset_y: f32,
     content_to_action_gap: f32,
     action_inset_x: f32,
-    action_width: f32,
 }
 fn popover_spacing() -> PopoverSpacing {
     let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
@@ -293,7 +300,6 @@ fn popover_spacing() -> PopoverSpacing {
         content_inset_y: inset,
         content_to_action_gap: regular,
         action_inset_x: inset,
-        action_width: 120.,
     }
 }
 /// Preferred placement in the existing viewport-clamped Popover shell. Right
@@ -370,11 +376,9 @@ impl PopoverView {
         role: proposal::TextRole,
     ) -> Size {
         let spacing = popover_spacing();
-        let dismiss =
-            ButtonModel::measure(text, "Dismiss", spacing.action_width, ButtonSize::Md, role);
+        let dismiss = ButtonModel::measure(text, "Dismiss", f32::MAX, ButtonSize::Md, role);
         Size::new(
             (content.width + spacing.content_inset_x * 2.)
-                .max(spacing.action_width + spacing.action_inset_x * 2.)
                 .max(dismiss.width + spacing.action_inset_x * 2.),
             content.height
                 + spacing.content_inset_y * 2.
@@ -421,12 +425,19 @@ impl PopoverView {
         } else {
             effective
         };
-        let frame = place_popover(anchor, size, viewport, 6., self.placement);
+        let frame = place_popover(
+            anchor,
+            size,
+            viewport,
+            tekes_ui_tokens::Spacing::Snug.value(),
+            self.placement,
+        );
         let visible = clipped(frame, clip);
         let spacing = popover_spacing();
-        let dismiss_w = spacing
-            .action_width
-            .min((frame.size.width - spacing.action_inset_x * 2.).max(0.));
+        let available_dismiss_w = (frame.size.width - spacing.action_inset_x * 2.).max(0.);
+        let dismiss_w = ButtonModel::measure(text, "Dismiss", f32::MAX, ButtonSize::Md, role)
+            .width
+            .min(available_dismiss_w);
         let dismiss_h = if self.dismiss_visible {
             ButtonModel::measure(text, "Dismiss", dismiss_w, ButtonSize::Md, role)
                 .height

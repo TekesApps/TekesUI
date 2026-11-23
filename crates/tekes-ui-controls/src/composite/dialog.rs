@@ -1,6 +1,6 @@
 use super::{
     ButtonLayout, ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey, Dialog,
-    clip_rect, empty_button_layout, focus_reveal_outset, paint, safe_rect, set_button_state,
+    clip_rect, empty_button_layout, paint, safe_rect, set_button_state,
 };
 use crate::control_motion::OverlayPresence;
 use tekes_ui_scene::{Point, Quad, Rect, Scene};
@@ -288,74 +288,67 @@ impl DialogView {
             }
             return Ok(None);
         }
-        let raw_w = (preview.size.width - 16.0).max(0.0);
+        let viewport_margin = tekes_ui_tokens::Spacing::Regular.value();
+        let raw_w = (preview.size.width - viewport_margin * 2.0).max(0.0);
+        let raw_h = (preview.size.height - viewport_margin * 2.0).max(0.0);
         let modal_width = self
             .max_width
             .filter(|limit| limit.is_finite())
             .map_or(raw_w, |limit| raw_w.min(limit.max(0.0)));
-        let modal_height = preview.size.height.clamp(0.0, 200.0);
-        let modal = Rect::new(
-            preview.min_x() + (preview.size.width - modal_width) * 0.5,
-            preview.min_y() + (preview.size.height - modal_height) * 0.5,
-            modal_width,
-            modal_height,
-        );
-        let action_height: f32 = if compact { 30.0 } else { 36.0 };
-        let margin = 20.0_f32.min((modal.size.width * 0.5).max(0.0));
-        let action_width = (modal.size.width - margin * 2.0).max(0.0);
-        let focus_gap = focus_reveal_outset(text.backing_scale()) * 2.0;
+        let pad = tekes_ui_tokens::Spacing::Loose.value();
+        let gap = tekes_ui_tokens::Spacing::Relaxed.value();
+        let margin = pad.min((modal_width * 0.5).max(0.0));
+        let action_width = (modal_width - margin * 2.0).max(0.0);
+        let title_size = text.measure(title, proposal::TextRole::UiHeading, action_width);
+        let button_size = if compact {
+            ButtonSize::Sm
+        } else {
+            ButtonSize::Md
+        };
+        let action_height: f32 = if compact {
+            proposal::metric("size", "size-button-sm").expect("dialog compact action button")
+        } else {
+            proposal::metric("size", "size-button-md").expect("dialog action button")
+        };
+        let action_gap = tekes_ui_tokens::Spacing::Regular.value();
         let cancel_natural = ButtonModel::measure(
             text,
             Self::button_label(0).unwrap(),
             f32::MAX,
-            ButtonSize::Body,
+            button_size,
             role,
         );
         let confirm_natural = ButtonModel::measure(
             text,
             Self::button_label(1).unwrap(),
             f32::MAX,
-            ButtonSize::Body,
+            button_size,
             role,
         );
-        let inline_width = ((action_width - focus_gap).max(0.0)) * 0.5;
+        let inline_width = ((action_width - action_gap).max(0.0)) * 0.5;
         let mut stacked = inline_width < cancel_natural.width.max(confirm_natural.width);
-        let vertical_margin = 20.0_f32.min((modal.size.height * 0.5).max(0.0));
-        let stacked_natural_height = ButtonModel::measure(
-            text,
-            Self::button_label(0).unwrap(),
-            action_width,
-            ButtonSize::Body,
-            role,
-        )
-        .height
-        .max(
-            ButtonModel::measure(
-                text,
-                Self::button_label(1).unwrap(),
-                action_width,
-                ButtonSize::Body,
-                role,
-            )
-            .height,
-        );
-        if stacked
-            && (modal.size.height - vertical_margin * 2.0).max(0.0)
-                < stacked_natural_height * 2.0 + focus_gap
-        {
-            stacked = false;
+        let available_raw_content_height = (raw_h - pad.min((raw_h * 0.5).max(0.0)) * 2.0).max(0.0);
+        if stacked {
+            let label_width =
+                (action_width - button_size.scaled_horizontal_inset(text, role) * 2.0).max(0.0);
+            let stacked_min_height = text
+                .measure(Self::button_label(0).unwrap(), role, label_width)
+                .height
+                .max(
+                    text.measure(Self::button_label(1).unwrap(), role, label_width)
+                        .height,
+                )
+                .max(action_height);
+            if available_raw_content_height < stacked_min_height * 2.0 + action_gap {
+                stacked = false;
+            }
         }
-        let stack_gap = if stacked {
-            focus_gap.min((modal.size.height / 4.0).max(0.0))
-        } else {
-            0.0
-        };
         let button_width = if stacked { action_width } else { inline_width };
         let measured_button_height = ButtonModel::measure(
             text,
             Self::button_label(0).unwrap(),
             button_width,
-            ButtonSize::Body,
+            button_size,
             role,
         )
         .height
@@ -364,11 +357,32 @@ impl DialogView {
                 text,
                 Self::button_label(1).unwrap(),
                 button_width,
-                ButtonSize::Body,
+                button_size,
                 role,
             )
             .height,
         );
+        let natural_button_h = action_height.max(measured_button_height);
+        let natural_actions_h = if stacked {
+            natural_button_h * 2.0 + action_gap
+        } else {
+            natural_button_h
+        };
+        let modal_height = (pad * 2.0 + title_size.height + gap + natural_actions_h).min(raw_h);
+        let modal = Rect::new(
+            preview.min_x() + (preview.size.width - modal_width) * 0.5,
+            preview.min_y() + (preview.size.height - modal_height) * 0.5,
+            modal_width,
+            modal_height,
+        );
+        let margin = pad.min((modal.size.width * 0.5).max(0.0));
+        let action_width = (modal.size.width - margin * 2.0).max(0.0);
+        let vertical_margin = pad.min((modal.size.height * 0.5).max(0.0));
+        let stack_gap = if stacked {
+            action_gap.min((modal.size.height / 4.0).max(0.0))
+        } else {
+            0.0
+        };
         let available_action_height = (modal.size.height - vertical_margin * 2.0).max(0.0);
         let maximum_button_height = if stacked {
             (available_action_height - stack_gap).max(0.0) * 0.5
@@ -395,7 +409,7 @@ impl DialogView {
                 )
             } else {
                 Rect::new(
-                    modal.min_x() + margin + index as f32 * (button_width + focus_gap),
+                    modal.min_x() + margin + index as f32 * (button_width + action_gap),
                     actions_top,
                     button_width,
                     action_h,
@@ -415,11 +429,10 @@ impl DialogView {
         }
         let title_clip = Rect::new(
             modal.min_x() + margin,
-            modal.min_y() + 20.0_f32.min(modal.size.height),
+            modal.min_y() + vertical_margin,
             (modal.size.width - margin * 2.0).max(0.0),
-            (actions_top - modal.min_y() - 32.0).max(0.0),
+            (actions_top - modal.min_y() - vertical_margin - gap).max(0.0),
         );
-        let title_size = text.measure(title, proposal::TextRole::UiHeading, title_clip.size.width);
         let title_rect = Rect::new(
             title_clip.min_x(),
             title_clip.min_y(),
@@ -467,7 +480,7 @@ impl DialogView {
                 visible_modal,
                 palette,
                 paint::ButtonVariant::Quiet,
-                ButtonSize::Body,
+                button_size,
                 role,
                 ButtonTextAlign::default(),
             );

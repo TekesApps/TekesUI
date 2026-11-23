@@ -166,7 +166,7 @@ fn popover_shell_and_owned_subtree_have_separate_actual_token_observations() {
                                     .unwrap()
                                     .component::<SwitchContent>()
                                     .unwrap()
-                                    .model
+                                    .model()
                                     .checked
                             );
                         }

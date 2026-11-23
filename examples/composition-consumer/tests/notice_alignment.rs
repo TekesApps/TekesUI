@@ -120,7 +120,7 @@ fn public_notices_align_first_line_with_coretext_and_keep_dismiss_actions() {
                         assert_eq!(action_align, ButtonTextAlign::Center);
                         let paragraph = text.paragraph(message, role, message_frame.size.width);
                         let first_height = paragraph.lines.first().unwrap().height as f32;
-                        let diameter = if banner { 12. } else { 10. };
+                        let diameter = proposal::metric("size", "size-dot").unwrap();
                         let marker = scene
                             .primitives()
                             .iter()

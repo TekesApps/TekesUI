@@ -220,7 +220,11 @@ fn menu_wheel_edge_rebound_advances_and_settles_through_owned_clock() {
             )
             .unwrap();
         let popup_inset = menu_popup_inset();
-        let document_height = layout.items.iter().map(|item| item.frame.size.height).sum::<f32>()
+        let document_height = layout
+            .items
+            .iter()
+            .map(|item| item.frame.size.height)
+            .sum::<f32>()
             + layout.items.len().saturating_sub(1) as f32 * menu_row_gap();
         let expected_rest = if delta < 0.0 {
             0.0
@@ -1114,6 +1118,106 @@ mod overlay_presence_tests {
             )
             .unwrap();
         assert_eq!(bounded.modal.size.width, 460.0);
+    }
+
+    #[test]
+    fn dialog_view_uses_16pt_padding_28_or_32pt_actions_and_dynamic_height() {
+        struct RoleText;
+        impl ButtonTextRenderer for RoleText {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, max: f32) -> Size {
+                Size::new(
+                    (value.len() as f32 * 7.0).min(max.max(0.0)),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        let mut text = RoleText;
+        let preview = Rect::new(0., 0., 600., 500.);
+        let palette = Palette::from(Theme::LIGHT);
+
+        let mut regular = DialogView::default();
+        regular.show(1);
+        let reg = regular
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                "Confirm?",
+                preview,
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+                false,
+            )
+            .unwrap();
+        assert_eq!(reg.buttons[0].frame.size.height, 32.0);
+        assert_eq!(
+            reg.buttons[1].frame.min_x() - reg.buttons[0].frame.max_x(),
+            tekes_ui_tokens::Spacing::Regular.value()
+        );
+        assert!(reg.modal.size.height < 200.0);
+
+        let mut compact = DialogView::default();
+        compact.show(1);
+        let cmp = compact
+            .render(
+                &mut Scene::new(),
+                &mut text,
+                "Confirm?",
+                preview,
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+                true,
+            )
+            .unwrap();
+        assert_eq!(cmp.buttons[0].frame.size.height, 28.0);
+
+        struct MultiLineTallText;
+        impl ButtonTextRenderer for MultiLineTallText {
+            fn measure(&mut self, value: &str, _: proposal::TextRole, max: f32) -> Size {
+                if value.len() > 20 {
+                    Size::new(max.min(280.0), 210.0)
+                } else {
+                    Size::new((value.len() as f32 * 7.0).min(max), 18.0)
+                }
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: tekes_ui_tokens::Rgba,
+            ) {
+            }
+        }
+        let mut tall = DialogView::default();
+        tall.show(1);
+        let tall_layout = tall
+            .render(
+                &mut Scene::new(),
+                &mut MultiLineTallText,
+                "A long heading spanning past the former 200pt cap",
+                preview,
+                None,
+                palette,
+                proposal::TextRole::UiBody,
+                false,
+            )
+            .unwrap();
+        assert!(tall_layout.modal.size.height > 200.0);
+        assert!(tall_layout.modal.size.height <= preview.size.height - 16.0);
     }
 
     #[test]

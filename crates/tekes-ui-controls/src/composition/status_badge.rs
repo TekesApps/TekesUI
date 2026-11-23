@@ -207,7 +207,7 @@ impl Component for BadgeContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
         let available = clean_size(available);
-        let pad_x = tekes_ui_tokens::Spacing::Tight.value();
+        let pad_x = tekes_ui_tokens::Spacing::Snug.value();
         let pad_y = tekes_ui_tokens::Spacing::Micro.value();
         let measured = text.measure(
             &self.label,
@@ -216,7 +216,12 @@ impl Component for BadgeContent {
         );
         MeasuredChild::new(Size::new(
             (measured.width + pad_x * 2.).min(available.width).max(0.),
-            (measured.height + pad_y * 2.).min(available.height).max(0.),
+            (measured
+                .height
+                .max(proposal::TextRole::UiCaption.style().line_height)
+                + pad_y * 2.)
+                .min(available.height)
+                .max(0.),
         ))
     }
     fn paint(
@@ -240,7 +245,7 @@ impl Component for BadgeContent {
         let radius = proposal::metric("radius", "radius-badge")
             .unwrap_or(4.)
             .min(frame.size.width.min(frame.size.height) * 0.5);
-        let pad_x = tekes_ui_tokens::Spacing::Tight.value();
+        let pad_x = tekes_ui_tokens::Spacing::Snug.value();
         let pad_y = tekes_ui_tokens::Spacing::Micro.value();
         let ix = pad_x.min(frame.size.width.max(0.) * 0.5);
         let iy = pad_y.min(frame.size.height.max(0.) * 0.5);
@@ -277,5 +282,37 @@ impl Component for BadgeContent {
         );
         s.description = self.description.clone();
         s
+    }
+}
+
+#[cfg(test)]
+mod badge_content_tests {
+    use super::*;
+
+    struct TinyText;
+    impl ButtonTextRenderer for TinyText {
+        fn measure(&mut self, label: &str, _: proposal::TextRole, max_width: f32) -> Size {
+            Size::new((label.len() as f32 * 6.0).min(max_width), 8.0)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: tekes_ui_tokens::Rgba,
+        ) {
+        }
+    }
+
+    #[test]
+    fn badge_content_uses_snug_horizontal_padding_and_caption_line_height_floor() {
+        let mut badge = BadgeContent::new("Tag").unwrap();
+        let size = badge.measure(&mut TinyText, Size::new(200.0, 100.0)).size;
+        let expected_w = 3.0 * 6.0 + tekes_ui_tokens::Spacing::Snug.value() * 2.0;
+        let expected_h = proposal::TextRole::UiCaption.style().line_height
+            + tekes_ui_tokens::Spacing::Micro.value() * 2.0;
+        assert_eq!(size, Size::new(expected_w, expected_h));
     }
 }

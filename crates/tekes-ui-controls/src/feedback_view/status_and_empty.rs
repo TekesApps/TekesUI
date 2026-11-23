@@ -236,6 +236,7 @@ pub struct EmptyStateView {
     pub(super) surface: Option<&'static str>,
     prepared: Option<EmptyStatePrepared>,
     pub(super) max_detail_width: Option<f32>,
+    outer_padding: Option<f32>,
 }
 /// Geometry owned by the original View; only prepare can replace it.
 #[derive(Clone, Copy, Debug)]
@@ -254,6 +255,25 @@ impl EmptyStateView {
 
     pub fn set_max_detail_width(&mut self, max_width: Option<f32>) {
         self.max_detail_width = max_width;
+    }
+
+    pub fn with_outer_padding(mut self, padding: Option<f32>) -> Self {
+        self.outer_padding = padding;
+        self
+    }
+
+    pub fn set_outer_padding(&mut self, padding: Option<f32>) {
+        self.outer_padding = padding;
+    }
+
+    pub(crate) fn max_detail_width_limit(&self) -> Option<f32> {
+        self.max_detail_width
+    }
+
+    pub(crate) fn resolved_outer_padding(&self) -> f32 {
+        self.outer_padding
+            .filter(|p| p.is_finite() && *p >= 0.)
+            .unwrap_or_else(|| tekes_ui_tokens::Spacing::Regular.value())
     }
 
     pub fn set_surface(
@@ -302,9 +322,26 @@ impl EmptyStateView {
         role: proposal::TextRole,
         max_detail_width: Option<f32>,
     ) -> Size {
-        let pad = tekes_ui_tokens::Spacing::Regular.value();
+        Self::measure_with_options(
+            text,
+            model,
+            width,
+            role,
+            tekes_ui_tokens::Spacing::Regular.value(),
+            max_detail_width,
+        )
+    }
+
+    pub(crate) fn measure_with_options(
+        text: &mut impl ButtonTextRenderer,
+        model: &EmptyState,
+        width: f32,
+        role: proposal::TextRole,
+        pad: f32,
+        max_detail_width: Option<f32>,
+    ) -> Size {
         let (title, detail, action) =
-            Self::measured_content_with_limit(text, model, width, role, max_detail_width);
+            Self::measured_content_with_limit(text, model, width, role, pad, max_detail_width);
         let content_bottom = action
             .map_or(detail.max_y(), |r| r.max_y())
             .max(title.max_y());
@@ -316,9 +353,9 @@ impl EmptyStateView {
         model: &EmptyState,
         width: f32,
         role: proposal::TextRole,
+        pad: f32,
         max_detail_width: Option<f32>,
     ) -> (Rect, Rect, Option<Rect>) {
-        let pad = tekes_ui_tokens::Spacing::Regular.value();
         let title_detail_gap = tekes_ui_tokens::Spacing::Regular.value();
         let detail_action_gap = tekes_ui_tokens::Spacing::Relaxed.value();
         let content_width = (width - pad * 2.).max(0.);
@@ -337,12 +374,14 @@ impl EmptyStateView {
             .map_or(content_width, |w| content_width.min(w.max(0.)));
         let detail_h = text.measure(&model.detail, role, detail_width).height;
         let detail = Rect::new(pad, detail_y, detail_width, detail_h);
+        let min_action_height =
+            proposal::metric("size", "size-row-height").expect("empty state action min height");
         let action = model.action.as_ref().map(|label| {
             let measured = ButtonModel::measure(text, label, content_width, ButtonSize::Body, role);
             let width = measured.width.min(content_width);
             let height = ButtonModel::measure(text, label, width, ButtonSize::Body, role)
                 .height
-                .max(34.);
+                .max(min_action_height);
             let after_detail = if detail_h > 0. {
                 detail.max_y() + detail_action_gap
             } else if title_h > 0. {
@@ -387,7 +426,7 @@ impl EmptyStateView {
         role: proposal::TextRole,
     ) -> ViewLayout {
         let visible = clipped(frame, clip);
-        let pad = tekes_ui_tokens::Spacing::Regular.value();
+        let pad = self.resolved_outer_padding();
         let x = frame.min_x() + pad;
         let title_y = frame.min_y() + pad;
         let content_width = (frame.size.width - pad * 2.).max(0.);
@@ -396,6 +435,7 @@ impl EmptyStateView {
             model,
             frame.size.width,
             role,
+            pad,
             self.max_detail_width,
         );
         let title_width = title.size.width;
