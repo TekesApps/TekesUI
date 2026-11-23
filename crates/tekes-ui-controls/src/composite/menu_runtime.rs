@@ -302,8 +302,8 @@ impl MenuRuntime {
         }
         heights.resize(model.items.count, min_row_height);
         self.row_heights = heights;
-        let natural_content =
-            self.row_heights.iter().take(count).sum::<f32>() + count.saturating_sub(1) as f32 * row_gap;
+        let natural_content = self.row_heights.iter().take(count).sum::<f32>()
+            + count.saturating_sub(1) as f32 * row_gap;
         let (popup, header_frame, inner_viewport) = menu_popup_geometry(
             anchor,
             natural_size,
@@ -438,18 +438,19 @@ impl MenuRuntime {
                 && button.state.focused
                 && button.state.focus_visible
                 && !button.state.disabled
-                && let Some(focus_color) = paint::button_surface_colors_with_tone_and_selection_progress(
-                    palette,
-                    "popover",
-                    button.state,
-                    paint::ButtonVariant::Quiet,
-                    0.0,
-                    0.0,
-                    button.tone,
-                    button.transparent_rest,
-                    button.selection_progress_override,
-                )
-                .focus
+                && let Some(focus_color) =
+                    paint::button_surface_colors_with_tone_and_selection_progress(
+                        palette,
+                        "popover",
+                        button.state,
+                        paint::ButtonVariant::Quiet,
+                        0.0,
+                        0.0,
+                        button.tone,
+                        button.transparent_rest,
+                        button.selection_progress_override,
+                    )
+                    .focus
             {
                 deferred_focus = Some((item, rows_visible, focus_color));
             }

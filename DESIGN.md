@@ -16,6 +16,11 @@
 
 当前 `v0.4.9` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
 
+### 全量组件边距、行高与几何尺寸审计收敛（`v0.4.9` / #397–#405）
+
+- **菜单、表单与集合行密度收敛（#398, #399, #400）**：将菜单项（`Menu`/`Select`/`ComboBox`/`CommandPalette`）收敛至 `28pt`（`size-button-sm`）、`6pt` 垂直内边距及 `9pt` 分隔线（`#398`）；修复 `c-checkbox-row-min = 32pt` 并对齐表单控件 `32pt` 基准、`FieldView` 零空消息留白、Clear `6pt` 内缩圆角与 `GroupedFormRowContent` `40pt`（`#399`）；将 `ListView`/`TreeView`/`DataTableView` 默认行高统一至 `32pt`（紧凑模式 `24pt`）并收敛 `KeyValueTableContent` 与缩进/单元留白（`#400`）。
+- **阅读、数值、导航、浮层与工具栏/宿主收敛（#401–#405）**：统一 `Diff`/`CodeBlockView`/`MarkdownView` `2pt`/`12pt` 间距（`#401`）；扩大 `NumberFieldContent` `24pt` 步进热区并移除 `StepperContent` `198/48` 魔数（`#402`）；收敛 `Link` `24pt`、`Breadcrumb` `4pt/8pt`、统一 `Disclosure` `16pt/28pt` 与 `Tabs`/`TabStripContent` `28/32pt` 及 `SegmentedControlView` 居中标签（`#403`）；对齐 `DialogView`/`DialogContent` 几何，收敛 `TooltipView` `8/4/6`、`PopoverView`、`Toast`/`Banner`（`6pt` 圆点 / `32pt` 行高）、`EmptyStateContent` 零外留白与 `Progress`/`Skeleton`/`Badge` 尺寸 token（`#404`）；修复 `Button::measure_button` `leading_content_inset`、对齐 `ToolbarGroup`/`ToolbarContent` `28pt`/`m.inset`、`IconView` `16pt`、`Chart` 标题全行高、`SplitView`/`MediaViewer`/`paint.rs` fallback 与 `AppHost` `proposal::SIDEBAR_MIN_WIDTH`（`224pt`）（`#405`）。物理窗口渲染、GPU 像素、实机 IME、VoiceOver 与 120Hz 性能仍作为独立未验证边界保留。
+
 ### Gold7 Token 与交互契约审计收敛（`v0.4.9` / #388–#395）
 
 - **表面对比与告警/浮层语义（#388, #389, #390）**：上调暗色高层交互填充（`button-hover` / `button-pressed` / `row-selection`）与 `dark-ic` `secondary-text` / `tertiary-text` 梯度以消除悬停塌缩；修正 `notice-marker-toast-warning` 为 `status-running`（区分 Warning 琥珀色与 Error 红色），并为 `ToastView` 与 `TooltipView`（`"hint"` 表面）统一接入 `SurfaceKind::Floating`（常规模式投影、`-ic` 模式 1pt 边界）与 `OverlayPresence` 进退场动画。
