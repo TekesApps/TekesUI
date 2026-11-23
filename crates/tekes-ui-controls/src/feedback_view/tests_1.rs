@@ -1155,7 +1155,7 @@ fn number_field_has_symmetric_stepper_gaps() {
         "left_gap={left_gap} vs right_gap={right_gap}"
     );
     assert!(
-        (left_gap - tekes_ui_tokens::Spacing::Relaxed.value()).abs() <= 0.01,
+        (left_gap - tekes_ui_tokens::Spacing::Regular.value()).abs() <= 0.01,
         "left_gap={left_gap}"
     );
 }

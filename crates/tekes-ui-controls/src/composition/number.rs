@@ -245,6 +245,20 @@ impl NumberFieldContent {
         let scale = text.backing_scale().max(1.);
         (width * scale).ceil() / scale
     }
+    fn step_button_width(
+        &mut self,
+        index: usize,
+        t: &mut dyn ButtonTextRenderer,
+        available: Size,
+    ) -> f32 {
+        let target = proposal::metric("size", "size-inline-action").expect("stepper hit target")
+            * crate::button_typography_scale(t, proposal::TextRole::UiBody);
+        self.buttons[index]
+            .measure(t, available)
+            .size
+            .width
+            .max(target)
+    }
     pub fn set_alignment(&mut self, alignment: TextSurfaceAlignment) {
         self.editor.surface.alignment = alignment;
     }
@@ -571,46 +585,53 @@ impl Component for NumberFieldContent {
         self.finish_edit_event(r)
     }
     fn measure(&mut self, t: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        let minus = self.buttons[0].measure(t, a).size;
-        let plus = self.buttons[1].measure(t, a).size;
-        let gap = Spacing::Tight.value().min(a.width.max(0.) / 4.);
+        let outer_w = a.width.max(0.);
+        let outer_limit = outer_w / 3.;
+        let minus_h = self.buttons[0].measure(t, a).size.height;
+        let plus_h = self.buttons[1].measure(t, a).size.height;
+        let minus_w = self.step_button_width(0, t, a).min(outer_limit);
+        let plus_w = self.step_button_width(1, t, a).min(outer_limit);
+        let gap = Spacing::Tight.value().min(outer_w / 4.);
+        let input_w = self.input_width(t);
+        let natural_total = input_w + minus_w + plus_w + 2. * Spacing::Tight.value();
+        let (w0, w1) = if outer_w >= natural_total {
+            (minus_w, plus_w)
+        } else {
+            let button_limit = ((outer_w - 2. * gap).max(0.) / 3.).max(0.);
+            (minus_w.min(button_limit), plus_w.min(button_limit))
+        };
         let field = self
             .editor
             .measure(
                 t,
-                Size::new(
-                    (a.width - minus.width - plus.width - 2. * gap).max(0.),
-                    a.height,
-                ),
+                Size::new((outer_w - w0 - w1 - 2. * gap).max(0.), a.height),
             )
             .size;
         MeasuredChild::new(Size::new(
-            (self.input_width(t) + minus.width + plus.width + 2. * gap).min(a.width),
+            (input_w + w0 + w1 + 2. * Spacing::Tight.value()).min(outer_w),
             field
                 .height
-                .max(minus.height)
-                .max(plus.height)
+                .max(minus_h)
+                .max(plus_h)
                 .max(proposal::metric("size", "size-button-md").expect("JSON input minimum")),
         ))
     }
-    fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        let mut f = f;
+    fn arrange(&mut self, t: &mut dyn ButtonTextRenderer, mut f: Rect, c: Rect) {
+        let outer_w = f.size.width.max(0.);
+        let outer_limit = outer_w / 3.;
         let width = self.input_width(t);
-        let minus = self.buttons[0].measure(t, f.size).size.width;
-        let plus = self.buttons[1].measure(t, f.size).size.width;
-        f.size.width = (width + minus + plus + 2. * Spacing::Tight.value()).min(f.size.width);
-        let gap = Spacing::Tight.value().min(f.size.width.max(0.) / 4.);
-        let button_limit = ((f.size.width - 2. * gap).max(0.) / 3.).max(0.);
-        let w0 = self.buttons[0]
-            .measure(t, f.size)
-            .size
-            .width
-            .min(button_limit);
-        let w1 = self.buttons[1]
-            .measure(t, f.size)
-            .size
-            .width
-            .min(button_limit);
+        let minus = self.step_button_width(0, t, f.size).min(outer_limit);
+        let plus = self.step_button_width(1, t, f.size).min(outer_limit);
+        let nominal_gap = Spacing::Tight.value();
+        let natural_total = width + minus + plus + 2. * nominal_gap;
+        let (gap, w0, w1) = if outer_w >= natural_total {
+            f.size.width = natural_total;
+            (nominal_gap, minus, plus)
+        } else {
+            let gap = nominal_gap.min(outer_w / 4.);
+            let button_limit = ((outer_w - 2. * gap).max(0.) / 3.).max(0.);
+            (gap, minus.min(button_limit), plus.min(button_limit))
+        };
         let editor_width = (f.size.width - w0 - w1 - 2. * gap).max(0.);
         self.editor_frame = Rect::new(f.min_x() + w0 + gap, f.min_y(), editor_width, f.size.height);
         self.frames = [
@@ -922,5 +943,30 @@ mod geometry_tests {
             field.pointer_event(&to_gap).changed,
             "leaving step button into 6pt gap must report changed=true"
         );
+    }
+
+    #[test]
+    fn stepper_hit_targets_meet_24pt_action_minimum_and_respect_narrow_third_cap() {
+        let mut field =
+            NumberFieldContent::new("Count", 2., 0., 9., 1., DecimalNumberFormat::default())
+                .unwrap();
+        let frame = Rect::new(0., 0., 300., 32.);
+        let measured = field.measure(&mut Text, frame.size).size;
+        field.arrange(&mut Text, frame, frame);
+        let parts = field.semantic_parts();
+        assert!(parts[0].frame.size.width >= 24.0);
+        assert!(parts[1].frame.size.width >= 24.0);
+        assert!(measured.width >= parts[0].frame.size.width + parts[1].frame.size.width);
+
+        for narrow in [42., 90., 300.] {
+            let narrow_frame = Rect::new(0., 0., narrow, 32.);
+            field.arrange(&mut Text, narrow_frame, narrow_frame);
+            assert!(
+                field
+                    .semantic_parts()
+                    .iter()
+                    .all(|part| part.frame.size.width <= narrow / 3. + 0.01)
+            );
+        }
     }
 }
