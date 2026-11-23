@@ -207,7 +207,7 @@ Gallery 的作用域顺序为搜索框、过滤结果中的侧栏当前项、页
 
 ## 2026-11-23 全量组件边距与行高 Figma 对齐收敛（Issues #397–#405）
 
-对 TekesUI (`v0.4.9`) 依据 Figma 设计基准对全量组件的外边距、内边距、行高、热区与分隔间距完成专项审计与收敛（总单 `#397` 及领域子单 `#398`–`#405`，工作分支 `menu_item_height_audit`）：
+对 TekesUI（基于 `v0.4.9` 审计、合入 `v0.4.11` 交付分支 `delivery/menu-geometry-audit-v0.4.11`）依据 Figma 设计基准对全量组件的外边距、内边距、行高、热区与分隔间距完成专项审计与收敛（总单 `#397` 及领域子单 `#398`–`#405`，原开发分支 `menu_item_height_audit`）：
 
 1. **Issue #398 (Menu)**：菜单项最低行高从 `36pt` 收敛为 `size-button-sm`（`28pt`）、行内垂直留白收敛至 `Spacing::Snug`（`6pt`）、弹出框内边距/行距统一至 `Spacing::Tight`（`4pt`）/`Spacing::Micro`（`2pt`），菜单分隔线收敛至 `4pt + 1pt + 4pt = 9pt`，并清理了 `MenuContent`/`Select`/`ComboBox`/`CommandPalette` 的重复菜单度量与硬编码 fallback。
 2. **Issue #399 (Forms / FieldView / Selection / Scrollbar / Settings)**：修正 `c-checkbox-row-min`（`36pt -> size-row-height 32pt`）与表单行高（`Select`/`Checkbox`/`RadioGroup`/`Switch`/`Slider` 对齐 `32pt` 及 `size`/`spacing` token）；消除 `FieldView` 空消息垂直幽灵留白，收敛 Clear 按钮内缩圆角 `6pt`、滚动条 `32pt` 最小滑块高、`GroupedFormRowContent` `40pt` 行高与 `FieldPresentation::emphasized_form()`。

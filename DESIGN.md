@@ -14,18 +14,18 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.10` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.11` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 全量组件边距、行高与几何尺寸审计收敛（`v0.4.11` / #397–#405）
+
+- **菜单、表单与集合行密度收敛（#398, #399, #400）**：将菜单项（`Menu`/`Select`/`ComboBox`/`CommandPalette`）收敛至 `28pt`（`size-button-sm`）、`6pt` 垂直内边距及 `9pt` 分隔线（`#398`）；修复 `c-checkbox-row-min = 32pt` 并对齐表单控件 `32pt` 基准、`FieldView` 零空消息留白、Clear `6pt` 内缩圆角与 `GroupedFormRowContent` `40pt`（`#399`）；将 `ListView`/`TreeView`/`DataTableView` 默认行高统一至 `32pt`（紧凑模式 `24pt`）并收敛 `KeyValueTableContent` 与缩进/单元留白（`#400`）。
+- **阅读、数值、导航、浮层与工具栏/宿主收敛（#401–#405）**：统一 `Diff`/`CodeBlockView`/`MarkdownView` `2pt`/`12pt` 间距（`#401`）；扩大 `NumberFieldContent` `24pt` 步进热区并移除 `StepperContent` `198/48` 魔数（`#402`）；收敛 `Link` `24pt`、`Breadcrumb` `4pt/8pt`、统一 `Disclosure` `16pt/28pt` 与 `Tabs`/`TabStripContent` `28/32pt` 及 `SegmentedControlView` 居中标签（`#403`）；对齐 `DialogView`/`DialogContent` 几何，收敛 `TooltipView` `8/4/6`、`PopoverView`、`Toast`/`Banner`（`6pt` 圆点 / `32pt` 行高）、`EmptyStateContent` 零外留白与 `Progress`/`Skeleton`/`Badge` 尺寸 token（`#404`）；修复 `Button::measure_button` `leading_content_inset`、对齐 `ToolbarGroup`/`ToolbarContent` `28pt`/`m.inset`、`IconView` `16pt`、`Chart` 标题全行高、`SplitView`/`MediaViewer`/`paint.rs` fallback 与 `AppHost` `proposal::SIDEBAR_MIN_WIDTH`（`224pt`）（`#405`）。物理窗口渲染、GPU 像素、实机 IME、VoiceOver 与 120Hz 性能仍作为独立未验证边界保留。
 
 ### macOS 应用/窗口生命周期与层级 ⌘W 对齐（`v0.4.10` / #406）
 
 - **原生驻留生命周期与 Opt-In 关窗退出**：`tekes_ui_platform_macos::AppConfig::default().quit_after_last_window_closed` 调整为 `false`（新增 `.name(...)` / `.quit_after_last_window_closed(...)` 构建器），主窗口关闭时进入 dormant 隐藏状态、停止 DisplayLink 与无效重绘、投递 `FocusChanged(false)`、撤回 AX publication 并在 `WindowWake` 中排队唤醒信号，应用继续驻留 Dock 与菜单栏；仅在 `⌘Q` / `NSApp.terminate:` 时执行 `WindowHandler::allows_app_quit()` 校验并完整 teardown，保留显式 `.quit_after_last_window_closed(true)` 给一次性工具或测试入口。
 - **Dock / `⌘N` 原生重开与层级 `⌘W`**：`AppDelegate` 实现 `applicationShouldHandleReopen:hasVisibleWindows:` 并新增标准 `File → New Window (⌘N)` 菜单项以恢复隐藏主窗口、Key Window 焦点、渲染与 AX publication 并保留已挂载的 `LocalContainer` 状态；`WindowHandler::{close_menu_title, handle_close_shortcut}` 与 `File` 菜单动态标题（`Close Tab` / `Close Window`）实现原生 `⌘W` 层级路由——辅助/独占窗口优先关闭（保留 Settings 未保存草稿拦截），AppHost 主窗口按 `⌘W` 优先关闭当前活跃可关闭 `Others` 容器 Tab 而红色关闭按钮始终仅关闭主窗口。
 - **`AppWindow` 身份配置与 Selftest 扩展**：`AppWindow` 新增 `.app_name(...)`、`.window_title(...)` 与 `.quit_after_last_window_closed(...)` 构建器替换硬编码 `"TekesUI AppHost Prototype"`，并扩展 `tekes_ui_platform_macos::selftest::Action::{Quit, Reopen, RedrawMark, ExpectLifecycle}` 与原生测试（`lifecycle_native`、`macos_lifecycle_native`）。
-
-### 全量组件边距、行高与几何尺寸审计收敛（`v0.4.9` / #397–#405）
-
-- **菜单、表单与集合行密度收敛（#398, #399, #400）**：将菜单项（`Menu`/`Select`/`ComboBox`/`CommandPalette`）收敛至 `28pt`（`size-button-sm`）、`6pt` 垂直内边距及 `9pt` 分隔线（`#398`）；修复 `c-checkbox-row-min = 32pt` 并对齐表单控件 `32pt` 基准、`FieldView` 零空消息留白、Clear `6pt` 内缩圆角与 `GroupedFormRowContent` `40pt`（`#399`）；将 `ListView`/`TreeView`/`DataTableView` 默认行高统一至 `32pt`（紧凑模式 `24pt`）并收敛 `KeyValueTableContent` 与缩进/单元留白（`#400`）。
-- **阅读、数值、导航、浮层与工具栏/宿主收敛（#401–#405）**：统一 `Diff`/`CodeBlockView`/`MarkdownView` `2pt`/`12pt` 间距（`#401`）；扩大 `NumberFieldContent` `24pt` 步进热区并移除 `StepperContent` `198/48` 魔数（`#402`）；收敛 `Link` `24pt`、`Breadcrumb` `4pt/8pt`、统一 `Disclosure` `16pt/28pt` 与 `Tabs`/`TabStripContent` `28/32pt` 及 `SegmentedControlView` 居中标签（`#403`）；对齐 `DialogView`/`DialogContent` 几何，收敛 `TooltipView` `8/4/6`、`PopoverView`、`Toast`/`Banner`（`6pt` 圆点 / `32pt` 行高）、`EmptyStateContent` 零外留白与 `Progress`/`Skeleton`/`Badge` 尺寸 token（`#404`）；修复 `Button::measure_button` `leading_content_inset`、对齐 `ToolbarGroup`/`ToolbarContent` `28pt`/`m.inset`、`IconView` `16pt`、`Chart` 标题全行高、`SplitView`/`MediaViewer`/`paint.rs` fallback 与 `AppHost` `proposal::SIDEBAR_MIN_WIDTH`（`224pt`）（`#405`）。物理窗口渲染、GPU 像素、实机 IME、VoiceOver 与 120Hz 性能仍作为独立未验证边界保留。
 
 ### Gold7 Token 与交互契约审计收敛（`v0.4.9` / #388–#395）
 
