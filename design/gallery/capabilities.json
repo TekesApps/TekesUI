@@ -3999,7 +3999,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -4416,7 +4416,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -4833,7 +4833,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -5250,7 +5250,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -5667,7 +5667,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -6084,7 +6084,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -6495,7 +6495,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -6906,7 +6906,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -7317,7 +7317,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -7722,7 +7722,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -8163,7 +8163,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -26755,7 +26755,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -27192,7 +27192,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -27629,7 +27629,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -28066,7 +28066,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -28503,7 +28503,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -28940,7 +28940,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -29371,7 +29371,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -29802,7 +29802,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -30239,7 +30239,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -30676,7 +30676,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -31101,7 +31101,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -31550,7 +31550,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -32266,7 +32266,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -32698,7 +32698,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -33130,7 +33130,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -33562,7 +33562,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -33994,7 +33994,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -34426,7 +34426,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -34846,7 +34846,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -35290,7 +35290,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -47895,7 +47895,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -48332,7 +48332,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -48769,7 +48769,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -49206,7 +49206,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -49643,7 +49643,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -50080,7 +50080,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -50511,7 +50511,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -50942,7 +50942,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -51379,7 +51379,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -51816,7 +51816,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -52241,7 +52241,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -52690,7 +52690,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -56286,7 +56286,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -56703,7 +56703,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -57120,7 +57120,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -57537,7 +57537,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -57954,7 +57954,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -58371,7 +58371,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -58782,7 +58782,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -59193,7 +59193,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -59604,7 +59604,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -60009,7 +60009,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -60507,7 +60507,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -61193,7 +61193,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -61610,7 +61610,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -62027,7 +62027,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -62444,7 +62444,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -62861,7 +62861,7 @@
                 "path": "examples/composition-consumer/Cargo.toml"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -63266,7 +63266,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -63696,7 +63696,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -64394,7 +64394,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -64826,7 +64826,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -65258,7 +65258,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -65690,7 +65690,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -66122,7 +66122,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -66554,7 +66554,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -66980,7 +66980,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -67406,7 +67406,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -67838,7 +67838,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -68270,7 +68270,7 @@
                 "path": "design/tokens.json"
               },
               {
-                "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+                "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
                 "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
                 "path": "examples/composition-consumer/src/choice_status.rs"
               },
@@ -68690,7 +68690,7 @@
             "path": "design/tokens.json"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -69133,7 +69133,7 @@
               "path": "design/tokens.json"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -78214,7 +78214,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -78649,7 +78649,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },
@@ -80645,7 +80645,7 @@
             "path": "examples/composition-consumer/Cargo.toml"
           },
           {
-            "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+            "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
             "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
             "path": "examples/composition-consumer/src/choice_status.rs"
           },
@@ -81111,7 +81111,7 @@
               "path": "examples/composition-consumer/Cargo.toml"
             },
             {
-              "actual_sha256": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+              "actual_sha256": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
               "expected_sha256": "a61c6df74952b17acc31335d1934678d158809e04fdced9717bc17612e56d4f8",
               "path": "examples/composition-consumer/src/choice_status.rs"
             },

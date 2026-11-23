@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "131a89e16aedfa8afb9259e760e6aff50cc1b282",
+  "head": "83e44b7bcf0a44c89b1fc93cdceda447e045b29d",
   "source": "Incremental #294 source review on fedb69b6: affected original Gallery fixtures and AppHost/Controls integration; scoped CPU checks through Check380 and release build Check381 passed. Original programs and failed checks retain identity; r3 native acceptance and public delivery remain separate.",
   "audited_at": "2026-11-23",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
@@ -2188,7 +2188,7 @@
     "examples/composition-consumer/Cargo.toml": "0f3becd46122911e118c0012048ca607133e3a5992440bb0748db755827938f3",
     "examples/composition-consumer/examples/native.rs": "dcdb15db3055e2576b05cc485b095ca16d22d7c3f1b476b8a122218f1760f44a",
     "examples/composition-consumer/examples/support/native_key.rs": "6932a589bce50e2f4365c780c67ab0c467a126c9a4677ad23eeda132f146adae",
-    "examples/composition-consumer/src/choice_status.rs": "4afd63ee69f8dea568a43f9b761c12dbda84e25238555f3e77896b1819713a29",
+    "examples/composition-consumer/src/choice_status.rs": "ce62ff9188fb5f7983f7b6fbe358ab4485bd75719c8b39a61454de7a3e8cadca",
     "examples/composition-consumer/src/combo_status.rs": "69dbe16efe09e02f0b44246d7070459b81dd95056ef2f9436fe9765f51a14e07",
     "examples/composition-consumer/src/command_status.rs": "dda8c70a4accc1aaf3a9e793fb27e8fd95c55b9285e69ddbc535d8813e1fda5d",
     "examples/composition-consumer/src/compact_actions.rs": "5251e11c51b3d9460ce35901cb5c39f633337aaaff375dad08c0290f9aea93c2",
