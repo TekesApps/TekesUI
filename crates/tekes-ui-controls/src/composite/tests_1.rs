@@ -589,20 +589,32 @@ fn keyboard_menu_reveals_focus_ring_inside_popup_padding() {
     let ring_width = proposal::metric("stroke", "c-focus-width").unwrap();
     let ring_gap = proposal::metric("spacing", "c-focus-offset").unwrap();
     let ring_outset = ring_width + ring_gap;
-    let minimum_row_gap = focus_reveal_outset(1.0).max(4.0);
     assert!(layout.items.windows(2).all(|rows| {
-        rows[1].frame.min_y() - rows[0].frame.max_y() + f32::EPSILON >= minimum_row_gap
+        (rows[1].frame.min_y() - rows[0].frame.max_y() - menu_row_gap()).abs() < 0.001
     }));
     assert!(layout.scroll_offset > 0.0);
     assert!(focused.focus_bounds().min_y() >= layout.popup.min_y() + 1.0);
     assert!(focused.focus_bounds().max_y() <= layout.popup.max_y() - 1.0);
-    assert!(
-        scene.primitives().iter().any(|primitive| {
+    let last_row_quad = scene
+        .primitives()
+        .iter()
+        .rposition(|primitive| {
             matches!(primitive, tekes_ui_scene::Primitive::Quad(q)
-            if (q.rect.min_y() - (focused.frame.min_y() - ring_outset)).abs() < 0.01
-                && q.rect.size.width > focused.frame.size.width)
-        }),
-        "keyboard-selected menu row paints its focus ring"
+                if q.rect.size.width == focused.frame.size.width)
+        })
+        .expect("row quads present");
+    let focus_quad = scene
+        .primitives()
+        .iter()
+        .position(|primitive| {
+            matches!(primitive, tekes_ui_scene::Primitive::Quad(q)
+                if (q.rect.min_y() - (focused.frame.min_y() - ring_outset)).abs() < 0.01
+                    && q.rect.size.width > focused.frame.size.width)
+        })
+        .expect("keyboard-selected menu row paints its focus ring");
+    assert!(
+        focus_quad > last_row_quad,
+        "menu keyboard focus ring must paint after all sibling rows"
     );
 }
 
@@ -711,8 +723,8 @@ fn menu_rows_use_selected_fill_without_strokes_and_keep_popup_and_keyboard_focus
 
 #[test]
 fn menu_row_measurement_uses_actual_focus_safe_inner_width() {
-    let inset = proposal::metric("spacing", "space-relaxed").unwrap();
-    let current_label_width = 120.0 - focus_reveal_outset(1.0) * 2.0 - inset * 2.0;
+    let inset = menu_row_horizontal_inset(&mut FixedText, proposal::TextRole::UiBody);
+    let current_label_width = 120.0 - menu_popup_inset() * 2.0 - inset * 2.0;
     let mut view = MenuView::new(1);
     view.show(1);
     let mut scene = Scene::new();
@@ -731,7 +743,7 @@ fn menu_row_measurement_uses_actual_focus_safe_inner_width() {
             false,
         )
         .expect("open menu layout");
-    assert_eq!(layout.items[0].frame.size.height, 48.0);
+    assert_eq!(layout.items[0].frame.size.height, 52.0);
     assert_eq!(layout.items[0].content.size.width, current_label_width);
 }
 
@@ -739,18 +751,20 @@ fn menu_row_measurement_uses_actual_focus_safe_inner_width() {
 fn short_menu_shrinks_to_its_widest_button_row_and_focus_gutters() {
     let labels = ["System", "Light", "Dark"];
     let max_width = 420.0;
-    let inset = focus_reveal_outset(1.0);
+    let inset = menu_popup_inset();
     let max_inner_width = (MENU_MAX_WIDTH - inset * 2.0).max(0.0);
     let mut text = FixedText;
+    let horiz = menu_row_horizontal_inset(&mut text, proposal::TextRole::UiBody);
     let preferred_row_width = labels
         .iter()
         .map(|label| {
-            ButtonModel::measure(
+            ButtonModel::measure_with_insets(
                 &mut text,
                 label,
                 max_inner_width,
-                size_role(false),
+                menu_size_role(false),
                 proposal::TextRole::UiBody,
+                Some((horiz, horiz)),
             )
             .width
         })
@@ -833,7 +847,7 @@ fn menu_natural_width_includes_checked_and_submenu_indicator_columns() {
 
 #[test]
 fn menu_header_keeps_its_allocated_width_when_rows_are_short() {
-    let inset = focus_reveal_outset(1.0);
+    let inset = menu_popup_inset();
     assert_eq!(
         MenuView::header_content_width(&mut FixedText, 420.0),
         MENU_MAX_WIDTH - inset * 2.0,
@@ -891,7 +905,7 @@ fn wider_header_remeasures_long_menu_row_at_final_popup_width() {
     let header = Size::new(250.0, 32.0);
     let anchor = Rect::new(20.0, 20.0, 80.0, 34.0);
     let viewport = Rect::new(0.0, 0.0, 360.0, 320.0);
-    let inset = focus_reveal_outset(1.0);
+    let inset = menu_popup_inset();
 
     let mut natural_text = IntrinsicWrappingText { wraps_below };
     let natural = MenuView::measure(
@@ -901,20 +915,19 @@ fn wider_header_remeasures_long_menu_row_at_final_popup_width() {
         proposal::TextRole::UiBody,
         false,
     );
+    let horiz = menu_row_horizontal_inset(&mut natural_text, proposal::TextRole::UiBody);
     assert!(natural.width - inset * 2.0 < header.width);
-    assert!(
-        natural.width - inset * 2.0 - proposal::metric("spacing", "space-relaxed").unwrap() * 2.0
-            < wraps_below
-    );
-    let natural_row_height = ButtonModel::measure(
+    assert!(natural.width - inset * 2.0 - horiz * 2.0 < wraps_below);
+    let natural_row_height = ButtonModel::measure_with_insets(
         &mut natural_text,
         label,
         natural.width - inset * 2.0,
-        size_role(false),
+        menu_size_role(false),
         proposal::TextRole::UiBody,
+        Some((horiz, horiz)),
     )
     .height
-    .max(36.0);
+    .max(menu_min_row_height(false));
 
     let mut text = IntrinsicWrappingText { wraps_below };
     let mut view = MenuView::new_external();
@@ -942,22 +955,23 @@ fn wider_header_remeasures_long_menu_row_at_final_popup_width() {
         .expect("header menu layout");
 
     let final_inner_width = (layout.popup.size.width - inset * 2.0).max(0.0);
-    let expected_height = ButtonModel::measure(
+    let expected_height = ButtonModel::measure_with_insets(
         &mut text,
         label,
         final_inner_width,
-        size_role(false),
+        menu_size_role(false),
         proposal::TextRole::UiBody,
+        Some((horiz, horiz)),
     )
     .height
-    .max(36.0);
+    .max(menu_min_row_height(false));
     assert!(
         natural_row_height > expected_height,
         "label wraps at natural width"
     );
     assert_eq!(layout.popup.size.width, header.width + inset * 2.0);
     assert_eq!(layout.items[0].frame.size.height, expected_height);
-    assert_eq!(layout.items[0].frame.size.height, 36.0);
+    assert_eq!(layout.items[0].frame.size.height, 32.0);
 }
 
 #[test]
@@ -1094,4 +1108,228 @@ fn tabs_cancel_space_when_focus_moves_before_key_up() {
     view.clear_focus();
     assert_eq!(view.key(ControlKey::Space, false), None);
     assert_eq!(view.selected(), 1);
+}
+
+#[test]
+fn menu_geometry_converges_row_heights_zero_gap_separator_and_concentric_radii() {
+    struct CanonicalText(f32);
+    impl ButtonTextRenderer for CanonicalText {
+        fn backing_scale(&self) -> f32 {
+            self.0
+        }
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            let width = (text.chars().count() as f32 * 7.0).min(max_width.max(0.0));
+            Size::new(width, role.style().line_height)
+        }
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            _text: &str,
+            _role: proposal::TextRole,
+            _rect: Rect,
+            _align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+        }
+    }
+    let labels = ["Cut", "Copy", "Divider", "Paste"];
+    for scale in [1.0, 2.0] {
+        for (compact, expected_height) in [(false, 28.0), (true, 24.0)] {
+            let mut view = MenuView::new(labels.len());
+            view.set_row_styles(vec![
+                MenuRowStyle::default(),
+                MenuRowStyle::default(),
+                MenuRowStyle {
+                    separator: true,
+                    ..Default::default()
+                },
+                MenuRowStyle::default(),
+            ]);
+            view.show(1);
+            let mut scene = Scene::new();
+            let layout = view
+                .render(
+                    &mut scene,
+                    &mut CanonicalText(scale),
+                    &labels,
+                    Rect::new(12.0, 12.0, 120.0, 32.0),
+                    Rect::new(0.0, 0.0, 320.0, 320.0),
+                    None,
+                    palette(),
+                    proposal::TextRole::UiBody,
+                    compact,
+                )
+                .expect("menu layout");
+            assert_eq!(layout.items[0].frame.size.height, expected_height);
+            assert_eq!(layout.items[1].frame.size.height, expected_height);
+            assert_eq!(layout.items[2].frame.size.height, 9.0);
+            assert_eq!(layout.items[3].frame.size.height, expected_height);
+            assert_eq!(layout.items[0].frame.min_y() - layout.popup.min_y(), 6.0);
+            assert_eq!(layout.items[1].frame.min_y() - layout.items[0].frame.max_y(), 0.0);
+            assert_eq!(layout.items[2].frame.min_y() - layout.items[1].frame.max_y(), 0.0);
+            assert_eq!(layout.items[3].frame.min_y() - layout.items[2].frame.max_y(), 0.0);
+            let row_frame = layout.items[0].frame;
+            assert!(scene.primitives().iter().any(|primitive| {
+                matches!(
+                    primitive,
+                    tekes_ui_scene::Primitive::Quad(q)
+                        if q.rect == row_frame && q.corner_radii == tekes_ui_scene::CornerRadii::uniform(6.0)
+                )
+            }));
+        }
+    }
+}
+
+#[test]
+fn select_combobox_and_command_palette_popup_widths_and_compact_apis() {
+    use crate::composition::{
+        Button, ComboBoxContent, CommandPaletteContent, ComponentId, Content, MenuContent,
+        SelectContent, TextFieldContent,
+    };
+    use crate::layout_view::{ComboBoxView, CommandPaletteView, SelectView};
+    struct CanonicalText;
+    impl ButtonTextRenderer for CanonicalText {
+        fn measure(&mut self, text: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            let width = (text.chars().count() as f32 * 7.0).min(max_width.max(0.0));
+            Size::new(width, role.style().line_height)
+        }
+        fn draw(
+            &mut self,
+            _scene: &mut Scene,
+            _text: &str,
+            _role: proposal::TextRole,
+            _rect: Rect,
+            _align: ButtonTextAlign,
+            _ink: Rgba,
+        ) {
+        }
+    }
+
+    let mut plain = MenuContent::new("File", vec!["Open".into()]).with_compact(true);
+    assert!(plain.compact());
+    plain.set_compact(false);
+    assert!(!plain.compact());
+
+    let mut select = SelectContent::new("Choice", vec!["Alpha".into(), "Beta".into()]);
+    assert!(!select.compact());
+    select.set_compact(true);
+    assert!(select.compact());
+
+    let mut combo =
+        ComboBoxContent::new("Combo", vec!["One".into(), "Two".into()]).with_compact(true);
+    assert!(combo.compact());
+    combo.set_compact(false);
+    assert!(!combo.compact());
+
+    let mut cmd = CommandPaletteContent::new(
+        Content::new(ComponentId(101), Button::new("Run")),
+        Content::new(ComponentId(102), TextFieldContent::new("query", "")),
+        crate::extended::CommandPalette {
+            combo: crate::extended::ComboBox {
+                items: vec!["Long Command Name".into()],
+                ..Default::default()
+            },
+        },
+    )
+    .with_compact(true);
+    assert!(cmd.compact());
+    cmd.set_compact(false);
+    assert!(!cmd.compact());
+
+    // Select with wide anchor matches anchor width even beyond MENU_MAX_WIDTH.
+    let mut select_view = SelectView::new(2);
+    let mut select_model = crate::Select::new(2);
+    select_model.menu.open = true;
+    let mut scene = Scene::new();
+    let wide_trigger = Rect::new(20.0, 20.0, 340.0, 32.0);
+    let viewport = Rect::new(0.0, 0.0, 800.0, 400.0);
+    select_view.render_trigger(
+        &mut scene,
+        &mut CanonicalText,
+        &mut select_model,
+        &["A", "B"],
+        wide_trigger,
+        Some(viewport),
+        palette(),
+        proposal::TextRole::UiBody,
+    );
+    let select_popup = select_view
+        .render_options(
+            &mut scene,
+            &mut CanonicalText,
+            &mut select_model,
+            &["A", "B"],
+            viewport,
+            Some(viewport),
+            palette(),
+            proposal::TextRole::UiBody,
+            true,
+        )
+        .expect("wide select popup");
+    assert_eq!(select_popup.popup.size.width, 340.0);
+    assert_eq!(select_popup.items[0].frame.size.height, 24.0);
+
+    // ComboBox with wide anchor matches anchor width and supports compact rows.
+    let mut combo_view = ComboBoxView::default();
+    let mut combo_model = crate::extended::ComboBox {
+        items: vec!["Alpha".into(), "Beta".into()],
+        open: true,
+        ..Default::default()
+    };
+    let combo_popup = combo_view
+        .render(
+            &mut scene,
+            &mut CanonicalText,
+            &mut combo_model,
+            wide_trigger,
+            viewport,
+            Some(viewport),
+            palette(),
+            proposal::TextRole::UiBody,
+            true,
+        )
+        .expect("wide combobox popup");
+    assert_eq!(combo_popup.popup.size.width, 340.0);
+    assert_eq!(combo_popup.items[0].frame.size.height, 24.0);
+
+    // CommandPalette allows widths above MENU_MAX_WIDTH up to 560pt.
+    let cmd_width = MenuView::command_header_content_width(&mut CanonicalText, 800.0);
+    assert_eq!(cmd_width, 560.0 - 12.0);
+    let mut cmd_view = CommandPaletteView::default();
+    let mut cmd_model = crate::extended::CommandPalette {
+        combo: crate::extended::ComboBox {
+            items: vec!["Run Build".into(), "Run Tests".into()],
+            open: true,
+            ..Default::default()
+        },
+    };
+    let wide_header = cmd_view.header_frame(
+        &mut CanonicalText,
+        &cmd_model,
+        Size::new(400.0, 32.0),
+        Rect::new(20.0, 20.0, 120.0, 32.0),
+        viewport,
+        true,
+    );
+    assert_eq!(wide_header.size.width, 400.0);
+    assert!(wide_header.size.width > MENU_MAX_WIDTH);
+    let mut paint_header = |_: &mut Scene, _: &mut dyn ButtonTextRenderer, _: Rect| {};
+    let cmd_popup = cmd_view
+        .render_with_header(
+            MenuRenderContext {
+                scene: &mut scene,
+                text: &mut CanonicalText,
+                anchor: Rect::new(20.0, 20.0, 120.0, 32.0),
+                visible: viewport,
+                clip: Some(viewport),
+                palette: palette(),
+                role: proposal::TextRole::UiBody,
+                compact: true,
+            },
+            &mut cmd_model,
+            (Size::new(400.0, 32.0), &mut paint_header),
+        )
+        .expect("wide command palette popup");
+    assert_eq!(cmd_popup.popup.size.width, 400.0 + 12.0);
+    assert_eq!(cmd_popup.items[0].frame.size.height, 24.0);
 }

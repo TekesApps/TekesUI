@@ -46,6 +46,7 @@ pub struct ComboBoxContent {
     last_selection: Option<ComboBoxSelection>,
     window_active: bool,
     runnable: bool,
+    compact: bool,
     last_frame: Option<std::time::Duration>,
 }
 impl ComboBoxContent {
@@ -64,8 +65,19 @@ impl ComboBoxContent {
             last_selection: None,
             window_active: true,
             runnable: true,
+            compact: false,
             last_frame: None,
         }
+    }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
     }
     pub fn model(&self) -> &ComboBox {
         &self.model
@@ -488,7 +500,7 @@ impl Component for ComboBoxContent {
             Some(clip),
             theme.palette,
             proposal::TextRole::UiBody,
-            false,
+            self.compact,
         );
         if self.view.options.needs_animation() {
             text.request_animation_frame();

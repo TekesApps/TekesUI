@@ -61,6 +61,7 @@ pub struct SelectContent {
     selection: Option<MenuSelection>,
     disabled: bool,
     error: bool,
+    compact: bool,
     last_frame: Option<std::time::Duration>,
 }
 impl SelectContent {
@@ -80,8 +81,19 @@ impl SelectContent {
             selection: None,
             disabled: false,
             error: false,
+            compact: false,
             last_frame: None,
         }
+    }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
     }
     pub fn labels(&self) -> &[String] {
         &self.labels
@@ -512,7 +524,7 @@ impl Component for SelectContent {
             Some(clip),
             theme.palette,
             proposal::TextRole::UiBody,
-            false,
+            self.compact,
         );
         if self.view.needs_animation() {
             text.request_animation_frame();

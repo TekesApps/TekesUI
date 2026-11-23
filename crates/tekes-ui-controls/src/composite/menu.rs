@@ -1,7 +1,9 @@
 use super::menu_runtime::MenuRuntime;
 use super::{
     ButtonLayout, ButtonModel, ButtonTextAlign, ButtonTextRenderer, ControlKey, Menu, ScrollArea,
-    ScrollPolicy, focus_reveal_outset, menu_width_limit, size_role,
+    ScrollPolicy, command_palette_max_width, menu_header_gap, menu_max_width_limit,
+    menu_min_row_height, menu_popup_inset, menu_row_gap, menu_row_horizontal_inset, menu_size_role,
+    menu_width_limit,
 };
 use crate::control_motion::OverlayPresence;
 use tekes_ui_scene::{Point, Rect, Scene, Size};
@@ -173,7 +175,7 @@ pub(super) fn menu_surface_height(content: f32, inset: f32) -> f32 {
 
 pub(super) fn menu_surface_height_for_rows(rows: &[f32], inset: f32) -> f32 {
     menu_surface_height(
-        rows.iter().sum::<f32>() + rows.len().saturating_sub(1) as f32 * inset.max(4.0),
+        rows.iter().sum::<f32>() + rows.len().saturating_sub(1) as f32 * menu_row_gap(),
         inset,
     )
 }
@@ -208,7 +210,7 @@ pub(crate) fn menu_popup_geometry(
     let gap = proposal::metric("spacing", "space-micro").expect("canonical popup spacing");
     let header_height = header.map_or(0.0, |size| size.height.max(0.0));
     let header_gap = if header.is_some() && !row_heights.is_empty() {
-        inset.max(4.0)
+        menu_header_gap()
     } else {
         0.0
     };
@@ -321,8 +323,27 @@ impl MenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> (Size, Vec<f32>) {
-        let inset = focus_reveal_outset(text.backing_scale());
-        let width = Self::preferred_menu_width(text, labels, max_width, role, compact);
+        Self::measured_rows_bounded(text, labels, max_width, role, compact, None, None)
+    }
+    pub(super) fn measured_rows_bounded(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        max_width: f32,
+        role: proposal::TextRole,
+        compact: bool,
+        min_width: Option<f32>,
+        max_ceiling: Option<f32>,
+    ) -> (Size, Vec<f32>) {
+        let inset = menu_popup_inset();
+        let width = Self::preferred_menu_width_bounded(
+            text,
+            labels,
+            max_width,
+            role,
+            compact,
+            min_width,
+            max_ceiling,
+        );
         let inner_width = (width - inset * 2.0).max(0.0);
         let heights = Self::measure_row_heights(text, labels, inner_width, role, compact);
         (
@@ -330,26 +351,46 @@ impl MenuView {
             heights,
         )
     }
-    fn preferred_menu_width(
+    #[allow(clippy::too_many_arguments)]
+    fn preferred_menu_width_bounded(
         text: &mut impl ButtonTextRenderer,
         labels: &[&str],
         max_width: f32,
         role: proposal::TextRole,
         compact: bool,
+        min_width: Option<f32>,
+        max_ceiling: Option<f32>,
     ) -> f32 {
-        let max_width = menu_width_limit(max_width);
-        let inset = focus_reveal_outset(text.backing_scale());
+        let limit = match max_ceiling {
+            Some(ceiling) => menu_max_width_limit(max_width, ceiling),
+            None => menu_width_limit(max_width),
+        };
+        let floor = min_width
+            .filter(|w| w.is_finite() && *w > 0.0)
+            .unwrap_or(0.0)
+            .min(limit);
+        let inset = menu_popup_inset();
         if labels.is_empty() {
-            return max_width;
+            return limit.max(floor);
         }
-        let max_inner_width = (max_width - inset * 2.0).max(0.0);
+        let max_inner_width = (limit - inset * 2.0).max(0.0);
+        let horiz = menu_row_horizontal_inset(text, role);
+        let row_size = menu_size_role(compact);
         let preferred_width = labels
             .iter()
             .map(|label| {
-                ButtonModel::measure(text, label, max_inner_width, size_role(compact), role).width
+                ButtonModel::measure_with_insets(
+                    text,
+                    label,
+                    max_inner_width,
+                    row_size,
+                    role,
+                    Some((horiz, horiz)),
+                )
+                .width
             })
             .fold(0.0, f32::max);
-        (preferred_width + inset * 2.0).min(max_width)
+        (preferred_width + inset * 2.0).max(floor).min(limit)
     }
     pub(super) fn measure_row_heights(
         text: &mut impl ButtonTextRenderer,
@@ -358,19 +399,39 @@ impl MenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Vec<f32> {
+        let horiz = menu_row_horizontal_inset(text, role);
+        let row_size = menu_size_role(compact);
+        let min_height = menu_min_row_height(compact);
         labels
             .iter()
             .map(|label| {
-                ButtonModel::measure(text, label, inner_width, size_role(compact), role)
-                    .height
-                    .max(36.0)
+                ButtonModel::measure_with_insets(
+                    text,
+                    label,
+                    inner_width,
+                    row_size,
+                    role,
+                    Some((horiz, horiz)),
+                )
+                .height
+                .max(min_height)
             })
             .collect()
     }
-    pub(crate) fn header_content_width(text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
-        (menu_width_limit(width) - focus_reveal_outset(text.backing_scale()) * 2.0).max(0.0)
+    #[cfg(test)]
+    pub(crate) fn header_content_width(_text: &mut impl ButtonTextRenderer, width: f32) -> f32 {
+        (menu_width_limit(width) - menu_popup_inset() * 2.0).max(0.0)
     }
 
+    pub(crate) fn command_header_content_width(
+        _text: &mut impl ButtonTextRenderer,
+        width: f32,
+    ) -> f32 {
+        (menu_max_width_limit(width, command_palette_max_width()) - menu_popup_inset() * 2.0)
+            .max(0.0)
+    }
+
+    #[cfg(test)]
     pub(crate) fn header_frame(
         text: &mut impl ButtonTextRenderer,
         labels: &[&str],
@@ -380,9 +441,35 @@ impl MenuView {
         role: proposal::TextRole,
         compact: bool,
     ) -> Rect {
-        let inset = focus_reveal_outset(text.backing_scale());
-        let width = Self::preferred_menu_width(text, labels, viewport.size.width, role, compact)
-            .max((header.width + inset * 2.0).min(menu_width_limit(viewport.size.width)));
+        Self::header_frame_bounded(text, labels, header, anchor, viewport, role, compact, None)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn header_frame_bounded(
+        text: &mut impl ButtonTextRenderer,
+        labels: &[&str],
+        header: Size,
+        anchor: Rect,
+        viewport: Rect,
+        role: proposal::TextRole,
+        compact: bool,
+        max_ceiling: Option<f32>,
+    ) -> Rect {
+        let inset = menu_popup_inset();
+        let limit = match max_ceiling {
+            Some(ceiling) => menu_max_width_limit(viewport.size.width, ceiling),
+            None => menu_width_limit(viewport.size.width),
+        };
+        let width = Self::preferred_menu_width_bounded(
+            text,
+            labels,
+            viewport.size.width,
+            role,
+            compact,
+            None,
+            max_ceiling,
+        )
+        .max((header.width + inset * 2.0).min(limit));
         let rows =
             Self::measure_row_heights(text, labels, (width - inset * 2.0).max(0.0), role, compact);
         let natural = Size::new(width, menu_surface_height_for_rows(&rows, inset));
@@ -449,20 +536,31 @@ impl MenuView {
                 disabled: false,
                 focus_visible: false,
                 compact: false,
-                row_heights: vec![36.0; count],
+                row_heights: vec![menu_min_row_height(false); count],
                 scroll_viewport: Rect::default(),
                 visible_bounds: Rect::default(),
                 ancestor_clip: None,
                 palette: Palette::from(tekes_ui_tokens::Theme::default()),
                 role: proposal::TextRole::UiBody,
                 scroll_gesture_captured: false,
-                focus_outset: focus_reveal_outset(1.0),
+                focus_outset: menu_popup_inset(),
                 row_styles: Vec::new(),
                 submenu_request: None,
                 beside_anchor: false,
                 open_generation: 0,
+                popup_min_width: None,
+                popup_max_width: None,
             },
         }
+    }
+
+    pub(crate) fn set_popup_width_bounds(
+        &mut self,
+        min_width: Option<f32>,
+        max_width: Option<f32>,
+    ) {
+        self.runtime.popup_min_width = min_width;
+        self.runtime.popup_max_width = max_width;
     }
 
     /// Creates a presentation runtime that must always receive an external

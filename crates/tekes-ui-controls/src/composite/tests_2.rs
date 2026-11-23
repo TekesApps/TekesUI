@@ -219,9 +219,9 @@ fn menu_wheel_edge_rebound_advances_and_settles_through_owned_clock() {
                 false,
             )
             .unwrap();
-        let popup_inset = focus_reveal_outset(1.0);
-        let document_height = labels.len() as f32 * 36.0
-            + labels.len().saturating_sub(1) as f32 * popup_inset.max(4.0);
+        let popup_inset = menu_popup_inset();
+        let document_height = layout.items.iter().map(|item| item.frame.size.height).sum::<f32>()
+            + layout.items.len().saturating_sub(1) as f32 * menu_row_gap();
         let expected_rest = if delta < 0.0 {
             0.0
         } else {

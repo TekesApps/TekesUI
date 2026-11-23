@@ -669,6 +669,10 @@ impl SelectView {
             return None;
         }
         let trigger = self.layout.trigger;
+        self.menu.set_popup_width_bounds(
+            Some(trigger.frame.size.width),
+            Some(trigger.frame.size.width.max(crate::composite::MENU_MAX_WIDTH)),
+        );
         if model.menu.open {
             let _ = self
                 .menu
