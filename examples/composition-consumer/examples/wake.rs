@@ -64,7 +64,11 @@ mod macos {
         }
         let host = Host::default();
         let proxy = host.proxy.clone();
-        App::new(AppConfig::default()).run(WindowConfig::default(), MenuBar::default(), host);
+        App::new(AppConfig {
+            quit_after_last_window_closed: true,
+            ..AppConfig::default()
+        })
+        .run(WindowConfig::default(), MenuBar::default(), host);
         if let Some(proxy) = proxy.lock().unwrap().as_ref() {
             assert_eq!(proxy.wake(), WakeResult::Closed);
             assert_eq!(proxy.clone().wake(), WakeResult::Closed);
@@ -72,7 +76,11 @@ mod macos {
     }
 
     pub(super) fn run_audit(audit: WakeAcceptance) {
-        App::new(AppConfig::default()).run(WindowConfig::default(), MenuBar::default(), audit);
+        App::new(AppConfig {
+            quit_after_last_window_closed: true,
+            ..AppConfig::default()
+        })
+        .run(WindowConfig::default(), MenuBar::default(), audit);
     }
 
     #[derive(Debug)]

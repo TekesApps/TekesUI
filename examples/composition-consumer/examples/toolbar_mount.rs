@@ -310,7 +310,7 @@ fn main() {
     text.services = true;
     let app = App::new(AppConfig {
         name: Some("TekesUI Toolbar Mount Review".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     });
     app.run(
         WindowConfig {

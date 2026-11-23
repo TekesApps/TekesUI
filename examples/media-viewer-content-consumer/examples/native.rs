@@ -1991,7 +1991,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     App::new(AppConfig {
         name: Some("Media Viewer Consumer 204".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

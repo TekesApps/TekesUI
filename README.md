@@ -1,10 +1,10 @@
 # TekesUI
 
-TekesUI (`v0.4.9`) is a pure-Rust, GPU-rendered design system and desktop component toolkit. It provides compiled design tokens and surface color systems, CoreText text shaping, glyph atlas and `wgpu` rendering, stateful UI controls and composition containers, accessibility/IME platform bridges, and an optional multi-container `AppHost` shell.
+TekesUI (`v0.4.10`) is a pure-Rust, GPU-rendered design system and desktop component toolkit. It provides compiled design tokens and surface color systems, CoreText text shaping, glyph atlas and `wgpu` rendering, stateful UI controls and composition containers, accessibility/IME platform bridges, and an optional multi-container `AppHost` shell.
 
-## Architecture & Crates (`v0.4.9`)
+## Architecture & Crates (`v0.4.10`)
 
-All 15 library/tool crates share workspace version `0.4.9` and live under [`crates/`](crates/):
+All 15 library/tool crates share workspace version `0.4.10` and live under [`crates/`](crates/):
 
 | Crate | Purpose | Optional Feature Flags |
 | --- | --- | --- |
@@ -36,9 +36,9 @@ Add TekesUI crates via Git tag (or local workspace path):
 
 ```toml
 [dependencies]
-tekes-ui-tokens = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.9" }
-tekes-ui-scene = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.9" }
-tekes-ui-controls = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.9", features = ["svg-icons"] }
+tekes-ui-tokens = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.10" }
+tekes-ui-scene = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.10" }
+tekes-ui-controls = { git = "https://github.com/TekesApps/TekesUI", tag = "v0.4.10", features = ["svg-icons"] }
 ```
 
 Enable opt-in crate features only when needed:
@@ -52,7 +52,7 @@ Enable opt-in crate features only when needed:
 
 Design system sources live under [`design/`](design/):
 
-- [`design/system.json`](design/system.json) and [`DESIGN.md`](DESIGN.md) describe the authoritative design contract (`v0.4.9`, `theme-and-surface-packets-active`).
+- [`design/system.json`](design/system.json) and [`DESIGN.md`](DESIGN.md) describe the authoritative design contract (`v0.4.10`, `theme-and-surface-packets-active`).
 - Consumers can compile their own `BrandConfig.json` and theme definitions completely offline using [`scripts/compile-consumer-brand.py`](scripts/compile-consumer-brand.py):
 
 ```sh
@@ -65,7 +65,7 @@ Point `TEKESUI_DESIGN_ARTIFACT=/path/to/offline-design` at build time to compile
 
 ## Icon Catalog (`@tekesui/icons`)
 
-The root [`package.json`](package.json) (`0.4.9`) publishes Web/ESM bindings for the 133 canonical square core SVG glyphs in [`crates/tekes-ui-icons/web/`](crates/tekes-ui-icons/web/):
+The root [`package.json`](package.json) (`0.4.10`) publishes Web/ESM bindings for the 133 canonical square core SVG glyphs in [`crates/tekes-ui-icons/web/`](crates/tekes-ui-icons/web/):
 
 ```sh
 python3 scripts/generate-icon-web-bindings.py --check
@@ -82,7 +82,7 @@ Build and run the macOS Gallery app directly, or package a signed `.app` bundle 
 ```sh
 cargo run -p tekes-ui-gallery --locked
 # Stage and codesign target/app/TekesUIGallery.app (pass --offline to avoid network access)
-python3 scripts/package-gallery.py --release --verify-tag v0.4.9
+python3 scripts/package-gallery.py --release --verify-tag v0.4.10
 ```
 
 ## Verification & Documentation
@@ -110,6 +110,6 @@ python3 scripts/check-cargo-package.py --offline
 See also:
 
 - [`docs/platform-boundary.md`](docs/platform-boundary.md) — Crate boundaries & cross-platform tracking
-- [`docs/dependencies.md`](docs/dependencies.md) — Audited third-party dependencies (`v0.4.9`)
+- [`docs/dependencies.md`](docs/dependencies.md) — Audited third-party dependencies (`v0.4.10`)
 - [`docs/design/app-host-architecture.md`](docs/design/app-host-architecture.md) — `AppHost` & process container architecture
 - [`docs/archive/design-logs/INDEX.md`](docs/archive/design-logs/INDEX.md) — Archived historical design & review records

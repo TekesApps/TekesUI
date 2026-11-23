@@ -6,12 +6,64 @@ use std::{
 };
 thread_local! { static WINDOWS:RefCell<Vec<Weak<Shared>>>=const {RefCell::new(Vec::new())}; }
 thread_local! {static WINDOW_OWNERS:RefCell<Vec<WindowHandle>>=const {RefCell::new(Vec::new())};}
-fn windows() -> Vec<Rc<Shared>> {
+pub(crate) fn windows() -> Vec<Rc<Shared>> {
     WINDOWS.with(|w| {
         let mut w = w.borrow_mut();
         w.retain(|s| s.upgrade().is_some_and(|s| !s.closed.get()));
         w.iter().filter_map(Weak::upgrade).collect()
     })
+}
+
+#[cfg(feature = "selftest")]
+pub(crate) fn primary_window_shared() -> Option<Rc<Shared>> {
+    windows().into_iter().find(|s| s.primary.get())
+}
+
+pub(crate) fn active_window_shared(mtm: MainThreadMarker) -> Option<Rc<Shared>> {
+    let live: Vec<_> = windows()
+        .into_iter()
+        .filter(|s| !s.is_inactive_surface())
+        .collect();
+    if live.is_empty() {
+        return None;
+    }
+    let app = NSApplication::sharedApplication(mtm);
+    if let Some(found) = live
+        .iter()
+        .find(|s| s.objects.get().is_some_and(|o| o.window.isKeyWindow()))
+    {
+        return Some(found.clone());
+    }
+    if let Some(main_win) = app.mainWindow()
+        && let Some(found) = live.iter().find(|s| {
+            s.objects
+                .get()
+                .is_some_and(|o| std::ptr::eq(&*o.window, &*main_win) && o.window.isVisible())
+        })
+    {
+        return Some(found.clone());
+    }
+    for ordered in app.orderedWindows().iter() {
+        if !ordered.isVisible() {
+            continue;
+        }
+        if let Some(found) = live.iter().find(|s| {
+            s.objects
+                .get()
+                .is_some_and(|o| std::ptr::eq(&*o.window, &*ordered))
+        }) {
+            return Some(found.clone());
+        }
+    }
+    live.into_iter()
+        .find(|s| s.objects.get().is_some_and(|o| o.window.isVisible()))
+}
+
+pub(crate) fn sync_close_menu_item(mtm: MainThreadMarker) {
+    let title = active_window_shared(mtm)
+        .and_then(|s| s.close_menu_title())
+        .unwrap_or("Close Window");
+    menu_build::set_close_menu_title(mtm, title);
 }
 
 use objc2::rc::Retained;
@@ -20,10 +72,11 @@ use objc2::{DefinedClass, MainThreadOnly, define_class, msg_send, sel};
 use objc2_app_kit::{
     NSAnimationContext, NSApplication, NSApplicationActivationPolicy, NSApplicationDelegate,
     NSApplicationTerminateReply, NSBackingStoreType, NSButton, NSEvent, NSEventModifierFlags,
-    NSEventType, NSMenuItem, NSToolbar, NSViewFrameDidChangeNotification, NSWindow,
-    NSWindowAnimationBehavior, NSWindowButton, NSWindowCollectionBehavior, NSWindowDelegate,
-    NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask, NSWindowTitleVisibility,
-    NSWindowToolbarStyle, NSWorkspace, NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
+    NSEventType, NSMenuItem, NSMenuItemValidation, NSToolbar, NSViewFrameDidChangeNotification,
+    NSWindow, NSWindowAnimationBehavior, NSWindowButton, NSWindowCollectionBehavior,
+    NSWindowDelegate, NSWindowOcclusionState, NSWindowOrderingMode, NSWindowStyleMask,
+    NSWindowTitleVisibility, NSWindowToolbarStyle, NSWorkspace,
+    NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification,
 };
 use objc2_foundation::{
     MainThreadMarker, NSNotification, NSNotificationCenter, NSObject, NSObjectProtocol, NSPoint,
@@ -71,6 +124,9 @@ define_class!(
         fn did_become_active(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::did_become_active", || {
                 for shared in windows() {
+                    if shared.is_inactive_surface() {
+                        continue;
+                    }
                     let active = shared.objects.get().is_some_and(|o| o.window.isKeyWindow());
                     shared.dispatch(Event::Focus(active));
                 }
@@ -81,9 +137,22 @@ define_class!(
         fn did_resign_active(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::did_resign_active", || {
                 for shared in windows() {
+                    if shared.is_inactive_surface() {
+                        continue;
+                    }
                     shared.dispatch(Event::Focus(false));
                 }
             });
+        }
+
+        #[unsafe(method(applicationShouldHandleReopen:hasVisibleWindows:))]
+        fn should_handle_reopen(&self, _app: &NSApplication, has_visible_windows: bool) -> bool {
+            crate::ffi_boundary("AppDelegate::should_handle_reopen", || {
+                if !has_visible_windows {
+                    self.reopen_main_window();
+                }
+                true
+            })
         }
 
         #[unsafe(method(applicationShouldTerminateAfterLastWindowClosed:))]
@@ -105,6 +174,9 @@ define_class!(
                     .collect();
                 if !blocked.is_empty() {
                     for shared in blocked {
+                        if shared.dormant.get() && shared.primary.get() {
+                            self.reopen_main_window();
+                        }
                         shared.dispatch(Event::QuitRequested);
                         if let Some(o) = shared.objects.get() {
                             o.window.makeKeyAndOrderFront(None);
@@ -114,6 +186,39 @@ define_class!(
                 }
                 stop_run_loop(app);
                 NSApplicationTerminateReply::TerminateCancel
+            })
+        }
+    }
+
+    // SAFETY: NSMenuItemValidation 没有安全要求，签名与协议一致。
+    unsafe impl NSMenuItemValidation for AppDelegate {
+        #[unsafe(method(validateMenuItem:))]
+        fn validate_menu_item(&self, menu_item: &NSMenuItem) -> bool {
+            crate::ffi_boundary("AppDelegate::validate_menu_item", || {
+                let mtm = self.mtm();
+                let Some(action) = menu_item.action() else {
+                    return true;
+                };
+                if action == menu_build::reopen_action() {
+                    return !self.ivars().shared.closed.get();
+                }
+                if action == menu_build::close_shortcut_action() {
+                    if let Some(target) = active_window_shared(mtm) {
+                        let title = target.close_menu_title().unwrap_or("Close Window");
+                        if menu_item.title().to_string() != title {
+                            menu_item.setTitle(&NSString::from_str(title));
+                        }
+                        return true;
+                    }
+                    if menu_item.title().to_string() != "Close Window" {
+                        menu_item.setTitle(&NSString::from_str("Close Window"));
+                    }
+                    return false;
+                }
+                if action == menu_build::command_action() {
+                    return active_window_shared(mtm).is_some();
+                }
+                true
             })
         }
     }
@@ -136,16 +241,30 @@ define_class!(
                 // 之后不再投递事件。是否结束应用由 applicationShouldTerminateAfterLastWindowClosed: 决定。
                 self.stop_observing_toolbar_controls();
                 let shared = &self.ivars().shared;
-                crate::wake::native::unregister(&shared.wake_state);
-                shared.closed.set(true);
-                shared.revoke_accessibility();
                 restore_windows(shared);
                 shared.titlebar_drag_origin.borrow_mut().take();
                 shared.animating.set(false);
+                shared.discard_metal_frames();
                 if let Some(o) = shared.objects.get() {
                     o.view.invalidate_display_link();
                     o.view.cancel_pending_performs();
                 }
+                if shared.reopenable.get() && !shared.closed.get() {
+                    if !shared.dormant.get() {
+                        shared.dispatch(Event::Focus(false));
+                    }
+                    shared.dormant.set(true);
+                    shared.revoke_accessibility();
+                    shared.text_input.borrow_mut().take();
+                    shared.redraw_pending.set(false);
+                    shared.discard_dormant_events();
+                } else {
+                    crate::wake::native::unregister(&shared.wake_state);
+                    shared.closed.set(true);
+                    shared.revoke_accessibility();
+                    shared.text_input.borrow_mut().take();
+                }
+                sync_close_menu_item(shared.mtm);
             });
         }
 
@@ -154,12 +273,16 @@ define_class!(
         #[unsafe(method(windowDidChangeOcclusionState:))]
         fn window_did_change_occlusion_state(&self, notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::window_did_change_occlusion_state", || {
+                let shared = &self.ivars().shared;
+                if shared.is_inactive_surface() {
+                    return;
+                }
                 let visible = notification
                     .object()
                     .and_then(|o| o.downcast::<NSWindow>().ok())
                     .is_some_and(|w| w.occlusionState().contains(NSWindowOcclusionState::Visible));
                 if visible {
-                    self.ivars().shared.request_redraw();
+                    shared.request_redraw();
                 }
             });
         }
@@ -183,7 +306,7 @@ define_class!(
         fn window_did_update(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::window_did_update", || {
                 let shared = &self.ivars().shared;
-                if shared.closed.get() || shared.toolbar_row_height.get().is_none() {
+                if shared.is_inactive_surface() || shared.toolbar_row_height.get().is_none() {
                     return;
                 }
                 if let Some(objects) = shared.objects.get() {
@@ -197,15 +320,23 @@ define_class!(
         fn window_did_become_key(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::window_did_become_key", || {
                 let shared = &self.ivars().shared;
+                if shared.is_inactive_surface() {
+                    return;
+                }
                 let active = NSApplication::sharedApplication(shared.mtm).isActive();
                 shared.dispatch(Event::Focus(active));
+                sync_close_menu_item(shared.mtm);
             });
         }
 
         #[unsafe(method(windowDidResignKey:))]
         fn window_did_resign_key(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::window_did_resign_key", || {
-                self.ivars().shared.dispatch(Event::Focus(false));
+                let shared = &self.ivars().shared;
+                if !shared.is_inactive_surface() {
+                    shared.dispatch(Event::Focus(false));
+                    sync_close_menu_item(shared.mtm);
+                }
             });
         }
     }
@@ -218,16 +349,30 @@ define_class!(
             });
         }
 
+        #[unsafe(method(tekesReopenMainWindow:))]
+        fn reopen_menu_selected(&self, _sender: Option<&AnyObject>) {
+            crate::ffi_boundary("AppDelegate::reopen_menu_selected", || {
+                self.reopen_main_window();
+            });
+        }
+
+        #[unsafe(method(tekesCloseShortcut:))]
+        fn close_shortcut_selected(&self, _sender: Option<&AnyObject>) {
+            crate::ffi_boundary("AppDelegate::close_shortcut_selected", || {
+                if let Some(target) = active_window_shared(self.mtm()) {
+                    target.dispatch_close_shortcut();
+                }
+            });
+        }
+
         /// 所有引擎命令菜单项的 action，`tag` 是 `CommandId`。
         #[unsafe(method(menuItemSelected:))]
         fn menu_item_selected(&self, sender: &NSMenuItem) {
             crate::ffi_boundary("AppDelegate::menu_item_selected", || {
                 let id = sender.tag();
-                if let Ok(id) = u32::try_from(id) {
-                    let owner = windows()
-                        .into_iter()
-                        .find(|s| s.objects.get().is_some_and(|o| o.window.isKeyWindow()))
-                        .unwrap_or_else(|| self.ivars().shared.clone());
+                if let Ok(id) = u32::try_from(id)
+                    && let Some(owner) = active_window_shared(self.mtm())
+                {
                     owner.dispatch(Event::Command(CommandId(id)));
                 }
             });
@@ -263,6 +408,7 @@ impl AppDelegate {
     }
 
     pub(crate) fn observe_toolbar_controls(&self) {
+        self.stop_observing_toolbar_controls();
         let shared = &self.ivars().shared;
         let Some(objects) = shared.objects.get() else {
             return;
@@ -464,6 +610,64 @@ impl AppDelegate {
         // 未打包的可执行文件需要显式激活，否则窗口出现在别的应用后面。
         #[allow(deprecated)]
         app.activateIgnoringOtherApps(true);
+        sync_close_menu_item(mtm);
+    }
+
+    pub(crate) fn reopen_main_window(&self) -> bool {
+        let mtm = self.mtm();
+        let shared = &self.ivars().shared;
+        if shared.closed.get() {
+            return false;
+        }
+        let Some(objects) = shared.objects.get() else {
+            return false;
+        };
+        for candidate in windows() {
+            if Rc::ptr_eq(&candidate, shared) || candidate.is_inactive_surface() {
+                continue;
+            }
+            let hides_primary = candidate
+                .exclusive_restore
+                .borrow()
+                .iter()
+                .any(|weak| weak.upgrade().is_some_and(|w| Rc::ptr_eq(&w, shared)));
+            if hides_primary && let Some(cover) = candidate.objects.get() {
+                if cover.window.isMiniaturized() {
+                    cover.window.deminiaturize(None);
+                }
+                cover.window.makeKeyAndOrderFront(None);
+                cover.window.makeFirstResponder(Some(&cover.view));
+                let app = NSApplication::sharedApplication(mtm);
+                #[allow(deprecated)]
+                app.activateIgnoringOtherApps(true);
+                candidate.request_redraw();
+                sync_close_menu_item(mtm);
+                return true;
+            }
+        }
+        let app = NSApplication::sharedApplication(mtm);
+        let was_dormant = shared.dormant.replace(false);
+        if was_dormant {
+            self.observe_toolbar_controls();
+        } else if objects.window.isMiniaturized() {
+            objects.window.deminiaturize(None);
+        }
+        objects.window.makeKeyAndOrderFront(None);
+        objects.window.makeFirstResponder(Some(&objects.view));
+        #[allow(deprecated)]
+        app.activateIgnoringOtherApps(true);
+        shared.align_toolbar_controls();
+        if was_dormant {
+            shared.last_geometry.set(None);
+            shared.check_appearance(false);
+            objects.view.sync_geometry(true);
+            if shared.pending_wake_while_dormant.replace(false) {
+                shared.dispatch(Event::Wake);
+            }
+        }
+        shared.request_redraw();
+        sync_close_menu_item(mtm);
+        true
     }
 }
 
@@ -517,6 +721,10 @@ impl App {
         app.setActivationPolicy(NSApplicationActivationPolicy::Regular);
 
         let shared = Shared::new(mtm, Box::new(handler));
+        shared.primary.set(true);
+        shared
+            .reopenable
+            .set(!self.config.quit_after_last_window_closed);
         let delegate = AppDelegate::new(mtm, shared.clone(), self.config, window_config, menu_bar);
         app.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
         app.run();
@@ -525,12 +733,14 @@ impl App {
         // （移除观察者、解绑 delegate、关闭 NSWindow、清空待执行回调并丢弃处理器），
         // 保证 delegate 析构晚于 window.delegate() 解绑且不泄漏主窗口。
         app.setDelegate(None);
+        menu_build::detach_target(mtm, delegate.as_ref());
         let handles = WINDOW_OWNERS.with(|w| std::mem::take(&mut *w.borrow_mut()));
         drop(handles);
         for window in windows() {
             window.finish();
         }
         delegate.teardown_window(&shared);
+        let _ = windows();
     }
 }
 
@@ -611,7 +821,7 @@ pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
     let mut hidden = child.exclusive_restore.borrow().clone();
     let mut key = None;
     for shared in windows() {
-        if Rc::ptr_eq(&shared, child) {
+        if Rc::ptr_eq(&shared, child) || shared.is_inactive_surface() {
             continue;
         }
         if let Some(o) = shared.objects.get()

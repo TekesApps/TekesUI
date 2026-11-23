@@ -34,3 +34,8 @@ tekes-ui-icons.workspace = true
 
 [lints]
 workspace = true
+
+[[test]]
+name = "macos_lifecycle_native"
+harness = false
+required-features = ["window-acceptance"]

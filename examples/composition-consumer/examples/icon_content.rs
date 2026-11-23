@@ -369,7 +369,7 @@ fn main() {
     let (title, root, host) = ("TekesUI Icon Content Review", ROOT, build().unwrap());
     App::new(AppConfig {
         name: Some(title.into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

@@ -14,7 +14,13 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.9` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.10` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### macOS 应用/窗口生命周期与层级 ⌘W 对齐（`v0.4.10` / #406）
+
+- **原生驻留生命周期与 Opt-In 关窗退出**：`tekes_ui_platform_macos::AppConfig::default().quit_after_last_window_closed` 调整为 `false`（新增 `.name(...)` / `.quit_after_last_window_closed(...)` 构建器），主窗口关闭时进入 dormant 隐藏状态、停止 DisplayLink 与无效重绘、投递 `FocusChanged(false)`、撤回 AX publication 并在 `WindowWake` 中排队唤醒信号，应用继续驻留 Dock 与菜单栏；仅在 `⌘Q` / `NSApp.terminate:` 时执行 `WindowHandler::allows_app_quit()` 校验并完整 teardown，保留显式 `.quit_after_last_window_closed(true)` 给一次性工具或测试入口。
+- **Dock / `⌘N` 原生重开与层级 `⌘W`**：`AppDelegate` 实现 `applicationShouldHandleReopen:hasVisibleWindows:` 并新增标准 `File → New Window (⌘N)` 菜单项以恢复隐藏主窗口、Key Window 焦点、渲染与 AX publication 并保留已挂载的 `LocalContainer` 状态；`WindowHandler::{close_menu_title, handle_close_shortcut}` 与 `File` 菜单动态标题（`Close Tab` / `Close Window`）实现原生 `⌘W` 层级路由——辅助/独占窗口优先关闭（保留 Settings 未保存草稿拦截），AppHost 主窗口按 `⌘W` 优先关闭当前活跃可关闭 `Others` 容器 Tab 而红色关闭按钮始终仅关闭主窗口。
+- **`AppWindow` 身份配置与 Selftest 扩展**：`AppWindow` 新增 `.app_name(...)`、`.window_title(...)` 与 `.quit_after_last_window_closed(...)` 构建器替换硬编码 `"TekesUI AppHost Prototype"`，并扩展 `tekes_ui_platform_macos::selftest::Action::{Quit, Reopen, RedrawMark, ExpectLifecycle}` 与原生测试（`lifecycle_native`、`macos_lifecycle_native`）。
 
 ### Gold7 Token 与交互契约审计收敛（`v0.4.9` / #388–#395）
 

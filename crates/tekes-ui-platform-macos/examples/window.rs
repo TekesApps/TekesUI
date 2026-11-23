@@ -291,7 +291,11 @@ mod mac {
         if let Some(mode) = selftest {
             selftest::spawn(mode == "hold");
         }
-        App::new(AppConfig::default()).run(window_config, menu_bar(), logger);
+        App::new(AppConfig {
+            quit_after_last_window_closed: true,
+            ..AppConfig::default()
+        })
+        .run(window_config, menu_bar(), logger);
         eprintln!("run() 已返回");
     }
 

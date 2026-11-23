@@ -362,7 +362,7 @@ fn text_geometry_probe() -> Result<()> {
                     .into(),
             ),
         ),
-        (3200, Action::Close),
+        (3200, Action::Quit),
     ]);
     app.run()
 }

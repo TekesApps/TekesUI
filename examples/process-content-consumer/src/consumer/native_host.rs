@@ -2112,7 +2112,7 @@ fn run_mode(
     };
     native::App::new(native::AppConfig {
         name: Some("TekesUI Process Content Review".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         native::WindowConfig {

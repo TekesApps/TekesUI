@@ -294,7 +294,7 @@ fn main() {
     };
     App::new(AppConfig {
         name: Some("TekesUI Context Menu Review".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

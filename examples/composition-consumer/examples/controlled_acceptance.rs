@@ -36,7 +36,7 @@ mod macos {
         };
         App::new(AppConfig {
             name: Some("TekesUI 受控文本".into()),
-            ..Default::default()
+            quit_after_last_window_closed: true,
         })
         .run(
             WindowConfig {

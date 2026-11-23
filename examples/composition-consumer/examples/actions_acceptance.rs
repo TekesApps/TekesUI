@@ -45,7 +45,7 @@ mod macos {
         fixture.host.focus(Some(FIRST), true);
         App::new(AppConfig {
             name: Some("TekesUI 公共动作".into()),
-            ..Default::default()
+            quit_after_last_window_closed: true,
         })
         .run(
             WindowConfig {

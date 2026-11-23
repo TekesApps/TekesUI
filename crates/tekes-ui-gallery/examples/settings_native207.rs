@@ -75,7 +75,7 @@ fn main() -> anyhow::Result<()> {
     selftest::run_script(steps);
     App::new(AppConfig {
         name: Some("TekesUI Settings 207".into()),
-        ..AppConfig::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

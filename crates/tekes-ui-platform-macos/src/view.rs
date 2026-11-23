@@ -232,7 +232,7 @@ define_class!(
                     .accessibility_nodes
                     .borrow()
                     .iter()
-                    .find(|node| !shared.closed.get() && authorized && node.focused)
+                    .find(|node| !shared.is_inactive_surface() && authorized && node.focused)
                     .map(|node| node.key);
                 focused_key
                     .and_then(|key| shared.accessibility_elements.borrow().get(&key).cloned())
@@ -246,7 +246,7 @@ define_class!(
             crate::ffi_boundary("TekesView::tekesStartMetalLink", || {
                 self.ivars().metal_start_pending.set(false);
                 let shared = &self.ivars().shared;
-                if !shared.closed.get() && shared.animating.get() && !self.ivars().live_resizing.get() {
+                if !shared.is_inactive_surface() && shared.animating.get() && !self.ivars().live_resizing.get() {
                     if shared.can_dispatch_synchronously() {
                         self.start_metal_link_now();
                     } else {
@@ -260,7 +260,7 @@ define_class!(
         fn caret_blink(&self) {
             crate::ffi_boundary("TekesView::tekesCaretBlink", || {
                 let active=self.ivars().shared.text_input.borrow().as_ref().is_some_and(|s|!s.read_only&&s.selection.is_empty());
-                if active && !self.ivars().shared.closed.get() {
+                if active && !self.ivars().shared.is_inactive_surface() {
                     self.ivars().shared.dispatch(Event::CaretBlink);
                     self.schedule_caret_blink();
                 } else {self.ivars().shared.caret_scheduled.set(false);}
@@ -337,7 +337,7 @@ define_class!(
         fn update_layer(&self) {
             crate::ffi_boundary("TekesView::updateLayer", || {
                 let shared = &self.ivars().shared;
-                if shared.closed.get() || !shared.ready.get() {
+                if shared.is_inactive_surface() || !shared.ready.get() {
                     return;
                 }
                 shared.redraw_pending.set(false);
@@ -352,7 +352,7 @@ define_class!(
             crate::ffi_boundary("TekesView::tekesPerformRedraw", || {
                 let shared = &self.ivars().shared;
                 // 已经被同步重绘（缩放路径）满足的请求，这里不再重复。
-                if !shared.closed.get() && shared.ready.get() && shared.redraw_pending.replace(false) {
+                if !shared.is_inactive_surface() && shared.ready.get() && shared.redraw_pending.replace(false) {
                     shared.dispatch(Event::Redraw);
                 }
             });
@@ -369,7 +369,7 @@ define_class!(
                 // Pausing CAD may leave one callback queued. Outside live resize
                 // only the Metal delegate may drive this opt-in renderer.
                 if Self::uses_metal_display_link() && !self.ivars().live_resizing.get() { return; }
-                if shared.closed.get() || !shared.ready.get() || !shared.animating.get() {
+                if shared.is_inactive_surface() || !shared.ready.get() || !shared.animating.get() {
                     return;
                 }
                 shared
@@ -520,7 +520,7 @@ define_class!(
                 let point = self.view_point(event);
                 let (_, cursor) = self.cursor_for_point(point);
                 cursor.set();
-                if !self.ivars().shared.closed.get() && self.trace_cursor("cursor-update", point) {
+                if !self.ivars().shared.is_inactive_surface() && self.trace_cursor("cursor-update", point) {
                     // Diagnostic-only, read-only sample after AppKit finishes the event.
                     unsafe {
                         self.performSelector_withObject_afterDelay_inModes(
@@ -534,7 +534,7 @@ define_class!(
         #[unsafe(method(tekesReviewCursor))]
         fn review_cursor_after_event(&self) {
             crate::ffi_boundary("TekesView::tekesReviewCursor", || {
-                if self.ivars().shared.closed.get() {
+                if self.ivars().shared.is_inactive_surface() {
                     return;
                 }
                 if let Some(window) = self.window() {
@@ -889,7 +889,9 @@ impl TekesView {
 
     pub(crate) fn flush_cursor_tracking_if_needed(&self) {
         self.ivars().scrolling_active.set(false);
-        if self.ivars().cursor_tracking_dirty.replace(false) && !self.ivars().shared.closed.get() {
+        if self.ivars().cursor_tracking_dirty.replace(false)
+            && !self.ivars().shared.is_inactive_surface()
+        {
             self.updateTrackingAreas();
             if let Some(window) = self.window()
                 && window.isKeyWindow()
@@ -991,7 +993,7 @@ impl TekesView {
     }
 
     pub(crate) fn schedule_caret_blink(&self) {
-        if self.ivars().shared.closed.get() {
+        if self.ivars().shared.is_inactive_surface() {
             return;
         }
         // SAFETY: main thread, selector has no arguments, common runloop modes.
@@ -1040,7 +1042,7 @@ impl TekesView {
 
     /// 在主 runloop 上排一次 `tekesPerformRedraw`。同一时刻是否已排由调用方用 `redraw_pending` 保证。
     pub(crate) fn schedule_redraw(&self) {
-        if self.ivars().shared.closed.get() {
+        if self.ivars().shared.is_inactive_surface() {
             return;
         }
         // SAFETY: selector 是上面定义的无参方法；modes 数组里是 AppKit 导出的全局常量。
@@ -1146,7 +1148,7 @@ impl TekesView {
     }
 
     fn schedule_metal_start(&self) {
-        if self.ivars().shared.closed.get() {
+        if self.ivars().shared.is_inactive_surface() {
             return;
         }
         if !self.ivars().metal_start_pending.replace(true) {

@@ -361,7 +361,7 @@ fn main() {
     text.services = true;
     App::new(AppConfig {
         name: Some("Unicode41 SDK".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

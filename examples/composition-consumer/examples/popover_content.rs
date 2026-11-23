@@ -386,7 +386,7 @@ fn main() {
     text.services = true;
     App::new(AppConfig {
         name: Some("TekesUI PopoverContent Review".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

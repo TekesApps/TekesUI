@@ -357,6 +357,7 @@ impl HostDiagnostics {
 pub struct Host {
     pub(crate) theme: Theme,
     palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
+    window_title: Option<String>,
     pub(crate) renderer: Option<Renderer>,
     pub(crate) text: Text,
     completion: Option<SyncSender<SyncSender<()>>>,
@@ -433,6 +434,14 @@ impl Host {
         self.palette_source = source;
         self
     }
+    pub(crate) fn with_window_title(mut self, title: Option<String>) -> Self {
+        self.window_title = title;
+        self
+    }
+    #[cfg(test)]
+    pub(crate) fn window_title(&self) -> Option<&str> {
+        self.window_title.as_deref()
+    }
     fn palette(&self) -> Palette {
         self.palette_source.as_ref().map_or_else(
             || self.theme.into(),
@@ -448,6 +457,7 @@ impl Host {
         Self {
             theme: Theme::LIGHT,
             palette_source: None,
+            window_title: None,
             renderer: None,
             text: Text::new(),
             completion: None,
@@ -690,7 +700,8 @@ impl Host {
                 for p in &mut self.panel_mgr.panels {
                     p.request(InputKind::Cancel, 0., 0.)?;
                 }
-                let title = format!("TekesUI AppHost · {label}");
+                let base = self.window_title.as_deref().unwrap_or("TekesUI AppHost");
+                let title = format!("{base} · {label}");
                 w.set_title(&title);
                 self.nav_mgr.navigation_title = Some(title);
                 self.nav_mgr.navigation_order = Some(self.layout.order.clone());
@@ -1114,7 +1125,8 @@ impl Host {
                 .as_ref()
                 .map(|e| e.id.as_str())
                 .unwrap_or("empty");
-            let title = format!("TekesUI AppHost · {name}");
+            let base = self.window_title.as_deref().unwrap_or("TekesUI AppHost");
+            let title = format!("{base} · {name}");
             if self.nav_mgr.navigation_title.as_ref() != Some(&title) {
                 w.set_title(&title);
                 self.nav_mgr.navigation_title = Some(title);
@@ -2034,12 +2046,88 @@ impl Host {
         Ok(())
     }
 }
+impl Host {
+    pub(crate) fn closable_active_tab(&self) -> Option<&str> {
+        if self.settings_mgr.is_settings_window {
+            return None;
+        }
+        let state = self.layout.presentation.as_ref()?;
+        if !state.others_visible() {
+            return None;
+        }
+        match state.selected_tab() {
+            Some(crate::OthersTab::Container(id))
+                if id != state.focus_id()
+                    && state.others_ids().iter().any(|candidate| candidate == id) =>
+            {
+                Some(id.as_str())
+            }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn close_menu_title(&self) -> Option<&'static str> {
+        self.closable_active_tab().map(|_| "Close Tab")
+    }
+
+    pub(crate) fn close_active_tab(&mut self) -> Result<bool> {
+        let Some(id) = self.closable_active_tab().map(str::to_owned) else {
+            return Ok(false);
+        };
+        if self.composition_in_progress() {
+            host_diag!("PRESENTATION_REJECTED composition-in-progress");
+            return Ok(true);
+        }
+        if let Some(header) = &mut self.layout.presentation_tabs {
+            header.event(&ContentEvent::Cancel);
+        }
+        if let Some(grid) = &mut self.layout.presentation_creation_grid {
+            grid.host.event(&ContentEvent::Cancel);
+        }
+        self.cancel_toolbar_input();
+        self.layout.drag_split = None;
+        self.layout.outer_view.cancel(&mut self.layout.outer);
+        self.layout.inner_view.cancel(&mut self.layout.inner);
+        self.close_container(&id)?;
+        if let Some(state) = self.layout.presentation.as_ref() {
+            host_diag!(
+                "PRESENTATION_CHANGED focus={} others={:?}",
+                state.focus_id(),
+                state.others()
+            );
+        }
+        Ok(true)
+    }
+}
+
 impl WindowHandler for Host {
     fn allows_app_quit(&self) -> bool {
         self.settings_mgr.settings.as_ref().is_none_or(|s| {
             let s = s.borrow();
             s.clean_for_close() || s.failed_close_prompted
         })
+    }
+
+    fn close_menu_title(&self) -> Option<&'static str> {
+        Host::close_menu_title(self)
+    }
+
+    fn handle_close_shortcut(&mut self, w: &mut Window) -> bool {
+        match self.close_active_tab() {
+            Ok(true) => {
+                if let Err(e) = self.draw(w) {
+                    host_diag!("HOST_ERROR {e:#}");
+                    w.set_title(&format!("AppHost error: {e}"));
+                }
+                true
+            }
+            Ok(false) => false,
+            Err(e) => {
+                host_diag!("HOST_ERROR {e:#}");
+                w.set_title(&format!("AppHost error: {e}"));
+                true
+            }
+        }
     }
 
     fn handle(&mut self, event: Event, w: &mut Window) {
@@ -2526,6 +2614,16 @@ impl Host {
 }
 
 pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
+    let app_name = app
+        .app_name
+        .clone()
+        .unwrap_or_else(|| "TekesUI AppHost Prototype".into());
+    let window_title = app
+        .window_title
+        .clone()
+        .or_else(|| app.app_name.clone())
+        .unwrap_or_else(|| "TekesUI AppHost Prototype".into());
+    let quit_after_last_window_closed = app.quit_after_last_window_closed.unwrap_or(acceptance);
     let settings = app.settings.take();
     let mut host = app.into_host(acceptance);
     ensure!(
@@ -2565,12 +2663,12 @@ pub(crate) fn run(mut app: crate::AppWindow, acceptance: bool) -> Result<()> {
     host.configure_settings(settings)?;
     let menus = host.menu_bar();
     App::new(AppConfig {
-        name: Some("TekesUI AppHost Prototype".into()),
-        ..Default::default()
+        name: Some(app_name),
+        quit_after_last_window_closed,
     })
     .run(
         WindowConfig {
-            title: "TekesUI AppHost Prototype".into(),
+            title: window_title,
             unified_titlebar: true,
             placement: tekes_ui_platform_macos::WindowPlacement::Auto {
                 need_120hz: false,
@@ -4435,5 +4533,100 @@ mod shared_settings_owner_tests {
 
         drop(host);
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn close_shortcut_targets_closable_others_tabs_before_window() {
+        use crate::{ContainerOptions, LocalContainer, OthersOptions, PresentationOptions};
+        use tekes_ui_controls::composition::{ComponentId, Content, TextFieldContent};
+
+        let make_local = |id: &str, list_height: Option<f32>| {
+            let mut local = LocalContainer::new(
+                id,
+                Content::new(ComponentId(1), TextFieldContent::new("Field", id)),
+            )
+            .unwrap();
+            if let Some(height) = list_height {
+                local = local.options(ContainerOptions {
+                    list_height: Some(height),
+                    ..ContainerOptions::default()
+                });
+            }
+            local.into()
+        };
+
+        let mut host = crate::AppWindow::from_containers(
+            vec![
+                make_local("focus", None),
+                make_local("tab_a", None),
+                make_local("tab_b", None),
+                make_local("list_item", Some(120.)),
+            ],
+            PresentationOptions::new("focus").others(OthersOptions::new(vec![
+                "tab_a".into(),
+                "tab_b".into(),
+                "list_item".into(),
+            ])),
+        )
+        .unwrap()
+        .into_host(false);
+        host.mount_initial_containers();
+
+        assert_eq!(host.close_menu_title(), Some("Close Tab"));
+        assert_eq!(host.closable_active_tab(), Some("tab_a"));
+        assert!(host.close_active_tab().unwrap());
+        assert_eq!(
+            host.layout.presentation.as_ref().unwrap().others_ids(),
+            &["tab_b".to_owned(), "list_item".to_owned()]
+        );
+
+        // Selecting List makes the active tab non-closable by container close.
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(crate::OthersTab::List)
+            .unwrap();
+        assert_eq!(host.close_menu_title(), None);
+        assert!(!host.close_active_tab().unwrap());
+
+        // Switching back to container tab restores "Close Tab", while hiding Others yields None.
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .select_tab(crate::OthersTab::Container("tab_b".into()))
+            .unwrap();
+        assert_eq!(host.close_menu_title(), Some("Close Tab"));
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others()
+            .unwrap();
+        assert_eq!(host.close_menu_title(), None);
+        assert!(!host.close_active_tab().unwrap());
+
+        // Restoring Others and closing tab_b leaves only List -> next shortcut closes window.
+        host.layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .toggle_others()
+            .unwrap();
+        assert!(host.close_active_tab().unwrap());
+        assert_eq!(host.close_menu_title(), None);
+        assert!(!host.close_active_tab().unwrap());
+
+        // Settings auxiliary windows never treat ⌘W as a tab close.
+        let mut settings_host = crate::AppWindow::from_containers(
+            vec![make_local("focus", None), make_local("tab", None)],
+            PresentationOptions::new("focus").others(OthersOptions::new(vec!["tab".into()])),
+        )
+        .unwrap()
+        .into_host(false);
+        settings_host.settings_mgr.is_settings_window = true;
+        assert_eq!(settings_host.close_menu_title(), None);
+        assert!(!settings_host.close_active_tab().unwrap());
     }
 }

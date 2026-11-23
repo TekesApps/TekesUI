@@ -66,7 +66,7 @@ pub(crate) fn run_harness() -> anyhow::Result<()> {
     };
     App::new(AppConfig {
         name: Some("TekesUI Gallery".into()),
-        ..AppConfig::default()
+        quit_after_last_window_closed: true,
     })
     .run(window_config, menu_bar, handler);
     if has_perf {
@@ -189,6 +189,14 @@ impl AppHostHarnessHandler {
 impl WindowHandler for AppHostHarnessHandler {
     fn allows_app_quit(&self) -> bool {
         self.hosted.allows_app_quit()
+    }
+
+    fn close_menu_title(&self) -> Option<&'static str> {
+        self.hosted.close_menu_title()
+    }
+
+    fn handle_close_shortcut(&mut self, window: &mut Window) -> bool {
+        self.hosted.handle_close_shortcut(window)
     }
 
     fn handle(&mut self, event: Event, window: &mut Window) {
