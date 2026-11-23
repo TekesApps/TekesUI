@@ -233,6 +233,19 @@ impl KeyedSelectableListContent {
     pub fn set_navigation_layout(&mut self, value: bool) {
         self.view.set_navigation_layout(value);
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.view.set_compact(compact);
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        if self.view.compact() != compact {
+            self.view.set_compact(compact);
+            self.view.invalidate_list_layout(&self.model);
+        }
+    }
+    pub fn compact(&self) -> bool {
+        self.view.compact()
+    }
     /// Use the shared navigation selection treatment.
     pub fn set_navigation_selection_fill_only(&mut self, value: bool) {
         self.view.set_navigation_selection_fill_only(value);

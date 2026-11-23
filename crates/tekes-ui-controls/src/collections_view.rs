@@ -81,15 +81,20 @@ pub(super) fn render_quiet_button(
     )
 }
 pub(super) fn row_height() -> f32 {
-    proposal::metric("spacing", "space-loose")
-        .unwrap_or(24.0)
-        .max(24.0)
-        + 12.0
+    proposal::metric("size", "size-row-height").expect("list row height")
+}
+pub(super) fn compact_row_height() -> f32 {
+    proposal::metric("size", "size-compact-row").expect("compact row height")
+}
+pub(super) fn row_height_for(compact: bool) -> f32 {
+    if compact {
+        compact_row_height()
+    } else {
+        row_height()
+    }
 }
 pub(super) fn row_gap() -> f32 {
-    // Existing Gallery list/tree/table fixtures use 4pt row gaps. Preserve
-    // those default pitches while allowing wrapped content to grow naturally.
-    4.0
+    tekes_ui_tokens::Spacing::Tight.value()
 }
 pub(super) fn control_state(
     selected: bool,

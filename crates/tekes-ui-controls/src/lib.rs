@@ -42,6 +42,7 @@ pub use widgets::{
 mod paint;
 pub use paint::{ButtonTone, ButtonVariant, SurfaceKind};
 pub use widgets::Toolbar;
+pub(crate) use widgets::button_typography_scale;
 mod chart;
 pub mod extended;
 pub use chart::{

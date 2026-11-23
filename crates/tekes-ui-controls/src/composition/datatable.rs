@@ -349,6 +349,19 @@ impl DataTableContent {
     pub fn selected_key(&self) -> Option<R> {
         self.model.selected_key()
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.view.set_compact(compact);
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        if self.view.compact() != compact {
+            self.view.set_compact(compact);
+            self.view.invalidate_content_layout();
+        }
+    }
+    pub fn compact(&self) -> bool {
+        self.view.compact()
+    }
     pub fn sort_key_state(&self) -> Option<(C, SortDirection)> {
         self.model.sort_key_state()
     }
@@ -1129,6 +1142,7 @@ impl DataTableContent {
     ) -> TableContentMetrics {
         let cw = width.max(0.) / self.model.snapshot().columns.len().max(1) as f32;
         let inset_x2 = DataTableView::cell_horizontal_inset(text) * 2.;
+        let accessory_gap = DataTableView::cell_accessory_gap(text);
         let mut result = TableContentMetrics::default();
         let mut i = 0;
         for col in &self.model.snapshot().columns {
@@ -1166,9 +1180,17 @@ impl DataTableContent {
                             .size
                     });
                     let aw = accessory.map_or(0., |s| s.width.min((cw - inset_x2).max(0.)));
+                    let acc_gap = if accessory.is_some() {
+                        accessory_gap
+                    } else {
+                        0.
+                    };
                     let main = refs[col * 2].map(|j| {
                         w.children[j]
-                            .measure(text, Size::new((cw - inset_x2 - aw).max(0.), height))
+                            .measure(
+                                text,
+                                Size::new((cw - inset_x2 - acc_gap - aw).max(0.), height),
+                            )
                             .size
                     });
                     row.push((main, accessory));
@@ -1188,6 +1210,7 @@ impl DataTableContent {
         let own = clip.intersection(&l.frame).unwrap_or_default();
         let inset = DataTableView::cell_horizontal_inset(text);
         let inset_x2 = inset * 2.;
+        let accessory_gap = DataTableView::cell_accessory_gap(text);
         let mut i = 0;
         for (j, col) in self.model.snapshot().columns.iter().enumerate() {
             if self.headers.get(&col.key).is_some_and(Option::is_some) {
@@ -1215,16 +1238,16 @@ impl DataTableContent {
                     for j in 0..self.model.snapshot().columns.len() {
                         let cw = l.columns[j].size.width;
                         let x = l.columns[j].min_x() + inset;
-                        let aw = self.metrics.cells[index][j]
-                            .1
-                            .map_or(0., |s| s.width.min((cw - inset_x2).max(0.)));
+                        let acc = self.metrics.cells[index][j].1;
+                        let aw = acc.map_or(0., |s| s.width.min((cw - inset_x2).max(0.)));
+                        let acc_gap = if acc.is_some() { accessory_gap } else { 0. };
                         for (slot, f) in [
                             (
                                 2 * j,
                                 Rect::new(
                                     x,
                                     layout.frame.min_y(),
-                                    (cw - inset_x2 - aw).max(0.),
+                                    (cw - inset_x2 - acc_gap - aw).max(0.),
                                     layout.frame.size.height,
                                 ),
                             ),
