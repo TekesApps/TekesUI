@@ -619,11 +619,13 @@ impl Component for MediaViewerContent {
             }
             ContentEvent::PointerUp(_) => ContentResponse::consumed(self.drag.take().is_some()),
             ContentEvent::Key { key, down: true } if self.focused => {
+                let step =
+                    proposal::metric("size", "size-row-height").expect("media viewer pan step");
                 let delta = match key {
-                    ControlKey::Left => Point::new(32.0, 0.0),
-                    ControlKey::Right => Point::new(-32.0, 0.0),
-                    ControlKey::Up => Point::new(0.0, 32.0),
-                    ControlKey::Down => Point::new(0.0, -32.0),
+                    ControlKey::Left => Point::new(step, 0.0),
+                    ControlKey::Right => Point::new(-step, 0.0),
+                    ControlKey::Up => Point::new(0.0, step),
+                    ControlKey::Down => Point::new(0.0, -step),
                     _ => return ContentResponse::default(),
                 };
                 ContentResponse::consumed(

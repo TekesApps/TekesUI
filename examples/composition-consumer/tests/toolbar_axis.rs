@@ -269,8 +269,9 @@ fn toolbar_menu_rows_escape_bar_clip_but_remain_hittable_and_region_bounded() {
         draw(&mut host, &mut text);
         let (_, delta_frame, role) = part(&host, "Delta");
         assert_eq!(role, ContentRole::MenuItem);
+        let min_menu_row = tekes_ui_tokens::proposal::metric("size", "size-button-sm").unwrap();
         assert!(
-            delta_frame.size.height >= 30.,
+            delta_frame.size.height >= min_menu_row,
             "the second popup row keeps its full menu hit frame outside the toolbar clip: {axis:?} {delta_frame:?}"
         );
         if axis == tekes_ui_controls::extended::Axis::Horizontal {
@@ -351,8 +352,9 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
         draw(&mut host, &mut text);
         let (_, second, role) = part_in(&host, MENU, "Second");
         assert_eq!(role, ContentRole::MenuItem);
+        let min_menu_row = tekes_ui_tokens::proposal::metric("size", "size-button-sm").unwrap();
         assert!(
-            second.size.height >= 30.,
+            second.size.height >= min_menu_row,
             "MenuContent row is clipped by its toolbar ancestor in {axis:?}: {second:?}"
         );
         let second_visible = host
@@ -366,7 +368,7 @@ fn original_menu_content_popup_rows_use_host_clip_in_horizontal_and_vertical_reg
             .items[1]
             .visible;
         assert!(
-            second_visible.is_some_and(|visible| visible.size.height >= 30.),
+            second_visible.is_some_and(|visible| visible.size.height >= min_menu_row),
             "host viewport must expose the full row outside the toolbar clip in {axis:?}: {second_visible:?}"
         );
         assert!(

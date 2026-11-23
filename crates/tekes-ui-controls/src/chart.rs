@@ -197,8 +197,8 @@ impl BarChart {
         } else {
             1.0
         };
-        let label_height =
-            (token_metric("spacing", "space-loose") * scale).min(bounds.size.height * 0.45);
+        let label_height = (proposal::TextRole::UiCaption.style().line_height * 2.0 * scale)
+            .min(bounds.size.height * 0.45);
         let inset = Rect::new(
             bounds.min_x() + outer,
             bounds.min_y() + outer,
@@ -1106,5 +1106,17 @@ mod tests {
         assert_eq!(chart, before);
         assert_eq!(chart.try_update_data(Vec::new()), Ok(()));
         assert_eq!(chart.selected(), None);
+    }
+
+    #[test]
+    fn layout_with_text_scale_reserves_full_ui_caption_height_per_label_row() {
+        let model = chart(&[4.0, 9.0]);
+        let g1 = model.layout_with_text_scale(Rect::new(0.0, 0.0, 320.0, 240.0), 1.0);
+        let caption_h = proposal::TextRole::UiCaption.style().line_height;
+        assert_eq!(g1.bars[0].value_label.size.height, caption_h);
+        assert_eq!(g1.bars[0].category_label.size.height, caption_h);
+        let g15 = model.layout_with_text_scale(Rect::new(0.0, 0.0, 320.0, 240.0), 1.5);
+        assert_eq!(g15.bars[0].value_label.size.height, caption_h * 1.5);
+        assert_eq!(g15.bars[0].category_label.size.height, caption_h * 1.5);
     }
 }

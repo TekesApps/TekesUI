@@ -101,8 +101,9 @@ impl ChartView {
         model.set_hovered(self.hovered);
         let mut local = Scene::new();
         let _ = text_scale; // Label heights come from the active text shaper.
-        let mut value_line_height: f32 = 16.0;
-        let mut category_line_height: f32 = 16.0;
+        let caption_floor = proposal::TextRole::UiCaption.style().line_height;
+        let mut value_line_height: f32 = caption_floor;
+        let mut category_line_height: f32 = caption_floor;
         if let Some((value_width, category_width)) = model.label_widths(frame) {
             for datum in model.data().iter().filter(|datum| datum.value.is_finite()) {
                 value_line_height = value_line_height.max(
@@ -181,7 +182,11 @@ impl ChartView {
             .bars
             .iter()
             .find(|b| {
-                visible(b.rect.inset(-6.0), self.layout.visible).is_some_and(|r| r.contains(point))
+                visible(
+                    b.rect.inset(-tekes_ui_tokens::Spacing::Snug.value()),
+                    self.layout.visible,
+                )
+                .is_some_and(|r| r.contains(point))
             })
             .map(|b| b.index);
         let changed = next != self.hovered;
@@ -211,7 +216,11 @@ impl ChartView {
             .bars
             .iter()
             .find(|b| {
-                visible(b.rect.inset(-6.0), self.layout.visible).is_some_and(|r| r.contains(point))
+                visible(
+                    b.rect.inset(-tekes_ui_tokens::Spacing::Snug.value()),
+                    self.layout.visible,
+                )
+                .is_some_and(|r| r.contains(point))
             })
             .map(|b| b.index)
         else {

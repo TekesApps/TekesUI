@@ -224,7 +224,7 @@ impl IconView {
         let natural = if requested_size.is_finite() && requested_size > 0. {
             requested_size
         } else {
-            proposal::metric("size", "size-icon-preview").expect("Icon natural artboard token")
+            proposal::metric("size", "size-icon-standard").expect("Icon natural artboard token")
         };
         let side = natural
             .min(frame.size.width.max(0.))
@@ -490,7 +490,11 @@ impl SplitViewView {
             leading: ControlFrame::new(leading, clip),
             divider: ControlFrame::new(divider, clip),
             trailing: ControlFrame::new(trailing, clip),
-            divider_hit: ControlFrame::new(divider.inset(-4.), clip).visible_frame(),
+            divider_hit: ControlFrame::new(
+                divider.inset(-tekes_ui_tokens::Spacing::Tight.value()),
+                clip,
+            )
+            .visible_frame(),
         };
         self.layout
     }

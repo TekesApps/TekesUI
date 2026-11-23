@@ -46,7 +46,7 @@ fn retained_public_icon_repaints_semantic_and_explicit_tints_without_an_interact
     let mut artwork = SvgArtwork { glyph, tree };
     let mut view = IconView::default();
     let frame = Rect::new(20., 30., 80., 64.);
-    let side = proposal::metric("size", "size-icon-preview").unwrap();
+    let side = proposal::metric("size", "size-icon-standard").unwrap();
     let mut original_geometry = None;
     let mut previous_ink = None;
     for theme in Theme::ALL {

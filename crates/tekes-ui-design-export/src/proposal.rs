@@ -413,6 +413,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         ("CAPTURE_WIDTH", "/layout/gallery/capture_size/0"),
         ("CAPTURE_HEIGHT", "/layout/gallery/capture_size/1"),
         ("SIDEBAR_WIDTH", "/layout/sidebar/default"),
+        ("SIDEBAR_MIN_WIDTH", "/layout/sidebar/min"),
         (
             "SCROLL_CONTENT_PADDING",
             "/layout/scroll_area/content_padding",
