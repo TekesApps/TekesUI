@@ -128,6 +128,14 @@ impl tekes_ui_platform_macos::WindowHandler for HostedWindow {
         self.0.allows_app_quit()
     }
 
+    fn close_menu_title(&self) -> Option<&'static str> {
+        self.0.close_menu_title()
+    }
+
+    fn handle_close_shortcut(&mut self, window: &mut tekes_ui_platform_macos::Window) -> bool {
+        self.0.handle_close_shortcut(window)
+    }
+
     fn handle(
         &mut self,
         event: tekes_ui_platform_macos::Event,
@@ -207,6 +215,9 @@ pub struct AppWindow {
     settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
     container_factories: Vec<ContainerFactory>,
+    app_name: Option<String>,
+    window_title: Option<String>,
+    quit_after_last_window_closed: Option<bool>,
 }
 #[cfg(target_os = "macos")]
 impl std::fmt::Debug for AppWindow {
@@ -239,6 +250,9 @@ impl AppWindow {
             settings: None,
             presentation: None,
             container_factories: Vec::new(),
+            app_name: None,
+            window_title: None,
+            quit_after_last_window_closed: None,
         }
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
@@ -265,6 +279,9 @@ impl AppWindow {
             settings: None,
             presentation: None,
             container_factories: Vec::new(),
+            app_name: None,
+            window_title: None,
+            quit_after_last_window_closed: None,
         })
     }
     /// Assemble the optional NavBar and focus/others presentation from stable
@@ -297,10 +314,14 @@ impl AppWindow {
             settings: None,
             presentation: Some(presentation),
             container_factories: Vec::new(),
+            app_name: None,
+            window_title: None,
+            quit_after_last_window_closed: None,
         })
     }
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
         let theme = self.theme;
+        let window_title = self.window_title.or_else(|| self.app_name.clone());
         let host = match self.columns {
             Some(columns) if self.presentation.is_some() => window::Host::from_containers(
                 columns.into_iter().map(Container::from).collect(),
@@ -321,6 +342,7 @@ impl AppWindow {
         };
         host.with_theme(theme)
             .with_palette_source(self.palette_source)
+            .with_window_title(window_title)
             .with_container_factories(self.container_factories)
     }
     /// Register finite, consumer-defined creatable types before opening a window.
@@ -396,6 +418,25 @@ impl AppWindow {
         self.settings = Some(settings::SettingsConfiguration::Shared(owner));
         self
     }
+    /// Configure the application name shown in the macOS menu bar
+    /// (`About / Hide / Quit <AppName>`). When `window_title` is not set
+    /// separately, this also serves as the initial main window title.
+    pub fn app_name(mut self, name: impl Into<String>) -> Self {
+        self.app_name = Some(name.into());
+        self
+    }
+    /// Configure the initial title for the main application window.
+    pub fn window_title(mut self, title: impl Into<String>) -> Self {
+        self.window_title = Some(title.into());
+        self
+    }
+    /// Configure whether closing the last window terminates the process
+    /// instead of keeping the macOS app resident in the Dock and menu bar.
+    /// Defaults to `false` for normal runs and `true` for `--window-acceptance`.
+    pub fn quit_after_last_window_closed(mut self, quit: bool) -> Self {
+        self.quit_after_last_window_closed = Some(quit);
+        self
+    }
     /// Open a native window in an existing application event loop.
     /// Process containers require the embedding executable's usual worker dispatch.
     pub fn open(
@@ -416,57 +457,21 @@ impl AppWindow {
 
     pub fn run(self) -> anyhow::Result<()> {
         let args: Vec<String> = std::env::args().collect();
-        run_columns(
-            self.profile,
-            self.components,
-            self.columns,
-            self.navigation,
-            self.settings,
-            self.presentation,
-            self.theme,
-            self.palette_source,
-            self.container_factories,
-            &args,
-            RunMode::Consumer,
-        )
+        run_columns(self, &args, RunMode::Consumer)
     }
 
     /// Launch this window under the finite `window-acceptance` test driver.
     #[cfg(feature = "window-acceptance")]
     pub fn run_window_acceptance(self) -> anyhow::Result<()> {
         let args: Vec<String> = std::env::args().collect();
-        run_columns(
-            self.profile,
-            self.components,
-            self.columns,
-            self.navigation,
-            self.settings,
-            self.presentation,
-            self.theme,
-            self.palette_source,
-            self.container_factories,
-            &args,
-            RunMode::WindowAcceptance,
-        )
+        run_columns(self, &args, RunMode::WindowAcceptance)
     }
 
     /// Run with explicit startup arguments, including the executable at argv[0].
     /// Embedding consumers remove only their own already-consumed arguments;
     /// all remaining worker and fixed-profile argument validation still applies.
     pub fn run_with_args(self, args: &[String]) -> anyhow::Result<()> {
-        run_columns(
-            self.profile,
-            self.components,
-            self.columns,
-            self.navigation,
-            self.settings,
-            self.presentation,
-            self.theme,
-            self.palette_source,
-            self.container_factories,
-            args,
-            RunMode::ValidateArgs,
-        )
+        run_columns(self, args, RunMode::ValidateArgs)
     }
 
     /// Validate this window assembly and construct its [`HostedWindow`] handler
@@ -542,16 +547,11 @@ fn run_internal(
     navigation: Option<NavigationOptions>,
     settings: Option<settings::SettingsConfiguration>,
 ) -> anyhow::Result<()> {
+    let mut app = AppWindow::new(profile);
+    app.navigation = navigation;
+    app.settings = settings;
     run_columns(
-        profile,
-        Vec::new(),
-        None,
-        navigation,
-        settings,
-        None,
-        tekes_ui_tokens::Theme::LIGHT,
-        None,
-        Vec::new(),
+        app,
         &std::env::args().collect::<Vec<_>>(),
         RunMode::Consumer,
     )
@@ -582,29 +582,16 @@ fn validate_assembly(
 }
 
 #[cfg(target_os = "macos")]
-#[allow(clippy::too_many_arguments)]
-fn run_columns(
-    profile: AppProfile,
-    components: Vec<ComponentDefinition>,
-    columns: Option<Vec<Column>>,
-    navigation: Option<NavigationOptions>,
-    settings: Option<settings::SettingsConfiguration>,
-    presentation: Option<PresentationOptions>,
-    theme: tekes_ui_tokens::Theme,
-    palette_source: Option<std::rc::Rc<std::cell::Cell<tekes_ui_tokens::Palette>>>,
-    factories: Vec<ContainerFactory>,
-    args: &[String],
-    mode: RunMode,
-) -> anyhow::Result<()> {
+fn run_columns(app: AppWindow, args: &[String], mode: RunMode) -> anyhow::Result<()> {
     validate_assembly(
-        &profile,
-        columns.as_deref(),
-        navigation.is_some(),
-        presentation.as_ref(),
+        &app.profile,
+        app.columns.as_deref(),
+        app.navigation.is_some(),
+        app.presentation.as_ref(),
     )?;
-    validate_components(&profile, &components)?;
+    validate_components(&app.profile, &app.components)?;
     let mut all_components = vec![navigation::definition(), settings_undo::definition()];
-    for component in &components {
+    for component in &app.components {
         if !all_components
             .iter()
             .any(|existing| existing.id == component.id)
@@ -617,7 +604,8 @@ fn run_columns(
     }
     if args.get(1).map(String::as_str) == Some("--worker") {
         anyhow::ensure!(args.len() == 4, "invalid worker arguments");
-        let definition = profile
+        let definition = app
+            .profile
             .modules
             .iter()
             .find(|m| m.id == args[2])
@@ -625,20 +613,7 @@ fn run_columns(
         return tekes_ui_module_runtime::run((definition.create)(), &args[3]);
     }
     let acceptance = resolve_acceptance(mode, args)?;
-    window::run(
-        AppWindow {
-            profile,
-            components,
-            columns,
-            navigation,
-            settings,
-            presentation,
-            theme,
-            palette_source,
-            container_factories: factories,
-        },
-        acceptance,
-    )
+    window::run(app, acceptance)
 }
 #[cfg(target_os = "macos")]
 fn resolve_acceptance(mode: RunMode, args: &[String]) -> anyhow::Result<bool> {
@@ -761,5 +736,51 @@ mod hosted_window_tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn app_window_identity_and_quit_policy_builders_and_fallback() {
+        let focus = LocalContainer::new(
+            "focus",
+            Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+        )
+        .unwrap();
+        let default_app =
+            AppWindow::from_containers(vec![focus.into()], PresentationOptions::new("focus"))
+                .unwrap();
+        assert_eq!(default_app.app_name, None);
+        assert_eq!(default_app.window_title, None);
+        assert_eq!(default_app.quit_after_last_window_closed, None);
+
+        let fallback_focus = LocalContainer::new(
+            "focus",
+            Content::new(ComponentId(2), TextFieldContent::new("Field", "")),
+        )
+        .unwrap();
+        let app_named = AppWindow::from_containers(
+            vec![fallback_focus.into()],
+            PresentationOptions::new("focus"),
+        )
+        .unwrap()
+        .app_name("Studio")
+        .quit_after_last_window_closed(false);
+        assert_eq!(app_named.app_name.as_deref(), Some("Studio"));
+        assert_eq!(app_named.window_title, None);
+        assert_eq!(app_named.quit_after_last_window_closed, Some(false));
+        let host = app_named.into_host(false);
+        assert_eq!(host.window_title(), Some("Studio"));
+
+        let custom_app = AppWindow::new(AppProfile { modules: vec![] })
+            .app_name("Studio")
+            .window_title("Workspace · Alpha")
+            .quit_after_last_window_closed(true);
+        assert_eq!(custom_app.app_name.as_deref(), Some("Studio"));
+        assert_eq!(
+            custom_app.window_title.as_deref(),
+            Some("Workspace · Alpha")
+        );
+        assert_eq!(custom_app.quit_after_last_window_closed, Some(true));
+        let host = custom_app.into_host(false);
+        assert_eq!(host.window_title(), Some("Workspace · Alpha"));
     }
 }

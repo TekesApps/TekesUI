@@ -200,7 +200,7 @@ impl WindowHandler for Probe {
 fn main() {
     App::new(AppConfig {
         name: Some("Rust Text Compare".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

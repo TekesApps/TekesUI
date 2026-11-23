@@ -323,7 +323,7 @@ fn main() {
     };
     App::new(AppConfig {
         name: Some("TekesUI Hover Preview Review".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

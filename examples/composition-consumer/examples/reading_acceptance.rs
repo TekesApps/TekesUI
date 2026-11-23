@@ -35,7 +35,7 @@ mod macos {
         };
         App::new(AppConfig {
             name: Some("TekesUI 阅读锚点".into()),
-            ..Default::default()
+            quit_after_last_window_closed: true,
         })
         .run(
             WindowConfig {

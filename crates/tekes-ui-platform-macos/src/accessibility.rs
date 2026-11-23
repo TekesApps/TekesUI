@@ -1763,7 +1763,7 @@ pub(crate) mod native {
 
         fn shared_and_node(&self) -> Option<(Rc<Shared>, AccessibilityNode)> {
             let shared = self.ivars().shared.upgrade()?;
-            if shared.closed.get() {
+            if shared.is_inactive_surface() {
                 return None;
             }
             if shared
@@ -1819,7 +1819,9 @@ pub(crate) mod native {
             let Some((shared, node)) = self.shared_and_node() else {
                 return false;
             };
-            if shared.closed.get() || !node.enabled || !Self::collection_has_action_geometry(&node)
+            if shared.is_inactive_surface()
+                || !node.enabled
+                || !Self::collection_has_action_geometry(&node)
             {
                 return false;
             }
@@ -1925,7 +1927,7 @@ pub(crate) mod native {
         shared: &Rc<Shared>,
         parent: Option<AccessibilityKey>,
     ) -> Retained<NSArray> {
-        if shared.closed.get() {
+        if shared.is_inactive_surface() {
             return NSArray::new();
         }
         if shared

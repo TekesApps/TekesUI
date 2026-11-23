@@ -1005,7 +1005,7 @@ mod mac {
         CAPTURE.with_borrow_mut(|c| c.reference = reference);
         App::new(AppConfig {
             name: Some("TekesUI Scroll Calibration".into()),
-            ..Default::default()
+            quit_after_last_window_closed: true,
         })
         .run(
             WindowConfig {

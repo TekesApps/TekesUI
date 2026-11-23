@@ -868,7 +868,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     App::new(AppConfig {
         name: Some("TekesUI Issue 82 Panel Consumer".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     })
     .run(
         WindowConfig {

@@ -2630,7 +2630,7 @@ fn main() {
     };
     let app = App::new(AppConfig {
         name: Some("TekesUI Composition Consumer".into()),
-        ..Default::default()
+        quit_after_last_window_closed: true,
     });
     if disclosure_review {
         host.selftest_script = Some(vec![

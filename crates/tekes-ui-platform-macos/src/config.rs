@@ -3,21 +3,24 @@
 use crate::event::Size;
 use crate::placement::WindowPlacement;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AppConfig {
     /// 应用名，用在标准应用菜单的“关于 / 隐藏 / 退出”标题里。
     /// `None` 时取进程名。
     pub name: Option<String>,
-    /// 最后一个窗口关闭后是否结束 `run()`。默认 true。
+    /// 最后一个窗口关闭后是否结束 `run()`。默认 false（符合原生 macOS 应用习惯，关窗后驻留 Dock 与菜单栏）。
     pub quit_after_last_window_closed: bool,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        AppConfig {
-            name: None,
-            quit_after_last_window_closed: true,
-        }
+impl AppConfig {
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn quit_after_last_window_closed(mut self, quit: bool) -> Self {
+        self.quit_after_last_window_closed = quit;
+        self
     }
 }
 
@@ -52,5 +55,26 @@ impl Default for WindowConfig {
             placement: WindowPlacement::Centered,
             frame_autosave_name: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_matches_native_macos_lifecycle() {
+        let config = AppConfig::default();
+        assert_eq!(config.name, None);
+        assert!(!config.quit_after_last_window_closed);
+    }
+
+    #[test]
+    fn builders_override_name_and_quit_policy() {
+        let config = AppConfig::default()
+            .name("Tekes Studio")
+            .quit_after_last_window_closed(true);
+        assert_eq!(config.name.as_deref(), Some("Tekes Studio"));
+        assert!(config.quit_after_last_window_closed);
     }
 }

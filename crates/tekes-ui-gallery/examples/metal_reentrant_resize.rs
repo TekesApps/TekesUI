@@ -84,7 +84,11 @@ fn main() {
     let frames = Rc::new(Cell::new(0));
     let presents = Rc::new(Cell::new(0));
     selftest::run_script(vec![(10000, selftest::Action::Close)]);
-    App::new(AppConfig::default()).run(
+    App::new(AppConfig {
+        quit_after_last_window_closed: true,
+        ..AppConfig::default()
+    })
+    .run(
         WindowConfig {
             title: "Metal reentrant resize regression".into(),
             ..Default::default()

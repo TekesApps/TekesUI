@@ -181,6 +181,23 @@ pub enum Action {
         shift: bool,
         command: bool,
     },
+    /// 触发 `⌘Q` / `App → Quit`（`NSApp.terminate:`）。
+    Quit,
+    /// 触发 Dock 重开（`applicationShouldHandleReopen:hasVisibleWindows:`）。
+    Reopen,
+    /// Record the primary window's redraw and animation-frame counts under `label`.
+    RedrawMark(&'static str),
+    /// Assert live lifecycle, File menu state, and dormant redraw invariants on the main thread.
+    ExpectLifecycle {
+        label: &'static str,
+        primary_visible: Option<bool>,
+        primary_dormant: Option<bool>,
+        visible_windows: Option<usize>,
+        close_menu_title: Option<&'static str>,
+        close_menu_enabled: Option<bool>,
+        new_window_enabled: Option<bool>,
+        redraws_delta_zero_since: Option<&'static str>,
+    },
 }
 
 /// 内容区坐标（左上角原点）→ 窗口坐标（左下角原点）。
@@ -233,7 +250,30 @@ fn key_event(
     )
 }
 
-thread_local! { static FRAME_MARK: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+thread_local! {
+    static FRAME_MARK: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static REDRAW_MARKS: std::cell::RefCell<std::collections::HashMap<&'static str, (u64, u64)>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+fn active_selftest_window(app: &NSApplication) -> Option<objc2::rc::Retained<NSWindow>> {
+    if let Some(key) = app.keyWindow()
+        && key.isVisible()
+    {
+        return Some(key);
+    }
+    for win in app.orderedWindows().iter() {
+        if win.isVisible() {
+            return Some(win);
+        }
+    }
+    for win in app.windows().iter() {
+        if win.isVisible() || win.isMiniaturized() {
+            return Some(win);
+        }
+    }
+    app.windows().firstObject()
+}
 
 extern "C" fn run_step(ctx: *mut c_void) {
     crate::ffi_boundary("selftest::run_step", || {
@@ -246,11 +286,230 @@ extern "C" fn run_step(ctx: *mut c_void) {
 fn run_step_inner(action: Action) {
     let mtm = MainThreadMarker::new().expect("主队列上必是主线程");
     let app = NSApplication::sharedApplication(mtm);
-    let Some(w) = app.windows().firstObject() else {
+    eprintln!("selftest: {action:?}");
+    match action {
+        Action::Log(_) => return,
+        Action::Quit => {
+            app.terminate(None);
+            return;
+        }
+        Action::Reopen => {
+            use objc2_app_kit::NSApplicationDelegate;
+            let has_visible = app.windows().iter().any(|win| win.isVisible());
+            if let Some(delegate) = app.delegate() {
+                let _ = delegate.applicationShouldHandleReopen_hasVisibleWindows(&app, has_visible);
+            } else {
+                eprintln!("selftest: 没有 AppDelegate，跳过 Reopen");
+            }
+            return;
+        }
+        Action::RedrawMark(label) => {
+            let counts = crate::app::primary_window_shared()
+                .map_or((0, 0), |s| (s.redraw_count.get(), s.animation_frames.get()));
+            REDRAW_MARKS.with(|marks| {
+                marks.borrow_mut().insert(label, counts);
+            });
+            eprintln!(
+                "redraw-mark {label}: redraws={} animation_frames={}",
+                counts.0, counts.1
+            );
+            return;
+        }
+        Action::ExpectLifecycle {
+            label,
+            primary_visible,
+            primary_dormant,
+            visible_windows,
+            close_menu_title,
+            close_menu_enabled,
+            new_window_enabled,
+            redraws_delta_zero_since,
+        } => {
+            if let Some(main_menu) = app.mainMenu() {
+                main_menu.update();
+                for top in main_menu.itemArray().iter() {
+                    if let Some(sub) = top.submenu() {
+                        sub.update();
+                    }
+                }
+            }
+            let primary = crate::app::primary_window_shared();
+            if let Some(expected) = primary_visible {
+                let actual = primary
+                    .as_ref()
+                    .and_then(|s| s.objects.get())
+                    .is_some_and(|o| o.window.isVisible());
+                assert_eq!(
+                    actual, expected,
+                    "ExpectLifecycle({label}) primary_visible mismatch"
+                );
+            }
+            if let Some(expected) = primary_dormant {
+                let actual = primary.as_ref().is_some_and(|s| s.dormant.get());
+                assert_eq!(
+                    actual, expected,
+                    "ExpectLifecycle({label}) primary_dormant mismatch"
+                );
+                if expected && let Some(s) = primary.as_ref() {
+                    assert!(
+                        !s.animating.get(),
+                        "ExpectLifecycle({label}) animating remained active while dormant"
+                    );
+                    assert!(
+                        s.accessibility_nodes.borrow().is_empty()
+                            && s.accessibility_elements.borrow().is_empty(),
+                        "ExpectLifecycle({label}) AX publication remained active while dormant"
+                    );
+                    assert_eq!(
+                        crate::accessibility::native::elements_for_parent(s, None).count(),
+                        0,
+                        "ExpectLifecycle({label}) native AX elements remained active while dormant"
+                    );
+                }
+            }
+            if let Some(expected) = visible_windows {
+                let actual = crate::app::windows()
+                    .iter()
+                    .filter(|s| {
+                        !s.is_inactive_surface()
+                            && s.objects.get().is_some_and(|o| o.window.isVisible())
+                    })
+                    .count();
+                assert_eq!(
+                    actual, expected,
+                    "ExpectLifecycle({label}) visible_windows mismatch"
+                );
+            }
+            if close_menu_title.is_some() || close_menu_enabled.is_some() {
+                let item = crate::menu_build::find_action_item(
+                    mtm,
+                    crate::menu_build::close_shortcut_action(),
+                )
+                .unwrap_or_else(|| panic!("ExpectLifecycle({label}) missing File -> Close item"));
+                if let Some(expected_title) = close_menu_title {
+                    assert_eq!(
+                        item.title().to_string(),
+                        expected_title,
+                        "ExpectLifecycle({label}) close_menu_title mismatch"
+                    );
+                }
+                if let Some(expected_enabled) = close_menu_enabled {
+                    assert_eq!(
+                        item.isEnabled(),
+                        expected_enabled,
+                        "ExpectLifecycle({label}) close_menu_enabled mismatch"
+                    );
+                }
+            }
+            if let Some(expected_new_enabled) = new_window_enabled {
+                let item =
+                    crate::menu_build::find_action_item(mtm, crate::menu_build::reopen_action())
+                        .unwrap_or_else(|| {
+                            panic!("ExpectLifecycle({label}) missing File -> New Window item")
+                        });
+                assert_eq!(
+                    item.isEnabled(),
+                    expected_new_enabled,
+                    "ExpectLifecycle({label}) new_window_enabled mismatch"
+                );
+            }
+            if let Some(mark_label) = redraws_delta_zero_since {
+                let prev = REDRAW_MARKS
+                    .with(|marks| marks.borrow().get(mark_label).copied())
+                    .unwrap_or_else(|| {
+                        panic!("ExpectLifecycle({label}) unknown RedrawMark {mark_label}")
+                    });
+                let cur = primary
+                    .as_ref()
+                    .map_or((0, 0), |s| (s.redraw_count.get(), s.animation_frames.get()));
+                assert_eq!(
+                    cur, prev,
+                    "ExpectLifecycle({label}) redraw/animation count changed since {mark_label}: {prev:?} -> {cur:?}"
+                );
+            }
+            eprintln!("lifecycle-expect {label}: ok");
+            return;
+        }
+        Action::MenuCommand(tag) => {
+            let mut found = false;
+            if let Some(main) = app.mainMenu() {
+                main.update();
+                for top in main.itemArray().iter() {
+                    let Some(sub) = top.submenu() else { continue };
+                    for item in sub.itemArray().iter() {
+                        if item.tag() == tag as isize
+                            && let Some(action) = item.action()
+                        {
+                            // SAFETY: action/target 来自平台层自己建的菜单项。
+                            unsafe {
+                                app.sendAction_to_from(
+                                    action,
+                                    item.target().as_deref(),
+                                    Some(&item),
+                                );
+                            }
+                            found = true;
+                        }
+                    }
+                }
+            }
+            if !found {
+                eprintln!("selftest: 没有命令 {tag}");
+            }
+            return;
+        }
+        Action::KeyEquivalent {
+            chars,
+            key_code,
+            control,
+            alt,
+            shift,
+            command,
+        } => {
+            let mut flags = NSEventModifierFlags::empty();
+            if control {
+                flags |= NSEventModifierFlags::Control;
+            }
+            if alt {
+                flags |= NSEventModifierFlags::Option;
+            }
+            if shift {
+                flags |= NSEventModifierFlags::Shift;
+            }
+            if command {
+                flags |= NSEventModifierFlags::Command;
+            }
+            let s = NSString::from_str(chars);
+            let window_number = active_selftest_window(&app)
+                .filter(|w| w.isVisible())
+                .map_or(0, |w| w.windowNumber());
+            let e = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
+                NSEventType::KeyDown,
+                NSPoint::new(0.0, 0.0),
+                flags,
+                0.0,
+                window_number,
+                None,
+                &s,
+                &s,
+                false,
+                key_code,
+            );
+            let handled = match (app.mainMenu(), e) {
+                (Some(m), Some(e)) => m.performKeyEquivalent(&e),
+                _ => false,
+            };
+            eprintln!(
+                "selftest: 菜单快捷键 {chars:?} 修饰 C={control} O={alt} S={shift} D={command} -> handled={handled}"
+            );
+            return;
+        }
+        _ => {}
+    }
+    let Some(w) = active_selftest_window(&app) else {
         eprintln!("selftest: 没有窗口，跳过 {action:?}");
         return;
     };
-    eprintln!("selftest: {action:?}");
     match action {
         Action::AXSelect { .. }
         | Action::AXReplace { .. }
@@ -527,7 +786,13 @@ fn run_step_inner(action: Action) {
         }
         Action::Miniaturize => w.miniaturize(None),
         Action::Deminiaturize => w.deminiaturize(None),
-        Action::Log(_) => {}
+        Action::Log(_)
+        | Action::Quit
+        | Action::Reopen
+        | Action::RedrawMark(_)
+        | Action::ExpectLifecycle { .. }
+        | Action::MenuCommand(_)
+        | Action::KeyEquivalent { .. } => unreachable!(),
         Action::WakeRedraw => {
             if let Some(view) = w.contentView() {
                 view.updateLayer();
@@ -735,32 +1000,6 @@ fn run_step_inner(action: Action) {
             }
         }
         Action::Close => w.performClose(None),
-        Action::MenuCommand(tag) => {
-            let mut found = false;
-            if let Some(main) = app.mainMenu() {
-                for top in main.itemArray().iter() {
-                    let Some(sub) = top.submenu() else { continue };
-                    for item in sub.itemArray().iter() {
-                        if item.tag() == tag as isize
-                            && let Some(action) = item.action()
-                        {
-                            // SAFETY: action/target 来自平台层自己建的菜单项。
-                            unsafe {
-                                app.sendAction_to_from(
-                                    action,
-                                    item.target().as_deref(),
-                                    Some(&item),
-                                );
-                            }
-                            found = true;
-                        }
-                    }
-                }
-            }
-            if !found {
-                eprintln!("selftest: 没有命令 {tag}");
-            }
-        }
         Action::MouseMove { x, y } => {
             if let (Some(v), Some(e)) = (
                 w.contentView(),
@@ -801,7 +1040,7 @@ fn run_step_inner(action: Action) {
             let view = content
                 .downcast_ref::<crate::view::TekesView>()
                 .expect("review TekesView");
-            let nodes: Vec<_> = view
+            let mut nodes: Vec<_> = view
                 .ivars()
                 .shared
                 .accessibility_nodes
@@ -810,6 +1049,21 @@ fn run_step_inner(action: Action) {
                 .filter(|node| node.label == label)
                 .cloned()
                 .collect();
+            if nodes.len() > 1 {
+                let interactive: Vec<_> = nodes
+                    .iter()
+                    .filter(|node| {
+                        !matches!(
+                            node.role,
+                            crate::AccessibilityRole::StaticText | crate::AccessibilityRole::Group
+                        )
+                    })
+                    .cloned()
+                    .collect();
+                if interactive.len() == 1 {
+                    nodes = interactive;
+                }
+            }
             assert_eq!(
                 nodes.len(),
                 1,
@@ -962,48 +1216,6 @@ fn run_step_inner(action: Action) {
                 .expect("real native content view")
                 .scrollWheel(&event);
         }
-        Action::KeyEquivalent {
-            chars,
-            key_code,
-            control,
-            alt,
-            shift,
-            command,
-        } => {
-            let mut flags = NSEventModifierFlags::empty();
-            if control {
-                flags |= NSEventModifierFlags::Control;
-            }
-            if alt {
-                flags |= NSEventModifierFlags::Option;
-            }
-            if shift {
-                flags |= NSEventModifierFlags::Shift;
-            }
-            if command {
-                flags |= NSEventModifierFlags::Command;
-            }
-            let s = NSString::from_str(chars);
-            let e = NSEvent::keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode(
-                NSEventType::KeyDown,
-                NSPoint::new(0.0, 0.0),
-                flags,
-                0.0,
-                w.windowNumber(),
-                None,
-                &s,
-                &s,
-                false,
-                key_code,
-            );
-            let handled = match (app.mainMenu(), e) {
-                (Some(m), Some(e)) => m.performKeyEquivalent(&e),
-                _ => false,
-            };
-            eprintln!(
-                "selftest: 菜单快捷键 {chars:?} 修饰 C={control} O={alt} S={shift} D={command} -> handled={handled}"
-            );
-        }
         Action::WindowLight => {
             let appearance = NSAppearance::appearanceNamed(unsafe { NSAppearanceNameAqua })
                 .expect("AppKit Aqua appearance");
@@ -1088,10 +1300,7 @@ fn await_published_step_inner(
         _ => unreachable!("only native AX or text-query steps use the publication gate"),
     }
     let app = NSApplication::sharedApplication(MainThreadMarker::new().expect("main queue"));
-    let window = app
-        .windows()
-        .firstObject()
-        .expect("published AX script window");
+    let window = active_selftest_window(&app).expect("published AX script window");
     let content = window.contentView().expect("published AX content view");
     let view = content
         .downcast_ref::<crate::view::TekesView>()
@@ -2530,7 +2739,9 @@ pub fn window_menu_replacement_contract() {
     crate::menu_build::install(mtm, "Probe", &bar(41), target);
     let main = app.mainMenu().unwrap();
     let application = main.itemAtIndex(0).unwrap();
-    let window = main.itemAtIndex(2).unwrap();
+    let file_item = main.itemAtIndex(1).unwrap();
+    assert_eq!(file_item.title().to_string(), "File");
+    let window = main.itemAtIndex(3).unwrap();
     let window_menu = app.windowsMenu().unwrap();
     crate::menu_build::replace_engine_menus(mtm, &bar(42), target).unwrap();
     assert_eq!(
@@ -2542,8 +2753,12 @@ pub fn window_menu_replacement_contract() {
         Retained::as_ptr(&main.itemAtIndex(0).unwrap())
     );
     assert_eq!(
+        Retained::as_ptr(&file_item),
+        Retained::as_ptr(&main.itemAtIndex(1).unwrap())
+    );
+    assert_eq!(
         Retained::as_ptr(&window),
-        Retained::as_ptr(&main.itemAtIndex(2).unwrap())
+        Retained::as_ptr(&main.itemAtIndex(3).unwrap())
     );
     assert_eq!(
         Retained::as_ptr(&window_menu),
@@ -2555,7 +2770,7 @@ pub fn window_menu_replacement_contract() {
         true
     ));
     let command = main
-        .itemAtIndex(1)
+        .itemAtIndex(2)
         .unwrap()
         .submenu()
         .unwrap()
@@ -2571,11 +2786,528 @@ pub fn window_menu_replacement_contract() {
         Some(target as *const AnyObject)
     );
     crate::menu_build::replace_engine_menus(mtm, &MenuBar::default(), target).unwrap();
-    assert_eq!(main.numberOfItems(), 2);
+    assert_eq!(main.numberOfItems(), 3);
     assert_eq!(
         Retained::as_ptr(&window),
-        Retained::as_ptr(&main.itemAtIndex(1).unwrap())
+        Retained::as_ptr(&main.itemAtIndex(2).unwrap())
     );
     app.setMainMenu(old_main.as_deref());
     app.setWindowsMenu(old_windows.as_deref());
+}
+
+/// Real AppKit window/app lifecycle contract (`⌘W`, red close, Dock `Reopen`,
+/// `⌘N`, auxiliary window focus isolation, dormant idle gating, and `⌘Q`).
+#[doc(hidden)]
+pub fn app_lifecycle_contract() {
+    use crate::{
+        AccessibilityKey, AccessibilityNode, AccessibilityRole, App, AppConfig, CommandId, Event,
+        Menu, MenuBar, MenuCommand, MenuItem, Point, Rect, Size, WakeResult, Window, WindowConfig,
+        WindowHandle, WindowHandler, WindowWake,
+    };
+    use std::cell::{Cell, RefCell};
+    use std::rc::Rc;
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+    };
+
+    struct AuxHandler {
+        closed: Rc<Cell<bool>>,
+        dropped: Rc<Cell<bool>>,
+    }
+    impl Drop for AuxHandler {
+        fn drop(&mut self) {
+            self.dropped.set(true);
+        }
+    }
+    impl WindowHandler for AuxHandler {
+        fn handle(&mut self, event: Event, w: &mut Window) {
+            if matches!(event, Event::CloseRequested) {
+                self.closed.set(true);
+                w.close();
+            }
+        }
+    }
+
+    struct PrimaryState {
+        has_tab: Cell<bool>,
+        allow_quit: Cell<bool>,
+        close_shortcut_calls: Cell<usize>,
+        close_requested_while_tab: Cell<usize>,
+        quit_requested_calls: Cell<usize>,
+        redraws_before_reopen: Cell<u64>,
+        redraws_after_reopen: Cell<u64>,
+        focus_events: RefCell<Vec<bool>>,
+        wake_events: Arc<AtomicUsize>,
+        dormant_ready: Arc<AtomicBool>,
+        redraws_while_dormant: Cell<usize>,
+        wake_slot: Arc<Mutex<Option<WindowWake>>>,
+        aux_closed: Rc<Cell<bool>>,
+        aux_dropped: Rc<Cell<bool>>,
+        aux_handle: RefCell<Option<WindowHandle>>,
+        ax_verified_after_reopen: Cell<bool>,
+        dropped: Cell<bool>,
+    }
+
+    struct PrimaryHandler {
+        state: Rc<PrimaryState>,
+    }
+    impl Drop for PrimaryHandler {
+        fn drop(&mut self) {
+            self.state.dropped.set(true);
+        }
+    }
+    impl PrimaryHandler {
+        fn publish_ax(w: &Window) {
+            let node = AccessibilityNode {
+                key: AccessibilityKey {
+                    component: 1,
+                    part: None,
+                },
+                parent: None,
+                role: AccessibilityRole::Button,
+                frame: Rect {
+                    origin: Point { x: 16., y: 16. },
+                    size: Size {
+                        width: 120.,
+                        height: 36.,
+                    },
+                },
+                label: "Lifecycle Button".into(),
+                value: None,
+                description: None,
+                enabled: true,
+                focused: false,
+                selected: false,
+                expanded: None,
+                invalid: false,
+                required: false,
+                text_selection: None,
+                read_only: false,
+                can_show_menu: false,
+            };
+            w.set_accessibility_nodes(vec![node]);
+        }
+    }
+    impl WindowHandler for PrimaryHandler {
+        fn allows_app_quit(&self) -> bool {
+            self.state.allow_quit.get()
+        }
+
+        fn close_menu_title(&self) -> Option<&'static str> {
+            self.state.has_tab.get().then_some("Close Tab")
+        }
+
+        fn handle_close_shortcut(&mut self, w: &mut Window) -> bool {
+            self.state
+                .close_shortcut_calls
+                .set(self.state.close_shortcut_calls.get() + 1);
+            if self.state.has_tab.get() {
+                self.state.has_tab.set(false);
+                w.request_redraw();
+                true
+            } else {
+                false
+            }
+        }
+
+        fn handle(&mut self, event: Event, w: &mut Window) {
+            match event {
+                Event::Created => {
+                    *self.state.wake_slot.lock().unwrap() = Some(w.wake_proxy());
+                    Self::publish_ax(w);
+                    w.set_animating(true);
+                }
+                Event::Redraw | Event::AnimationFrame(_) => {
+                    let is_dormant =
+                        crate::app::primary_window_shared().is_some_and(|s| s.dormant.get());
+                    if is_dormant {
+                        self.state
+                            .redraws_while_dormant
+                            .set(self.state.redraws_while_dormant.get() + 1);
+                    } else if self.state.dormant_ready.load(Ordering::Acquire) {
+                        self.state.redraws_after_reopen.set(w.redraw_count());
+                        Self::publish_ax(w);
+                    } else {
+                        self.state.redraws_before_reopen.set(w.redraw_count());
+                        Self::publish_ax(w);
+                    }
+                }
+                Event::Wake => {
+                    self.state.wake_events.fetch_add(1, Ordering::AcqRel);
+                    Self::publish_ax(w);
+                    w.request_redraw();
+                }
+                Event::Focus(focused) => {
+                    self.state.focus_events.borrow_mut().push(focused);
+                }
+                Event::CloseRequested => {
+                    if self.state.has_tab.get() {
+                        self.state
+                            .close_requested_while_tab
+                            .set(self.state.close_requested_while_tab.get() + 1);
+                    }
+                    let arm_dormant_test = !self.state.has_tab.get()
+                        && !self.state.dormant_ready.load(Ordering::Acquire);
+                    w.close();
+                    if arm_dormant_test {
+                        self.state.dormant_ready.store(true, Ordering::Release);
+                    }
+                }
+                Event::QuitRequested => {
+                    self.state
+                        .quit_requested_calls
+                        .set(self.state.quit_requested_calls.get() + 1);
+                }
+                Event::Command(CommandId(9001)) => {
+                    let handle = w.open_window(
+                        WindowConfig {
+                            title: "Lifecycle Auxiliary".into(),
+                            size: Size {
+                                width: 280.,
+                                height: 180.,
+                            },
+                            ..Default::default()
+                        },
+                        AuxHandler {
+                            closed: self.state.aux_closed.clone(),
+                            dropped: self.state.aux_dropped.clone(),
+                        },
+                    );
+                    *self.state.aux_handle.borrow_mut() = Some(handle);
+                }
+                Event::Command(CommandId(9002)) => {
+                    self.state.has_tab.set(true);
+                    w.request_redraw();
+                }
+                Event::Command(CommandId(9003)) => {
+                    self.state.allow_quit.set(true);
+                }
+                Event::Command(CommandId(9004)) => {
+                    Self::publish_ax(w);
+                    assert_eq!(
+                        w.accessibility_nodes().len(),
+                        1,
+                        "reopened window must publish AX nodes again"
+                    );
+                    assert_eq!(
+                        self.state.wake_events.load(Ordering::Acquire),
+                        1,
+                        "queued Wake must be delivered after Reopen"
+                    );
+                    self.state.ax_verified_after_reopen.set(true);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let wake_events = Arc::new(AtomicUsize::new(0));
+    let dormant_ready = Arc::new(AtomicBool::new(false));
+    let wake_verified_dormant = Arc::new(AtomicBool::new(false));
+    let wake_slot: Arc<Mutex<Option<WindowWake>>> = Arc::new(Mutex::new(None));
+
+    let state = Rc::new(PrimaryState {
+        has_tab: Cell::new(true),
+        allow_quit: Cell::new(false),
+        close_shortcut_calls: Cell::new(0),
+        close_requested_while_tab: Cell::new(0),
+        quit_requested_calls: Cell::new(0),
+        redraws_before_reopen: Cell::new(0),
+        redraws_after_reopen: Cell::new(0),
+        focus_events: RefCell::new(Vec::new()),
+        wake_events: wake_events.clone(),
+        dormant_ready: dormant_ready.clone(),
+        redraws_while_dormant: Cell::new(0),
+        wake_slot: wake_slot.clone(),
+        aux_closed: Rc::new(Cell::new(false)),
+        aux_dropped: Rc::new(Cell::new(false)),
+        aux_handle: RefCell::new(None),
+        ax_verified_after_reopen: Cell::new(false),
+        dropped: Cell::new(false),
+    });
+
+    let wake_thread = {
+        let dormant_ready = dormant_ready.clone();
+        let wake_events = wake_events.clone();
+        let wake_slot = wake_slot.clone();
+        let wake_verified_dormant = wake_verified_dormant.clone();
+        std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(3);
+            while !dormant_ready.load(Ordering::Acquire) {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "timed out waiting for dormant primary window"
+                );
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            std::thread::sleep(Duration::from_millis(120));
+            assert_eq!(wake_events.load(Ordering::Acquire), 0);
+            let wake = wake_slot
+                .lock()
+                .unwrap()
+                .clone()
+                .expect("primary Wake handle");
+            assert_eq!(wake.wake(), WakeResult::Queued);
+            std::thread::sleep(Duration::from_millis(100));
+            assert_eq!(
+                wake_events.load(Ordering::Acquire),
+                0,
+                "Wake while dormant must queue instead of dispatching immediately"
+            );
+            wake_verified_dormant.store(true, Ordering::Release);
+        })
+    };
+
+    run_script(vec![
+        (
+            150,
+            Action::ExpectLifecycle {
+                label: "initial",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Tab"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (
+            260,
+            Action::KeyEquivalent {
+                chars: "w",
+                key_code: 13,
+                control: false,
+                alt: false,
+                shift: false,
+                command: true,
+            },
+        ),
+        (
+            400,
+            Action::ExpectLifecycle {
+                label: "after_close_tab",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Window"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (
+            480,
+            Action::KeyEquivalent {
+                chars: "w",
+                key_code: 13,
+                control: false,
+                alt: false,
+                shift: false,
+                command: true,
+            },
+        ),
+        (600, Action::RedrawMark("dormant_start")),
+        (
+            920,
+            Action::ExpectLifecycle {
+                label: "while_dormant",
+                primary_visible: Some(false),
+                primary_dormant: Some(true),
+                visible_windows: Some(0),
+                close_menu_title: Some("Close Window"),
+                close_menu_enabled: Some(false),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: Some("dormant_start"),
+            },
+        ),
+        (960, Action::Reopen),
+        (
+            1120,
+            Action::ExpectLifecycle {
+                label: "after_dock_reopen",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Window"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (1180, Action::MenuCommand(9004)),
+        (1240, Action::MenuCommand(9002)),
+        (
+            1340,
+            Action::ExpectLifecycle {
+                label: "rearmed_tab",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Tab"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (1420, Action::Close),
+        (
+            1540,
+            Action::ExpectLifecycle {
+                label: "after_red_close",
+                primary_visible: Some(false),
+                primary_dormant: Some(true),
+                visible_windows: Some(0),
+                close_menu_title: Some("Close Window"),
+                close_menu_enabled: Some(false),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (
+            1600,
+            Action::KeyEquivalent {
+                chars: "n",
+                key_code: 45,
+                control: false,
+                alt: false,
+                shift: false,
+                command: true,
+            },
+        ),
+        (
+            1760,
+            Action::ExpectLifecycle {
+                label: "after_cmd_n",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Tab"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (1820, Action::MenuCommand(9001)),
+        (
+            1960,
+            Action::ExpectLifecycle {
+                label: "aux_open",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(2),
+                close_menu_title: Some("Close Window"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (
+            2040,
+            Action::KeyEquivalent {
+                chars: "w",
+                key_code: 13,
+                control: false,
+                alt: false,
+                shift: false,
+                command: true,
+            },
+        ),
+        (
+            2180,
+            Action::ExpectLifecycle {
+                label: "after_aux_cmd_w",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Tab"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (2240, Action::Quit),
+        (
+            2360,
+            Action::ExpectLifecycle {
+                label: "quit_blocked",
+                primary_visible: Some(true),
+                primary_dormant: Some(false),
+                visible_windows: Some(1),
+                close_menu_title: Some("Close Tab"),
+                close_menu_enabled: Some(true),
+                new_window_enabled: Some(true),
+                redraws_delta_zero_since: None,
+            },
+        ),
+        (2420, Action::MenuCommand(9003)),
+        (2480, Action::Quit),
+    ]);
+
+    let menu_bar = MenuBar {
+        menus: vec![Menu::new(
+            "Lifecycle",
+            vec![
+                MenuItem::Command(MenuCommand::new("Open Aux", CommandId(9001))),
+                MenuItem::Command(MenuCommand::new("Re-arm Tab", CommandId(9002))),
+                MenuItem::Command(MenuCommand::new("Allow Quit", CommandId(9003))),
+                MenuItem::Command(MenuCommand::new("Verify Reopen", CommandId(9004))),
+            ],
+        )],
+    };
+
+    App::new(AppConfig {
+        name: Some("TekesUI Lifecycle Probe".into()),
+        quit_after_last_window_closed: false,
+    })
+    .run(
+        WindowConfig {
+            title: "TekesUI Lifecycle Primary".into(),
+            size: Size {
+                width: 420.,
+                height: 280.,
+            },
+            ..Default::default()
+        },
+        menu_bar,
+        PrimaryHandler {
+            state: state.clone(),
+        },
+    );
+
+    wake_thread.join().unwrap();
+    assert!(wake_verified_dormant.load(Ordering::Acquire));
+    assert!(
+        state.dropped.get(),
+        "PrimaryHandler must drop after App::run"
+    );
+    assert!(state.aux_closed.get(), "auxiliary window must close on ⌘W");
+    assert!(
+        state.aux_dropped.get(),
+        "auxiliary handler must drop cleanly"
+    );
+    assert!(
+        state.ax_verified_after_reopen.get(),
+        "reopened primary window must restore AX and Wake delivery"
+    );
+    assert_eq!(state.close_shortcut_calls.get(), 2);
+    assert_eq!(state.close_requested_while_tab.get(), 1);
+    assert_eq!(state.quit_requested_calls.get(), 1);
+    assert_eq!(state.redraws_while_dormant.get(), 0);
+    assert!(
+        state.redraws_after_reopen.get() > state.redraws_before_reopen.get(),
+        "reopened window must resume redraws"
+    );
+    assert!(state.focus_events.borrow().contains(&false));
+    assert!(crate::app::windows().is_empty(), "all windows must retire");
+    let wake = wake_slot.lock().unwrap().clone().unwrap();
+    assert_eq!(wake.wake(), WakeResult::Closed);
+    println!(
+        "APP_LIFECYCLE_NATIVE_OK close_shortcuts={} red_close_preserves_tab={} wake_queued_and_delivered={} quit_blocked_then_exited=1 windows_remaining={}",
+        state.close_shortcut_calls.get(),
+        state.close_requested_while_tab.get(),
+        wake_events.load(Ordering::Acquire),
+        crate::app::windows().len()
+    );
 }

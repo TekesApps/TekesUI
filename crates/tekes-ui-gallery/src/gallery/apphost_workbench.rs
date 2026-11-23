@@ -1029,6 +1029,8 @@ fn assemble_for_route_internal(
                 .ok_or_else(|| anyhow::anyhow!("invalid Gallery history visit"))
         }),
     })
+    .app_name("TekesUI Gallery")
+    .window_title("TekesUI Gallery")
     .palette_source(palette)
     .shared_settings(settings);
     Ok((app, state, session_path))

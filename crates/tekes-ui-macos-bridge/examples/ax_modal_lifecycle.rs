@@ -181,7 +181,11 @@ mod native {
     }
     pub fn run() {
         let saved = Rc::new(RefCell::new(Saved::default()));
-        App::new(AppConfig::default()).run(
+        App::new(AppConfig {
+            quit_after_last_window_closed: true,
+            ..AppConfig::default()
+        })
+        .run(
             WindowConfig {
                 title: TITLE.into(),
                 size: Size {

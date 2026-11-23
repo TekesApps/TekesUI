@@ -21,6 +21,14 @@ pub(crate) fn command_action() -> Sel {
     sel!(menuItemSelected:)
 }
 
+pub(crate) fn reopen_action() -> Sel {
+    sel!(tekesReopenMainWindow:)
+}
+
+pub(crate) fn close_shortcut_action() -> Sel {
+    sel!(tekesCloseShortcut:)
+}
+
 fn ns_modifiers(m: Modifiers) -> NSEventModifierFlags {
     NSEventModifierFlags::from_bits_retain(m.to_ns_flags())
 }
@@ -127,6 +135,25 @@ fn app_menu(mtm: MainThreadMarker, app_name: &str) -> Retained<NSMenu> {
     menu
 }
 
+fn file_menu(mtm: MainThreadMarker, target: &AnyObject) -> Retained<NSMenu> {
+    let menu = new_menu(mtm, "File");
+    let cmd = Modifiers::COMMAND;
+
+    let new_window = new_item(mtm, "New Window", Some(reopen_action()), "n", cmd);
+    // SAFETY: target 是主应用委托，它在应用生命周期内存活；run() 结束时会调用 detach_target 解绑。
+    unsafe { new_window.setTarget(Some(target)) };
+    menu.addItem(&new_window);
+
+    menu.addItem(&NSMenuItem::separatorItem(mtm));
+
+    let close_window = new_item(mtm, "Close Window", Some(close_shortcut_action()), "w", cmd);
+    // SAFETY: 同上，动态标题和路由由主应用委托统一处理。
+    unsafe { close_window.setTarget(Some(target)) };
+    menu.addItem(&close_window);
+
+    menu
+}
+
 fn window_menu(mtm: MainThreadMarker) -> Retained<NSMenu> {
     let menu = new_menu(mtm, "Window");
     let cmd = Modifiers::COMMAND;
@@ -144,8 +171,6 @@ fn window_menu(mtm: MainThreadMarker) -> Retained<NSMenu> {
         "",
         Modifiers::NONE,
     ));
-    menu.addItem(&NSMenuItem::separatorItem(mtm));
-    menu.addItem(&new_item(mtm, "Close", Some(sel!(performClose:)), "w", cmd));
     menu.addItem(&NSMenuItem::separatorItem(mtm));
     menu.addItem(&new_item(
         mtm,
@@ -213,6 +238,11 @@ pub(crate) fn install(mtm: MainThreadMarker, app_name: &str, bar: &MenuBar, targ
     replace_application_items(mtm, &application, bar, target);
     main.addItem(&top_level(mtm, &application));
 
+    let file = file_menu(mtm, target);
+    let file_item = top_level(mtm, &file);
+    file_item.setTitle(&NSString::from_str("File"));
+    main.addItem(&file_item);
+
     for m in bar.menus.iter().filter(|menu| !menu.application_menu) {
         let submenu = new_menu(mtm, &m.title);
         for item in &m.items {
@@ -275,9 +305,60 @@ pub(crate) fn replace_engine_menus(
         let top = top_level(mtm, &submenu);
         top.setTitle(&NSString::from_str(&menu.title));
         top.setTag(ENGINE_MENU_TAG);
-        main.insertItem_atIndex(&top, (index + 1) as isize);
+        // Position 0 is Application menu, position 1 is standard File menu.
+        main.insertItem_atIndex(&top, (index + 2) as isize);
     }
     Ok(())
+}
+
+fn find_item_by_action(menu: &NSMenu, action: Sel) -> Option<Retained<NSMenuItem>> {
+    for item in menu.itemArray().iter() {
+        if let Some(sub) = item.submenu()
+            && let Some(found) = find_item_by_action(&sub, action)
+        {
+            return Some(found);
+        }
+        if item.action() == Some(action) {
+            return Some(item);
+        }
+    }
+    None
+}
+
+pub(crate) fn find_action_item(mtm: MainThreadMarker, action: Sel) -> Option<Retained<NSMenuItem>> {
+    let main = NSApplication::sharedApplication(mtm).mainMenu()?;
+    find_item_by_action(&main, action)
+}
+
+pub(crate) fn set_close_menu_title(mtm: MainThreadMarker, title: &str) {
+    let Some(item) = find_action_item(mtm, close_shortcut_action()) else {
+        return;
+    };
+    if item.title().to_string() != title {
+        item.setTitle(&NSString::from_str(title));
+    }
+}
+
+fn detach_target_in_menu(menu: &NSMenu, target: *const AnyObject) {
+    for item in menu.itemArray().iter() {
+        if let Some(sub) = item.submenu() {
+            detach_target_in_menu(&sub, target);
+        }
+        if item
+            .target()
+            .as_deref()
+            .is_some_and(|current| std::ptr::eq(current, target))
+        {
+            // SAFETY: clears menu item target during App::run teardown.
+            unsafe { item.setTarget(None) };
+        }
+    }
+}
+
+pub(crate) fn detach_target(mtm: MainThreadMarker, target: &AnyObject) {
+    if let Some(main) = NSApplication::sharedApplication(mtm).mainMenu() {
+        detach_target_in_menu(&main, target as *const AnyObject);
+    }
 }
 
 fn find_command(menu: &NSMenu, id: isize) -> Option<Retained<NSMenuItem>> {

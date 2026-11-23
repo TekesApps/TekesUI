@@ -61,6 +61,17 @@ pub trait WindowHandler: 'static {
     fn allows_app_quit(&self) -> bool {
         true
     }
+    /// Optional title for the standard `⌘W` menu item while this window is
+    /// targeted (e.g. `"Close Tab"`). `None` uses `"Close Window"`.
+    fn close_menu_title(&self) -> Option<&'static str> {
+        None
+    }
+    /// Handle the `⌘W` menu shortcut before falling back to `performClose:`
+    /// (`Event::CloseRequested`). Return `true` if consumed (e.g. closed an
+    /// active tab). Clicking the red close button bypasses this hook.
+    fn handle_close_shortcut(&mut self, _window: &mut Window) -> bool {
+        false
+    }
     fn handle(&mut self, event: Event, window: &mut Window);
 }
 
@@ -82,10 +93,15 @@ struct ProvidedFrame {
     drawable: Retained<objc2::runtime::ProtocolObject<dyn objc2_quartz_core::CAMetalDrawable>>,
 }
 
+enum QueuedKind {
+    Event(Event),
+    CloseShortcut,
+}
+
 struct QueuedEvent {
     accessibility_authority:
         Option<std::rc::Rc<dyn crate::accessibility::AccessibilityGeometryLease>>,
-    event: Event,
+    kind: QueuedKind,
     drawable: Option<ProvidedFrame>,
 }
 
@@ -118,6 +134,8 @@ pub(crate) struct Shared {
     pub(crate) titlebar_drag_origin: RefCell<Option<Retained<NSEvent>>>,
     // Native zoom may run a nested resize loop. Release the Rust handler first.
     pending_titlebar_zoom: Cell<bool>,
+    pending_perform_close: Cell<bool>,
+    cached_close_menu_title: Cell<Option<&'static str>>,
     pub(crate) toolbar_row_height: Cell<Option<f64>>,
     toolbar_aligning: Cell<bool>,
     toolbar_alignment_pending: Cell<bool>,
@@ -131,6 +149,10 @@ pub(crate) struct Shared {
     /// `Created` 已经投递。在此之前视图收到的回调（初始 setFrameSize 等）不投递事件。
     pub ready: Cell<bool>,
     pub closed: Cell<bool>,
+    pub primary: Cell<bool>,
+    pub reopenable: Cell<bool>,
+    pub dormant: Cell<bool>,
+    pub pending_wake_while_dormant: Cell<bool>,
     pub exclusive_restore: RefCell<Vec<std::rc::Weak<Shared>>>,
     pub exclusive_key: RefCell<Option<std::rc::Weak<Shared>>>,
     /// 统计：用于示例和测试。
@@ -149,6 +171,7 @@ impl std::fmt::Debug for Shared {
         f.debug_struct("Shared")
             .field("ready", &self.ready.get())
             .field("closed", &self.closed.get())
+            .field("dormant", &self.dormant.get())
             .finish_non_exhaustive()
     }
 }
@@ -161,6 +184,7 @@ impl Drop for Shared {
 
 impl Shared {
     pub fn new(mtm: MainThreadMarker, handler: Box<dyn WindowHandler>) -> Rc<Shared> {
+        let initial_close_title = handler.close_menu_title();
         Rc::new(Shared {
             wake_state: Default::default(),
             presentation: Default::default(),
@@ -176,6 +200,8 @@ impl Shared {
             dispatching: Cell::new(false),
             titlebar_drag_origin: RefCell::new(None),
             pending_titlebar_zoom: Cell::new(false),
+            pending_perform_close: Cell::new(false),
+            cached_close_menu_title: Cell::new(initial_close_title),
             toolbar_row_height: Cell::new(None),
             toolbar_aligning: Cell::new(false),
             toolbar_alignment_pending: Cell::new(false),
@@ -187,6 +213,10 @@ impl Shared {
             placement: RefCell::new(None),
             ready: Cell::new(false),
             closed: Cell::new(false),
+            primary: Cell::new(false),
+            reopenable: Cell::new(false),
+            dormant: Cell::new(false),
+            pending_wake_while_dormant: Cell::new(false),
             exclusive_restore: RefCell::new(Vec::new()),
             exclusive_key: RefCell::new(None),
             redraw_count: Cell::new(0),
@@ -195,6 +225,21 @@ impl Shared {
             metal_reentrant_queued: Cell::new(0),
             animation_frames: Cell::new(0),
         })
+    }
+
+    pub(crate) fn is_inactive_surface(&self) -> bool {
+        self.closed.get() || self.dormant.get()
+    }
+
+    pub(crate) fn close_menu_title(&self) -> Option<&'static str> {
+        if let Ok(guard) = self.handler.try_borrow()
+            && let Some(handler) = guard.as_ref()
+        {
+            let title = handler.close_menu_title();
+            self.cached_close_menu_title.set(title);
+            return title;
+        }
+        self.cached_close_menu_title.get()
     }
 
     pub(crate) fn can_dispatch_synchronously(&self) -> bool {
@@ -215,7 +260,7 @@ impl Shared {
         }
         self.enqueue(QueuedEvent {
             accessibility_authority: None,
-            event: Event::AnimationFrame(frame),
+            kind: QueuedKind::Event(Event::AnimationFrame(frame)),
             drawable: Some(ProvidedFrame { layer, drawable }),
         });
     }
@@ -235,6 +280,35 @@ impl Shared {
         drop(discarded);
     }
 
+    pub(crate) fn discard_dormant_events(&self) {
+        let mut pending = std::mem::take(&mut *self.queue.borrow_mut());
+        let mut discarded = Vec::new();
+        while let Some(item) = pending.pop_front() {
+            match &item.kind {
+                QueuedKind::Event(Event::Focus(false) | Event::QuitRequested) => {
+                    self.queue.borrow_mut().push_back(item);
+                }
+                QueuedKind::Event(Event::Wake) => {
+                    self.pending_wake_while_dormant.set(true);
+                    discarded.push(item);
+                }
+                _ => discarded.push(item),
+            }
+        }
+        drop(discarded);
+    }
+
+    pub(crate) fn dispatch_close_shortcut(self: &Rc<Self>) {
+        if self.is_inactive_surface() {
+            return;
+        }
+        self.enqueue(QueuedEvent {
+            accessibility_authority: None,
+            kind: QueuedKind::CloseShortcut,
+            drawable: None,
+        });
+    }
+
     /// 投递一个事件。重入时在当前 handler 返回后按顺序处理。
     pub fn dispatch(self: &Rc<Self>, event: Event) {
         if matches!(event, Event::Focus(false) | Event::CloseRequested) {
@@ -248,13 +322,13 @@ impl Shared {
         };
         self.enqueue(QueuedEvent {
             accessibility_authority,
-            event,
+            kind: QueuedKind::Event(event),
             drawable: None,
         });
     }
 
     fn enqueue(self: &Rc<Self>, queued: QueuedEvent) {
-        if let Event::Resized { size, .. } = &queued.event {
+        if let QueuedKind::Event(Event::Resized { size, .. }) = &queued.kind {
             resize_review(format_args!(
                 "WINDOW_GEOMETRY width={} height={} handler_busy={}",
                 size.width,
@@ -262,13 +336,32 @@ impl Shared {
                 self.dispatching.get()
             ));
         }
-        if self.closed.get() && queued.event != Event::CloseRequested {
+        if self.closed.get() && !matches!(queued.kind, QueuedKind::Event(Event::CloseRequested)) {
             return;
+        }
+        if self.dormant.get() {
+            match &queued.kind {
+                QueuedKind::Event(Event::Focus(false) | Event::QuitRequested) => {}
+                QueuedKind::Event(Event::Wake) => {
+                    self.pending_wake_while_dormant.set(true);
+                    return;
+                }
+                _ => return,
+            }
         }
         {
             let mut queue = self.queue.borrow_mut();
-            if queued.event == Event::Redraw
-                && queue.back().is_some_and(|q| q.event == Event::Redraw)
+            if matches!(queued.kind, QueuedKind::Event(Event::Redraw))
+                && queue
+                    .back()
+                    .is_some_and(|q| matches!(q.kind, QueuedKind::Event(Event::Redraw)))
+            {
+                return;
+            }
+            if matches!(queued.kind, QueuedKind::Event(Event::Focus(false)))
+                && queue
+                    .back()
+                    .is_some_and(|q| matches!(q.kind, QueuedKind::Event(Event::Focus(false))))
             {
                 return;
             }
@@ -282,60 +375,92 @@ impl Shared {
             let next = self.queue.borrow_mut().pop_front();
             let Some(QueuedEvent {
                 accessibility_authority,
-                mut event,
+                kind,
                 drawable,
             }) = next
             else {
                 break;
             };
-            if let Event::Accessibility { target, .. } = &event {
-                // Queued/reentrant native actions retain their original whole-batch
-                // lease. A replacement cannot authorize an event from the old batch.
-                let authorized = match accessibility_authority.as_ref() {
-                    Some(p) => p.authorizes_target(*target),
-                    None => self.content_geometry.borrow().is_none(),
-                };
-                if !authorized {
-                    continue;
+            match kind {
+                QueuedKind::Event(mut event) => {
+                    if let Event::Accessibility { target, .. } = &event {
+                        // Queued/reentrant native actions retain their original whole-batch
+                        // lease. A replacement cannot authorize an event from the old batch.
+                        let authorized = match accessibility_authority.as_ref() {
+                            Some(p) => p.authorizes_target(*target),
+                            None => self.content_geometry.borrow().is_none(),
+                        };
+                        if !authorized {
+                            continue;
+                        }
+                    }
+                    if drawable.is_some() && (self.is_inactive_surface() || !self.animating.get()) {
+                        continue;
+                    }
+                    if let Event::AnimationFrame(frame) = &mut event {
+                        frame.dispatch_time = objc2_quartz_core::CACurrentMediaTime();
+                    }
+                    let taken = self.handler.borrow_mut().take();
+                    let Some(handler) = taken else { break };
+                    let mut handler_guard = HandlerGuard {
+                        slot: &self.handler,
+                        closed: &self.closed,
+                        handler: Some(handler),
+                    };
+                    if event == Event::Redraw {
+                        self.redraw_count.set(self.redraw_count.get() + 1);
+                        if let Some(objects) = self.objects.get() {
+                            let size = objects.view.size_points();
+                            resize_review(format_args!(
+                                "WINDOW_REDRAW width={} height={}",
+                                size.width, size.height
+                            ));
+                        }
+                    }
+                    let mut window = Window::new(self.clone());
+                    let handler = handler_guard.handler.as_mut().expect("handler present");
+                    if let Some(frame) = drawable {
+                        crate::presentation::with_provided_drawable(
+                            &frame.layer,
+                            frame.drawable,
+                            || handler.handle(event, &mut window),
+                        );
+                    } else {
+                        handler.handle(event, &mut window);
+                    }
+                    // Closing an auxiliary window does not end NSApp.run. HandlerGuard
+                    // retires or restores the handler when dropped outside borrows.
+                    drop(handler_guard);
+                }
+                QueuedKind::CloseShortcut => {
+                    if self.is_inactive_surface() {
+                        continue;
+                    }
+                    let taken = self.handler.borrow_mut().take();
+                    let Some(handler) = taken else { break };
+                    let mut handler_guard = HandlerGuard {
+                        slot: &self.handler,
+                        closed: &self.closed,
+                        handler: Some(handler),
+                    };
+                    let mut window = Window::new(self.clone());
+                    let handler = handler_guard.handler.as_mut().expect("handler present");
+                    let consumed = handler.handle_close_shortcut(&mut window);
+                    if !consumed && !self.is_inactive_surface() {
+                        self.pending_perform_close.set(true);
+                    }
+                    drop(handler_guard);
                 }
             }
-            if drawable.is_some() && (self.closed.get() || !self.animating.get()) {
-                continue;
-            }
-            if let Event::AnimationFrame(frame) = &mut event {
-                frame.dispatch_time = objc2_quartz_core::CACurrentMediaTime();
-            }
-            let taken = self.handler.borrow_mut().take();
-            let Some(handler) = taken else { break };
-            let mut handler_guard = HandlerGuard {
-                slot: &self.handler,
-                closed: &self.closed,
-                handler: Some(handler),
-            };
-            if event == Event::Redraw {
-                self.redraw_count.set(self.redraw_count.get() + 1);
-                if let Some(objects) = self.objects.get() {
-                    let size = objects.view.size_points();
-                    resize_review(format_args!(
-                        "WINDOW_REDRAW width={} height={}",
-                        size.width, size.height
-                    ));
-                }
-            }
-            let mut window = Window::new(self.clone());
-            let handler = handler_guard.handler.as_mut().expect("handler present");
-            if let Some(frame) = drawable {
-                crate::presentation::with_provided_drawable(&frame.layer, frame.drawable, || {
-                    handler.handle(event, &mut window)
-                });
-            } else {
-                handler.handle(event, &mut window);
-            }
-            // Closing an auxiliary window does not end NSApp.run. HandlerGuard
-            // retires or restores the handler when dropped outside borrows.
-            drop(handler_guard);
         }
         drop(_dispatch_guard);
+        crate::app::sync_close_menu_item(self.mtm);
+        if self.pending_perform_close.replace(false)
+            && !self.is_inactive_surface()
+            && let Some(objects) = self.objects.get()
+        {
+            objects.window.performClose(None);
+        }
         // Explicit selftest AX readiness runs only outside the mutable handler.
         #[cfg(feature = "selftest")]
         crate::selftest::run_published_step(self);
@@ -344,7 +469,7 @@ impl Shared {
         // animation returned. The handler is now restored, so each geometry
         // callback can draw without aliasing the original mutable handler.
         if self.pending_titlebar_zoom.replace(false)
-            && !self.closed.get()
+            && !self.is_inactive_surface()
             && let Some(objects) = self.objects.get()
         {
             debug_assert!(self.handler.borrow().is_some());
@@ -359,7 +484,7 @@ impl Shared {
 
     fn toolbar_control_center(&self) -> Option<f64> {
         use objc2_app_kit::NSWindowStyleMask;
-        if self.closed.get() {
+        if self.is_inactive_surface() {
             return None;
         }
         let height = self.toolbar_row_height.get()?;
@@ -463,7 +588,7 @@ impl Shared {
                     // and does not keep a closed/dropped window alive.
                     let weak = unsafe { Box::from_raw(context.cast::<std::rc::Weak<Shared>>()) };
                     if let Some(shared) = weak.upgrade() {
-                        if !shared.closed.get() {
+                        if !shared.is_inactive_surface() {
                             // Keep pending set throughout this attempt: synchronous
                             // notifications coalesce, and a failed attempt cannot
                             // schedule itself into an unbounded retry loop.
@@ -482,7 +607,7 @@ impl Shared {
 
     /// 重新读取系统外观，变化了（或 `force`）就投递 `SystemAppearanceChanged`。
     pub fn check_appearance(self: &Rc<Self>, force: bool) {
-        if !self.ready.get() {
+        if !self.ready.get() || self.is_inactive_surface() {
             return;
         }
         let Some(o) = self.objects.get() else { return };
@@ -522,7 +647,11 @@ impl Shared {
         crate::app::restore_windows(self);
         crate::wake::native::unregister(&self.wake_state);
         self.closed.set(true);
+        self.dormant.set(false);
+        self.pending_wake_while_dormant.set(false);
+        self.pending_perform_close.set(false);
         self.revoke_accessibility();
+        self.text_input.borrow_mut().take();
         self.titlebar_drag_origin.borrow_mut().take();
         self.animating.set(false);
         self.discard_metal_frames();
@@ -537,7 +666,7 @@ impl Shared {
 
     /// 标记需要重绘（合并）。
     pub fn request_redraw(&self) {
-        if self.closed.get() {
+        if self.is_inactive_surface() {
             return;
         }
         if !self.redraw_pending.replace(true)
@@ -576,15 +705,23 @@ impl Window {
         bar: &crate::menu::MenuBar,
     ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         bar.validate()?;
-        let delegate = self
-            .window
-            .delegate()
-            .ok_or("window delegate is unavailable")?;
+        let app = objc2_app_kit::NSApplication::sharedApplication(self.shared.mtm);
+        let app_delegate = app.delegate();
+        let window_delegate = self.window.delegate();
+        if app_delegate.is_none() && window_delegate.is_none() {
+            return Err("window delegate is unavailable".into());
+        }
         if !self.window.isKeyWindow() {
             return Ok(false);
         }
-        let target: &AnyObject = delegate.as_ref();
-        crate::menu_build::replace_engine_menus(self.shared.mtm, bar, target)?;
+        if let Some(delegate) = app_delegate.as_ref() {
+            let target: &AnyObject = delegate.as_ref();
+            crate::menu_build::replace_engine_menus(self.shared.mtm, bar, target)?;
+        } else if let Some(delegate) = window_delegate.as_ref() {
+            let target: &AnyObject = delegate.as_ref();
+            crate::menu_build::replace_engine_menus(self.shared.mtm, bar, target)?;
+        }
+        crate::app::sync_close_menu_item(self.shared.mtm);
         Ok(true)
     }
 
@@ -691,10 +828,10 @@ impl Window {
     /// callback events are still delivered exactly once. Default is disabled.
     /// Reject changes during a key span, so the FIFO markers stay balanced.
     pub fn set_text_key_events(&self, enabled: bool) -> bool {
-        !self.shared.closed.get() && self.view.set_text_key_events(enabled)
+        !self.shared.is_inactive_surface() && self.view.set_text_key_events(enabled)
     }
     pub fn set_text_input_state(&self, state: Option<crate::event::TextInputState>) {
-        if self.shared.closed.get() {
+        if self.shared.closed.get() || (self.shared.dormant.get() && state.is_some()) {
             return;
         }
         let blink = state
@@ -723,7 +860,7 @@ impl Window {
         &self,
         lease: Option<Rc<dyn crate::accessibility::AccessibilityGeometryLease>>,
     ) -> bool {
-        if lease.is_none() && !self.shared.closed.get() {
+        if lease.is_none() && !self.shared.is_inactive_surface() {
             if let Some(old) = self.shared.content_geometry.borrow_mut().take() {
                 old.revoke();
             }
@@ -732,7 +869,7 @@ impl Window {
             self.view.accessibility_nodes_changed(&previous);
             return false;
         }
-        let lease = if self.shared.closed.get() {
+        let lease = if self.shared.is_inactive_surface() {
             None
         } else {
             lease
@@ -764,7 +901,7 @@ impl Window {
     pub fn accessibility_geometry_lease(
         &self,
     ) -> Option<Rc<dyn crate::accessibility::AccessibilityGeometryLease>> {
-        if self.shared.closed.get() {
+        if self.shared.is_inactive_surface() {
             return None;
         }
         self.shared
@@ -778,7 +915,7 @@ impl Window {
         if self.shared.content_geometry.borrow().is_some() {
             return;
         }
-        if self.shared.closed.get() {
+        if self.shared.is_inactive_surface() {
             return;
         }
         let nodes = crate::accessibility::accept_accessibility_nodes(nodes);
@@ -799,7 +936,7 @@ impl Window {
             crate::accessibility::AccessibilityTextLayout,
         )>,
     ) {
-        if self.shared.closed.get() {
+        if self.shared.is_inactive_surface() {
             return;
         }
         if self.shared.content_geometry.borrow().is_some() {
@@ -818,7 +955,7 @@ impl Window {
     /// Owned readback of the accepted tree, after validation. Changing this
     /// copy never mutates native AX elements; publication still uses the setter.
     pub fn accessibility_nodes(&self) -> Vec<crate::accessibility::AccessibilityNode> {
-        if self.shared.closed.get() {
+        if self.shared.is_inactive_surface() {
             return Vec::new();
         }
         if let Some(p) = self.shared.content_geometry.borrow().as_ref() {
@@ -868,7 +1005,7 @@ impl Window {
     /// 返回设置之后动画模式是否真的开着：需要 macOS 14（`NSView.displayLink(target:selector:)`），
     /// 系统不支持时开不起来，返回 false。关闭永远返回 false。
     pub fn set_animating(&self, animating: bool) -> bool {
-        if self.shared.closed.get() {
+        if self.shared.is_inactive_surface() {
             return false;
         }
         if self.shared.animating.get() == animating {

@@ -130,7 +130,13 @@ pub(crate) mod native {
             let target =
                 TARGETS.with(|targets| targets.borrow().get(&key(&state)).and_then(Weak::upgrade));
             if let Some(shared) = target {
-                shared.dispatch(Event::Wake);
+                if shared.closed.get() {
+                    state.close();
+                } else if shared.dormant.get() {
+                    shared.pending_wake_while_dormant.set(true);
+                } else {
+                    shared.dispatch(Event::Wake);
+                }
             } else {
                 state.close();
             }
