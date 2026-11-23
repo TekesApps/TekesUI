@@ -1,10 +1,12 @@
 #![allow(clippy::too_many_arguments)]
 use super::{
     CollectionEvent, CollectionInteraction, CollectionItemLayout, CollectionLayout, control_state,
-    mounted_bounds, own_clip, paint_collection_focus, render_quiet_button, row_gap, row_key_target,
+    mounted_bounds, own_clip, paint_collection_focus, render_quiet_button, row_gap, row_height_for,
+    row_key_target,
 };
 use crate::{
     ButtonModel, ButtonSize, ButtonTextAlign, ButtonTextRenderer, ControlKey,
+    button_typography_scale,
     extended::Tree,
     layout_view::{IconRenderer, IconView},
     paint::ButtonVariant,
@@ -25,6 +27,7 @@ pub struct TreeView {
     pub(super) keyed: bool,
     pub(super) state: CollectionInteraction,
     pub(super) disabled: bool,
+    pub(super) compact: bool,
     pub(super) buttons: Vec<ButtonModel>,
     pub(super) icons: Vec<IconView>,
     icon_slots: Vec<TreeIconSlot>,
@@ -66,6 +69,7 @@ impl Default for TreeView {
                 ..Default::default()
             },
             disabled: false,
+            compact: false,
             buttons: Vec::new(),
             icons: Vec::new(),
             icon_slots: Vec::new(),
@@ -238,6 +242,16 @@ impl TreeView {
             self.state.blur();
         }
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
+    }
     pub fn focus(&mut self, index: usize, keyboard: bool) {
         if self.keyed || self.disabled || !self.state.window_active {
             return;
@@ -266,12 +280,18 @@ impl TreeView {
         clip: Option<Rect>,
         palette: Palette,
     ) -> CollectionLayout {
-        let metrics = Self::measure_rows(model, frame.size.width, text, |text, id, width, _| {
-            (
-                text.measure(&model.nodes()[id].label, proposal::TextRole::UiBody, width),
-                false,
-            )
-        });
+        let metrics = Self::measure_rows(
+            model,
+            frame.size.width,
+            text,
+            self.compact,
+            |text, id, width, _| {
+                (
+                    text.measure(&model.nodes()[id].label, proposal::TextRole::UiBody, width),
+                    false,
+                )
+            },
+        );
         self.arrange_rows(text, model, frame, clip, &metrics);
         self.paint_rows(scene, text, model, clip, palette, "base");
         self.layout.clone()
@@ -281,6 +301,7 @@ impl TreeView {
         model: &Tree,
         width: f32,
         text: &mut dyn ButtonTextRenderer,
+        compact: bool,
         mut measure: impl FnMut(
             &mut dyn ButtonTextRenderer,
             usize,
@@ -290,7 +311,8 @@ impl TreeView {
     ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
         let slot =
             proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
-        let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
+        let min_row = row_height_for(compact);
+        let inset = ButtonSize::Body.scaled_horizontal_inset(text, proposal::TextRole::UiBody);
         model
             .visible()
             .into_iter()
@@ -299,7 +321,7 @@ impl TreeView {
                 let width = (row_width - inset * 2. - slot).max(0.);
                 let resolved = crate::ButtonLayout::resolve_with_text(
                     text,
-                    Rect::new(0., 0., row_width, 34.),
+                    Rect::new(0., 0., row_width, min_row),
                     None,
                     tekes_ui_scene::Size::default(),
                     ButtonSize::Body,
@@ -318,7 +340,9 @@ impl TreeView {
         size: tekes_ui_scene::Size,
         custom: bool,
         width: f32,
+        compact: bool,
     ) -> f32 {
+        let min_row = row_height_for(compact);
         if custom {
             ButtonModel::measure_content(
                 text,
@@ -328,19 +352,25 @@ impl TreeView {
                 proposal::TextRole::UiBody,
             )
             .height
-            .max(34.)
+            .max(min_row)
         } else {
-            size.height.max(34.)
+            let v_pad = tekes_ui_tokens::Spacing::Tight.value()
+                * 2.0
+                * button_typography_scale(text, proposal::TextRole::UiBody);
+            (size.height + v_pad).max(min_row)
         }
     }
     pub(crate) fn rows_height(
         text: &mut dyn ButtonTextRenderer,
         width: f32,
         metrics: &[(usize, tekes_ui_scene::Size, bool)],
+        compact: bool,
     ) -> f32 {
         metrics
             .iter()
-            .map(|(_, size, custom)| Self::resolved_row_height(text, *size, *custom, width))
+            .map(|(_, size, custom)| {
+                Self::resolved_row_height(text, *size, *custom, width, compact)
+            })
             .sum::<f32>()
             + row_gap() * metrics.len().saturating_sub(1) as f32
     }
@@ -366,7 +396,7 @@ impl TreeView {
         self.layout = CollectionLayout {
             frame,
             visible: own,
-            content_height: Self::rows_height(text, frame.size.width, metrics),
+            content_height: Self::rows_height(text, frame.size.width, metrics, self.compact),
             items: Vec::new(),
         };
         if own.is_none() {
@@ -386,7 +416,7 @@ impl TreeView {
         for &(id, size, custom) in metrics {
             let indent = depth_indent(model, id);
             let width = (frame.size.width - indent).max(0.);
-            let height = Self::resolved_row_height(text, size, custom, width);
+            let height = Self::resolved_row_height(text, size, custom, width, self.compact);
             let r = Rect::new(frame.min_x() + indent, y, width, height);
             let button = crate::ButtonLayout::resolve_with_text(
                 text,
@@ -792,5 +822,7 @@ fn tree_depth(tree: &Tree, mut id: usize) -> usize {
     depth
 }
 fn depth_indent(tree: &Tree, id: usize) -> f32 {
-    tree_depth(tree, id) as f32 * 20.0
+    let per_level = proposal::metric("size", "size-icon-standard").expect("tree indent icon")
+        + tekes_ui_tokens::Spacing::Tight.value();
+    tree_depth(tree, id) as f32 * per_level
 }

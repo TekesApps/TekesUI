@@ -5,11 +5,13 @@ use super::menu::{
 };
 use super::{
     ButtonLayout, ButtonModel, ButtonTextAlign, ButtonTextRenderer, ContainerLayout, ControlKey,
-    Insets, Menu, ScrollArea, clip_rect, explicit_visible_clip, focus_reveal_outset,
-    menu_width_limit, paint, safe_rect, set_button_state, size_role,
+    Insets, MENU_MAX_WIDTH, Menu, ScrollArea, clip_rect, explicit_visible_clip,
+    menu_max_width_limit, menu_min_row_height, menu_popup_inset, menu_row_gap,
+    menu_row_horizontal_inset, menu_row_radius, menu_separator_height, menu_size_role,
+    menu_typography_scale, paint, safe_rect, set_button_state,
 };
 use crate::control_motion::OverlayPresence;
-use tekes_ui_scene::{Point, Rect, Scene, Size};
+use tekes_ui_scene::{CornerRadii, Point, Rect, Scene, Size};
 use tekes_ui_tokens::{Palette, proposal};
 
 #[derive(Debug)]
@@ -35,6 +37,8 @@ pub(super) struct MenuRuntime {
     pub(super) submenu_request: Option<usize>,
     pub(super) beside_anchor: bool,
     pub(super) open_generation: u64,
+    pub(super) popup_min_width: Option<f32>,
+    pub(super) popup_max_width: Option<f32>,
 }
 
 impl MenuRuntime {
@@ -78,14 +82,14 @@ impl MenuRuntime {
             return self.scroll.offset.y;
         }
         let index = index.min(self.row_heights.len() - 1);
+        let row_gap = menu_row_gap();
         let top = self
             .row_heights
             .iter()
             .take(index)
-            .map(|h| h + self.focus_outset.max(4.))
-            .sum::<f32>()
-            - self.focus_outset;
-        let bottom = top + self.row_heights[index] + self.focus_outset * 2.;
+            .map(|h| h + row_gap)
+            .sum::<f32>();
+        let bottom = top + self.row_heights[index];
         let offset = self.scroll.offset.y;
         let height = self.scroll_viewport.size.height.max(0.);
         let target = if top < offset {
@@ -183,9 +187,11 @@ impl MenuRuntime {
         }
         let header_size = header.as_ref().map(|(size, _)| *size);
         let paint_context = format!(
-            "{header_size:?}{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}",
+            "{header_size:?}{anchor:?}{visible_bounds:?}{ancestor_clip:?}{palette:?}{role:?}{compact:?}{}{labels:?}{:?}{:?}{:?}",
             text.backing_scale(),
-            self.row_styles
+            self.row_styles,
+            self.popup_min_width,
+            self.popup_max_width
         );
         if !model.open && !self.presence.is_presented() {
             self.clear_layout();
@@ -198,7 +204,13 @@ impl MenuRuntime {
         self.compact = compact;
         self.palette = palette;
         self.role = role;
-        self.focus_outset = focus_reveal_outset(text.backing_scale());
+        let popup_inset = menu_popup_inset();
+        let row_gap = menu_row_gap();
+        let role_size = menu_size_role(compact);
+        let min_row_height = menu_min_row_height(compact);
+        let row_radius = menu_row_radius();
+        let horiz_inset = menu_row_horizontal_inset(text, role);
+        self.focus_outset = popup_inset;
         let anchor = safe_rect(anchor);
         let visible_bounds = safe_rect(visible_bounds);
         let old_scroll_viewport = self.scroll_viewport;
@@ -210,14 +222,17 @@ impl MenuRuntime {
             .resize_with(model.items.count, ButtonModel::default);
         let has_check = self.row_styles.iter().any(|style| style.checked.is_some());
         let has_submenu = self.row_styles.iter().any(|style| style.submenu);
+        let type_scale = menu_typography_scale(text, role);
         let indicator_gap = if has_check || has_submenu {
             proposal::metric("spacing", "space-tight")
                 .expect("canonical menu indicator-caption spacing")
+                * type_scale
         } else {
             0.0
         };
         let icon = if has_check || has_submenu {
-            proposal::metric("size", "size-icon-standard").expect("canonical menu indicator size")
+            proposal::metric("size", "size-icon-small").expect("canonical menu indicator size")
+                * type_scale
         } else {
             0.0
         };
@@ -231,7 +246,7 @@ impl MenuRuntime {
         } else {
             0.0
         };
-        let (mut natural_size, mut heights) = MenuView::measured_rows(
+        let (mut natural_size, mut heights) = MenuView::measured_rows_bounded(
             &mut MenuRowText {
                 text,
                 leading,
@@ -243,12 +258,17 @@ impl MenuRuntime {
             visible_bounds.size.width,
             role,
             compact,
+            self.popup_min_width,
+            self.popup_max_width,
         );
         if let Some(header) = header_size {
-            let header_width = natural_size.width.max(
-                (header.width + self.focus_outset * 2.0)
-                    .min(menu_width_limit(visible_bounds.size.width)),
+            let max_limit = menu_max_width_limit(
+                visible_bounds.size.width,
+                self.popup_max_width.unwrap_or(MENU_MAX_WIDTH),
             );
+            let header_width = natural_size
+                .width
+                .max((header.width + popup_inset * 2.0).min(max_limit));
             if header_width > natural_size.width {
                 natural_size.width = header_width;
                 let mut row_text = MenuRowText {
@@ -261,31 +281,27 @@ impl MenuRuntime {
                 heights = MenuView::measure_row_heights(
                     &mut row_text,
                     &labels[..count],
-                    (natural_size.width - self.focus_outset * 2.0).max(0.0),
+                    (natural_size.width - popup_inset * 2.0).max(0.0),
                     role,
                     compact,
                 );
-                natural_size.height = menu_surface_height_for_rows(&heights, self.focus_outset);
+                natural_size.height = menu_surface_height_for_rows(&heights, popup_inset);
             }
         }
+        let separator_height = menu_separator_height();
         for (index, height) in heights.iter_mut().enumerate() {
             if self.row_style(index).separator {
-                *height = proposal::metric("spacing", "space-regular")
-                    .expect("canonical separator row spacing");
+                *height = separator_height;
             }
         }
         if !self.row_styles.is_empty() {
             natural_size.height = menu_surface_height(
-                heights.iter().sum::<f32>()
-                    + count.saturating_sub(1) as f32 * self.focus_outset.max(4.0),
-                self.focus_outset,
+                heights.iter().sum::<f32>() + count.saturating_sub(1) as f32 * row_gap,
+                popup_inset,
             );
         }
-        heights.resize(model.items.count, 36.0);
+        heights.resize(model.items.count, min_row_height);
         self.row_heights = heights;
-        let popup_inset = self.focus_outset;
-        let row_gap = popup_inset.max(4.0);
-        let role_size = size_role(compact);
         let natural_content = self.row_heights.iter().take(count).sum::<f32>()
             + count.saturating_sub(1) as f32 * row_gap;
         let (popup, header_frame, inner_viewport) = menu_popup_geometry(
@@ -353,6 +369,7 @@ impl MenuRuntime {
             visible
         };
         let mut items = Vec::with_capacity(model.items.count);
+        let mut deferred_focus: Option<(Rect, Option<Rect>, tekes_ui_tokens::Rgba)> = None;
         let mut y = inner_viewport.min_y() - offset;
         for index in 0..model.items.count {
             let height = self.row_heights[index];
@@ -385,6 +402,9 @@ impl MenuRuntime {
             let button = &mut self.buttons[index];
             button.set_surface("popover");
             button.set_selection_fill_only(true);
+            button.set_corner_radii(Some(CornerRadii::uniform(row_radius)));
+            button.set_horizontal_inset_override(Some((horiz_inset, horiz_inset)));
+            button.set_defer_focus_ring(true);
             set_button_state(
                 button,
                 self.window_active && model.open && model.items.selected == index,
@@ -414,8 +434,45 @@ impl MenuRuntime {
                 role,
                 ButtonTextAlign::Leading,
             );
+            if layout.visible.is_some()
+                && button.state.focused
+                && button.state.focus_visible
+                && !button.state.disabled
+                && let Some(focus_color) =
+                    paint::button_surface_colors_with_tone_and_selection_progress(
+                        palette,
+                        "popover",
+                        button.state,
+                        paint::ButtonVariant::Quiet,
+                        0.0,
+                        0.0,
+                        button.tone,
+                        button.transparent_rest,
+                        button.selection_progress_override,
+                    )
+                    .focus
+            {
+                deferred_focus = Some((item, rows_visible, focus_color));
+            }
             items.push(layout);
             y += height + row_gap;
+        }
+        if let Some((focus_rect, focus_clip, focus_color)) = deferred_focus {
+            let pushed = if let Some(clip) = focus_clip {
+                scene.push_clip(clip);
+                true
+            } else {
+                false
+            };
+            paint::focus_ring_with_radii(
+                scene,
+                focus_rect,
+                focus_color,
+                CornerRadii::uniform(row_radius),
+            );
+            if pushed {
+                scene.pop_clip();
+            }
         }
         if visible.is_some() {
             scene.pop_clip();
@@ -654,14 +711,14 @@ impl MenuRuntime {
         if self.row_heights.is_empty() {
             return;
         }
+        let row_gap = menu_row_gap();
         let top = self
             .row_heights
             .iter()
             .take(index)
-            .map(|h| h + self.focus_outset.max(4.0))
-            .sum::<f32>()
-            - self.focus_outset;
-        let bottom = top + self.row_heights[index] + self.focus_outset * 2.0;
+            .map(|h| h + row_gap)
+            .sum::<f32>();
+        let bottom = top + self.row_heights[index];
         let viewport_height = self.scroll_viewport.size.height.max(0.0);
         let offset = self.scroll.offset.y;
         if top < offset {

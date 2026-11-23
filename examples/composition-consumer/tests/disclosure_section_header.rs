@@ -359,9 +359,11 @@ fn only_nonfocus_plain_sections_remove_the_actual_header_body_gap() {
                                     .focus_bounds(backing)
                                     .max_y()
                                     - header.max_y();
+                            let expected = tekes_ui_tokens::Spacing::Snug.value();
                             assert!(original > 0.);
-                            assert!((body.min_y() - header.max_y() - original).abs() < 0.01);
-                            original
+                            assert!(expected >= original);
+                            assert!((body.min_y() - header.max_y() - expected).abs() < 0.01);
+                            expected
                         };
                         // The measured allocation and actual child frame agree;
                         // zero spacing is not a cosmetic wrapper projection.

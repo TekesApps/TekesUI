@@ -323,6 +323,27 @@ fn set_content_axis(children: &mut [Content], axis: Axis) {
         }
     }
 }
+fn measure_plain_toolbar_child(
+    child: &mut Content,
+    text: &mut dyn ButtonTextRenderer,
+    available: Size,
+    axis: Axis,
+    box_size: f32,
+) -> MeasuredChild {
+    let mut measured = child.measure(text, available);
+    if child.component::<Button>().is_some() {
+        match axis {
+            Axis::Horizontal => {
+                measured.size.height = measured.size.height.max(box_size).min(available.height);
+            }
+            Axis::Vertical => {
+                measured.size.width = measured.size.width.max(box_size).min(available.width);
+            }
+        }
+    }
+    measured
+}
+
 impl Component for ToolbarGroup {
     fn host_reveal_passthrough(&self) -> bool {
         self.reveal_passthrough
@@ -383,11 +404,13 @@ impl Component for ToolbarGroup {
             Self::clear_segment_specs(&mut self.children);
             self.capsule_frame = None;
             let gap = spacing(text, "space-tight");
+            let box_size = crate::toolbar::metrics(text, proposal::TextRole::UiBody).box_size;
             let mut size = Size::default();
             let mut count: usize = 0;
             for child in self.children.iter_mut().filter(|c| c.active()) {
                 count += 1;
-                let m = child.measure(text, available).size;
+                let m =
+                    measure_plain_toolbar_child(child, text, available, self.axis, box_size).size;
                 if self.axis == Axis::Horizontal {
                     size.width += m.width;
                     size.height = size.height.max(m.height);
@@ -439,10 +462,11 @@ impl Component for ToolbarGroup {
             Self::clear_segment_specs(&mut self.children);
             self.capsule_frame = None;
             let gap = spacing(text, "space-tight");
+            let box_size = crate::toolbar::metrics(text, proposal::TextRole::UiBody).box_size;
             let mut children: Vec<_> = self.children.iter_mut().filter(|c| c.active()).collect();
             let measured: Vec<_> = children
                 .iter_mut()
-                .map(|c| c.measure(text, frame.size))
+                .map(|c| measure_plain_toolbar_child(c, text, frame.size, self.axis, box_size))
                 .collect();
             let placements = layout_measured_children(
                 frame,
@@ -698,8 +722,9 @@ impl Component for ToolbarContent {
             }
             let gaps = [spacing(text, "space-tight"), gap, gap];
             let sections = counts.iter().filter(|&&count| count > 0).count();
+            let default_inset = crate::toolbar::metrics(text, proposal::TextRole::UiBody).inset;
             if sections > 0 {
-                heights += self.horizontal_inset.unwrap_or(gap) * 2.;
+                heights += self.horizontal_inset.unwrap_or(default_inset) * 2.;
             }
             heights += counts
                 .iter()
@@ -714,7 +739,9 @@ impl Component for ToolbarContent {
                 heights.min(available.height),
             ));
         }
-        let row = crate::toolbar::metrics(text, proposal::TextRole::UiBody).row;
+        let metrics = crate::toolbar::metrics(text, proposal::TextRole::UiBody);
+        let row = metrics.row;
+        let default_inset = metrics.inset;
         let gap = spacing(text, "space-regular");
         let mut widths = 0.;
         let mut counts = [0usize; 3];
@@ -731,7 +758,7 @@ impl Component for ToolbarContent {
             0.
         } else {
             widths
-                + self.horizontal_inset.unwrap_or(gap) * 2.
+                + self.horizontal_inset.unwrap_or(default_inset) * 2.
                 + gap * sections.saturating_sub(1) as f32
                 + (0..3)
                     .map(|i| gaps[i] * counts[i].saturating_sub(1) as f32)
@@ -771,11 +798,12 @@ impl Component for ToolbarContent {
             self.arrange_vertical(text, frame, clip);
             return;
         }
-        let row = crate::toolbar::metrics(text, proposal::TextRole::UiBody).row;
+        let metrics = crate::toolbar::metrics(text, proposal::TextRole::UiBody);
+        let row = metrics.row;
         let gap = spacing(text, "space-regular");
         let pad = self
             .horizontal_inset
-            .unwrap_or(gap)
+            .unwrap_or(metrics.inset)
             .min(frame.size.width * 0.5);
         let inner = Rect::new(
             frame.min_x() + pad,
@@ -917,9 +945,10 @@ impl Component for ToolbarContent {
 impl ToolbarContent {
     fn arrange_vertical(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         let gap = spacing(text, "space-regular");
+        let default_inset = crate::toolbar::metrics(text, proposal::TextRole::UiBody).inset;
         let pad = self
             .horizontal_inset
-            .unwrap_or(gap)
+            .unwrap_or(default_inset)
             .min(frame.size.height * 0.5);
         let inner = Rect::new(
             frame.min_x(),
@@ -1376,7 +1405,7 @@ mod radio_projection_tests {
         toolbar.arrange(&mut text, frame, frame);
         let top_pad = toolbar.children[0].frame().min_y() - frame.min_y();
         let bottom_pad = frame.max_y() - toolbar.children[1].frame().max_y();
-        let expected_pad = tekes_ui_tokens::Spacing::Regular.value();
+        let expected_pad = crate::toolbar::metrics(&mut text, proposal::TextRole::UiBody).inset;
         assert!((top_pad - expected_pad).abs() <= 0.01, "top_pad={top_pad}");
         assert!(
             (bottom_pad - expected_pad).abs() <= 0.01,
@@ -2035,5 +2064,43 @@ mod capsule_group_tests {
                 assert!(((seam * scale) - (seam * scale).round()).abs() < 0.001);
             }
         }
+    }
+
+    #[test]
+    fn plain_toolbar_group_aligns_buttons_to_box_size_and_toolbar_uses_metrics_inset() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, value: &str, role: proposal::TextRole, width: f32) -> Size {
+                Size::new(
+                    (value.chars().count() as f32 * 8.).min(width),
+                    role.style().line_height,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: crate::ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let mut text = Text;
+        let metrics = crate::toolbar::metrics(&mut text, proposal::TextRole::UiBody);
+        let mut group = ToolbarGroup::new(
+            ToolbarPlacement::Navigation,
+            vec![Content::new(ComponentId(401), Button::new("Save"))],
+        );
+        let measured_group = group.measure(&mut text, Size::new(300., metrics.row)).size;
+        assert_eq!(measured_group.height, metrics.box_size);
+
+        let mut toolbar = ToolbarContent::new(vec![Content::new(ComponentId(402), group)]);
+        let frame = Rect::new(0., 0., 400., metrics.row);
+        toolbar.arrange(&mut text, frame, frame);
+        let arranged_btn = toolbar.children[0].component.children()[0].frame();
+        assert_eq!(arranged_btn.min_x(), metrics.inset);
+        assert_eq!(arranged_btn.size.height, metrics.box_size);
     }
 }

@@ -19,6 +19,16 @@ impl SelectableListContent {
             name: name.into(),
         }
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.view.set_compact(compact);
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.view.set_compact(compact);
+    }
+    pub fn compact(&self) -> bool {
+        self.view.compact()
+    }
 }
 impl Component for SelectableListContent {
     fn curve_subtree_capability(&self) -> CurveSubtreeCapability {

@@ -55,7 +55,8 @@ impl EmptyStateContent {
         let owner = Rc::new(RefCell::new(Owner {
             arranged: false,
             model,
-            view: EmptyStateView::default(),
+            view: EmptyStateView::default()
+                .with_outer_padding(Some(tekes_ui_tokens::Spacing::None.value())),
             disabled: false,
             window_active: true,
             exposure: Exposure::default(),
@@ -82,6 +83,20 @@ impl EmptyStateContent {
     }
     pub fn disabled(&self) -> bool {
         self.owner.borrow().disabled
+    }
+    pub fn with_max_detail_width(self, max_width: Option<f32>) -> Self {
+        self.owner.borrow_mut().view.set_max_detail_width(max_width);
+        self
+    }
+    pub fn set_max_detail_width(&mut self, max_width: Option<f32>) {
+        self.owner.borrow_mut().view.set_max_detail_width(max_width);
+    }
+    pub fn with_outer_padding(self, padding: Option<f32>) -> Self {
+        self.owner.borrow_mut().view.set_outer_padding(padding);
+        self
+    }
+    pub fn set_outer_padding(&mut self, padding: Option<f32>) {
+        self.owner.borrow_mut().view.set_outer_padding(padding);
     }
     pub fn set_metadata(
         &mut self,
@@ -155,11 +170,14 @@ impl Component for EmptyStateContent {
         if !self.intact() {
             return MeasuredChild::new(Size::default());
         }
-        MeasuredChild::new(EmptyStateView::measure(
+        let owner = self.owner.borrow();
+        MeasuredChild::new(EmptyStateView::measure_with_options(
             &mut TextAdapter(text),
-            &self.owner.borrow().model,
+            &owner.model,
             available.width,
             proposal::TextRole::UiBody,
+            owner.view.resolved_outer_padding(),
+            owner.view.max_detail_width_limit(),
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
@@ -788,5 +806,60 @@ mod tests {
                 .activated
         );
         assert_eq!(h.drain_actions().len(), 1);
+    }
+
+    #[test]
+    fn empty_state_content_defaults_to_zero_outer_padding_and_supports_max_detail_width() {
+        struct WrappingDetailText;
+        impl ButtonTextRenderer for WrappingDetailText {
+            fn measure(&mut self, value: &str, _: proposal::TextRole, max_width: f32) -> Size {
+                let width = value.chars().count() as f32 * 7.0;
+                let lines = if max_width > 0.0 && width > max_width {
+                    (width / max_width).ceil()
+                } else {
+                    1.0
+                };
+                Size::new(width.min(max_width.max(0.0)), lines * 18.0)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        let content_model = EmptyState {
+            title: "Nothing here".into(),
+            detail: "A longer explanation that wraps once a max_detail_width limit is applied"
+                .into(),
+            action: Some("Create".into()),
+        };
+        let mut text = WrappingDetailText;
+        let expected_unpadded = EmptyStateView::measure_with_options(
+            &mut text,
+            &content_model,
+            600.0,
+            proposal::TextRole::UiBody,
+            0.0,
+            None,
+        );
+        let mut empty = EmptyStateContent::new("Empty", content_model.clone(), ACTION).unwrap();
+        assert_eq!(
+            empty.measure(&mut text, Size::new(600.0, 400.0)).size,
+            expected_unpadded
+        );
+        empty.set_max_detail_width(Some(140.0));
+        let narrow_detail = empty.measure(&mut text, Size::new(600.0, 400.0)).size;
+        let builder_narrow = EmptyStateContent::new("Empty", content_model, ACTION)
+            .unwrap()
+            .with_max_detail_width(Some(140.0))
+            .measure(&mut text, Size::new(600.0, 400.0))
+            .size;
+        assert_eq!(narrow_detail, builder_narrow);
+        assert!(narrow_detail.height > expected_unpadded.height);
     }
 }

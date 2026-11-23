@@ -134,7 +134,7 @@ pub(crate) fn surface_kind_with_elevation_at_scale(
         SurfaceKind::Dialog => ("surface-popover", "c-dialog-radius", true),
         SurfaceKind::Code => ("code-surface", "c-code-radius", true),
     };
-    let radius = metric("radius", radius, 6.0);
+    let radius = metric("radius", radius, 8.0);
     // JSON layers are front-to-back; painter order is back-to-front. Shadows
     // retain the caller's ancestor clip, never the surface's own bounds.
     for layer in proposal::elevation(elevation_role, theme.theme)
@@ -175,7 +175,7 @@ pub(crate) fn surface_kind_with_elevation_colors_at_scale(
         SurfaceKind::Dialog => ("c-dialog-radius", true),
         SurfaceKind::Code => ("c-code-radius", true),
     };
-    let radius = metric("radius", radius, 6.0);
+    let radius = metric("radius", radius, 8.0);
     // JSON layers are front-to-back; painter order is back-to-front. Shadows
     // retain the caller's ancestor clip, never the surface's own bounds.
     for layer in proposal::elevation(elevation_role, theme.theme)
@@ -225,7 +225,7 @@ fn panel_surface_parts(
         if framed { "surface-frame" } else { "content" },
         "rest",
     )?;
-    let radius = metric("radius", "radius-panel", 8.0);
+    let radius = metric("radius", "radius-panel", 10.0);
     for layer in proposal::elevation("panel", palette.theme)
         .iter()
         .rev()
@@ -332,7 +332,7 @@ pub(crate) fn panel_boundary(
         );
     }
     if focused {
-        let radius = metric("radius", "radius-panel", 8.0);
+        let radius = metric("radius", "radius-panel", 10.0);
         focus_ring(scene, rect, palette, radius);
     }
 }
@@ -473,7 +473,7 @@ pub(crate) fn button(
         rect,
         theme.into(),
         state,
-        metric("radius", "c-button-md-radius", 6.0),
+        metric("radius", "c-button-md-radius", 8.0),
     )
 }
 #[cfg(test)]
@@ -777,7 +777,7 @@ pub(crate) fn button_variant(
         theme.into(),
         state,
         variant,
-        metric("radius", "c-button-md-radius", 6.0),
+        metric("radius", "c-button-md-radius", 8.0),
     )
 }
 /// Size-aware production Button paint; legacy painters retain their md radius.

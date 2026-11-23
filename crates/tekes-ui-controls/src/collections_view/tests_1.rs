@@ -523,8 +523,8 @@ fn list_tree_and_table_keep_gallery_default_row_geometry() {
         None,
         Theme::LIGHT.into(),
     );
-    assert_eq!(list_layout.items[0].frame.size.height, 36.);
-    assert_eq!(list_layout.items[1].frame.min_y(), 40.);
+    assert_eq!(list_layout.items[0].frame.size.height, 32.);
+    assert_eq!(list_layout.items[1].frame.min_y(), 36.);
 
     let mut tree = Tree::default();
     let root = tree.add("root", None).unwrap();
@@ -539,8 +539,8 @@ fn list_tree_and_table_keep_gallery_default_row_geometry() {
         None,
         Theme::LIGHT.into(),
     );
-    assert_eq!(tree_layout.items[0].frame.size.height, 34.);
-    assert_eq!(tree_layout.items[1].frame.min_y(), 38.);
+    assert_eq!(tree_layout.items[0].frame.size.height, 32.);
+    assert_eq!(tree_layout.items[1].frame.min_y(), 36.);
     assert_eq!(
         tree_layout.items[1].frame.min_x() - tree_layout.items[0].frame.min_x(),
         20.
@@ -560,13 +560,89 @@ fn list_tree_and_table_keep_gallery_default_row_geometry() {
         None,
         Theme::LIGHT.into(),
     );
-    assert_eq!(table_layout.headers[0].frame.size.height, 34.);
-    assert_eq!(table_layout.rows[0].frame.min_y(), 40.);
-    assert_eq!(table_layout.rows[0].frame.size.height, 34.);
+    assert_eq!(table_layout.headers[0].frame.size.height, 32.);
+    assert_eq!(table_layout.rows[0].frame.min_y(), 38.);
+    assert_eq!(table_layout.rows[0].frame.size.height, 32.);
     assert_eq!(
         table_layout.rows[1].frame.min_y() - table_layout.rows[0].frame.min_y(),
-        38.
+        36.
     );
+}
+
+#[test]
+fn collection_compact_mode_padding_and_accessory_gap() {
+    let mut scene = Scene::new();
+    let mut text = FixedText { height: 14. };
+
+    let mut list = ListView::new().with_compact(true);
+    let list_model = List::new(2);
+    let list_layout = list.render(
+        &mut scene,
+        &mut text,
+        &list_model,
+        &["first".into(), "second".into()],
+        Rect::new(0., 0., 200., 100.),
+        None,
+        Theme::LIGHT.into(),
+    );
+    assert_eq!(list_layout.items[0].frame.size.height, 24.);
+    assert_eq!(list_layout.items[1].frame.min_y(), 28.);
+
+    let mut tree = Tree::default();
+    tree.add("root", None).unwrap();
+    let mut tree_view = TreeView::new().with_compact(true);
+    let tree_layout = tree_view.render(
+        &mut scene,
+        &mut text,
+        &tree,
+        Rect::new(0., 0., 200., 100.),
+        None,
+        Theme::LIGHT.into(),
+    );
+    assert_eq!(tree_layout.items[0].frame.size.height, 24.);
+
+    let mut wrapped_tree = Tree::default();
+    wrapped_tree.add("wrapped item", None).unwrap();
+    let mut wrapped_text = FixedText { height: 40. };
+    let wrapped_layout = TreeView::new().render(
+        &mut scene,
+        &mut wrapped_text,
+        &wrapped_tree,
+        Rect::new(0., 0., 200., 100.),
+        None,
+        Theme::LIGHT.into(),
+    );
+    assert_eq!(wrapped_layout.items[0].frame.size.height, 48.);
+
+    let table_model = DataTable::new(1, 1);
+    let mut compact_table = DataTableView::new().with_compact(true);
+    let compact_layout = compact_table.render(
+        &mut scene,
+        &mut text,
+        &table_model,
+        &["Name".into()],
+        &[vec!["first".into()]],
+        &[0],
+        Rect::new(0., 0., 200., 120.),
+        None,
+        Theme::LIGHT.into(),
+    );
+    assert_eq!(compact_layout.headers[0].frame.size.height, 24.);
+    assert_eq!(compact_layout.rows[0].frame.size.height, 24.);
+    assert_eq!(compact_layout.rows[0].frame.min_y(), 30.);
+
+    let wrapped_table_layout = DataTableView::new().render(
+        &mut scene,
+        &mut wrapped_text,
+        &table_model,
+        &["Name".into()],
+        &[vec!["wrapped cell".into()]],
+        &[0],
+        Rect::new(0., 0., 200., 200.),
+        None,
+        Theme::LIGHT.into(),
+    );
+    assert_eq!(wrapped_table_layout.rows[0].frame.size.height, 48.);
 }
 
 #[test]
@@ -879,5 +955,5 @@ fn data_table_measures_final_sorted_header_label_before_positioning_rows() {
     );
     assert_eq!(layout.headers[0].frame.size.height, 80.0);
     assert_eq!(layout.rows[0].frame.min_y(), frame.min_y() + 86.0);
-    assert_eq!(layout.content_height, 120.0);
+    assert_eq!(layout.content_height, 118.0);
 }

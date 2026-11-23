@@ -224,6 +224,19 @@ impl TreeContent {
         }
         self.commit(dataset, p)
     }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.view.set_compact(compact);
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        if self.view.compact() != compact {
+            self.view.set_compact(compact);
+            self.invalidate();
+        }
+    }
+    pub fn compact(&self) -> bool {
+        self.view.compact()
+    }
     pub fn selected_key(&self) -> Option<TreeNodeKey> {
         self.model.selected_key()
     }
@@ -682,11 +695,13 @@ impl Component for TreeContent {
             self.invalidate();
             return MeasuredChild::new(Size::default());
         }
+        let compact = self.view.compact();
         let rows = &mut self.rows;
         let metrics = TreeView::measure_rows(
             &self.model,
             available.width,
             text,
+            compact,
             |text, i, w, custom_width| {
                 let custom = !rows[i]
                     .component::<RowSlot>()
@@ -705,7 +720,7 @@ impl Component for TreeContent {
         );
         MeasuredChild::new(Size::new(
             available.width,
-            TreeView::rows_height(text, available.width, &metrics),
+            TreeView::rows_height(text, available.width, &metrics, compact),
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
@@ -713,11 +728,13 @@ impl Component for TreeContent {
             self.invalidate();
             return;
         }
+        let compact = self.view.compact();
         let rows = &mut self.rows;
         let metrics = TreeView::measure_rows(
             &self.model,
             frame.size.width,
             text,
+            compact,
             |text, i, w, custom_width| {
                 let custom = !rows[i]
                     .component::<RowSlot>()

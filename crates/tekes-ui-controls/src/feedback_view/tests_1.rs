@@ -291,12 +291,33 @@ fn field_emphasized_form_presentation_restores_label_and_spacing() {
         FieldPresentation::emphasized_form(),
     );
     assert_eq!(layout.label.min_y(), frame.min_y());
-    assert_eq!(layout.label.size.height, 36.);
+    assert_eq!(
+        layout.label.size.height,
+        proposal::TextRole::UiHeading.style().line_height
+    );
     assert_eq!(layout.slot.min_y(), layout.label.max_y() + 4.);
     assert_eq!(layout.message.min_y(), layout.slot.max_y() + 6.);
-    assert!(layout.slot.size.height >= 36.);
-    assert_eq!(layout.message.size.height, 36.);
+    assert!(layout.slot.size.height >= 32.);
+    assert_eq!(
+        layout.message.size.height,
+        proposal::TextRole::UiCaption.style().line_height
+    );
     assert!(layout.required_mark.is_none());
+
+    // Empty help/error omits slot_to_message_gap completely.
+    let no_msg = view.measure_with_presentation(
+        &mut text,
+        &Field {
+            label: "Workspace name".into(),
+            ..Field::default()
+        },
+        frame,
+        None,
+        role(),
+        FieldPresentation::emphasized_form(),
+    );
+    assert_eq!(no_msg.message.size.height, 0.);
+    assert_eq!(no_msg.message.min_y(), no_msg.slot.max_y());
 }
 #[test]
 fn toolbar_pointer_and_keyboard_activation_are_owned_by_child_buttons() {
@@ -1026,7 +1047,7 @@ fn notices_align_status_marker_to_actual_first_line_at_each_text_scale() {
                     );
                 }
                 let message_rect = text.draws.iter().find(|(s, _)| s == message).unwrap().1;
-                let diameter = if banner { 12. } else { 10. };
+                let diameter = proposal::metric("size", "size-dot").unwrap();
                 let marker = scene
                     .primitives()
                     .iter()
@@ -1079,9 +1100,25 @@ fn banner_uses_symmetric_padding_and_quiet_dismiss_with_first_line_marker() {
         role(),
     );
     let dismiss = view.dismiss_layout.unwrap();
+    let dot = proposal::metric("size", "size-dot").unwrap();
+    let min_row = proposal::metric("size", "size-row-height").unwrap();
+    let dismiss_w = ButtonModel::measure(
+        &mut RecordingText::default(),
+        "Dismiss",
+        f32::MAX,
+        ButtonSize::Body,
+        role(),
+    )
+    .width;
+    let dismiss_y = frame.min_y() + (frame.size.height - min_row) * 0.5;
     assert_eq!(
         dismiss.frame,
-        Rect::new(frame.max_x() - pad - 92., 32., 92., 34.)
+        Rect::new(
+            frame.max_x() - pad - dismiss_w,
+            dismiss_y,
+            dismiss_w,
+            min_row
+        )
     );
     assert!(
         ((dismiss.frame.min_y() - frame.min_y()) - (frame.max_y() - dismiss.frame.max_y())).abs()
@@ -1092,11 +1129,11 @@ fn banner_uses_symmetric_padding_and_quiet_dismiss_with_first_line_marker() {
         .iter()
         .find(|(drawn, _, _, _)| drawn == &model.message)
         .unwrap();
-    assert_eq!(message.2.min_x(), frame.min_x() + pad + 12. + gap);
+    assert_eq!(message.2.min_x(), frame.min_x() + pad + dot + gap);
     assert_eq!(message.2.min_y(), frame.min_y() + pad);
     assert_eq!(message.2.size.height, role().style().line_height);
     assert!(scene.primitives().iter().any(|primitive| {
-        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - 12.) * 0.5, 12., 12.))
+        matches!(primitive, Primitive::Quad(q) if q.rect == Rect::new(frame.min_x() + pad, frame.min_y() + pad + (role().style().line_height - dot) * 0.5, dot, dot))
     }));
     let quiet_fill = tekes_ui_tokens::surface_palette::resolve_surface(
         palette(),
@@ -1134,7 +1171,7 @@ fn number_field_has_symmetric_stepper_gaps() {
         "left_gap={left_gap} vs right_gap={right_gap}"
     );
     assert!(
-        (left_gap - tekes_ui_tokens::Spacing::Relaxed.value()).abs() <= 0.01,
+        (left_gap - tekes_ui_tokens::Spacing::Regular.value()).abs() <= 0.01,
         "left_gap={left_gap}"
     );
 }

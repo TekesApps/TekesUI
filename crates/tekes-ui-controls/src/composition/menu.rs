@@ -142,6 +142,7 @@ pub(crate) struct MenuContentState {
     last_frame: Option<std::time::Duration>,
     context: Option<ContextMenuState>,
     popup_viewport: Option<Rect>,
+    compact: bool,
 }
 impl MenuContentState {
     fn new(labels: &[String]) -> Self {
@@ -161,6 +162,7 @@ impl MenuContentState {
             last_frame: None,
             context: None,
             popup_viewport: None,
+            compact: false,
         }
     }
     fn reset(&mut self, labels: &[String]) {
@@ -171,8 +173,10 @@ impl MenuContentState {
         let content = std::mem::take(&mut self.trigger_content);
         let measured = self.trigger_measured;
         let popup_viewport = self.popup_viewport;
+        let compact = self.compact;
         *self = Self::new(labels);
         self.popup_viewport = popup_viewport;
+        self.compact = compact;
         self.context = context;
         self.trigger_content = content;
         self.trigger_measured = measured;
@@ -280,6 +284,21 @@ impl MenuContent {
     }
     pub fn trigger_tone(&self) -> crate::paint::ButtonTone {
         self.trigger.tone()
+    }
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.set_compact(compact);
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        if let Some(state) = &mut self.menu.content_state {
+            state.compact = compact;
+        }
+    }
+    pub fn compact(&self) -> bool {
+        self.menu
+            .content_state
+            .as_ref()
+            .is_some_and(|state| state.compact)
     }
     pub fn set_trigger_label(&mut self, label: impl Into<String>) {
         self.trigger.set_label(label);
@@ -1126,6 +1145,7 @@ impl MenuContent {
     ) {
         let root_open = self.menu.is_open();
         let state = self.menu.content_state.as_mut().unwrap();
+        let compact = state.compact;
         for index in 0..state.retiring.len() {
             let panel = &state.retiring[index];
             let labels = state
@@ -1147,6 +1167,7 @@ impl MenuContent {
                 text,
                 clip,
                 theme,
+                compact,
             );
         }
         for level in 0..state.panels.len() {
@@ -1191,6 +1212,7 @@ impl MenuContent {
                 text,
                 clip,
                 theme,
+                compact,
             );
         }
         state.retiring.retain(|panel| panel.view.is_presented());
@@ -1295,6 +1317,7 @@ impl MenuContent {
         None
     }
 }
+#[allow(clippy::too_many_arguments)]
 fn render_menu_panel(
     panel: &mut MenuPanel,
     labels: &[String],
@@ -1303,6 +1326,7 @@ fn render_menu_panel(
     text: &mut dyn ButtonTextRenderer,
     clip: Rect,
     theme: ContentTheme,
+    compact: bool,
 ) {
     if let Some(context) = text.motion_context() {
         panel.view.set_reduced_motion(context.reduced_motion);
@@ -1317,7 +1341,7 @@ fn render_menu_panel(
         Some(clip),
         theme.palette,
         proposal::TextRole::UiBody,
-        false,
+        compact,
     );
     if layout.is_some() {
         panel.layout = layout;
@@ -1765,6 +1789,7 @@ impl Component for MenuContent {
         let (f, c) = self.context().map_or((f, popup_viewport), |context| {
             (context.anchor, context.viewport)
         });
+        let compact = self.compact();
         let labels = self.labels.iter().map(String::as_str).collect::<Vec<_>>();
         self.popup = self.menu.render(
             s,
@@ -1775,7 +1800,7 @@ impl Component for MenuContent {
             Some(c),
             theme.palette,
             proposal::TextRole::UiBody,
-            false,
+            compact,
         );
         if self.declared() {
             self.paint_declared_panels(s, t, c, theme);

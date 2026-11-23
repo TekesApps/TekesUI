@@ -733,7 +733,7 @@ fn code_ink_falls_back_to_plain_body_ink_without_syntax_highlighting() {
 fn fenced_code_surface_contains_original_text_and_stays_below_selection() {
     let id = ComponentId(902);
     let source = "Before\n\n```rust\nlet greeting = \"你好🦀\";\nlet count = 42;\n```\n\nAfter";
-    let inset = tekes_ui_tokens::proposal::metric("spacing", "space-button-md-inset").unwrap();
+    let inset = tekes_ui_tokens::proposal::metric("spacing", "space-relaxed").unwrap();
     for theme in [Theme::LIGHT, Theme::DARK] {
         for width in [220., 560.] {
             let document = RichDocument::from_markdown(source);

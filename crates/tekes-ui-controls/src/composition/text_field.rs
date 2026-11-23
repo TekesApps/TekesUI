@@ -1393,7 +1393,12 @@ impl TextFieldContent {
             return r;
         }
         match e {
-            ContentEvent::PointerMove(p) => r.changed = self.surface.pointer_drag(*p, 24.),
+            ContentEvent::PointerMove(p) => {
+                r.changed = self.surface.pointer_drag(
+                    *p,
+                    proposal::metric("size", "size-row-height").expect("scrollbar minimum thumb"),
+                )
+            }
             ContentEvent::PointerUp(_) => {
                 self.surface.pointer_up();
                 r = ContentResponse::consumed(true);

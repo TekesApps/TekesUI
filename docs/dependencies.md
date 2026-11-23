@@ -1,8 +1,8 @@
-# Dependencies (`v0.4.10`)
+# Dependencies (`v0.4.11`)
 
 All third-party workspace dependencies use permissive licenses (MIT, Apache-2.0, Zlib, Unicode-3.0, or BSD-style equivalents compatible with TekesUI's MIT license). No GPL, LGPL, or MPL crates are present in the dependency graph.
 
-External versions below reflect `Cargo.lock` at `v0.4.10`.
+External versions below reflect `Cargo.lock` at `v0.4.11`.
 
 ## Zero-dependency Core & Token Crates
 

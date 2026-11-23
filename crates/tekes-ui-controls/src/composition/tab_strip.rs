@@ -26,11 +26,22 @@ pub struct TabStripContent {
     lanes: Vec<f32>,
     height: f32,
     toolbar: bool,
+    compact: bool,
     gap: f32,
     intent: Option<TabStripIntent>,
     title_max_width: f32,
 }
 impl TabStripContent {
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+    pub fn compact(&self) -> bool {
+        self.compact
+    }
     pub fn with_title_max_width(mut self, width: f32) -> Self {
         self.set_title_max_width(width);
         self
@@ -68,6 +79,7 @@ impl TabStripContent {
             lanes: vec![],
             height: 0.,
             toolbar: false,
+            compact: false,
             gap: 0.,
             intent: None,
             title_max_width: TAB_TITLE_MAX_WIDTH,
@@ -91,9 +103,7 @@ impl TabStripContent {
         Rect::new(
             self.lanes.iter().take(index).sum(),
             0.,
-            (self.lanes.get(index).copied().unwrap_or(0.)
-                - if self.toolbar { self.gap } else { 0. })
-            .max(0.),
+            (self.lanes.get(index).copied().unwrap_or(0.) - self.gap).max(0.),
             self.height,
         )
     }
@@ -101,7 +111,7 @@ impl TabStripContent {
         let gap = if self.toolbar {
             crate::toolbar::tab_geometry(text).0
         } else {
-            crate::composite::focus_reveal_outset(text.backing_scale()).max(4.)
+            TabsView::lane_gap()
         };
         self.gap = gap;
         self.sizes = self
@@ -113,12 +123,8 @@ impl TabStripContent {
                     .size
             })
             .collect();
-        let close = if self.toolbar {
-            let role = proposal::TextRole::UiBody;
-            24. * text.resolved_font_size(role) / role.style().size
-        } else {
-            TabsView::close_width(text)
-        };
+        let close = TabsView::close_width_for(text, self.toolbar)
+            + TabsView::close_gap_for(text, self.toolbar);
         self.lanes = self
             .sizes
             .iter()
@@ -139,7 +145,7 @@ impl TabStripContent {
         self.height = if self.toolbar {
             crate::toolbar::tab_geometry(text).1
         } else {
-            TabsView::content_height(text, &self.sizes, &self.lanes, false)
+            TabsView::content_height(text, &self.sizes, &self.lanes, self.compact)
         };
     }
     fn snapshot(&mut self, selected: Option<usize>) -> ContentResponse {
@@ -190,11 +196,7 @@ impl Component for TabStripContent {
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, _: Size) -> MeasuredChild {
         self.measure_labels(text);
-        let trailing_gap = if self.toolbar && !self.lanes.is_empty() {
-            self.gap
-        } else {
-            0.
-        };
+        let trailing_gap = if !self.lanes.is_empty() { self.gap } else { 0. };
         MeasuredChild::new(Size::new(
             self.lanes.iter().sum::<f32>() - trailing_gap,
             self.height,
@@ -220,7 +222,7 @@ impl Component for TabStripContent {
             Some(clip),
             theme.palette,
             proposal::TextRole::UiBody,
-            false,
+            self.compact,
         );
         for (index, child) in self.children.iter_mut().enumerate() {
             if let Some(item) = layout.items.get(index) {
@@ -426,5 +428,111 @@ impl Component for TabStripContent {
             }
             _ => ContentResponse::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        ButtonTextAlign,
+        extended::{Disclosure, SegmentedControl},
+        layout_view::{DisclosureView, SegmentedControlView},
+    };
+    use tekes_ui_tokens::{Rgba, Theme};
+
+    struct TestText {
+        draws: Vec<ButtonTextAlign>,
+    }
+    impl TestText {
+        fn new() -> Self {
+            Self { draws: Vec::new() }
+        }
+    }
+    impl ButtonTextRenderer for TestText {
+        fn measure(&mut self, s: &str, role: proposal::TextRole, max_width: f32) -> Size {
+            Size::new(
+                (s.chars().count() as f32 * 7.).min(max_width.max(0.)),
+                role.style().line_height,
+            )
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            align: ButtonTextAlign,
+            _: Rgba,
+        ) {
+            self.draws.push(align);
+        }
+    }
+
+    #[test]
+    fn tab_strip_compact_heights_disclosure_parity_and_segmented_centering() {
+        let mut text = TestText::new();
+        let make_strip = |compact: bool| {
+            TabStripContent::new(
+                vec![
+                    TabStripItem {
+                        label: Content::new(ComponentId(1), TextContent::new("One")),
+                        name: "One".into(),
+                        closable: false,
+                    },
+                    TabStripItem {
+                        label: Content::new(ComponentId(2), TextContent::new("Two")),
+                        name: "Two".into(),
+                        closable: false,
+                    },
+                ],
+                0,
+            )
+            .with_compact(compact)
+        };
+        let mut normal = make_strip(false);
+        let mut compact = make_strip(true);
+        let n_size = normal.measure(&mut text, Size::new(400., 100.)).size;
+        let c_size = compact.measure(&mut text, Size::new(400., 100.)).size;
+        assert_eq!(n_size.height, 32.0);
+        assert_eq!(c_size.height, 28.0);
+        assert_eq!(n_size.width, normal.lanes.iter().sum::<f32>() - 6.0);
+
+        let insets = DisclosureView::content_insets(&mut text);
+        assert_eq!(insets.icon_side, 16.0);
+        assert_eq!(insets.icon_gap, 6.0);
+        assert_eq!(insets.row_height, 28.0);
+        let mut d_view = DisclosureView::default();
+        let d_model = Disclosure::default();
+        let d_layout = d_view.render(
+            &mut Scene::new(),
+            &mut text,
+            &d_model,
+            "Section",
+            Rect::new(0., 0., 200., 0.),
+            None,
+            Theme::LIGHT.into(),
+            proposal::TextRole::UiBody,
+        );
+        assert_eq!(d_layout.frame.size.height, 28.0);
+
+        let mut seg_view = SegmentedControlView::new(2);
+        let mut seg_model = SegmentedControl::new(2);
+        text.draws.clear();
+        seg_view.render(
+            &mut Scene::new(),
+            &mut text,
+            &mut seg_model,
+            &["First", "Second"],
+            Rect::new(0., 0., 200., 32.),
+            None,
+            Theme::LIGHT.into(),
+            proposal::TextRole::UiBody,
+            false,
+        );
+        assert_eq!(
+            text.draws,
+            vec![ButtonTextAlign::Center, ButtonTextAlign::Center]
+        );
     }
 }

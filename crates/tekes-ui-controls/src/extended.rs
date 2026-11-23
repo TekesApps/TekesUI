@@ -216,7 +216,7 @@ impl SplitView {
     pub fn new(ratio: f32) -> Self {
         Self {
             ratio: finite_or(ratio, 0.5).clamp(0., 1.),
-            divider: 1.,
+            divider: proposal::metric("stroke", "stroke-rule").unwrap_or(1.0),
             min_pane: 0.,
             collapsed: None,
             drag: None,

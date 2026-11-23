@@ -100,7 +100,8 @@ impl ButtonRuntime {
             self.layout = ButtonComponentLayout::default();
             return (self.layout, Rect::default());
         }
-        let inset = proposal::metric("spacing", "space-relaxed").unwrap_or(12.);
+        let m = DisclosureView::content_insets(text);
+        let inset = m.inset;
         let available = (frame.size.width - inset * 2.).max(0.);
         let slot_width = icon_slot_width.max(0.).min(available);
         let text_width = (available - slot_width).max(0.);
@@ -109,10 +110,7 @@ impl ButtonRuntime {
         } else {
             text.measure(label, role, text_width)
         };
-        let vertical_inset = ((proposal::metric("size", "size-action-button").unwrap_or(40.)
-            - role.style().line_height)
-            * 0.5)
-            .max(0.);
+        let vertical_inset = ((m.row_height - role.style().line_height * m.scale) * 0.5).max(0.);
         let button_frame = Rect::new(
             frame.min_x(),
             frame.min_y(),
@@ -120,6 +118,7 @@ impl ButtonRuntime {
             frame
                 .size
                 .height
+                .max(m.row_height)
                 .max(label_size.height + vertical_inset * 2.),
         );
         self.button.state.focused = self.focused && self.window_active;
@@ -136,9 +135,8 @@ impl ButtonRuntime {
             ButtonTextAlign::Leading,
             radius,
         );
-        let icon_side = proposal::metric("size", "size-icon-preview")
-            .expect("Disclosure icon artboard token")
-            .min(slot_width);
+        let icon_side = m.icon_side.min(slot_width);
+        let gap = m.icon_gap.min((slot_width - icon_side).max(0.));
         let row_bounds = Rect::new(
             button_layout.content.min_x(),
             button_layout.frame.min_y(),
@@ -152,7 +150,7 @@ impl ButtonRuntime {
                 MeasuredChild::new(Size::new(icon_side, icon_side)),
                 MeasuredChild::new(Size::new(text_width, label_size.height)),
             ],
-            (slot_width - icon_side).max(0.),
+            gap,
             proposal::layout::alignment(proposal::layout::AlignmentPreset::Row),
             AlignmentOverride::default(),
         );
@@ -235,6 +233,16 @@ impl ButtonRuntime {
             self.blur();
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct DisclosureInsets {
+    pub(crate) scale: f32,
+    pub(crate) inset: f32,
+    pub(crate) icon_gap: f32,
+    pub(crate) icon_side: f32,
+    pub(crate) row_height: f32,
+    pub(crate) section_inset: f32,
 }
 
 /// Geometry for a Disclosure's animated body. `body_rect` is the stable full
@@ -339,19 +347,19 @@ impl DisclosureView {
             .surface_colors(palette, ButtonVariant::Quiet, surface);
         (colors.text, colors.icon)
     }
-    pub(crate) fn content_insets(text: &mut impl ButtonTextRenderer) -> (f32, f32, f32) {
-        let role = proposal::TextRole::UiBody;
-        let scale = text.resolved_font_size(role) / role.style().size;
-        let scale = if scale.is_finite() && scale > 0. {
-            scale
-        } else {
-            1.
-        };
-        (
-            proposal::metric("spacing", "space-relaxed").expect("Disclosure inset") * scale,
-            proposal::metric("size", "size-icon-standard").expect("Disclosure icon") * scale,
-            proposal::metric("size", "size-action-button").expect("Disclosure row") * scale,
-        )
+    pub(crate) fn content_insets(text: &mut impl ButtonTextRenderer) -> DisclosureInsets {
+        let scale = crate::button_typography_scale(text, proposal::TextRole::UiBody);
+        DisclosureInsets {
+            scale,
+            inset: proposal::metric("spacing", "space-relaxed").expect("Disclosure inset") * scale,
+            icon_gap: proposal::metric("spacing", "space-snug").expect("Disclosure icon gap")
+                * scale,
+            icon_side: proposal::metric("size", "size-icon-standard").expect("Disclosure icon")
+                * scale,
+            row_height: proposal::metric("size", "size-button-sm").expect("Disclosure row") * scale,
+            section_inset: proposal::metric("spacing", "space-loose")
+                .expect("Disclosure section inset"),
+        }
     }
     /// Shared arranged/painted geometry for the original passive title slot.
     pub(crate) fn content_frames(
@@ -361,18 +369,22 @@ impl DisclosureView {
         rtl: bool,
         section_header: bool,
     ) -> (Rect, Rect) {
-        let (inset, side, _) = Self::content_insets(text);
-        let inset = if section_header { 16. } else { inset };
+        let m = Self::content_insets(text);
+        let inset = if section_header {
+            m.section_inset
+        } else {
+            m.inset
+        };
         let width = (frame.size.width - inset * 2.).max(0.);
         let side = if section_header {
             0.
         } else {
-            side.min(width).min(frame.size.height)
+            m.icon_side.min(width).min(frame.size.height)
         };
         let slot = if section_header {
             0.
         } else {
-            (side + inset).min(width)
+            (side + m.icon_gap).min(width)
         };
         let icon_x = if rtl {
             frame.max_x() - inset - side
@@ -478,6 +490,7 @@ impl DisclosureView {
         role: proposal::TextRole,
     ) -> ButtonComponentLayout {
         self.sync_model(model);
+        let m = Self::content_insets(text);
         let (layout, icon_frame) = self.runtime.render_icon_label(
             scene,
             text,
@@ -487,7 +500,7 @@ impl DisclosureView {
             palette,
             role,
             ButtonVariant::Quiet,
-            24.,
+            m.icon_side + m.icon_gap,
             Some(proposal::metric("radius", "radius-row").expect("Disclosure radius token")),
         );
         self.icon_frame = icon_frame;
@@ -726,9 +739,11 @@ impl LinkView {
         {
             self.blur();
         }
-        let inset = proposal::metric("spacing", "space-regular")
+        let scale = crate::button_typography_scale(text, role);
+        let inset = proposal::metric("spacing", "space-tight")
             .expect("Link content inset token")
-            .max(0.);
+            .max(0.)
+            * scale;
         let content = Rect::new(
             frame.min_x() + inset,
             frame.min_y(),

@@ -21,6 +21,7 @@ pub struct CommandPaletteContent {
     query_frame: Rect,
     query_clip: Rect,
     trigger_layout: Option<crate::ButtonLayout>,
+    compact: bool,
     last_frame: Option<std::time::Duration>,
     last_selection: Option<usize>,
 }
@@ -44,9 +45,23 @@ impl CommandPaletteContent {
             query_frame: Rect::default(),
             query_clip: Rect::default(),
             trigger_layout: None,
+            compact: false,
             last_frame: None,
             last_selection: None,
         }
+    }
+
+    pub fn with_compact(mut self, compact: bool) -> Self {
+        self.compact = compact;
+        self
+    }
+
+    pub fn set_compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+
+    pub fn compact(&self) -> bool {
+        self.compact
     }
 
     pub fn is_open(&self) -> bool {
@@ -282,7 +297,7 @@ impl Component for CommandPaletteContent {
         // ordinary trigger slot. Both layout and painting use MenuRuntime's
         // shared header geometry and the existing viewport placement rules.
         self.sync_model_query();
-        let width = crate::feedback_view::MenuView::header_content_width(
+        let width = crate::feedback_view::MenuView::command_header_content_width(
             &mut FrameTextAdapter(text, None, true),
             clip.size.width,
         );
@@ -295,6 +310,7 @@ impl Component for CommandPaletteContent {
             self.query_size,
             self.trigger_frame,
             clip,
+            self.compact,
         );
         self.query_clip = clip;
         let layout = self.view.trigger_content_layout(
@@ -390,7 +406,7 @@ impl Component for CommandPaletteContent {
                 clip: Some(clip),
                 palette: theme.palette,
                 role: proposal::TextRole::UiBody,
-                compact: false,
+                compact: self.compact,
             },
             &mut self.model,
             (self.query_size, &mut paint_query),
