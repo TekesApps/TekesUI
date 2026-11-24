@@ -42,14 +42,10 @@ pub fn combo_text_role_contract() -> usize {
     unsafe { window.setReleasedWhenClosed(false) };
     let view = crate::view::TekesView::new(mtm, shared.clone(), rect);
     window.setContentView(Some(&view));
-    shared
-        .objects
-        .set(crate::shared::Objects {
-            window: window.clone(),
-            view,
-        })
-        .ok()
-        .unwrap();
+    shared.set_objects(crate::shared::Objects {
+        window: window.clone(),
+        view,
+    });
     shared.ready.set(true);
     assert!(!window.isVisible());
     let key = AccessibilityKey {

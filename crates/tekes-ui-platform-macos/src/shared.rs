@@ -17,7 +17,7 @@
 //! `Window` 本身只是一组 `Retained` 引用和一个 `Rc<Shared>`，每次分发时临时构造，
 //! 不持有任何 `RefCell` 借用，所以 `handle` 里随便调它的方法都不会二次借用。
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -83,6 +83,7 @@ pub(crate) struct GeometryState {
     pub drawable: (u32, u32),
 }
 
+#[derive(Clone)]
 pub(crate) struct Objects {
     pub window: Retained<NSWindow>,
     pub view: Retained<TekesView>,
@@ -143,7 +144,7 @@ pub(crate) struct Shared {
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
     pub last_appearance: Cell<Option<(bool, bool)>>,
-    pub objects: OnceCell<Objects>,
+    objects: RefCell<Option<Objects>>,
     /// 窗口摆放的选择结果（autosave 恢复了位置时为 None）。
     pub placement: RefCell<Option<PlacementReport>>,
     /// `Created` 已经投递。在此之前视图收到的回调（初始 setFrameSize 等）不投递事件。
@@ -209,7 +210,7 @@ impl Shared {
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
             last_appearance: Cell::new(None),
-            objects: OnceCell::new(),
+            objects: RefCell::new(None),
             placement: RefCell::new(None),
             ready: Cell::new(false),
             closed: Cell::new(false),
@@ -409,7 +410,7 @@ impl Shared {
                     };
                     if event == Event::Redraw {
                         self.redraw_count.set(self.redraw_count.get() + 1);
-                        if let Some(objects) = self.objects.get() {
+                        if let Some(objects) = self.objects() {
                             let size = objects.view.size_points();
                             resize_review(format_args!(
                                 "WINDOW_REDRAW width={} height={}",
@@ -457,7 +458,7 @@ impl Shared {
         crate::app::sync_close_menu_item(self.mtm);
         if self.pending_perform_close.replace(false)
             && !self.is_inactive_surface()
-            && let Some(objects) = self.objects.get()
+            && let Some(objects) = self.objects()
         {
             objects.window.performClose(None);
         }
@@ -470,7 +471,7 @@ impl Shared {
         // callback can draw without aliasing the original mutable handler.
         if self.pending_titlebar_zoom.replace(false)
             && !self.is_inactive_surface()
-            && let Some(objects) = self.objects.get()
+            && let Some(objects) = self.objects()
         {
             debug_assert!(self.handler.borrow().is_some());
             let before = self.redraw_count.get();
@@ -488,7 +489,7 @@ impl Shared {
             return None;
         }
         let height = self.toolbar_row_height.get()?;
-        let objects = self.objects.get()?;
+        let objects = self.objects()?;
         let style = objects.window.styleMask();
         if !style.contains(NSWindowStyleMask::FullSizeContentView)
             || style.contains(NSWindowStyleMask::FullScreen)
@@ -517,7 +518,7 @@ impl Shared {
         let Some(center) = self.toolbar_control_center() else {
             return;
         };
-        let Some(objects) = self.objects.get() else {
+        let Some(objects) = self.objects() else {
             return;
         };
         let controls = [
@@ -610,7 +611,7 @@ impl Shared {
         if !self.ready.get() || self.is_inactive_surface() {
             return;
         }
-        let Some(o) = self.objects.get() else { return };
+        let Some(o) = self.objects() else { return };
         let reduce =
             objc2_app_kit::NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceMotion();
         if force || self.last_motion.get() != Some(reduce) {
@@ -643,6 +644,14 @@ impl Shared {
         self.accessibility_text_layouts.borrow_mut().clear();
         self.accessibility_elements.borrow_mut().clear();
     }
+    pub(crate) fn objects(&self) -> Option<Objects> {
+        self.objects.borrow().clone()
+    }
+
+    pub(crate) fn set_objects(&self, objects: Objects) {
+        *self.objects.borrow_mut() = Some(objects);
+    }
+
     pub fn finish(&self) {
         crate::app::restore_windows(self);
         crate::wake::native::unregister(&self.wake_state);
@@ -656,12 +665,15 @@ impl Shared {
         self.animating.set(false);
         self.discard_metal_frames();
         self.queue.borrow_mut().clear();
-        if let Some(o) = self.objects.get() {
+        let objects = self.objects.borrow_mut().take();
+        if let Some(o) = &objects {
             o.view.cancel_pending_performs();
             o.view.invalidate_display_link();
+            o.view.clear_tracking_areas();
         }
         let handler = self.handler.borrow_mut().take();
         drop(handler);
+        drop(objects);
     }
 
     /// 标记需要重绘（合并）。
@@ -670,7 +682,7 @@ impl Shared {
             return;
         }
         if !self.redraw_pending.replace(true)
-            && let Some(o) = self.objects.get()
+            && let Some(o) = self.objects()
         {
             o.view.schedule_redraw();
         }
@@ -979,8 +991,7 @@ impl Window {
 
     fn new(shared: Rc<Shared>) -> Window {
         let o = shared
-            .objects
-            .get()
+            .objects()
             .expect("事件在窗口创建之前被投递，这是平台层的 bug");
         Window {
             window: o.window.clone(),

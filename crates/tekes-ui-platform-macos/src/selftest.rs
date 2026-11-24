@@ -279,7 +279,7 @@ extern "C" fn run_step(ctx: *mut c_void) {
     crate::ffi_boundary("selftest::run_step", || {
         // SAFETY: ctx 是 run_script 里 Box::into_raw 出来的 Action，每个只消费一次。
         let action = *unsafe { Box::from_raw(ctx.cast::<Action>()) };
-        run_step_inner(action);
+        objc2::rc::autoreleasepool(|_| run_step_inner(action));
     });
 }
 
@@ -288,7 +288,24 @@ fn run_step_inner(action: Action) {
     let app = NSApplication::sharedApplication(mtm);
     eprintln!("selftest: {action:?}");
     match action {
-        Action::Log(_) => return,
+        Action::Log(msg) => {
+            if msg == "drain-app-runloop"
+                && let Some(ev) = NSEvent::otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2(
+                    NSEventType::ApplicationDefined,
+                    NSPoint::ZERO,
+                    NSEventModifierFlags::empty(),
+                    0.0,
+                    0,
+                    None,
+                    0,
+                    0,
+                    0,
+                )
+            {
+                app.postEvent_atStart(&ev, false);
+            }
+            return;
+        }
         Action::Quit => {
             app.terminate(None);
             return;
@@ -337,7 +354,7 @@ fn run_step_inner(action: Action) {
             if let Some(expected) = primary_visible {
                 let actual = primary
                     .as_ref()
-                    .and_then(|s| s.objects.get())
+                    .and_then(|s| s.objects())
                     .is_some_and(|o| o.window.isVisible());
                 assert_eq!(
                     actual, expected,
@@ -372,7 +389,7 @@ fn run_step_inner(action: Action) {
                     .iter()
                     .filter(|s| {
                         !s.is_inactive_surface()
-                            && s.objects.get().is_some_and(|o| o.window.isVisible())
+                            && s.objects().is_some_and(|o| o.window.isVisible())
                     })
                     .count();
                 assert_eq!(
@@ -542,22 +559,19 @@ fn run_step_inner(action: Action) {
                 _ => unreachable!(),
             };
             let component = key.component;
-            let element = view
+            let shared = view
                 .ivars()
                 .shared
-                .accessibility_elements
-                .borrow()
-                .get(&key)
-                .cloned();
+                .upgrade()
+                .expect("selftest view shared alive");
+            let element = shared.accessibility_elements.borrow().get(&key).cloned();
             if matches!(action, Action::ExpectAXMissing(_)) {
                 assert!(element.is_none(), "closed AX element remains published");
                 eprintln!("SELFTEST PASS AX closed owner removed");
                 return;
             }
             let element = element.unwrap_or_else(|| {
-                let published: Vec<_> = view
-                    .ivars()
-                    .shared
+                let published: Vec<_> = shared
                     .accessibility_nodes
                     .borrow()
                     .iter()
@@ -605,9 +619,7 @@ fn run_step_inner(action: Action) {
                 Action::AuditAXMenu { component } => unsafe {
                     use objc2::{rc::Retained, sel};
                     use objc2_foundation::NSRect;
-                    let nodes: Vec<_> = view
-                        .ivars()
-                        .shared
+                    let nodes: Vec<_> = shared
                         .accessibility_nodes
                         .borrow()
                         .iter()
@@ -617,9 +629,7 @@ fn run_step_inner(action: Action) {
                     assert!(!nodes.is_empty(), "published original menu nodes missing");
                     let mut checked = 0;
                     for node in nodes {
-                        let native = view
-                            .ivars()
-                            .shared
+                        let native = shared
                             .accessibility_elements
                             .borrow()
                             .get(&node.key)
@@ -1040,9 +1050,12 @@ fn run_step_inner(action: Action) {
             let view = content
                 .downcast_ref::<crate::view::TekesView>()
                 .expect("review TekesView");
-            let mut nodes: Vec<_> = view
+            let shared = view
                 .ivars()
                 .shared
+                .upgrade()
+                .expect("selftest view shared alive");
+            let mut nodes: Vec<_> = shared
                 .accessibility_nodes
                 .borrow()
                 .iter()
@@ -1315,13 +1328,15 @@ fn await_published_step_inner(
             complete,
         });
     });
-    run_published_step(&view.ivars().shared);
+    if let Some(shared) = view.ivars().shared.upgrade() {
+        run_published_step(&shared);
+    }
 }
 // Run after the real handler is restored and its queued events finish. Looking
 // up the element and calling its original selector cannot then straddle another
 // Host animation/layout callback. No borrow survives the native selector.
 pub(crate) fn run_published_step(shared: &crate::shared::Shared) {
-    let Some(objects) = shared.objects.get() else {
+    let Some(objects) = shared.objects() else {
         return;
     };
     if shared.closed.get() {
@@ -1740,14 +1755,10 @@ pub fn content_accessibility_publication_contract(
     unsafe { nswin.setReleasedWhenClosed(false) };
     let view = TekesView::new(mtm, shared.clone(), rect);
     nswin.setContentView(Some(&view));
-    shared
-        .objects
-        .set(Objects {
-            window: nswin.clone(),
-            view: view.clone(),
-        })
-        .ok()
-        .unwrap();
+    shared.set_objects(Objects {
+        window: nswin.clone(),
+        view: view.clone(),
+    });
     shared.ready.set(true);
 
     shared.dispatch(Event::Created);
@@ -1912,14 +1923,10 @@ pub fn titlebar_contract() -> Vec<(bool, f64, f64)> {
         let view = TekesView::new(mtm, shared.clone(), rect);
         window.setContentView(Some(&view));
         view.layoutSubtreeIfNeeded();
-        shared
-            .objects
-            .set(Objects {
-                window: window.clone(),
-                view: view.clone(),
-            })
-            .ok()
-            .unwrap();
+        shared.set_objects(Objects {
+            window: window.clone(),
+            view: view.clone(),
+        });
         // Use the production delegate: update() must exercise the native
         // notification boundary, not call the alignment helper directly.
         let delegate = crate::app::AppDelegate::new(
@@ -2330,8 +2337,8 @@ pub fn exclusive_reentry_contract() {
             };
             let other = window.open_window(config("visible"), Noop);
             let hidden = window.open_window(config("originally-hidden"), Noop);
-            let other_window = &other.shared.objects.get().unwrap().window;
-            let hidden_window = &hidden.shared.objects.get().unwrap().window;
+            let other_window = other.shared.objects().unwrap().window;
+            let hidden_window = hidden.shared.objects().unwrap().window;
             hidden_window.orderOut(None);
             // Establish the real original key before opening Settings. No key
             // operation is performed by the test after closing the cover.
@@ -2351,7 +2358,7 @@ pub fn exclusive_reentry_contract() {
             assert!(anchor_window.isVisible() && other_window.isVisible());
             assert!(!hidden_window.isVisible());
             let cover = window.open_exclusive_window(config("cover"), Noop);
-            let cover_window = &cover.shared.objects.get().unwrap().window;
+            let cover_window = cover.shared.objects().unwrap().window;
             assert_eq!(
                 cover_window.frame(),
                 anchor_window.frame(),
@@ -2372,8 +2379,7 @@ pub fn exclusive_reentry_contract() {
                     .as_ref()
                     .and_then(std::rc::Weak::upgrade)
                     .is_some_and(|saved| saved
-                        .objects
-                        .get()
+                        .objects()
                         .is_some_and(|o| o.window.windowNumber() == window.native_window_number()))
             );
             // Re-show an already-recorded window to cover duplicate merging.
@@ -2388,8 +2394,7 @@ pub fn exclusive_reentry_contract() {
                     .as_ref()
                     .and_then(std::rc::Weak::upgrade)
                     .is_some_and(|saved| saved
-                        .objects
-                        .get()
+                        .objects()
                         .is_some_and(|o| o.window.windowNumber() == window.native_window_number()))
             );
             assert!(cover_window.isVisible());
@@ -2431,7 +2436,7 @@ pub fn exclusive_reentry_contract() {
             assert!(cover.shared.exclusive_restore.borrow().is_empty());
             assert!(cover.shared.exclusive_key.borrow().is_none());
             for handle in [&other, &hidden] {
-                handle.shared.objects.get().unwrap().window.close();
+                handle.shared.objects().unwrap().window.close();
                 handle.shared.finish();
             }
             cover.shared.finish();
@@ -2582,14 +2587,10 @@ pub fn splitter_role_contract() -> usize {
     unsafe { window.setReleasedWhenClosed(false) };
     let view = crate::view::TekesView::new(mtm, shared.clone(), rect);
     window.setContentView(Some(&view));
-    shared
-        .objects
-        .set(crate::shared::Objects {
-            window: window.clone(),
-            view,
-        })
-        .ok()
-        .unwrap();
+    shared.set_objects(crate::shared::Objects {
+        window: window.clone(),
+        view,
+    });
     shared.ready.set(true);
     assert!(!window.isVisible());
 
@@ -2802,7 +2803,7 @@ pub fn app_lifecycle_contract() {
     use crate::{
         AccessibilityKey, AccessibilityNode, AccessibilityRole, App, AppConfig, CommandId, Event,
         Menu, MenuBar, MenuCommand, MenuItem, Point, Rect, Size, WakeResult, Window, WindowConfig,
-        WindowHandle, WindowHandler, WindowWake,
+        WindowHandler, WindowWake,
     };
     use std::cell::{Cell, RefCell};
     use std::rc::Rc;
@@ -2813,11 +2814,11 @@ pub fn app_lifecycle_contract() {
 
     struct AuxHandler {
         closed: Rc<Cell<bool>>,
-        dropped: Rc<Cell<bool>>,
+        dropped: Rc<Cell<usize>>,
     }
     impl Drop for AuxHandler {
         fn drop(&mut self) {
-            self.dropped.set(true);
+            self.dropped.set(self.dropped.get() + 1);
         }
     }
     impl WindowHandler for AuxHandler {
@@ -2843,10 +2844,14 @@ pub fn app_lifecycle_contract() {
         redraws_while_dormant: Cell<usize>,
         wake_slot: Arc<Mutex<Option<WindowWake>>>,
         aux_closed: Rc<Cell<bool>>,
-        aux_dropped: Rc<Cell<bool>>,
-        aux_handle: RefCell<Option<WindowHandle>>,
+        aux_drops: Rc<Cell<usize>>,
+        aux_weak_window: RefCell<Option<objc2::rc::Weak<NSWindow>>>,
+        aux_weak_view: RefCell<Option<objc2::rc::Weak<crate::view::TekesView>>>,
+        primary_weak_window: RefCell<Option<objc2::rc::Weak<NSWindow>>>,
+        primary_weak_view: RefCell<Option<objc2::rc::Weak<crate::view::TekesView>>>,
+        script: RefCell<Option<Vec<(u64, Action)>>>,
         ax_verified_after_reopen: Cell<bool>,
-        dropped: Cell<bool>,
+        dropped: Cell<usize>,
     }
 
     struct PrimaryHandler {
@@ -2854,7 +2859,7 @@ pub fn app_lifecycle_contract() {
     }
     impl Drop for PrimaryHandler {
         fn drop(&mut self) {
-            self.state.dropped.set(true);
+            self.state.dropped.set(self.state.dropped.get() + 1);
         }
     }
     impl PrimaryHandler {
@@ -2917,6 +2922,17 @@ pub fn app_lifecycle_contract() {
                     *self.state.wake_slot.lock().unwrap() = Some(w.wake_proxy());
                     Self::publish_ax(w);
                     w.set_animating(true);
+                    if let Some(objects) =
+                        crate::app::primary_window_shared().and_then(|s| s.objects())
+                    {
+                        *self.state.primary_weak_window.borrow_mut() =
+                            Some(objc2::rc::Weak::from_retained(&objects.window));
+                        *self.state.primary_weak_view.borrow_mut() =
+                            Some(objc2::rc::Weak::from_retained(&objects.view));
+                    }
+                    if let Some(steps) = self.state.script.borrow_mut().take() {
+                        run_script(steps);
+                    }
                 }
                 Event::Redraw | Event::AnimationFrame(_) => {
                     let is_dormant =
@@ -2971,10 +2987,16 @@ pub fn app_lifecycle_contract() {
                         },
                         AuxHandler {
                             closed: self.state.aux_closed.clone(),
-                            dropped: self.state.aux_dropped.clone(),
+                            dropped: self.state.aux_drops.clone(),
                         },
                     );
-                    *self.state.aux_handle.borrow_mut() = Some(handle);
+                    let objects = handle.shared.objects().expect("aux window objects");
+                    *self.state.aux_weak_window.borrow_mut() =
+                        Some(objc2::rc::Weak::from_retained(&objects.window));
+                    *self.state.aux_weak_view.borrow_mut() =
+                        Some(objc2::rc::Weak::from_retained(&objects.view));
+                    drop(objects);
+                    drop(handle);
                 }
                 Event::Command(CommandId(9002)) => {
                     self.state.has_tab.set(true);
@@ -2997,6 +3019,27 @@ pub fn app_lifecycle_contract() {
                     );
                     self.state.ax_verified_after_reopen.set(true);
                 }
+                Event::Command(CommandId(9005)) => {
+                    assert!(
+                        self.state.aux_closed.get(),
+                        "auxiliary window must close on ⌘W"
+                    );
+                    assert_eq!(
+                        self.state.aux_drops.get(),
+                        1,
+                        "auxiliary handler must drop once on permanent close"
+                    );
+                    let w_ref = self.state.aux_weak_window.borrow();
+                    let v_ref = self.state.aux_weak_view.borrow();
+                    assert!(
+                        w_ref.as_ref().expect("aux weak window").load().is_none(),
+                        "closed auxiliary NSWindow must deallocate"
+                    );
+                    assert!(
+                        v_ref.as_ref().expect("aux weak view").load().is_none(),
+                        "closed auxiliary TekesView must deallocate"
+                    );
+                }
                 _ => {}
             }
         }
@@ -3007,59 +3050,7 @@ pub fn app_lifecycle_contract() {
     let wake_verified_dormant = Arc::new(AtomicBool::new(false));
     let wake_slot: Arc<Mutex<Option<WindowWake>>> = Arc::new(Mutex::new(None));
 
-    let state = Rc::new(PrimaryState {
-        has_tab: Cell::new(true),
-        allow_quit: Cell::new(false),
-        close_shortcut_calls: Cell::new(0),
-        close_requested_while_tab: Cell::new(0),
-        quit_requested_calls: Cell::new(0),
-        redraws_before_reopen: Cell::new(0),
-        redraws_after_reopen: Cell::new(0),
-        focus_events: RefCell::new(Vec::new()),
-        wake_events: wake_events.clone(),
-        dormant_ready: dormant_ready.clone(),
-        redraws_while_dormant: Cell::new(0),
-        wake_slot: wake_slot.clone(),
-        aux_closed: Rc::new(Cell::new(false)),
-        aux_dropped: Rc::new(Cell::new(false)),
-        aux_handle: RefCell::new(None),
-        ax_verified_after_reopen: Cell::new(false),
-        dropped: Cell::new(false),
-    });
-
-    let wake_thread = {
-        let dormant_ready = dormant_ready.clone();
-        let wake_events = wake_events.clone();
-        let wake_slot = wake_slot.clone();
-        let wake_verified_dormant = wake_verified_dormant.clone();
-        std::thread::spawn(move || {
-            let deadline = std::time::Instant::now() + Duration::from_secs(3);
-            while !dormant_ready.load(Ordering::Acquire) {
-                assert!(
-                    std::time::Instant::now() < deadline,
-                    "timed out waiting for dormant primary window"
-                );
-                std::thread::sleep(Duration::from_millis(10));
-            }
-            std::thread::sleep(Duration::from_millis(120));
-            assert_eq!(wake_events.load(Ordering::Acquire), 0);
-            let wake = wake_slot
-                .lock()
-                .unwrap()
-                .clone()
-                .expect("primary Wake handle");
-            assert_eq!(wake.wake(), WakeResult::Queued);
-            std::thread::sleep(Duration::from_millis(100));
-            assert_eq!(
-                wake_events.load(Ordering::Acquire),
-                0,
-                "Wake while dormant must queue instead of dispatching immediately"
-            );
-            wake_verified_dormant.store(true, Ordering::Release);
-        })
-    };
-
-    run_script(vec![
+    let script = vec![
         (
             150,
             Action::ExpectLifecycle {
@@ -3227,9 +3218,12 @@ pub fn app_lifecycle_contract() {
                 redraws_delta_zero_since: None,
             },
         ),
-        (2240, Action::Quit),
+        (2600, Action::Log("drain-app-runloop".into())),
+        (3100, Action::Log("drain-app-runloop".into())),
+        (3200, Action::MenuCommand(9005)),
+        (3260, Action::Quit),
         (
-            2360,
+            3380,
             Action::ExpectLifecycle {
                 label: "quit_blocked",
                 primary_visible: Some(true),
@@ -3241,9 +3235,65 @@ pub fn app_lifecycle_contract() {
                 redraws_delta_zero_since: None,
             },
         ),
-        (2420, Action::MenuCommand(9003)),
-        (2480, Action::Quit),
-    ]);
+        (3440, Action::MenuCommand(9003)),
+        (3500, Action::Quit),
+    ];
+
+    let state = Rc::new(PrimaryState {
+        has_tab: Cell::new(true),
+        allow_quit: Cell::new(false),
+        close_shortcut_calls: Cell::new(0),
+        close_requested_while_tab: Cell::new(0),
+        quit_requested_calls: Cell::new(0),
+        redraws_before_reopen: Cell::new(0),
+        redraws_after_reopen: Cell::new(0),
+        focus_events: RefCell::new(Vec::new()),
+        wake_events: wake_events.clone(),
+        dormant_ready: dormant_ready.clone(),
+        redraws_while_dormant: Cell::new(0),
+        wake_slot: wake_slot.clone(),
+        aux_closed: Rc::new(Cell::new(false)),
+        aux_drops: Rc::new(Cell::new(0)),
+        aux_weak_window: RefCell::new(None),
+        aux_weak_view: RefCell::new(None),
+        primary_weak_window: RefCell::new(None),
+        primary_weak_view: RefCell::new(None),
+        script: RefCell::new(Some(script)),
+        ax_verified_after_reopen: Cell::new(false),
+        dropped: Cell::new(0),
+    });
+
+    let wake_thread = {
+        let dormant_ready = dormant_ready.clone();
+        let wake_events = wake_events.clone();
+        let wake_slot = wake_slot.clone();
+        let wake_verified_dormant = wake_verified_dormant.clone();
+        std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + Duration::from_secs(3);
+            while !dormant_ready.load(Ordering::Acquire) {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "timed out waiting for dormant primary window"
+                );
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            std::thread::sleep(Duration::from_millis(120));
+            assert_eq!(wake_events.load(Ordering::Acquire), 0);
+            let wake = wake_slot
+                .lock()
+                .unwrap()
+                .clone()
+                .expect("primary Wake handle");
+            assert_eq!(wake.wake(), WakeResult::Queued);
+            std::thread::sleep(Duration::from_millis(100));
+            assert_eq!(
+                wake_events.load(Ordering::Acquire),
+                0,
+                "Wake while dormant must queue instead of dispatching immediately"
+            );
+            wake_verified_dormant.store(true, Ordering::Release);
+        })
+    };
 
     let menu_bar = MenuBar {
         menus: vec![Menu::new(
@@ -3253,6 +3303,7 @@ pub fn app_lifecycle_contract() {
                 MenuItem::Command(MenuCommand::new("Re-arm Tab", CommandId(9002))),
                 MenuItem::Command(MenuCommand::new("Allow Quit", CommandId(9003))),
                 MenuItem::Command(MenuCommand::new("Verify Reopen", CommandId(9004))),
+                MenuItem::Command(MenuCommand::new("Verify Aux Release", CommandId(9005))),
             ],
         )],
     };
@@ -3278,15 +3329,55 @@ pub fn app_lifecycle_contract() {
 
     wake_thread.join().unwrap();
     assert!(wake_verified_dormant.load(Ordering::Acquire));
-    assert!(
+    assert_eq!(
         state.dropped.get(),
-        "PrimaryHandler must drop after App::run"
+        1,
+        "PrimaryHandler must drop once after App::run"
     );
     assert!(state.aux_closed.get(), "auxiliary window must close on ⌘W");
-    assert!(
-        state.aux_dropped.get(),
-        "auxiliary handler must drop cleanly"
+    assert_eq!(
+        state.aux_drops.get(),
+        1,
+        "auxiliary handler must drop cleanly once"
     );
+    objc2::rc::autoreleasepool(|_| {
+        unsafe extern "C" {
+            static kCFRunLoopDefaultMode: *const c_void;
+            fn CFRunLoopRunInMode(
+                mode: *const c_void,
+                seconds: f64,
+                return_after_source_handled: u8,
+            ) -> i32;
+        }
+        unsafe {
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, 0);
+        }
+    });
+    assert!(
+        state
+            .primary_weak_window
+            .borrow()
+            .as_ref()
+            .expect("primary weak window")
+            .load()
+            .is_none(),
+        "primary NSWindow must deallocate after App::run"
+    );
+    if let Some(view) = state
+        .primary_weak_view
+        .borrow()
+        .as_ref()
+        .expect("primary weak view")
+        .load()
+    {
+        let rc: usize = unsafe { objc2::msg_send![&*view, retainCount] };
+        let has_win = view.window().is_some();
+        let has_sup = unsafe { view.superview().is_some() };
+        drop(view);
+        panic!(
+            "primary TekesView must deallocate after App::run (rc_after_load={rc}, has_window={has_win}, has_superview={has_sup})"
+        );
+    }
     assert!(
         state.ax_verified_after_reopen.get(),
         "reopened primary window must restore AX and Wake delivery"

@@ -901,7 +901,7 @@ pub(crate) mod native {
                         let Some((shared, node)) = self.shared_and_node() else {
                             return Self::native_range(None);
                         };
-                        let Some(objects) = shared.objects.get() else {
+                        let Some(objects) = shared.objects() else {
                             return Self::native_range(None);
                         };
                         let local = objects.view.convertPoint_fromView(
@@ -1012,7 +1012,7 @@ pub(crate) mod native {
                         let Some(shared) = self.ivars().shared.upgrade() else {
                             return NSRect::ZERO;
                         };
-                        let Some(objects) = shared.objects.get() else {
+                        let Some(objects) = shared.objects() else {
                             return NSRect::ZERO;
                         };
                         let local = NSRect::new(
@@ -1087,7 +1087,7 @@ pub(crate) mod native {
                             .borrow()
                             .as_ref()
                             .is_some_and(|s| s.is_current())
-                        && let Some(objects) = shared.objects.get()
+                        && let Some(objects) = shared.objects()
                     {
                         unsafe { msg_send![&*objects.view, accessibilityHitTest:point] }
                     } else {
@@ -1113,7 +1113,7 @@ pub(crate) mod native {
                         NSPoint::new(node.frame.origin.x, node.frame.origin.y),
                         NSSize::new(node.frame.size.width, node.frame.size.height),
                     );
-                    let Some(objects) = shared.objects.get() else {
+                    let Some(objects) = shared.objects() else {
                         return NSRect::ZERO;
                     };
                     let window_rect = objects.view.convertRect_toView(local, None);
@@ -1132,7 +1132,7 @@ pub(crate) mod native {
                                 .borrow()
                                 .get(&parent)
                                 .map(|e| e.retain().into()),
-                            None => shared.objects.get().map(|o| o.view.retain().into()),
+                            None => shared.objects().map(|o| o.view.retain().into()),
                         },
                         None => None,
                     },
