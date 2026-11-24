@@ -1228,6 +1228,7 @@ impl Host {
     }
 
     pub(super) fn draw_settings(&mut self, w: &Window) -> Result<()> {
+        let redraw_generation = w.redraw_generation();
         let progress = self.layout.sidebar_motion.sample(
             self.layout.motion_epoch.elapsed(),
             self.layout.reduced_motion,
@@ -1456,6 +1457,7 @@ impl Host {
             &mut self.text.atlas,
             super::surface_ground(palette, "panel"),
         )?;
+        w.satisfy_pending_redraw(redraw_generation);
         if self.nav_mgr.navigation_order.is_some() && self.nav_mgr.navigation_ack.is_none() {
             let (tx, rx) = mpsc::sync_channel(1);
             self.completion

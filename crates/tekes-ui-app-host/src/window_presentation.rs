@@ -1059,6 +1059,10 @@ impl Host {
         native_height: f32,
         leading: f32,
     ) -> Result<Vec<Rect>> {
+        #[cfg(test)]
+        {
+            self.diagnostics.presentation_layout_calls += 1;
+        }
         let mut layout = self
             .layout
             .presentation
@@ -1226,6 +1230,10 @@ impl Host {
                 palette,
                 self.text.scale,
             );
+        } else {
+            self.layout
+                .outer_view
+                .arrange(&mut self.layout.outer, Rect::default(), None);
         }
         if self.layout.presentation.as_ref().unwrap().others_visible()
             && !self.layout.presentation.as_ref().unwrap().others_expanded()
@@ -1244,6 +1252,15 @@ impl Host {
                 palette,
                 self.text.scale,
             );
+        } else {
+            self.layout
+                .inner_view
+                .arrange(&mut self.layout.inner, Rect::default(), None);
+        }
+        if (self.layout.drag_split == Some(2) && !self.layout.outer_view.is_dragging())
+            || (self.layout.drag_split == Some(3) && !self.layout.inner_view.is_dragging())
+        {
+            self.layout.drag_split = None;
         }
         self.sync_presentation_switcher(whole)?;
         let switcher_frame = self.presentation_switcher_frame();

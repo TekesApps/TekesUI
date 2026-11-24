@@ -754,6 +754,9 @@ impl SplitViewView {
         }
         model.key_in(key, self.layout.frame.frame(), self.axis)
     }
+    pub fn is_dragging(&self) -> bool {
+        self.dragging
+    }
     pub fn cancel(&mut self, model: &mut SplitView) -> bool {
         let was = std::mem::replace(&mut self.dragging, false);
         model.cancel_drag() || was

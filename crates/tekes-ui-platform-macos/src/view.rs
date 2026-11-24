@@ -379,7 +379,8 @@ define_class!(
                 let Some(shared) = self.shared() else {
                     return;
                 };
-                // 已经被同步重绘（缩放路径）满足的请求，这里不再重复。
+                shared.redraw_scheduled.set(false);
+                // 已经被同步重绘（缩放或抢先刷新路径）满足的请求，这里不再重复。
                 if !shared.is_inactive_surface() && shared.ready.get() && shared.redraw_pending.replace(false) {
                     shared.dispatch(Event::Redraw);
                 }
@@ -1269,6 +1270,7 @@ impl TekesView {
         self.ivars().metal_start_pending.set(false);
         if let Some(shared) = self.shared() {
             shared.redraw_pending.set(false);
+            shared.redraw_scheduled.set(false);
             shared.caret_scheduled.set(false);
         }
     }

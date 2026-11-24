@@ -1818,3 +1818,41 @@ fn icon_view_default_size_and_split_view_divider_hit_use_tokens() {
     let div = split_layout.divider.frame();
     assert_eq!(hit, div.inset(-tekes_ui_tokens::Spacing::Tight.value()));
 }
+
+#[test]
+fn split_view_is_dragging_tracks_pointer_cancel_and_constrained_arrange() {
+    let mut split = crate::extended::SplitView::new(0.5);
+    split.min_pane = 180.;
+    let mut view = SplitViewView::new(crate::extended::Axis::Horizontal);
+    let wide = Rect::new(0., 0., 800., 300.);
+    let layout = view.arrange(&mut split, wide, None);
+    assert!(!view.is_dragging());
+
+    let down = layout.divider.frame().center();
+    assert!(view.pointer_down(down, &mut split));
+    assert!(view.is_dragging());
+
+    // Constrained arrange cancels both view and model drag state.
+    let narrow = Rect::new(0., 0., 240., 300.);
+    view.arrange(&mut split, narrow, None);
+    assert!(!view.is_dragging());
+
+    // Empty arrange also clears an active drag cleanly.
+    view.arrange(&mut split, wide, None);
+    assert!(view.pointer_down(layout.divider.frame().center(), &mut split));
+    assert!(view.is_dragging());
+    view.arrange(&mut split, Rect::default(), None);
+    assert!(!view.is_dragging());
+
+    // Normal release clears is_dragging.
+    let layout = view.arrange(&mut split, wide, None);
+    assert!(view.pointer_down(layout.divider.frame().center(), &mut split));
+    assert!(view.is_dragging());
+    assert!(view.pointer_up(&mut split));
+    assert!(!view.is_dragging());
+
+    assert!(view.pointer_down(layout.divider.frame().center(), &mut split));
+    assert!(view.is_dragging());
+    assert!(view.cancel(&mut split));
+    assert!(!view.is_dragging());
+}

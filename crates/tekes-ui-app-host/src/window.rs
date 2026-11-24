@@ -322,6 +322,10 @@ struct HostDiagnostics {
     draw_diagnostic: bool,
     diagnostic_event: u64,
     diagnostic_draw: u64,
+    #[cfg(test)]
+    pub(super) column_layout_calls: u64,
+    #[cfg(test)]
+    pub(super) presentation_layout_calls: u64,
     #[cfg(feature = "window-acceptance")]
     acceptance: bool,
     #[cfg(feature = "window-acceptance")]
@@ -340,6 +344,10 @@ impl HostDiagnostics {
             draw_diagnostic: std::env::var("TEKESUI_APPHOST_DRAW_DIAGNOSTIC").as_deref() == Ok("1"),
             diagnostic_event: 0,
             diagnostic_draw: 0,
+            #[cfg(test)]
+            column_layout_calls: 0,
+            #[cfg(test)]
+            presentation_layout_calls: 0,
             #[cfg(feature = "window-acceptance")]
             acceptance: _acceptance,
             #[cfg(feature = "window-acceptance")]
@@ -614,6 +622,7 @@ impl Host {
         }
     }
     fn draw(&mut self, w: &Window) -> Result<()> {
+        let redraw_generation = w.redraw_generation();
         // One opt-in summary at the end avoids synchronous stage logging inside
         // the measured layout path. These are CPU boundaries, not presentation.
         let diagnostic = self.diagnostics.draw_diagnostic.then(|| {
@@ -785,12 +794,8 @@ impl Host {
         // Keep component defaults intact; the consumer chooses no frame/shadow.
         let palette = self.palette();
         scene.push_quad(Quad::new(whole, surface_ground(palette, "canvas")));
-        let mut frames = self.arrange_column_frames(whole);
-        if self.panel_mgr.panels.len() >= 2 {
-            frames = presented_frames(&frames, whole, progress, w.scale() as f32);
-        }
-        if self.layout.presentation.is_some() {
-            frames = self.presentation_frames(
+        let frames = if self.layout.presentation.is_some() {
+            self.presentation_frames(
                 whole,
                 w,
                 toolbar_y + toolbar_paint_height,
@@ -799,8 +804,14 @@ impl Host {
                     height: toolbar_paint_height,
                     native_leading: leading as f32,
                 },
-            )?;
-        }
+            )?
+        } else {
+            let mut frames = self.arrange_column_frames(whole);
+            if self.panel_mgr.panels.len() >= 2 {
+                frames = presented_frames(&frames, whole, progress, w.scale() as f32);
+            }
+            frames
+        };
         self.text.scale = w.scale() as f32;
         let renderer = self.renderer.as_mut().unwrap();
         for p in &mut self.panel_mgr.panels {
@@ -1072,6 +1083,7 @@ impl Host {
             surface_ground(palette, "canvas"),
         )?;
         self.layout.presentation_scroll_pending = false;
+        w.satisfy_pending_redraw(redraw_generation);
         let renderer_return = diagnostic.map(|_| std::time::Instant::now());
         let drawable_after = diagnostic.map(|_| w.drawable_serial());
         #[cfg(feature = "window-acceptance")]
@@ -1771,7 +1783,11 @@ impl Host {
             Event::Created | Event::Redraw | Event::Wake | Event::AnimationFrame(_) => {
                 self.draw(w)?
             }
-            Event::Resized { .. } => {
+            Event::Resized {
+                drawable_size,
+                scale,
+                ..
+            } => {
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.event(&ContentEvent::Cancel);
                 }
@@ -1779,7 +1795,9 @@ impl Host {
                     grid.host.event(&ContentEvent::Cancel);
                 }
                 self.cancel_toolbar_input();
-                self.draw(w)?;
+                if let Some(renderer) = self.renderer.as_mut() {
+                    renderer.resize(drawable_size, scale as f32);
+                }
             }
             Event::Mouse(m) if w.is_active() => {
                 let content_event = toolbar_pointer(m);
@@ -2185,11 +2203,7 @@ impl WindowHandler for Host {
         });
         let acceptance_tick = matches!(
             &event,
-            Event::Created
-                | Event::Redraw
-                | Event::Wake
-                | Event::AnimationFrame(_)
-                | Event::Resized { .. }
+            Event::Created | Event::Redraw | Event::Wake | Event::AnimationFrame(_)
         );
         let result = self.event(event, w).and_then(|()| {
             if acceptance_tick && self.renderer.is_some() {
@@ -2295,13 +2309,26 @@ impl Host {
     }
 
     fn arrange_column_frames(&mut self, whole: Rect) -> Vec<Rect> {
-        if self.panel_mgr.panels.len() == 1 {
+        #[cfg(test)]
+        {
+            self.diagnostics.column_layout_calls += 1;
+        }
+        let frames = if self.panel_mgr.panels.len() == 1 {
+            self.layout
+                .outer_view
+                .arrange(&mut self.layout.outer, Rect::default(), None);
+            self.layout
+                .inner_view
+                .arrange(&mut self.layout.inner, Rect::default(), None);
             vec![whole]
         } else if self.panel_mgr.panels.len() == 2 {
             let layout = self
                 .layout
                 .outer_view
                 .arrange(&mut self.layout.outer, whole, None);
+            self.layout
+                .inner_view
+                .arrange(&mut self.layout.inner, Rect::default(), None);
             vec![layout.leading.frame(), layout.trailing.frame()]
         } else {
             let a = self
@@ -2322,7 +2349,13 @@ impl Host {
                 ),
                 b.trailing.frame(),
             ]
+        };
+        if (self.layout.drag_split == Some(0) && !self.layout.outer_view.is_dragging())
+            || (self.layout.drag_split == Some(1) && !self.layout.inner_view.is_dragging())
+        {
+            self.layout.drag_split = None;
         }
+        frames
     }
 
     fn paint_panel_body(
@@ -4628,5 +4661,179 @@ mod shared_settings_owner_tests {
         settings_host.settings_mgr.is_settings_window = true;
         assert_eq!(settings_host.close_menu_title(), None);
         assert!(!settings_host.close_active_tab().unwrap());
+    }
+
+    #[test]
+    fn presentation_layout_skips_columns_and_cancels_constrained_or_hidden_split_drag() {
+        use crate::{LocalContainer, OthersOptions, PresentationOptions};
+        use tekes_ui_controls::composition::{ComponentId, Content, TextContent};
+
+        let make_local = |id: &str| -> crate::Container {
+            LocalContainer::new(id, Content::new(ComponentId(1), TextContent::new(id)))
+                .unwrap()
+                .into()
+        };
+
+        let mut pres_host = crate::AppWindow::from_containers(
+            vec![
+                make_local("focus"),
+                make_local("navbar"),
+                make_local("tab_a"),
+                make_local("tab_b"),
+            ],
+            PresentationOptions::new("focus")
+                .nav_bar("navbar")
+                .others(OthersOptions::new(vec!["tab_a".into(), "tab_b".into()])),
+        )
+        .unwrap()
+        .into_host(false);
+        pres_host.mount_initial_containers();
+        assert!(
+            pres_host
+                .layout
+                .presentation
+                .as_ref()
+                .unwrap()
+                .others_visible()
+        );
+
+        // Wide layout: NavBar + Focus + Others dividers visible and draggable.
+        let wide = Rect::new(0., 0., 1200., 600.);
+        let frames_wide = pres_host
+            .presentation_frames_with_safe_area(
+                wide,
+                42.,
+                window_toolbar_mount::ToolbarBand {
+                    y: 0.,
+                    height: 42.,
+                    native_leading: 0.,
+                },
+                0.,
+                0.,
+            )
+            .unwrap();
+        pres_host
+            .paint_presentation(&mut Scene::new(), wide, Theme::LIGHT.into())
+            .unwrap();
+        assert_eq!(pres_host.diagnostics.presentation_layout_calls, 1);
+        assert_eq!(pres_host.diagnostics.column_layout_calls, 0);
+        assert_eq!(frames_wide.len(), 4);
+        assert!(frames_wide[0].size.width > 0.);
+        assert_eq!(pres_host.presentation_resize_regions().len(), 2);
+
+        // Start dragging Focus/Others divider (inner_view -> drag_split = Some(3)), then narrow
+        // to constrained width so SplitView::is_constrained cancels drag capture.
+        let inner_down = pres_host
+            .layout
+            .inner_view
+            .layout()
+            .divider
+            .frame()
+            .center();
+        assert!(
+            pres_host
+                .layout
+                .inner_view
+                .pointer_down(inner_down, &mut pres_host.layout.inner)
+        );
+        pres_host.layout.drag_split = Some(3);
+        assert!(pres_host.layout.inner_view.is_dragging());
+
+        let narrow = Rect::new(0., 0., 460., 420.);
+        pres_host
+            .presentation_frames_with_safe_area(
+                narrow,
+                42.,
+                window_toolbar_mount::ToolbarBand {
+                    y: 0.,
+                    height: 42.,
+                    native_leading: 0.,
+                },
+                0.,
+                0.,
+            )
+            .unwrap();
+        pres_host
+            .paint_presentation(&mut Scene::new(), narrow, Theme::LIGHT.into())
+            .unwrap();
+        assert!(!pres_host.layout.inner_view.is_dragging());
+        assert_eq!(pres_host.layout.drag_split, None);
+        assert_eq!(pres_host.diagnostics.column_layout_calls, 0);
+        for panel in &pres_host.panel_mgr.panels {
+            assert!(panel.bounds.size.width >= 0. && panel.clip.size.width >= 0.);
+            assert!(panel.bounds.max_x() <= narrow.max_x() + 0.01);
+        }
+
+        // Re-widen, start dragging NavBar divider (outer_view -> drag_split = Some(2)),
+        // then hide NavBar: else branch cancels outer_view & drag_split and removes its resize hit.
+        pres_host
+            .presentation_frames_with_safe_area(
+                wide,
+                42.,
+                window_toolbar_mount::ToolbarBand {
+                    y: 0.,
+                    height: 42.,
+                    native_leading: 0.,
+                },
+                0.,
+                0.,
+            )
+            .unwrap();
+        pres_host
+            .paint_presentation(&mut Scene::new(), wide, Theme::LIGHT.into())
+            .unwrap();
+        let outer_down = pres_host
+            .layout
+            .outer_view
+            .layout()
+            .divider
+            .frame()
+            .center();
+        assert!(
+            pres_host
+                .layout
+                .outer_view
+                .pointer_down(outer_down, &mut pres_host.layout.outer)
+        );
+        pres_host.layout.drag_split = Some(2);
+        pres_host
+            .layout
+            .presentation
+            .as_mut()
+            .unwrap()
+            .toggle_nav_bar()
+            .unwrap();
+        pres_host
+            .paint_presentation(&mut Scene::new(), wide, Theme::LIGHT.into())
+            .unwrap();
+        assert!(!pres_host.layout.outer_view.is_dragging());
+        assert_eq!(pres_host.layout.drag_split, None);
+        assert_eq!(pres_host.presentation_resize_regions().len(), 1);
+
+        // When headless GPU renderer is available, verify full scene build keeps branches exclusive.
+        if let Ok(mut renderer) = tekes_ui_render::Renderer::new_headless() {
+            let calls_before = pres_host.diagnostics.presentation_layout_calls;
+            pres_host
+                .build_headless_scene(&mut renderer, wide, 2.0, true)
+                .unwrap();
+            assert_eq!(
+                pres_host.diagnostics.presentation_layout_calls,
+                calls_before + 1
+            );
+            assert_eq!(pres_host.diagnostics.column_layout_calls, 0);
+
+            let mut col_host = crate::AppWindow::from_columns(vec![
+                make_local("a").into(),
+                make_local("b").into(),
+            ])
+            .unwrap()
+            .into_host(false);
+            col_host.mount_initial_containers();
+            col_host
+                .build_headless_scene(&mut renderer, wide, 2.0, true)
+                .unwrap();
+            assert_eq!(col_host.diagnostics.column_layout_calls, 1);
+            assert_eq!(col_host.diagnostics.presentation_layout_calls, 0);
+        }
     }
 }
