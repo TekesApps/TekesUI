@@ -141,6 +141,8 @@ pub(crate) struct Shared {
     toolbar_aligning: Cell<bool>,
     toolbar_alignment_pending: Cell<bool>,
     pub redraw_pending: Cell<bool>,
+    pub redraw_scheduled: Cell<bool>,
+    pub redraw_generation: Cell<u64>,
     pub last_geometry: Cell<Option<GeometryState>>,
     pub last_motion: Cell<Option<bool>>,
     pub last_appearance: Cell<Option<(bool, bool)>>,
@@ -207,6 +209,8 @@ impl Shared {
             toolbar_aligning: Cell::new(false),
             toolbar_alignment_pending: Cell::new(false),
             redraw_pending: Cell::new(false),
+            redraw_scheduled: Cell::new(false),
+            redraw_generation: Cell::new(0),
             last_geometry: Cell::new(None),
             last_motion: Cell::new(None),
             last_appearance: Cell::new(None),
@@ -681,11 +685,38 @@ impl Shared {
         if self.is_inactive_surface() {
             return;
         }
-        if !self.redraw_pending.replace(true)
-            && let Some(o) = self.objects()
+        if begin_redraw_request(
+            &self.redraw_pending,
+            &self.redraw_scheduled,
+            &self.redraw_generation,
+        ) && let Some(o) = self.objects()
         {
             o.view.schedule_redraw();
         }
+    }
+
+    pub fn redraw_generation(&self) -> u64 {
+        self.redraw_generation.get()
+    }
+
+    pub fn satisfy_pending_redraw(&self, generation: u64) {
+        finish_redraw_request(&self.redraw_pending, &self.redraw_generation, generation);
+    }
+}
+
+fn begin_redraw_request(
+    pending: &Cell<bool>,
+    scheduled: &Cell<bool>,
+    generation: &Cell<u64>,
+) -> bool {
+    generation.set(generation.get().wrapping_add(1));
+    pending.set(true);
+    !scheduled.replace(true)
+}
+
+fn finish_redraw_request(pending: &Cell<bool>, generation: &Cell<u64>, expected_generation: u64) {
+    if generation.get() == expected_generation {
+        pending.set(false);
     }
 }
 
@@ -1004,6 +1035,14 @@ impl Window {
     /// 在处理 `Redraw` 的过程中调用，表示“下一帧还要画”。
     pub fn request_redraw(&self) {
         self.shared.request_redraw();
+    }
+
+    pub fn redraw_generation(&self) -> u64 {
+        self.shared.redraw_generation()
+    }
+
+    pub fn satisfy_pending_redraw(&self, generation: u64) {
+        self.shared.satisfy_pending_redraw(generation);
     }
 
     /// 打开或关闭持续动画模式。
@@ -1487,5 +1526,35 @@ mod tests {
         assert!(!dispatching.get());
         assert!(slot.borrow().is_none());
         assert_eq!(drops.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn redraw_generation_clears_only_satisfied_requests_and_deduplicates_scheduling() {
+        let pending = Cell::new(false);
+        let scheduled = Cell::new(false);
+        let generation = Cell::new(0_u64);
+
+        // First invalidation schedules one runloop callback and sets generation=1.
+        assert!(begin_redraw_request(&pending, &scheduled, &generation));
+        assert!(pending.get());
+        assert!(scheduled.get());
+        assert_eq!(generation.get(), 1);
+
+        // Coalesced second invalidation before callback runs increments generation without rescheduling.
+        assert!(!begin_redraw_request(&pending, &scheduled, &generation));
+        assert!(pending.get());
+        assert_eq!(generation.get(), 2);
+
+        // Synchronous draw capturing gen=2 clears pending cleanly (Case A: no trailing redraw).
+        let captured = generation.get();
+        finish_redraw_request(&pending, &generation, captured);
+        assert!(!pending.get());
+
+        // Case B: a new invalidation after capture increments generation=3, preserving pending.
+        let captured_before_invalidation = generation.get();
+        assert!(!begin_redraw_request(&pending, &scheduled, &generation));
+        finish_redraw_request(&pending, &generation, captured_before_invalidation);
+        assert!(pending.get());
+        assert_eq!(generation.get(), 3);
     }
 }

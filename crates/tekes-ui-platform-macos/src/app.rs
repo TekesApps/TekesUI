@@ -303,6 +303,7 @@ define_class!(
                     shared.revoke_accessibility();
                     shared.text_input.borrow_mut().take();
                     shared.redraw_pending.set(false);
+                    shared.redraw_scheduled.set(false);
                     shared.discard_dormant_events();
                 } else {
                     crate::wake::native::unregister(&shared.wake_state);
