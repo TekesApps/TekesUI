@@ -12,6 +12,13 @@ struct Key {
     target: wire::Target,
     part: Option<usize>,
 }
+impl std::hash::Hash for Key {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.target.id.hash(state);
+        self.target.mount.hash(state);
+        self.part.hash(state);
+    }
+}
 #[derive(Clone, Debug)]
 struct Entry {
     key: Key,
@@ -45,10 +52,19 @@ fn valid_rect(r: [f32; 4]) -> bool {
         && (r[1] + r[3]).is_finite()
 }
 pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
-    let mut ids = std::collections::HashSet::new();
-    for n in nodes {
+    #[cfg(test)]
+    {
+        VALIDATE_CALLS.with(|c| c.set(c.get() + 1));
+    }
+    let mut id_to_idx = std::collections::HashMap::with_capacity(nodes.len());
+    let mut part_maps = Vec::with_capacity(nodes.len());
+    let mut part_state = Vec::new();
+    let mut chain = Vec::new();
+    for (node_idx, n) in nodes.iter().enumerate() {
         ensure!(
-            n.target.id != 0 && n.target.mount != 0 && ids.insert(n.target.id),
+            n.target.id != 0
+                && n.target.mount != 0
+                && id_to_idx.insert(n.target.id, node_idx).is_none(),
             "invalid/duplicate child semantic identity"
         );
         ensure!(
@@ -94,8 +110,8 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 || (n.text.is_none() && n.text_layout.is_none() && n.text_binding.is_none()),
             "Select cannot carry a text owner"
         );
-        let mut parts = std::collections::HashSet::new();
-        for p in &n.parts {
+        let mut part_to_idx = std::collections::HashMap::with_capacity(n.parts.len());
+        for (part_idx, p) in n.parts.iter().enumerate() {
             ensure!(
                 p.semantics.role != wire::SemanticRole::Image
                     || p.semantics.name.is_empty()
@@ -135,34 +151,71 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
                 "invalid child part value range"
             );
             ensure!(
-                parts.insert(p.index) && valid_rect(p.frame),
+                part_to_idx.insert(p.index, part_idx).is_none() && valid_rect(p.frame),
                 "invalid child semantic part"
             );
         }
-        for p in &n.parts {
-            let mut parent = p.parent;
-            let mut seen = std::collections::HashSet::from([p.index]);
-            while let Some(i) = parent {
-                ensure!(seen.insert(i), "cyclic child semantic part");
-                parent = n
-                    .parts
-                    .iter()
-                    .find(|p| p.index == i)
-                    .ok_or_else(|| anyhow::anyhow!("missing child semantic parent part"))?
-                    .parent;
+        part_state.clear();
+        part_state.resize(n.parts.len(), 0u8);
+        for start in 0..n.parts.len() {
+            if part_state[start] == 2 {
+                continue;
+            }
+            chain.clear();
+            let mut cur = start;
+            loop {
+                part_state[cur] = 1;
+                chain.push(cur);
+                let Some(parent_idx) = n.parts[cur].parent else {
+                    break;
+                };
+                let next = *part_to_idx
+                    .get(&parent_idx)
+                    .ok_or_else(|| anyhow::anyhow!("missing child semantic parent part"))?;
+                if part_state[next] == 1 {
+                    anyhow::bail!("cyclic child semantic part");
+                }
+                if part_state[next] == 2 {
+                    break;
+                }
+                cur = next;
+            }
+            for &idx in &chain {
+                part_state[idx] = 2;
             }
         }
+        part_maps.push(part_to_idx);
     }
-    for n in nodes {
-        let mut parent = n.parent;
-        let mut seen = std::collections::HashSet::from([n.target.id]);
-        while let Some(t) = parent {
-            ensure!(seen.insert(t.id), "cyclic child semantic hierarchy");
-            parent = nodes
-                .iter()
-                .find(|n| n.target == t)
-                .ok_or_else(|| anyhow::anyhow!("missing child semantic parent"))?
-                .parent;
+    let mut node_state = vec![0u8; nodes.len()];
+    for start in 0..nodes.len() {
+        if node_state[start] == 2 {
+            continue;
+        }
+        chain.clear();
+        let mut cur = start;
+        loop {
+            node_state[cur] = 1;
+            chain.push(cur);
+            let Some(parent_target) = nodes[cur].parent else {
+                break;
+            };
+            let Some(&next) = id_to_idx.get(&parent_target.id) else {
+                anyhow::bail!("missing child semantic parent");
+            };
+            if node_state[next] == 1 {
+                anyhow::bail!("cyclic child semantic hierarchy");
+            }
+            ensure!(
+                nodes[next].target == parent_target,
+                "missing child semantic parent"
+            );
+            if node_state[next] == 2 {
+                break;
+            }
+            cur = next;
+        }
+        for &idx in &chain {
+            node_state[idx] = 2;
         }
     }
     // Validate depth against the actual serialized hierarchy, including nested
@@ -182,64 +235,84 @@ pub(crate) fn validate(nodes: &[wire::SemanticNode]) -> Result<()> {
             }
             Ok(())
         };
-    for n in nodes {
+    for (node_idx, n) in nodes.iter().enumerate() {
         tree_parent(
             n.semantics.role,
             n.parent
-                .and_then(|t| nodes.iter().find(|n| n.target == t))
-                .map(|n| n.semantics.role),
+                .and_then(|t| {
+                    id_to_idx
+                        .get(&t.id)
+                        .copied()
+                        .filter(|&idx| nodes[idx].target == t)
+                })
+                .map(|idx| nodes[idx].semantics.role),
         )?;
         for p in &n.parts {
             let parent = match p.parent {
-                Some(i) => n
-                    .parts
-                    .iter()
-                    .find(|p| p.index == i)
-                    .map(|p| p.semantics.role),
+                Some(i) => part_maps[node_idx]
+                    .get(&i)
+                    .map(|&pi| n.parts[pi].semantics.role),
                 None => Some(n.semantics.role),
             };
             tree_parent(p.semantics.role, parent)?;
         }
     }
     validate_tables(nodes)?;
-    validate_selection(nodes)?;
+    validate_selection(nodes, &id_to_idx, &part_maps)?;
     Ok(())
 }
 fn validate_tables(nodes: &[wire::SemanticNode]) -> Result<()> {
     use wire::SemanticRole as W;
-    let mut all = Vec::new();
-    for n in nodes {
-        all.push((
-            Key {
-                target: n.target,
-                part: None,
-            },
-            n.parent.map(|target| Key { target, part: None }),
-            n.semantics.role,
-            n.frame,
-            n.focused,
-        ));
-        all.extend(n.parts.iter().map(|p| {
-            (
-                Key {
-                    target: n.target,
-                    part: Some(p.index),
-                },
-                Some(Key {
-                    target: n.target,
-                    part: p.parent,
-                }),
-                p.semantics.role,
-                p.frame,
-                p.focused,
-            )
-        }));
-    }
-    let parent_role = |parent: Option<Key>| {
-        parent
-            .and_then(|k| all.iter().find(|e| e.0 == k))
-            .map(|e| e.2)
+    let is_table_role = |r: wire::SemanticRole| {
+        matches!(
+            r,
+            W::Table
+                | W::TableColumn { .. }
+                | W::TableColumnHeader { .. }
+                | W::TableRow { .. }
+                | W::TableCell { .. }
+        )
     };
+    if !nodes.iter().any(|n| {
+        is_table_role(n.semantics.role) || n.parts.iter().any(|p| is_table_role(p.semantics.role))
+    }) {
+        return Ok(());
+    }
+    let total = nodes.iter().map(|n| 1 + n.parts.len()).sum();
+    let mut all = Vec::with_capacity(total);
+    let mut role_by_key = std::collections::HashMap::with_capacity(total);
+    let mut children_by_parent: std::collections::HashMap<Key, Vec<usize>> =
+        std::collections::HashMap::new();
+    for n in nodes {
+        let idx = all.len();
+        let key = Key {
+            target: n.target,
+            part: None,
+        };
+        let parent = n.parent.map(|target| Key { target, part: None });
+        all.push((key, parent, n.semantics.role, n.frame, n.focused));
+        role_by_key.insert(key, n.semantics.role);
+        if let Some(pk) = parent {
+            children_by_parent.entry(pk).or_default().push(idx);
+        }
+        for p in &n.parts {
+            let pidx = all.len();
+            let pkey = Key {
+                target: n.target,
+                part: Some(p.index),
+            };
+            let pparent = Some(Key {
+                target: n.target,
+                part: p.parent,
+            });
+            all.push((pkey, pparent, p.semantics.role, p.frame, p.focused));
+            role_by_key.insert(pkey, p.semantics.role);
+            if let Some(pk) = pparent {
+                children_by_parent.entry(pk).or_default().push(pidx);
+            }
+        }
+    }
+    let parent_role = |parent: Option<Key>| parent.and_then(|k| role_by_key.get(&k).copied());
     for (_, parent, role, frame, focused) in &all {
         match role {
             W::TableColumn { .. } | W::TableRow { .. } => ensure!(
@@ -271,39 +344,38 @@ fn validate_tables(nodes: &[wire::SemanticNode]) -> Result<()> {
             );
         }
     }
-    let contiguous = |mut ord: Vec<usize>| {
-        ord.sort_unstable();
-        ord.iter().enumerate().all(|(i, v)| i == *v)
+    let contiguous = |len: usize, ords: &mut dyn Iterator<Item = usize>| -> bool {
+        let mut seen = vec![false; len];
+        let mut count = 0usize;
+        for v in ords {
+            if v >= len || seen[v] {
+                return false;
+            }
+            seen[v] = true;
+            count += 1;
+        }
+        count == len
     };
     for (table, _, role, _, _) in &all {
         if *role != W::Table {
             continue;
         }
-        let columns: Vec<_> = all
-            .iter()
-            .filter(|e| e.1 == Some(*table))
-            .filter_map(|e| {
-                if let W::TableColumn { index } = e.2 {
-                    Some((e.0, index))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        let rows: Vec<_> = all
-            .iter()
-            .filter(|e| e.1 == Some(*table))
-            .filter_map(|e| {
-                if let W::TableRow { index } = e.2 {
-                    Some((e.0, index))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let direct = children_by_parent
+            .get(table)
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+        let mut columns = Vec::new();
+        let mut rows = Vec::new();
+        for &ci in direct {
+            match all[ci].2 {
+                W::TableColumn { index } => columns.push((all[ci].0, index)),
+                W::TableRow { index } => rows.push((all[ci].0, index)),
+                _ => (),
+            }
+        }
         ensure!(
-            contiguous(columns.iter().map(|e| e.1).collect())
-                && contiguous(rows.iter().map(|e| e.1).collect()),
+            contiguous(columns.len(), &mut columns.iter().map(|e| e.1))
+                && contiguous(rows.len(), &mut rows.iter().map(|e| e.1)),
             "invalid/duplicate Table ordinal"
         );
         ensure!(
@@ -311,23 +383,51 @@ fn validate_tables(nodes: &[wire::SemanticNode]) -> Result<()> {
             "Table rows without columns"
         );
         for (column, index) in &columns {
-            let headers: Vec<_> = all.iter().filter(|e| e.1 == Some(*column)).collect();
+            let headers = children_by_parent
+                .get(column)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]);
             ensure!(
                 headers.len() == 1
-                    && matches!(headers[0].2,W::TableColumnHeader{index:i,..} if i==*index),
+                    && matches!(all[headers[0]].2, W::TableColumnHeader { index: i, .. } if i == *index),
                 "invalid Table column/header closure"
             );
         }
         for (row, index) in &rows {
-            let cells: Vec<_> = all.iter().filter(|e| e.1 == Some(*row)).collect();
-            ensure!(cells.len()==columns.len() && cells.iter().all(|e|matches!(e.2,W::TableCell{row:r,column:c} if r==*index && c<columns.len()))
-                && contiguous(cells.iter().filter_map(|e|if let W::TableCell{column,..}=e.2{Some(column)}else{None}).collect()),"invalid Table row/cell closure");
+            let cells = children_by_parent
+                .get(row)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]);
+            ensure!(
+                cells.len() == columns.len()
+                    && cells.iter().all(|&ci| {
+                        matches!(
+                            all[ci].2,
+                            W::TableCell { row: r, column: c } if r == *index && c < columns.len()
+                        )
+                    })
+                    && contiguous(
+                        columns.len(),
+                        &mut cells.iter().filter_map(|&ci| {
+                            if let W::TableCell { column, .. } = all[ci].2 {
+                                Some(column)
+                            } else {
+                                None
+                            }
+                        }),
+                    ),
+                "invalid Table row/cell closure"
+            );
         }
     }
     Ok(())
 }
 
-fn validate_selection(nodes: &[wire::SemanticNode]) -> Result<()> {
+fn validate_selection(
+    nodes: &[wire::SemanticNode],
+    id_to_idx: &std::collections::HashMap<u64, usize>,
+    part_maps: &[std::collections::HashMap<usize, usize>],
+) -> Result<()> {
     // Finite selection capabilities are validated over the complete hierarchy.
     fn selection(
         s: &wire::Semantics,
@@ -359,22 +459,25 @@ fn validate_selection(nodes: &[wire::SemanticNode]) -> Result<()> {
         ensure!(valid, "invalid selection value/parent");
         Ok(())
     }
-    for n in nodes {
+    for (node_idx, n) in nodes.iter().enumerate() {
         selection(
             &n.semantics,
             n.parent
-                .and_then(|t| nodes.iter().find(|n| n.target == t))
-                .map(|n| n.semantics.role),
+                .and_then(|t| {
+                    id_to_idx
+                        .get(&t.id)
+                        .copied()
+                        .filter(|&idx| nodes[idx].target == t)
+                })
+                .map(|idx| nodes[idx].semantics.role),
             n.text.is_some() || n.text_binding.is_some() || n.text_layout.is_some(),
             n.value_range.is_some(),
         )?;
         for p in &n.parts {
             let parent = match p.parent {
-                Some(i) => n
-                    .parts
-                    .iter()
-                    .find(|p| p.index == i)
-                    .map(|p| p.semantics.role),
+                Some(i) => part_maps[node_idx]
+                    .get(&i)
+                    .map(|&pi| n.parts[pi].semantics.role),
                 None => Some(n.semantics.role),
             };
             selection(
@@ -468,14 +571,25 @@ impl RemoteSemantics {
             .semantics
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("semantic query required"))?;
-        if let Err(e) = validate(nodes) {
+        if !snapshot.semantics_validated()
+            && let Err(e) = validate(nodes)
+        {
             self.revoke();
             return Err(e);
         }
         let attachment = snapshot.semantic_attachment();
         let same = self.attachment.as_ref() == Some(&attachment);
-        let mut entries = Vec::new();
-        let mut parents = Vec::new();
+        let old_by_key: Option<std::collections::HashMap<Key, usize>> = same.then(|| {
+            self.entries
+                .iter()
+                .enumerate()
+                .map(|(i, e)| (e.key, i))
+                .collect()
+        });
+        let total = nodes.iter().map(|n| 1 + n.parts.len()).sum();
+        let mut entries = Vec::with_capacity(total);
+        let mut parents = Vec::with_capacity(total);
+        let mut new_index_by_key = std::collections::HashMap::with_capacity(total);
         let mut next = self.next;
         for node in nodes {
             let key = Key {
@@ -525,13 +639,10 @@ impl RemoteSemantics {
                     p.value_range,
                 )
             })) {
-                let index = if let Some(old) = same
-                    .then(|| {
-                        self.entries
-                            .iter()
-                            .find(|e| e.key == key && e.text_binding == binding)
-                    })
-                    .flatten()
+                let index = if let Some(old) = old_by_key
+                    .as_ref()
+                    .and_then(|map| map.get(&key).map(|&i| &self.entries[i]))
+                    .filter(|old| old.text_binding == binding)
                 {
                     old.index
                 } else {
@@ -540,6 +651,7 @@ impl RemoteSemantics {
                         .ok_or_else(|| anyhow::anyhow!("child semantic ID exhausted"))?;
                     next
                 };
+                new_index_by_key.insert(key, index);
                 entries.push(Entry {
                     key,
                     index,
@@ -556,12 +668,8 @@ impl RemoteSemantics {
                 parents.push(parent);
             }
         }
-        let parent_indices = parents
-            .into_iter()
-            .map(|key| key.and_then(|key| entries.iter().find(|e| e.key == key).map(|e| e.index)))
-            .collect::<Vec<_>>();
-        for (e, p) in entries.iter_mut().zip(parent_indices) {
-            e.parent = p;
+        for (e, parent) in entries.iter_mut().zip(parents) {
+            e.parent = parent.and_then(|key| new_index_by_key.get(&key).copied());
         }
         self.next = next;
         self.entries = entries;
@@ -1093,3 +1201,335 @@ mod selection_shape_tests {
 #[cfg(test)]
 #[path = "collection_receiver_tests.rs"]
 mod collection_receiver_tests;
+
+#[cfg(test)]
+std::thread_local! {
+    static VALIDATE_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+#[cfg(test)]
+pub(crate) fn reset_validate_call_count() {
+    VALIDATE_CALLS.with(|c| c.set(0));
+}
+#[cfg(test)]
+pub(crate) fn validate_call_count() -> usize {
+    VALIDATE_CALLS.with(|c| c.get())
+}
+
+#[cfg(test)]
+mod runtime_validation_and_reuse_tests {
+    use super::*;
+    use crate::native_content::semantic_test_snapshot;
+
+    fn sem(role: wire::SemanticRole, name: &str) -> wire::Semantics {
+        wire::Semantics {
+            role,
+            name: name.into(),
+            value: None,
+            disabled: false,
+            selected: false,
+            expanded: None,
+            invalid: false,
+            required: false,
+            description: None,
+        }
+    }
+
+    fn base_node(
+        id: u64,
+        mount: u64,
+        parent: Option<wire::Target>,
+        role: wire::SemanticRole,
+    ) -> wire::SemanticNode {
+        wire::SemanticNode {
+            text_layout: None,
+            target: wire::Target { id, mount },
+            parent,
+            frame: [0., 0., 100., 30.],
+            visible: Some([0., 0., 100., 30.]),
+            focused: false,
+            semantics: sem(role, &format!("n{id}")),
+            preserves_activation_focus: false,
+            parts: Vec::new(),
+            value_range: None,
+            text_binding: None,
+            text: None,
+        }
+    }
+
+    fn valid_table_node() -> wire::SemanticNode {
+        let mut t = base_node(10, 100, None, wire::SemanticRole::Table);
+        t.parts = vec![
+            wire::SemanticPart {
+                text_layout: None,
+                value_range: None,
+                index: 1,
+                parent: None,
+                frame: [0., 0., 50., 20.],
+                focused: false,
+                semantics: sem(wire::SemanticRole::TableColumn { index: 0 }, "col0"),
+                preserves_activation_focus: false,
+            },
+            wire::SemanticPart {
+                text_layout: None,
+                value_range: None,
+                index: 2,
+                parent: Some(1),
+                frame: [0., 0., 50., 20.],
+                focused: false,
+                semantics: sem(
+                    wire::SemanticRole::TableColumnHeader {
+                        index: 0,
+                        sort: None,
+                    },
+                    "hdr0",
+                ),
+                preserves_activation_focus: false,
+            },
+            wire::SemanticPart {
+                text_layout: None,
+                value_range: None,
+                index: 3,
+                parent: None,
+                frame: [0., 20., 50., 20.],
+                focused: false,
+                semantics: sem(wire::SemanticRole::TableRow { index: 0 }, "row0"),
+                preserves_activation_focus: false,
+            },
+            wire::SemanticPart {
+                text_layout: None,
+                value_range: None,
+                index: 4,
+                parent: Some(3),
+                frame: [0., 20., 50., 20.],
+                focused: false,
+                semantics: sem(wire::SemanticRole::TableCell { row: 0, column: 0 }, "cell0"),
+                preserves_activation_focus: false,
+            },
+        ];
+        t
+    }
+
+    #[test]
+    fn prevalidated_curve_snapshot_skips_second_validate_while_unvalidated_still_validates_and_revokes()
+     {
+        let nodes = vec![base_node(1, 100, None, wire::SemanticRole::Group)];
+        let mut snap = semantic_test_snapshot(nodes);
+        reset_validate_call_count();
+        validate(snap.reply().semantics.as_deref().unwrap()).unwrap();
+        assert_eq!(validate_call_count(), 1);
+        snap.mark_semantics_validated();
+
+        let mut remote = RemoteSemantics::default();
+        remote.update(snap).unwrap();
+        assert_eq!(
+            validate_call_count(),
+            1,
+            "prevalidated Curve snapshot skips duplicate validate"
+        );
+
+        let mut unvalidated =
+            semantic_test_snapshot(vec![base_node(2, 100, None, wire::SemanticRole::Group)]);
+        reset_validate_call_count();
+        remote.update(unvalidated.clone()).unwrap();
+        assert_eq!(validate_call_count(), 1);
+
+        // Malformed unvalidated snapshot fails and revokes prior published projection.
+        unvalidated = semantic_test_snapshot(vec![base_node(
+            3,
+            100,
+            Some(wire::Target { id: 99, mount: 100 }),
+            wire::SemanticRole::Group,
+        )]);
+        assert!(remote.update(unvalidated).is_err());
+        assert!(remote.needs_refresh());
+        assert!(
+            remote
+                .parts(
+                    Rect::new(0., 0., 200., 200.),
+                    Rect::new(0., 0., 200., 200.),
+                    false
+                )
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn malformed_hierarchies_parts_and_tables_fail_and_revoke_prior_projection() {
+        let valid_seed =
+            || semantic_test_snapshot(vec![base_node(1, 100, None, wire::SemanticRole::Group)]);
+        let frame = Rect::new(0., 0., 300., 300.);
+
+        let bad_cases: Vec<(&str, Vec<wire::SemanticNode>)> = vec![
+            (
+                "self cycle",
+                vec![base_node(
+                    1,
+                    100,
+                    Some(wire::Target { id: 1, mount: 100 }),
+                    wire::SemanticRole::Group,
+                )],
+            ),
+            (
+                "same-id wrong-mount self reference preserves cyclic error",
+                vec![base_node(
+                    1,
+                    100,
+                    Some(wire::Target { id: 1, mount: 999 }),
+                    wire::SemanticRole::Group,
+                )],
+            ),
+            (
+                "multi-node cycle",
+                vec![
+                    base_node(
+                        1,
+                        100,
+                        Some(wire::Target { id: 3, mount: 100 }),
+                        wire::SemanticRole::Group,
+                    ),
+                    base_node(
+                        2,
+                        100,
+                        Some(wire::Target { id: 1, mount: 100 }),
+                        wire::SemanticRole::Group,
+                    ),
+                    base_node(
+                        3,
+                        100,
+                        Some(wire::Target { id: 2, mount: 100 }),
+                        wire::SemanticRole::Group,
+                    ),
+                ],
+            ),
+            (
+                "wrong-mount parent after verified parent",
+                vec![
+                    base_node(1, 100, None, wire::SemanticRole::Group),
+                    base_node(
+                        2,
+                        100,
+                        Some(wire::Target { id: 1, mount: 999 }),
+                        wire::SemanticRole::Group,
+                    ),
+                ],
+            ),
+            (
+                "invalid TreeItem level directly under Tree",
+                vec![
+                    base_node(1, 100, None, wire::SemanticRole::Tree),
+                    base_node(
+                        2,
+                        100,
+                        Some(wire::Target { id: 1, mount: 100 }),
+                        wire::SemanticRole::TreeItem { level: 2 },
+                    ),
+                ],
+            ),
+            ("table missing column header", {
+                let mut t = valid_table_node();
+                t.parts.remove(1);
+                vec![t]
+            }),
+            ("table row with extra non-cell child", {
+                let mut t = valid_table_node();
+                t.parts.push(wire::SemanticPart {
+                    text_layout: None,
+                    value_range: None,
+                    index: 99,
+                    parent: Some(3),
+                    frame: [0., 20., 10., 10.],
+                    focused: false,
+                    semantics: sem(wire::SemanticRole::Text, "stray"),
+                    preserves_activation_focus: false,
+                });
+                vec![t]
+            }),
+            ("table cell with wrong row ordinal", {
+                let mut t = valid_table_node();
+                t.parts[3].semantics.role = wire::SemanticRole::TableCell { row: 1, column: 0 };
+                vec![t]
+            }),
+            ("table cell zero area focused", {
+                let mut t = valid_table_node();
+                t.parts[3].frame = [0., 20., 0., 20.];
+                t.parts[3].focused = true;
+                vec![t]
+            }),
+        ];
+
+        for (label, bad_nodes) in bad_cases {
+            let mut remote = RemoteSemantics::default();
+            remote.update(valid_seed()).unwrap();
+            assert_eq!(remote.parts(frame, frame, false).len(), 1);
+            assert!(
+                remote.update(semantic_test_snapshot(bad_nodes)).is_err(),
+                "{label} must reject"
+            );
+            assert!(remote.needs_refresh(), "{label} must revoke");
+            assert!(
+                remote.parts(frame, frame, false).is_empty(),
+                "{label} cleared parts"
+            );
+        }
+    }
+
+    #[test]
+    fn ax_ids_and_parent_links_reuse_on_unchanged_binding_and_reallocate_on_change() {
+        let t = valid_table_node();
+        let mut ti = base_node(20, 200, None, wire::SemanticRole::TextInput);
+        ti.text_binding = Some(vec![1, 2, 3]);
+        let nodes = vec![t.clone(), ti.clone()];
+
+        let mut remote = RemoteSemantics::default();
+        remote
+            .update(semantic_test_snapshot(nodes.clone()))
+            .unwrap();
+        let frame = Rect::new(0., 0., 400., 400.);
+        let parts1 = remote.parts(frame, frame, false);
+        assert_eq!(parts1.len(), 6);
+        let next_after_first = remote.next;
+
+        // Verify exact parent link from TableHeader(idx 2) -> TableColumn(idx 1) and Cell(idx 4) -> Row(idx 3).
+        let hdr_ax = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableColumnHeader { .. }))
+            .unwrap()
+            .index;
+        let col_ax = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableColumn { .. }))
+            .unwrap()
+            .index;
+        let cell_ax = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableCell { .. }))
+            .unwrap()
+            .index;
+        let row_ax = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableRow { .. }))
+            .unwrap()
+            .index;
+        assert_eq!(remote.parent(hdr_ax), Some(col_ax));
+        assert_eq!(remote.parent(cell_ax), Some(row_ax));
+
+        // Second update with identical attachment & bindings reuses all 6 AX IDs without advancing next.
+        remote.update(semantic_test_snapshot(nodes)).unwrap();
+        let parts2 = remote.parts(frame, frame, false);
+        assert_eq!(
+            parts1.iter().map(|p| p.index).collect::<Vec<_>>(),
+            parts2.iter().map(|p| p.index).collect::<Vec<_>>()
+        );
+        assert_eq!(remote.next, next_after_first);
+
+        // Changing text_binding on TextInput reallocates ONLY TextInput's AX ID while keeping table IDs.
+        ti.text_binding = Some(vec![9, 9]);
+        remote.update(semantic_test_snapshot(vec![t, ti])).unwrap();
+        let parts3 = remote.parts(frame, frame, false);
+        assert_eq!(
+            parts3[..5].iter().map(|p| p.index).collect::<Vec<_>>(),
+            parts1[..5].iter().map(|p| p.index).collect::<Vec<_>>()
+        );
+        assert!(parts3[5].index > next_after_first);
+    }
+}

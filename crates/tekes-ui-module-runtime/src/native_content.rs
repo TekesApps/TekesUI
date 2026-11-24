@@ -28,8 +28,15 @@ pub struct ProcessContentSnapshot {
     stamp: Stamp,
     reply: wire::Reply,
     text: Option<native::TextInputState>,
+    validated_semantics: bool,
 }
 impl ProcessContentSnapshot {
+    pub(crate) fn mark_semantics_validated(&mut self) {
+        self.validated_semantics = true;
+    }
+    pub(crate) fn semantics_validated(&self) -> bool {
+        self.validated_semantics
+    }
     pub fn reply(&self) -> &wire::Reply {
         &self.reply
     }
@@ -50,7 +57,12 @@ impl ProcessContentSnapshot {
     }
     fn from_stamp_and_reply(stamp: Stamp, reply: wire::Reply) -> Result<Self> {
         let text = project(&stamp, &reply)?;
-        Ok(Self { stamp, reply, text })
+        Ok(Self {
+            stamp,
+            reply,
+            text,
+            validated_semantics: false,
+        })
     }
     pub(crate) fn from_wire(
         process: &ProcessComponent,
@@ -527,6 +539,7 @@ impl<'a> ProcessContentBridge<'a> {
             stamp: self.stamp.clone(),
             reply,
             text,
+            validated_semantics: false,
         })
     }
     fn curve_query(
@@ -989,6 +1002,7 @@ pub(crate) fn semantic_test_snapshot(nodes: Vec<wire::SemanticNode>) -> ProcessC
         },
         reply,
         text: None,
+        validated_semantics: false,
     }
 }
 
@@ -1476,6 +1490,7 @@ mod tests {
                     stamp: stamp.clone(),
                     reply: received,
                     text: None,
+                    validated_semantics: false,
                 })
                 .unwrap();
             let parts = remote.parts(frame, frame, false);
@@ -1503,7 +1518,8 @@ mod tests {
                 .update(ProcessContentSnapshot {
                     stamp,
                     reply,
-                    text: None
+                    text: None,
+                    validated_semantics: false,
                 })
                 .is_err()
         );
@@ -1535,6 +1551,7 @@ mod tests {
                 stamp: stamp.clone(),
                 reply: reply.clone(),
                 text: None,
+                validated_semantics: false,
             })
             .unwrap();
         let frame = Rect::new(0., 0., 100., 100.);
@@ -1553,7 +1570,8 @@ mod tests {
                 .update(ProcessContentSnapshot {
                     stamp,
                     reply,
-                    text: None
+                    text: None,
+                    validated_semantics: false,
                 })
                 .is_err()
         );

@@ -383,7 +383,7 @@ impl ProcessContainerFrameHandle {
                 }
                 _ => bail!("unexpected reply for curve read-only projection"),
             };
-            let snapshot = crate::ProcessContentSnapshot::from_curve(
+            let mut snapshot = crate::ProcessContentSnapshot::from_curve(
                 &process,
                 self.view,
                 pending.stamp.viewport,
@@ -398,6 +398,7 @@ impl ProcessContainerFrameHandle {
                 .as_deref()
                 .context("curve projection omitted original semantics")?;
             crate::container_semantics::validate(semantics)?;
+            snapshot.mark_semantics_validated();
             let registration = renderer.register_owned_gpu_image(pending.image.image())?;
             resources.pending_curve_publication = Some(PendingCurvePublication {
                 image: pending.image,

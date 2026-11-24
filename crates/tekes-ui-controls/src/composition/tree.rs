@@ -219,7 +219,7 @@ impl TreeContent {
         nodes: Vec<TreeContentNode>,
     ) -> Result<(), TreeContentError> {
         let p = self.prepare(dataset, nodes)?;
-        if self.mounted && p.ids != self.current_ids()? {
+        if self.mounted && p.ids != self.collect_ids()? {
             return Err(TreeContentError::HostTransactionRequired);
         }
         self.commit(dataset, p)
@@ -254,6 +254,9 @@ impl TreeContent {
         if !self.available() || !self.geometry_actionable(i) {
             return false;
         }
+        self.set_expanded_at_checked(i, expanded)
+    }
+    fn set_expanded_at_checked(&mut self, i: usize, expanded: bool) -> bool {
         if self.model.nodes()[i].expanded == expanded
             || !self.model.nodes().iter().any(|n| n.parent == Some(i))
         {
@@ -283,9 +286,10 @@ impl TreeContent {
                 .exposures
                 .get(&intent.key)
                 .is_some_and(|e| e.token == intent.exposure)
-            && self.model.node_index(intent.key).is_some_and(|i| {
-                !self.model.nodes()[i].disabled && self.model.visible().contains(&i)
-            })
+            && self
+                .model
+                .node_index(intent.key)
+                .is_some_and(|i| !self.model.nodes()[i].disabled && self.model.is_node_visible(i))
     }
     fn available(&self) -> bool {
         self.mounted && self.window_active && !self.exhausted && self.validate_rows().is_ok()
@@ -318,21 +322,20 @@ impl TreeContent {
         }
         Ok(())
     }
-    fn validate_rows(&self) -> Result<(), TreeContentError> {
-        self.validate_structure()?;
-        for (i, row) in self.rows.iter().enumerate() {
-            passive(row, self.model.node_key(i).expect("keyed row"))?;
-        }
-        self.current_ids()?;
-        Ok(())
-    }
-    fn current_ids(&self) -> Result<BTreeSet<ComponentId>, TreeContentError> {
-        self.validate_structure()?;
+    fn collect_ids(&self) -> Result<BTreeSet<ComponentId>, TreeContentError> {
         let mut ids = BTreeSet::new();
         for row in &self.rows {
             row.ids(&mut ids)?;
         }
         Ok(ids)
+    }
+    fn validate_rows(&self) -> Result<(), TreeContentError> {
+        self.validate_structure()?;
+        for (i, row) in self.rows.iter().enumerate() {
+            passive(row, self.model.node_key(i).expect("keyed row"))?;
+        }
+        self.collect_ids()?;
+        Ok(())
     }
     fn prepare(
         &self,
@@ -476,17 +479,14 @@ impl TreeContent {
         }
         self.exposures = p.exposures;
         self.next = p.next;
-        self.update_active();
+        self.update_active_validated();
         self.invalidate();
         Ok(())
     }
-    fn update_active(&mut self) {
-        if self.validate_structure().is_err() {
-            return;
-        }
-        let visible = self.model.visible();
+    fn update_active_validated(&mut self) {
+        let visible = self.model.visible_flags();
         for (i, row) in self.rows.iter_mut().enumerate() {
-            row.set_composition_active(visible.contains(&i));
+            row.set_composition_active(visible[i]);
             row.component_mut::<RowSlot>().expect("row").disabled = self.model.nodes()[i].disabled;
         }
     }
@@ -504,7 +504,7 @@ impl TreeContent {
                 self.exposures.clear();
             }
         }
-        self.update_active();
+        self.update_active_validated();
     }
     fn invalidate(&mut self) {
         self.view.reconcile_model(&self.model);
@@ -895,23 +895,27 @@ impl Component for TreeContent {
         let Some(layout) = self.view.layout_for(&self.model) else {
             return Vec::new();
         };
+        let nodes = self.model.nodes();
+        let mut has_child = vec![false; nodes.len()];
+        for n in nodes {
+            if let Some(p) = n.parent
+                && let Some(slot) = has_child.get_mut(p)
+            {
+                *slot = true;
+            }
+        }
         layout
             .items
             .iter()
             .filter_map(|row| {
                 let key = self.model.node_key(row.id)?;
                 let e = self.exposures.get(&key)?;
-                let node = &self.model.nodes()[row.id];
+                let node = &nodes[row.id];
                 let mut s =
                     ContentSemantics::new(ContentRole::TreeItem { level: row.depth }, &node.label);
                 s.selected = self.selected_key() == Some(key);
                 s.disabled = node.disabled;
-                s.expanded = self
-                    .model
-                    .nodes()
-                    .iter()
-                    .any(|n| n.parent == Some(row.id))
-                    .then_some(node.expanded);
+                s.expanded = has_child[row.id].then_some(node.expanded);
                 Some(SemanticPart {
                     index: e.token,
                     frame: row.visible.unwrap_or(Rect::new(
@@ -971,7 +975,7 @@ impl Component for TreeContent {
                 self.response(CollectionEvent::Activated(i), before)
             }
             AccessibilityAction::SetExpanded(expanded) => {
-                let changed = self.set_expanded_key(key, *expanded);
+                let changed = self.set_expanded_at_checked(i, *expanded);
                 if changed {
                     self.intent(
                         key,
@@ -1308,5 +1312,248 @@ mod tree_content_counters {
         );
         assert_eq!(lease.load(Ordering::Acquire), current_lease);
         assert_eq!(format!("{h:?}"), before);
+    }
+
+    #[test]
+    fn children_mut_corruption_still_rejects_replace_expand_validate_and_ax_actions() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, _: &str, _: proposal::TextRole, w: f32) -> Size {
+                Size::new(w.min(80.), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        struct Icons;
+        impl crate::layout_view::IconRenderer for Icons {
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {}
+            fn prepare_icon(
+                &mut self,
+                _: &str,
+                _: f32,
+                _: f32,
+                _: Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                Ok(IconImage::new(
+                    tekes_ui_scene::ImageId(1),
+                    std::rc::Rc::new(()),
+                ))
+            }
+        }
+        let parent = TreeContentNode {
+            row_id: ComponentId(101),
+            node: KeyedTreeNode {
+                key: TreeNodeKey(1),
+                parent: None,
+                label: "root".into(),
+                disabled: false,
+                initially_expanded: true,
+            },
+            display: TreeDisplayUpdate::Keep,
+        };
+        let child = TreeContentNode {
+            row_id: ComponentId(102),
+            node: KeyedTreeNode {
+                key: TreeNodeKey(2),
+                parent: Some(TreeNodeKey(1)),
+                label: "child".into(),
+                disabled: false,
+                initially_expanded: false,
+            },
+            display: TreeDisplayUpdate::Keep,
+        };
+        let mut host = ContentHost::new(Content::new(
+            ComponentId(1),
+            TreeContent::new("Tree", TreeDatasetKey(1), vec![parent, child]).unwrap(),
+        ))
+        .unwrap();
+        let frame = Rect::new(0., 0., 300., 200.);
+        host.render(
+            &mut Scene::new(),
+            &mut WithIconRenderer::new(&mut Text, &mut Icons),
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let token = host.root.component::<TreeContent>().unwrap().exposures[&TreeNodeKey(1)].token;
+        // Mutate rows vec via public Component::children_mut().
+        host.root
+            .component_mut::<TreeContent>()
+            .unwrap()
+            .children_mut()
+            .unwrap()
+            .pop();
+        let tree = host.root.component_mut::<TreeContent>().unwrap();
+        assert!(tree.validate().is_err());
+        assert!(tree.semantic_parts().is_empty());
+        assert!(!tree.set_expanded_key(TreeNodeKey(1), false));
+        assert!(
+            !tree
+                .accessibility_action(Some(token), &AccessibilityAction::SetExpanded(false))
+                .consumed
+        );
+        assert_eq!(
+            tree.replace_nodes(TreeDatasetKey(1), vec![n(1)]),
+            Err(TreeContentError::InvalidStructure)
+        );
+    }
+
+    #[test]
+    fn direct_set_expanded_and_ax_set_expanded_preserve_admission_intent_and_expanded_metadata() {
+        struct Text;
+        impl ButtonTextRenderer for Text {
+            fn measure(&mut self, _: &str, _: proposal::TextRole, w: f32) -> Size {
+                Size::new(w.min(80.), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+        struct Icons;
+        impl crate::layout_view::IconRenderer for Icons {
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {}
+            fn prepare_icon(
+                &mut self,
+                _: &str,
+                _: f32,
+                _: f32,
+                _: Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                Ok(IconImage::new(
+                    tekes_ui_scene::ImageId(1),
+                    std::rc::Rc::new(()),
+                ))
+            }
+        }
+        let make_nodes = || {
+            vec![
+                TreeContentNode {
+                    row_id: ComponentId(101),
+                    node: KeyedTreeNode {
+                        key: TreeNodeKey(1),
+                        parent: None,
+                        label: "root".into(),
+                        disabled: false,
+                        initially_expanded: true,
+                    },
+                    display: TreeDisplayUpdate::Keep,
+                },
+                TreeContentNode {
+                    row_id: ComponentId(102),
+                    node: KeyedTreeNode {
+                        key: TreeNodeKey(2),
+                        parent: Some(TreeNodeKey(1)),
+                        label: "mid".into(),
+                        disabled: false,
+                        initially_expanded: true,
+                    },
+                    display: TreeDisplayUpdate::Keep,
+                },
+                TreeContentNode {
+                    row_id: ComponentId(103),
+                    node: KeyedTreeNode {
+                        key: TreeNodeKey(3),
+                        parent: Some(TreeNodeKey(2)),
+                        label: "leaf".into(),
+                        disabled: false,
+                        initially_expanded: false,
+                    },
+                    display: TreeDisplayUpdate::Keep,
+                },
+            ]
+        };
+        // Unmounted & unlaid-out tree refuses direct set_expanded_key.
+        let mut unmounted = TreeContent::new("Unmounted", TreeDatasetKey(1), make_nodes()).unwrap();
+        assert!(!unmounted.set_expanded_key(TreeNodeKey(1), false));
+
+        let id = ComponentId(1);
+        let mut host = ContentHost::new(Content::new(
+            id,
+            TreeContent::new("Tree", TreeDatasetKey(1), make_nodes()).unwrap(),
+        ))
+        .unwrap();
+        // Mounted before first layout still refuses set_expanded_key.
+        assert!(
+            !host
+                .root
+                .component_mut::<TreeContent>()
+                .unwrap()
+                .set_expanded_key(TreeNodeKey(1), false)
+        );
+        let frame = Rect::new(0., 0., 300., 200.);
+        host.render(
+            &mut Scene::new(),
+            &mut WithIconRenderer::new(&mut Text, &mut Icons),
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+
+        let tree = host.root.component::<TreeContent>().unwrap();
+        let parts = tree.semantic_parts();
+        assert_eq!(parts.len(), 3);
+        assert_eq!(parts[0].semantics.expanded, Some(true));
+        assert_eq!(parts[1].semantics.expanded, Some(true));
+        assert_eq!(parts[2].semantics.expanded, None);
+
+        let root_tok = parts[0].index;
+        let leaf_tok = parts[2].index;
+        // Leaf cannot expand; same state is no-op.
+        let tc = host.root.component_mut::<TreeContent>().unwrap();
+        assert!(!tc.set_expanded_key(TreeNodeKey(3), true));
+        assert!(!tc.set_expanded_key(TreeNodeKey(1), true));
+
+        // Press leaf to record leaf intent, then collapse root via AX SetExpanded(false).
+        assert!(
+            tc.accessibility_action(Some(leaf_tok), &AccessibilityAction::Press)
+                .activated
+        );
+        let leaf_intent = tc.last_intent.clone().unwrap();
+        assert!(tc.intent_is_current(&leaf_intent));
+
+        let resp =
+            tc.accessibility_action(Some(root_tok), &AccessibilityAction::SetExpanded(false));
+        assert!(resp.changed);
+        assert!(resp.consumed);
+        let collapse_intent = tc.last_intent.clone().unwrap();
+        assert_eq!(
+            collapse_intent.kind,
+            TreeIntentKind::ExpansionChanged { expanded: false }
+        );
+        assert!(tc.intent_is_current(&collapse_intent));
+        // Previously visible leaf intent is now invalid after collapse.
+        assert!(!tc.intent_is_current(&leaf_intent));
+
+        // Render and verify direct set_expanded_key re-expands cleanly; inactive window blocks mutation.
+        host.render(
+            &mut Scene::new(),
+            &mut WithIconRenderer::new(&mut Text, &mut Icons),
+            frame,
+            frame,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let tc = host.root.component_mut::<TreeContent>().unwrap();
+        assert!(tc.set_expanded_key(TreeNodeKey(1), true));
+        tc.window_active_changed(false);
+        assert!(!tc.set_expanded_key(TreeNodeKey(1), false));
+        assert!(!tc.intent_is_current(&collapse_intent));
     }
 }
