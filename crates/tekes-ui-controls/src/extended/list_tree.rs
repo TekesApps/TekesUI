@@ -491,7 +491,7 @@ impl Tree {
                 let Some(&parent) = indices.get(&parent_key) else {
                     return Err(TreeUpdateError::InvalidParent(node.key));
                 };
-                let Some(position) = ancestors.iter().position(|key| *key == parent_key) else {
+                let Some(position) = ancestors.iter().rposition(|key| *key == parent_key) else {
                     return Err(TreeUpdateError::NonPreorder(node.key));
                 };
                 ancestors.truncate(position + 1);
@@ -525,10 +525,11 @@ impl Tree {
             selected: None,
         });
         staged.selected = None;
+        let visible_flags = staged.visible_flags();
         if same_dataset {
-            staged.recover_selection(self);
+            staged.recover_selection_with_visible(self, &visible_flags);
         }
-        staged.finish_update(self)?;
+        staged.finish_update_with_visible(self, &visible_flags)?;
         let old_to_new = (0..self.nodes.len())
             .map(|i| {
                 same_dataset
@@ -536,7 +537,6 @@ impl Tree {
                     .flatten()
             })
             .collect::<Vec<_>>();
-        let visible = staged.visible();
         let result = TreeReconcile {
             removed: old_to_new
                 .iter()
@@ -546,7 +546,7 @@ impl Tree {
             hidden: old_to_new
                 .iter()
                 .enumerate()
-                .filter_map(|(i, j)| j.filter(|j| !visible.contains(j)).map(|_| i))
+                .filter_map(|(i, j)| j.filter(|j| !visible_flags[*j]).map(|_| i))
                 .collect(),
             old_to_new,
             revision: staged.revision,
@@ -557,16 +557,15 @@ impl Tree {
     }
     // Recover only through the old ancestor chain. A disabled target clears,
     // whereas disappearance/concealment may recover to a surviving ancestor.
-    fn recover_selection(&mut self, old: &Self) {
+    fn recover_selection_with_visible(&mut self, old: &Self, visible: &[bool]) {
         let Some(key) = old.selected_key() else {
             return;
         };
-        let visible = self.visible();
         if let Some(i) = self.node_index(key) {
             if self.nodes[i].disabled {
                 return;
             }
-            if visible.contains(&i) {
+            if visible[i] {
                 self.select(i);
                 return;
             }
@@ -574,7 +573,7 @@ impl Tree {
         let mut ancestor = old.node_index(key).and_then(|i| old.nodes[i].parent);
         while let Some(i) = ancestor {
             if let Some(j) = old.node_key(i).and_then(|key| self.node_index(key))
-                && visible.contains(&j)
+                && visible[j]
                 && !self.nodes[j].disabled
             {
                 self.select(j);
@@ -584,19 +583,26 @@ impl Tree {
         }
     }
     fn finish_update(&mut self, old: &Self) -> Result<(), TreeUpdateError> {
+        let visible = self.visible_flags();
+        self.finish_update_with_visible(old, &visible)
+    }
+    fn finish_update_with_visible(
+        &mut self,
+        old: &Self,
+        visible: &[bool],
+    ) -> Result<(), TreeUpdateError> {
         self.revision = old
             .revision
             .checked_add(1)
             .ok_or(TreeUpdateError::CounterExhausted)?;
-        let visible = self.visible();
-        let old_visible = old.visible();
         let same = old.dataset_key() == self.dataset_key();
+        let old_visible = same.then(|| old.visible_flags());
         let Some(state) = self.keyed.as_mut() else {
             return Ok(());
         };
         for (i, key) in state.keys.iter().enumerate() {
             let retained = same.then(|| old.node_index(*key)).flatten().filter(|j| {
-                visible.contains(&i) == old_visible.contains(j)
+                visible[i] == old_visible.as_ref().is_some_and(|v| v[*j])
                     && self.nodes[i].disabled == old.nodes[*j].disabled
             });
             state.incarnations[i] = if let Some(j) = retained {
@@ -671,9 +677,13 @@ impl Tree {
         staged.restore_selection_projection();
         staged.nodes[i].expanded = !staged.nodes[i].expanded;
         if self.is_keyed() {
+            let visible_flags = staged.visible_flags();
             staged.clear_selection();
-            staged.recover_selection(self);
-            if staged.finish_update(self).is_err() {
+            staged.recover_selection_with_visible(self, &visible_flags);
+            if staged
+                .finish_update_with_visible(self, &visible_flags)
+                .is_err()
+            {
                 return false;
             }
         }
@@ -681,18 +691,35 @@ impl Tree {
         *self = staged;
         true
     }
+    pub(crate) fn is_node_visible(&self, index: usize) -> bool {
+        let mut p = self.nodes.get(index).and_then(|n| n.parent);
+        while let Some(parent) = p {
+            let Some(node) = self.nodes.get(parent) else {
+                return false;
+            };
+            if !node.expanded {
+                return false;
+            }
+            p = node.parent;
+        }
+        index < self.nodes.len()
+    }
+    pub(crate) fn visible_flags(&self) -> Vec<bool> {
+        let mut flags = vec![false; self.nodes.len()];
+        for (i, node) in self.nodes.iter().enumerate() {
+            flags[i] = match node.parent {
+                None => true,
+                Some(p) if p < i => flags[p] && self.nodes[p].expanded,
+                Some(_) => self.is_node_visible(i),
+            };
+        }
+        flags
+    }
     pub fn visible(&self) -> Vec<usize> {
-        (0..self.nodes.len())
-            .filter(|i| {
-                let mut p = self.nodes[*i].parent;
-                while let Some(parent) = p {
-                    if !self.nodes[parent].expanded {
-                        return false;
-                    }
-                    p = self.nodes[parent].parent;
-                }
-                true
-            })
+        self.visible_flags()
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, visible)| visible.then_some(i))
             .collect()
     }
     pub fn key(&mut self, key: ControlKey) -> bool {
@@ -828,5 +855,122 @@ mod tree_identity_counters {
         let before = tree.clone();
         assert!(!tree.toggle(0));
         assert_eq!(tree, before);
+    }
+    #[test]
+    fn deep_and_wide_keyed_trees_preserve_preorder_visibility_recovery_and_incarnation_rules() {
+        let deep_nodes = |d: usize| {
+            (0..d)
+                .map(|i| KeyedTreeNode {
+                    key: TreeNodeKey((i + 1) as u64),
+                    parent: (i > 0).then_some(TreeNodeKey(i as u64)),
+                    label: format!("d{i}"),
+                    disabled: false,
+                    initially_expanded: true,
+                })
+                .collect::<Vec<_>>()
+        };
+        let mut deep = Tree::default();
+        deep.replace_keyed(TreeDatasetKey(1), deep_nodes(500))
+            .unwrap();
+        assert_eq!(deep.visible(), (0..500).collect::<Vec<_>>());
+        assert!(deep.select_key(TreeNodeKey(400)));
+
+        // NonPreorder & InvalidParent reject atomically without corrupting model.
+        let before = deep.clone();
+        assert_eq!(
+            deep.replace_keyed(
+                TreeDatasetKey(1),
+                vec![
+                    node(1),
+                    KeyedTreeNode {
+                        key: TreeNodeKey(2),
+                        parent: Some(TreeNodeKey(1)),
+                        label: "c1".into(),
+                        disabled: false,
+                        initially_expanded: false,
+                    },
+                    node(3),
+                    KeyedTreeNode {
+                        key: TreeNodeKey(4),
+                        parent: Some(TreeNodeKey(1)),
+                        label: "late".into(),
+                        disabled: false,
+                        initially_expanded: false,
+                    },
+                ],
+            ),
+            Err(TreeUpdateError::NonPreorder(TreeNodeKey(4)))
+        );
+        assert_eq!(deep, before);
+        assert_eq!(
+            deep.replace_keyed(
+                TreeDatasetKey(1),
+                vec![KeyedTreeNode {
+                    key: TreeNodeKey(2),
+                    parent: Some(TreeNodeKey(999)),
+                    label: "orphan".into(),
+                    disabled: false,
+                    initially_expanded: false,
+                }],
+            ),
+            Err(TreeUpdateError::InvalidParent(TreeNodeKey(2)))
+        );
+        assert_eq!(deep, before);
+
+        // Collapsing ancestor 250 recovers selection to index 249 (key 250), hides 250..500,
+        // and retains incarnations for 0..=249 while bumping hidden/shown descendants on re-toggle.
+        let inc_anc = deep.incarnation(249).unwrap();
+        let inc_desc = deep.incarnation(300).unwrap();
+        assert!(deep.toggle(249));
+        assert_eq!(deep.selected_key(), Some(TreeNodeKey(250)));
+        assert_eq!(deep.visible(), (0..250).collect::<Vec<_>>());
+        assert_eq!(deep.incarnation(249), Some(inc_anc));
+        assert!(deep.incarnation(300).unwrap() > inc_desc);
+
+        // Removing the selected node (key 250) clears or recovers through surviving ancestor (249).
+        let mut trimmed = deep_nodes(249);
+        trimmed[248].disabled = false;
+        let rec = deep.replace_keyed(TreeDatasetKey(1), trimmed).unwrap();
+        assert_eq!(rec.removed, (249..500).collect::<Vec<_>>());
+        assert!(rec.hidden.is_empty());
+        assert_eq!(deep.selected_key(), Some(TreeNodeKey(249)));
+
+        // Disabling selected target clears selection cleanly.
+        let mut with_disabled = deep_nodes(10);
+        assert!(
+            deep.replace_keyed(TreeDatasetKey(2), with_disabled.clone())
+                .is_ok()
+        );
+        assert!(deep.select_key(TreeNodeKey(5)));
+        with_disabled[4].disabled = true;
+        deep.replace_keyed(TreeDatasetKey(2), with_disabled)
+            .unwrap();
+        assert_eq!(deep.selected_key(), None);
+
+        // Wide sibling tree: collapse hides siblings 1..=500 and updates reconcile.hidden in preorder.
+        let mut wide = Tree::default();
+        let mut wnodes = vec![KeyedTreeNode {
+            key: TreeNodeKey(1),
+            parent: None,
+            label: "root".into(),
+            disabled: false,
+            initially_expanded: true,
+        }];
+        for k in 2..=501u64 {
+            wnodes.push(KeyedTreeNode {
+                key: TreeNodeKey(k),
+                parent: Some(TreeNodeKey(1)),
+                label: format!("w{k}"),
+                disabled: false,
+                initially_expanded: false,
+            });
+        }
+        wide.replace_keyed(TreeDatasetKey(3), wnodes.clone())
+            .unwrap();
+        assert_eq!(wide.visible(), (0..=500).collect::<Vec<_>>());
+        assert!(wide.toggle(0));
+        assert_eq!(wide.visible(), vec![0]);
+        let rec_w = wide.replace_keyed(TreeDatasetKey(3), wnodes).unwrap();
+        assert_eq!(rec_w.hidden, (1..=500).collect::<Vec<_>>());
     }
 }
