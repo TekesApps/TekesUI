@@ -1,11 +1,59 @@
 //! NSApplication、应用委托与 `run()`。
 
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
 };
 thread_local! { static WINDOWS:RefCell<Vec<Weak<Shared>>>=const {RefCell::new(Vec::new())}; }
 thread_local! {static WINDOW_OWNERS:RefCell<Vec<WindowHandle>>=const {RefCell::new(Vec::new())};}
+thread_local! { static RETIRE_PENDING: Cell<bool> = const { Cell::new(false) }; }
+
+unsafe extern "C" {
+    static _dispatch_main_q: u8;
+    fn dispatch_async_f(
+        queue: *const std::ffi::c_void,
+        context: *mut std::ffi::c_void,
+        work: extern "C" fn(*mut std::ffi::c_void),
+    );
+}
+
+extern "C" fn retire_closed_windows_callback(_ctx: *mut std::ffi::c_void) {
+    crate::ffi_boundary("retire_closed_windows_callback", || {
+        RETIRE_PENDING.with(|pending| pending.set(false));
+        retire_closed_windows();
+    });
+}
+
+pub(crate) fn retire_closed_windows() {
+    // Retire closed windows outside a registry borrow; native release may reenter.
+    let retired = WINDOW_OWNERS.with(|windows| {
+        let handles = std::mem::take(&mut *windows.borrow_mut());
+        let (live, closed): (Vec<_>, Vec<_>) = handles.into_iter().partition(|h| !h.is_closed());
+        *windows.borrow_mut() = live;
+        closed
+    });
+    if !retired.is_empty() {
+        objc2::rc::autoreleasepool(|_| drop(retired));
+    }
+    let _ = windows();
+}
+
+fn schedule_retire_closed_windows() {
+    RETIRE_PENDING.with(|pending| {
+        if pending.replace(true) {
+            return;
+        }
+        // SAFETY: `_dispatch_main_q` is the main dispatch queue; `retire_closed_windows_callback`
+        // runs on the main thread and touches only main-thread thread-locals.
+        unsafe {
+            dispatch_async_f(
+                (&raw const _dispatch_main_q).cast(),
+                std::ptr::null_mut(),
+                retire_closed_windows_callback,
+            );
+        }
+    });
+}
 pub(crate) fn windows() -> Vec<Rc<Shared>> {
     WINDOWS.with(|w| {
         let mut w = w.borrow_mut();
@@ -30,14 +78,13 @@ pub(crate) fn active_window_shared(mtm: MainThreadMarker) -> Option<Rc<Shared>> 
     let app = NSApplication::sharedApplication(mtm);
     if let Some(found) = live
         .iter()
-        .find(|s| s.objects.get().is_some_and(|o| o.window.isKeyWindow()))
+        .find(|s| s.objects().is_some_and(|o| o.window.isKeyWindow()))
     {
         return Some(found.clone());
     }
     if let Some(main_win) = app.mainWindow()
         && let Some(found) = live.iter().find(|s| {
-            s.objects
-                .get()
+            s.objects()
                 .is_some_and(|o| std::ptr::eq(&*o.window, &*main_win) && o.window.isVisible())
         })
     {
@@ -48,15 +95,14 @@ pub(crate) fn active_window_shared(mtm: MainThreadMarker) -> Option<Rc<Shared>> 
             continue;
         }
         if let Some(found) = live.iter().find(|s| {
-            s.objects
-                .get()
+            s.objects()
                 .is_some_and(|o| std::ptr::eq(&*o.window, &*ordered))
         }) {
             return Some(found.clone());
         }
     }
     live.into_iter()
-        .find(|s| s.objects.get().is_some_and(|o| o.window.isVisible()))
+        .find(|s| s.objects().is_some_and(|o| o.window.isVisible()))
 }
 
 pub(crate) fn sync_close_menu_item(mtm: MainThreadMarker) {
@@ -127,7 +173,7 @@ define_class!(
                     if shared.is_inactive_surface() {
                         continue;
                     }
-                    let active = shared.objects.get().is_some_and(|o| o.window.isKeyWindow());
+                    let active = shared.objects().is_some_and(|o| o.window.isKeyWindow());
                     shared.dispatch(Event::Focus(active));
                 }
             });
@@ -178,7 +224,7 @@ define_class!(
                             self.reopen_main_window();
                         }
                         shared.dispatch(Event::QuitRequested);
-                        if let Some(o) = shared.objects.get() {
+                        if let Some(o) = shared.objects() {
                             o.window.makeKeyAndOrderFront(None);
                         }
                     }
@@ -245,7 +291,7 @@ define_class!(
                 shared.titlebar_drag_origin.borrow_mut().take();
                 shared.animating.set(false);
                 shared.discard_metal_frames();
-                if let Some(o) = shared.objects.get() {
+                if let Some(o) = shared.objects() {
                     o.view.invalidate_display_link();
                     o.view.cancel_pending_performs();
                 }
@@ -263,6 +309,7 @@ define_class!(
                     shared.closed.set(true);
                     shared.revoke_accessibility();
                     shared.text_input.borrow_mut().take();
+                    schedule_retire_closed_windows();
                 }
                 sync_close_menu_item(shared.mtm);
             });
@@ -292,7 +339,7 @@ define_class!(
         #[unsafe(method(windowDidMove:))]
         fn window_did_move(&self, _notification: &NSNotification) {
             crate::ffi_boundary("AppDelegate::window_did_move", || {
-                if let Some(objects) = self.ivars().shared.objects.get()
+                if let Some(objects) = self.ivars().shared.objects()
                     && let Some(context) = objects.view.inputContext()
                 {
                     context.invalidateCharacterCoordinates();
@@ -309,7 +356,7 @@ define_class!(
                 if shared.is_inactive_surface() || shared.toolbar_row_height.get().is_none() {
                     return;
                 }
-                if let Some(objects) = shared.objects.get() {
+                if let Some(objects) = shared.objects() {
                     objects.window.layoutIfNeeded();
                     shared.align_toolbar_controls();
                 }
@@ -410,7 +457,7 @@ impl AppDelegate {
     pub(crate) fn observe_toolbar_controls(&self) {
         self.stop_observing_toolbar_controls();
         let shared = &self.ivars().shared;
-        let Some(objects) = shared.objects.get() else {
+        let Some(objects) = shared.objects() else {
             return;
         };
         if !objects
@@ -456,9 +503,15 @@ impl AppDelegate {
                 .removeObserver(self);
         }
         self.stop_observing_toolbar_controls();
-        if let Some(objects) = shared.objects.get() {
+        if let Some(objects) = shared.objects() {
+            let _ = objects.window.makeFirstResponder(None);
             objects.window.setDelegate(None);
-            objects.window.close();
+            if !shared.closed.get() || objects.window.isVisible() {
+                objects
+                    .window
+                    .setAnimationBehavior(NSWindowAnimationBehavior::None);
+                objects.window.close();
+            }
         }
         shared.finish();
     }
@@ -568,11 +621,11 @@ impl AppDelegate {
 
         // Position before the first show: never expose a centered intermediate
         // Settings window and then visibly move it over its owning window.
-        if let Some(anchor) = exclusive_anchor.and_then(|s| s.objects.get()) {
+        if let Some(anchor) = exclusive_anchor.and_then(|s| s.objects()) {
             window.setAnimationBehavior(NSWindowAnimationBehavior::None);
             window.setFrame_display(anchor.window.frame(), false);
         }
-        let _ = shared.objects.set(Objects {
+        shared.set_objects(Objects {
             window: window.clone(),
             view: view.clone(),
         });
@@ -619,7 +672,7 @@ impl AppDelegate {
         if shared.closed.get() {
             return false;
         }
-        let Some(objects) = shared.objects.get() else {
+        let Some(objects) = shared.objects() else {
             return false;
         };
         for candidate in windows() {
@@ -631,7 +684,7 @@ impl AppDelegate {
                 .borrow()
                 .iter()
                 .any(|weak| weak.upgrade().is_some_and(|w| Rc::ptr_eq(&w, shared)));
-            if hides_primary && let Some(cover) = candidate.objects.get() {
+            if hides_primary && let Some(cover) = candidate.objects() {
                 if cover.window.isMiniaturized() {
                     cover.window.deminiaturize(None);
                 }
@@ -732,15 +785,19 @@ impl App {
         // run() 返回之后：先销毁辅助窗口，再对主窗口执行与 WindowOwner::drop 对齐的收尾
         // （移除观察者、解绑 delegate、关闭 NSWindow、清空待执行回调并丢弃处理器），
         // 保证 delegate 析构晚于 window.delegate() 解绑且不泄漏主窗口。
-        app.setDelegate(None);
-        menu_build::detach_target(mtm, delegate.as_ref());
-        let handles = WINDOW_OWNERS.with(|w| std::mem::take(&mut *w.borrow_mut()));
-        drop(handles);
-        for window in windows() {
-            window.finish();
-        }
-        delegate.teardown_window(&shared);
-        let _ = windows();
+        objc2::rc::autoreleasepool(|_| {
+            app.setDelegate(None);
+            menu_build::detach_target(mtm, delegate.as_ref());
+            let handles = WINDOW_OWNERS.with(|w| std::mem::take(&mut *w.borrow_mut()));
+            drop(handles);
+            delegate.teardown_window(&shared);
+            for window in windows() {
+                window.finish();
+            }
+            let _ = windows();
+            drop(delegate);
+            drop(shared);
+        });
     }
 }
 
@@ -761,7 +818,7 @@ impl WindowHandle {
     }
     pub fn show(&self) {
         if !self.is_closed()
-            && let Some(objects) = self.shared.objects.get()
+            && let Some(objects) = self.shared.objects()
         {
             objects.window.makeKeyAndOrderFront(None);
             self.shared.request_redraw();
@@ -779,14 +836,7 @@ pub(crate) fn open_window(
     handler: impl WindowHandler,
     exclusive_anchor: Option<&Rc<Shared>>,
 ) -> WindowHandle {
-    // Retire closed windows outside a registry borrow; native release may reenter.
-    let retired = WINDOW_OWNERS.with(|windows| {
-        let handles = std::mem::take(&mut *windows.borrow_mut());
-        let (live, closed): (Vec<_>, Vec<_>) = handles.into_iter().partition(|h| !h.is_closed());
-        *windows.borrow_mut() = live;
-        closed
-    });
-    drop(retired);
+    retire_closed_windows();
     let shared = Shared::new(mtm, Box::new(handler));
     let delegate = AppDelegate::new(
         mtm,
@@ -809,10 +859,10 @@ pub(crate) fn open_window(
 }
 
 pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
-    let Some(objects) = child.objects.get() else {
+    let Some(objects) = child.objects() else {
         return;
     };
-    if let Some(original) = anchor.objects.get() {
+    if let Some(original) = anchor.objects() {
         objects
             .window
             .setFrame_display(original.window.frame(), true);
@@ -824,7 +874,7 @@ pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
         if Rc::ptr_eq(&shared, child) || shared.is_inactive_surface() {
             continue;
         }
-        if let Some(o) = shared.objects.get()
+        if let Some(o) = shared.objects()
             && o.window.isVisible()
             && !o.window.isMiniaturized()
         {
@@ -846,7 +896,7 @@ pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
     NSAnimationContext::currentContext().setAllowsImplicitAnimation(false);
     objects.window.makeKeyAndOrderFront(None);
     for shared in hidden.iter().filter_map(|w| w.upgrade()) {
-        if let Some(o) = shared.objects.get() {
+        if let Some(o) = shared.objects() {
             let animation = o.window.animationBehavior();
             o.window
                 .setAnimationBehavior(NSWindowAnimationBehavior::None);
@@ -877,8 +927,8 @@ pub(crate) fn restore_windows(owner: &Shared) {
     // Returning from Settings keeps the current cover's frame on its original
     // Main window, including a move or resize made while Settings was visible.
     if let Some(anchor) = key.as_ref().filter(|shared| !shared.closed.get())
-        && let Some(original) = anchor.objects.get()
-        && let Some(cover) = owner.objects.get()
+        && let Some(original) = anchor.objects()
+        && let Some(cover) = owner.objects()
     {
         original
             .window
@@ -889,11 +939,11 @@ pub(crate) fn restore_windows(owner: &Shared) {
         .filter_map(|w| w.upgrade())
         .filter(|s| !s.closed.get())
     {
-        if let Some(o) = shared.objects.get() {
+        if let Some(o) = shared.objects() {
             let animation = o.window.animationBehavior();
             o.window
                 .setAnimationBehavior(NSWindowAnimationBehavior::None);
-            if let Some(cover) = owner.objects.get().filter(|o| o.window.isVisible()) {
+            if let Some(cover) = owner.objects().filter(|o| o.window.isVisible()) {
                 o.window.orderWindow_relativeTo(
                     NSWindowOrderingMode::Below,
                     cover.window.windowNumber(),
@@ -905,7 +955,7 @@ pub(crate) fn restore_windows(owner: &Shared) {
         }
     }
     if let Some(shared) = key.filter(|s| !s.closed.get())
-        && let Some(o) = shared.objects.get()
+        && let Some(o) = shared.objects()
     {
         o.window.makeKeyWindow();
     }
