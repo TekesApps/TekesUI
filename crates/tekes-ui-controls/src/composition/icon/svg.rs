@@ -6,10 +6,27 @@ type Key = (u64, &'static str, u32, [u32; 4]);
 /// lifetime; weak variants never keep hidden/unmounted components alive.
 #[derive(Debug, Default)]
 pub struct SvgIconCache {
+    extensions: Vec<tekes_ui_icons::Glyph>,
     entries: HashMap<Key, (ImageId, Weak<dyn Debug>)>,
     frame: Vec<IconImage>,
 }
 impl SvgIconCache {
+    /// Attach consumer-supplied extension glyphs alongside the canonical core catalog.
+    pub fn with_extensions(mut self, extensions: Vec<tekes_ui_icons::Glyph>) -> Self {
+        self.extensions = extensions;
+        self
+    }
+    /// Replace registered extension glyphs, clearing cached images when the pack changes.
+    pub fn set_extensions(&mut self, extensions: Vec<tekes_ui_icons::Glyph>) {
+        if self.extensions != extensions {
+            self.extensions = extensions;
+            self.clear();
+        }
+    }
+    /// Borrow registered extension glyphs.
+    pub fn extensions(&self) -> &[tekes_ui_icons::Glyph] {
+        &self.extensions
+    }
     pub fn renderer<'a>(
         &'a mut self,
         renderer: &'a mut Renderer,
@@ -37,15 +54,19 @@ pub struct SvgIconRenderer<'a> {
     renderer: &'a mut Renderer,
     backing: f32,
 }
-fn leading_ink_inset(name: &str) -> Result<f32, IconRenderError> {
-    let glyph = tekes_ui_icons::Glyph::named(name).ok_or(IconRenderError::UnknownIcon)?;
+fn leading_ink_inset(
+    name: &str,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> Result<f32, IconRenderError> {
+    let glyph = tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
+        .ok_or(IconRenderError::UnknownIcon)?;
     let tree = resvg::usvg::Tree::from_str(glyph.svg, &resvg::usvg::Options::default())
         .map_err(|_| IconRenderError::Raster)?;
     Ok(tree.root().abs_stroke_bounding_box().left() / tree.size().width())
 }
 impl IconRenderer for SvgIconRenderer<'_> {
     fn leading_ink_inset(&mut self, name: &str) -> Result<f32, IconRenderError> {
-        leading_ink_inset(name)
+        leading_ink_inset(name, &self.cache.extensions)
     }
     fn resource_identity(&self) -> Option<u64> {
         Some(self.renderer.resource_identity())
@@ -71,7 +92,8 @@ impl IconRenderer for SvgIconRenderer<'_> {
         backing: f32,
         tint: Rgba,
     ) -> Result<IconImage, IconRenderError> {
-        let glyph = tekes_ui_icons::Glyph::named(name).ok_or(IconRenderError::UnknownIcon)?;
+        let glyph = tekes_ui_icons::Glyph::resolve_with_extensions(name, &self.cache.extensions)
+            .ok_or(IconRenderError::UnknownIcon)?;
         let pixels = (size * backing).ceil();
         if !size.is_finite()
             || size <= 0.
@@ -158,7 +180,7 @@ mod tests {
             if self.unsupported {
                 return Err(IconRenderError::UnsupportedRenderer);
             }
-            leading_ink_inset(name)
+            leading_ink_inset(name, &[])
         }
         fn prepare_icon(
             &mut self,
@@ -353,5 +375,41 @@ mod tests {
         cache.clear();
         replacement.collect_retired_images();
         assert_eq!(replacement.image_count(), 0);
+    }
+
+    #[test]
+    fn svg_icon_cache_resolves_registered_extensions_and_rejects_unregistered_names() {
+        const EXT: tekes_ui_icons::Glyph = tekes_ui_icons::Glyph {
+            name: "host-custom-tool",
+            svg: r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="1.5"/></svg>"#,
+        };
+        assert!(leading_ink_inset("host-custom-tool", &[EXT]).is_ok());
+        assert_eq!(
+            leading_ink_inset("missing-host-icon", &[EXT]),
+            Err(IconRenderError::UnknownIcon)
+        );
+        let mut cache = SvgIconCache::default().with_extensions(vec![EXT]);
+        assert_eq!(cache.extensions(), &[EXT]);
+        cache.clear();
+        assert_eq!(cache.extensions(), &[EXT]);
+        if let Ok(mut renderer) = Renderer::new_headless() {
+            let mut service = cache.renderer(&mut renderer, 2.);
+            assert!(service.leading_ink_inset("host-custom-tool").is_ok());
+            assert_eq!(
+                service.leading_ink_inset("missing-host-icon"),
+                Err(IconRenderError::UnknownIcon)
+            );
+            assert!(
+                service
+                    .prepare_icon("host-custom-tool", 16., 2., Rgba::gray(0.))
+                    .is_ok()
+            );
+            assert_eq!(
+                service
+                    .prepare_icon("missing-host-icon", 16., 2., Rgba::gray(0.))
+                    .err(),
+                Some(IconRenderError::UnknownIcon)
+            );
+        }
     }
 }

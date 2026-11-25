@@ -56,6 +56,8 @@ pub mod legacy {
 }
 #[cfg(target_os = "macos")]
 pub use navigation_window::NavigationOptions;
+#[cfg(target_os = "macos")]
+pub use tekes_ui_icons::Glyph;
 pub use tekes_ui_module_runtime::{ComponentDefinition, ModuleDefinition, ProcessComponentOptions};
 
 /// Fixed build-time assembly, not a dynamic plugin registry.
@@ -215,6 +217,7 @@ pub struct AppWindow {
     settings: Option<settings::SettingsConfiguration>,
     presentation: Option<PresentationOptions>,
     container_factories: Vec<ContainerFactory>,
+    extension_icons: Vec<tekes_ui_icons::Glyph>,
     app_name: Option<String>,
     window_title: Option<String>,
     quit_after_last_window_closed: Option<bool>,
@@ -250,13 +253,22 @@ impl AppWindow {
             settings: None,
             presentation: None,
             container_factories: Vec::new(),
+            extension_icons: Vec::new(),
             app_name: None,
             window_title: None,
             quit_after_last_window_closed: None,
         }
     }
     pub fn from_columns(columns: Vec<Column>) -> anyhow::Result<Self> {
-        columns::validate(&columns)?;
+        Self::from_columns_with_icons(columns, Vec::new())
+    }
+    /// Assemble fixed columns with host-registered extension icons validated upfront.
+    pub fn from_columns_with_icons(
+        columns: Vec<Column>,
+        extension_icons: Vec<tekes_ui_icons::Glyph>,
+    ) -> anyhow::Result<Self> {
+        columns::validate_extension_icons(&extension_icons)?;
+        columns::validate_with_icons(&columns, &extension_icons)?;
         let mut modules = Vec::new();
         let mut components = Vec::new();
         for column in &columns {
@@ -279,6 +291,7 @@ impl AppWindow {
             settings: None,
             presentation: None,
             container_factories: Vec::new(),
+            extension_icons,
             app_name: None,
             window_title: None,
             quit_after_last_window_closed: None,
@@ -290,7 +303,16 @@ impl AppWindow {
         containers: Vec<Container>,
         presentation: PresentationOptions,
     ) -> anyhow::Result<Self> {
-        PresentationState::new(&containers, presentation.clone())?;
+        Self::from_containers_with_icons(containers, presentation, Vec::new())
+    }
+    /// Assemble presentation containers with host-registered extension icons validated upfront.
+    pub fn from_containers_with_icons(
+        containers: Vec<Container>,
+        presentation: PresentationOptions,
+        extension_icons: Vec<tekes_ui_icons::Glyph>,
+    ) -> anyhow::Result<Self> {
+        columns::validate_extension_icons(&extension_icons)?;
+        PresentationState::new_with_icons(&containers, presentation.clone(), &extension_icons)?;
         let columns: Vec<Column> = containers.into_iter().map(Column::from).collect();
         let mut modules = Vec::new();
         let mut components = Vec::new();
@@ -314,21 +336,33 @@ impl AppWindow {
             settings: None,
             presentation: Some(presentation),
             container_factories: Vec::new(),
+            extension_icons,
             app_name: None,
             window_title: None,
             quit_after_last_window_closed: None,
         })
     }
+    /// Register validated host extension glyphs before `.container_factories(...)` or opening.
+    pub fn extension_icons(mut self, icons: Vec<tekes_ui_icons::Glyph>) -> anyhow::Result<Self> {
+        let mut merged = self.extension_icons.clone();
+        merged.extend(icons);
+        columns::validate_extension_icons(&merged)?;
+        self.extension_icons = merged;
+        Ok(self)
+    }
     pub(crate) fn into_host(self, acceptance: bool) -> window::Host {
         let theme = self.theme;
         let window_title = self.window_title.or_else(|| self.app_name.clone());
         let host = match self.columns {
-            Some(columns) if self.presentation.is_some() => window::Host::from_containers(
-                columns.into_iter().map(Container::from).collect(),
-                acceptance,
-                self.navigation,
-                self.presentation,
-            ),
+            Some(columns) if self.presentation.is_some() => {
+                window::Host::from_containers_with_icons(
+                    columns.into_iter().map(Container::from).collect(),
+                    acceptance,
+                    self.navigation,
+                    self.presentation,
+                    self.extension_icons.clone(),
+                )
+            }
             Some(columns) => window::Host::from_columns(columns, acceptance, self.navigation),
             None => window::Host::new(
                 self.profile
@@ -343,12 +377,13 @@ impl AppWindow {
         host.with_theme(theme)
             .with_palette_source(self.palette_source)
             .with_window_title(window_title)
+            .with_extension_icons(self.extension_icons)
             .with_container_factories(self.container_factories)
     }
     /// Register finite, consumer-defined creatable types before opening a window.
     /// Process definitions use the executable's existing fixed worker dispatch.
     pub fn container_factories(mut self, factories: Vec<ContainerFactory>) -> anyhow::Result<Self> {
-        container_factory::validate(&factories)?;
+        container_factory::validate_with_icons(&factories, &self.extension_icons)?;
         anyhow::ensure!(
             self.presentation
                 .as_ref()
@@ -449,6 +484,7 @@ impl AppWindow {
             self.columns.as_deref(),
             self.navigation.is_some(),
             self.presentation.as_ref(),
+            &self.extension_icons,
         )?;
         validate_components(&self.profile, &self.components)?;
         let settings = self.settings.take();
@@ -484,6 +520,7 @@ impl AppWindow {
             self.columns.as_deref(),
             self.navigation.is_some(),
             self.presentation.as_ref(),
+            &self.extension_icons,
         )?;
         validate_components(&self.profile, &self.components)?;
         let settings = self.settings.take();
@@ -562,12 +599,18 @@ fn validate_assembly(
     columns: Option<&[Column]>,
     navigation: bool,
     presentation: Option<&PresentationOptions>,
+    extension_icons: &[tekes_ui_icons::Glyph],
 ) -> anyhow::Result<()> {
+    columns::validate_extension_icons(extension_icons)?;
     if let Some(columns) = columns {
         if let Some(presentation) = presentation {
-            PresentationState::from_columns(columns, presentation.clone())?;
+            PresentationState::from_columns_with_icons(
+                columns,
+                presentation.clone(),
+                extension_icons,
+            )?;
         } else {
-            columns::validate(columns)?;
+            columns::validate_with_icons(columns, extension_icons)?;
         }
     } else {
         validate(profile)?;
@@ -588,6 +631,7 @@ fn run_columns(app: AppWindow, args: &[String], mode: RunMode) -> anyhow::Result
         app.columns.as_deref(),
         app.navigation.is_some(),
         app.presentation.as_ref(),
+        &app.extension_icons,
     )?;
     validate_components(&app.profile, &app.components)?;
     let mut all_components = vec![navigation::definition(), settings_undo::definition()];
@@ -698,7 +742,7 @@ mod hosted_window_tests {
     #[test]
     fn hosted_open_uses_run_assembly_preconditions_before_native_creation() {
         let empty = AppProfile { modules: vec![] };
-        assert!(validate_assembly(&empty, None, false, None).is_err());
+        assert!(validate_assembly(&empty, None, false, None, &[]).is_err());
         let local = LocalContainer::new(
             "focus",
             Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
@@ -711,7 +755,8 @@ mod hosted_window_tests {
                 &app.profile,
                 app.columns.as_deref(),
                 true,
-                app.presentation.as_ref()
+                app.presentation.as_ref(),
+                &app.extension_icons,
             )
             .unwrap_err()
             .to_string()
@@ -722,7 +767,8 @@ mod hosted_window_tests {
                 &app.profile,
                 app.columns.as_deref(),
                 false,
-                app.presentation.as_ref()
+                app.presentation.as_ref(),
+                &app.extension_icons,
             )
             .is_ok()
         );
@@ -732,7 +778,8 @@ mod hosted_window_tests {
                 &app.profile,
                 app.columns.as_deref(),
                 true,
-                Some(&presentation)
+                Some(&presentation),
+                &app.extension_icons,
             )
             .is_ok()
         );
@@ -782,5 +829,339 @@ mod hosted_window_tests {
         assert_eq!(custom_app.quit_after_last_window_closed, Some(true));
         let host = custom_app.into_host(false);
         assert_eq!(host.window_title(), Some("Workspace · Alpha"));
+    }
+
+    #[test]
+    fn host_extension_icons_flow_through_validation_factories_toolbars_and_rendering() {
+        const EXT: Glyph = Glyph {
+            name: "host-custom-tool",
+            svg: r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="1.5"/></svg>"#,
+        };
+        let invalid_name = Glyph {
+            name: " ",
+            svg: EXT.svg,
+        };
+        let invalid_svg = Glyph {
+            name: "host-bad-svg",
+            svg: "<svg>",
+        };
+        assert!(
+            AppWindow::from_columns_with_icons(
+                vec![
+                    LocalContainer::new(
+                        "main",
+                        Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+                    )
+                    .unwrap()
+                    .into()
+                ],
+                vec![invalid_name],
+            )
+            .is_err()
+        );
+        assert!(
+            AppWindow::from_columns_with_icons(
+                vec![
+                    LocalContainer::new(
+                        "main",
+                        Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+                    )
+                    .unwrap()
+                    .into()
+                ],
+                vec![EXT, EXT],
+            )
+            .is_err()
+        );
+        assert!(
+            AppWindow::from_columns_with_icons(
+                vec![
+                    LocalContainer::new(
+                        "main",
+                        Content::new(ComponentId(1), TextFieldContent::new("Field", "")),
+                    )
+                    .unwrap()
+                    .into()
+                ],
+                vec![invalid_svg],
+            )
+            .is_err()
+        );
+
+        let make_focus = |icon_name: &str| {
+            LocalContainer::new(
+                "focus",
+                Content::new(ComponentId(1), TextFieldContent::new("Focus", "")),
+            )
+            .unwrap()
+            .title("Focus")
+            .switcher_icon(icon_name)
+            .toolbar_items(vec![
+                LocalToolbarItem::Button(
+                    LocalToolbarButton::new(1, "Tool")
+                        .icon(icon_name)
+                        .tooltip("Custom tool"),
+                ),
+                LocalToolbarItem::Menu(
+                    LocalToolbarMenu::new(2, "Menu", vec![])
+                        .icon(icon_name)
+                        .tooltip("Custom menu"),
+                ),
+                LocalToolbarItem::Group(LocalToolbarGroup::new(
+                    3,
+                    vec![LocalToolbarItem::Button(
+                        LocalToolbarButton::new(4, "Grouped").icon(icon_name),
+                    )],
+                )),
+            ])
+        };
+        let make_side = || {
+            LocalContainer::new(
+                "side",
+                Content::new(ComponentId(2), TextFieldContent::new("Side", "")),
+            )
+            .unwrap()
+            .title("Side")
+            .switcher_icon("host-custom-tool")
+        };
+
+        // Without registering the extension icon, existing errors are preserved at each seam.
+        let err = AppWindow::from_containers(
+            vec![make_focus("host-custom-tool").into()],
+            PresentationOptions::new("focus"),
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("unknown switcher icon"), "{err}");
+
+        let err = PresentationState::new_with_icons(
+            &[make_focus("tekes-new").into(), make_side().into()],
+            PresentationOptions::new("focus").others(
+                OthersOptions::new(vec!["side".into()]).groups(vec![OthersGroup::new(
+                    "g",
+                    "Group",
+                    "unknown-group-icon",
+                    vec!["side".into()],
+                )]),
+            ),
+            &[EXT],
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("unknown Others group icon"),
+            "{err}"
+        );
+
+        let err = AppWindow::from_containers(
+            vec![make_focus("tekes-new").into()],
+            PresentationOptions::new("focus").others(OthersOptions::new(vec![])),
+        )
+        .unwrap()
+        .container_factories(vec![
+            ContainerFactory::local(
+                "custom-fact",
+                "Custom Factory",
+                ContainerMultiplicity::Multiple,
+                |id| {
+                    LocalContainer::new(
+                        id,
+                        Content::new(ComponentId(10), TextFieldContent::new("Dyn", "")),
+                    )
+                },
+            )
+            .switcher_icon("host-custom-tool"),
+        ])
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("unknown container factory icon"),
+            "{err}"
+        );
+
+        // Registering the extension icon unlocks containers, OthersGroup, factories, toolbars,
+        // switcher tiles, and real SVG rasterization in headless scene rendering.
+        let side = make_side();
+        let presentation = PresentationOptions::new("focus").others(
+            OthersOptions::new(vec!["side".into()]).groups(vec![OthersGroup::new(
+                "custom-group",
+                "Group",
+                "host-custom-tool",
+                vec!["side".into()],
+            )]),
+        );
+        let app = AppWindow::from_containers_with_icons(
+            vec![make_focus("host-custom-tool").into(), side.into()],
+            presentation,
+            vec![EXT],
+        )
+        .unwrap()
+        .container_factories(vec![
+            ContainerFactory::local(
+                "custom-fact",
+                "Custom Factory",
+                ContainerMultiplicity::Multiple,
+                |id| {
+                    LocalContainer::new(
+                        id,
+                        Content::new(ComponentId(10), TextFieldContent::new("Dyn", "")),
+                    )
+                },
+            )
+            .switcher_icon("host-custom-tool"),
+        ])
+        .unwrap();
+
+        let (_menus, mut hosted) = app.into_window_handler().unwrap();
+        let created = hosted.0.create_container("custom-fact").unwrap();
+        assert!(created.starts_with("custom-fact-instance-"));
+
+        // Empty Others + factory also exercises window_switcher creation grid tiles with EXT icons.
+        let grid_app = AppWindow::from_containers_with_icons(
+            vec![make_focus("host-custom-tool").into()],
+            PresentationOptions::new("focus").others(OthersOptions::new(vec![])),
+            vec![EXT],
+        )
+        .unwrap()
+        .container_factories(vec![
+            ContainerFactory::local(
+                "grid-fact",
+                "Grid Factory",
+                ContainerMultiplicity::Multiple,
+                |id| {
+                    LocalContainer::new(
+                        id,
+                        Content::new(ComponentId(11), TextFieldContent::new("Grid", "")),
+                    )
+                },
+            )
+            .switcher_icon("host-custom-tool"),
+        ])
+        .unwrap();
+        let (_menus2, mut grid_hosted) = grid_app.into_window_handler().unwrap();
+
+        if let Ok(mut renderer) = tekes_ui_render::Renderer::new_headless() {
+            let whole = tekes_ui_scene::Rect::new(0., 0., 960., 640.);
+            let (scene, _) = hosted
+                .build_headless_scene(&mut renderer, whole, 2.0, true)
+                .unwrap();
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, tekes_ui_scene::Primitive::Image(_))),
+                "toolbar and presentation icons must rasterize and emit image quads"
+            );
+            let rgba = hosted
+                .render_headless_rgba8(&mut renderer, (960, 640), 2)
+                .unwrap();
+            assert_eq!(rgba.len(), 960 * 640 * 4 * 4);
+
+            let (grid_scene, _) = grid_hosted
+                .build_headless_scene(&mut renderer, whole, 2.0, true)
+                .unwrap();
+            assert!(
+                grid_scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, tekes_ui_scene::Primitive::Image(_))),
+                "creation grid tiles must rasterize extension icons"
+            );
+        }
+
+        // Unregistered toolbar template/menu icon names still fail with existing error messages.
+        let mut mounted = crate::window_toolbar::MountedToolbar::new();
+        mounted.icons.set_extensions(vec![EXT]);
+        let bad_menu = crate::window_toolbar::Declaration {
+            id: ComponentId(70001),
+            region: ComponentId(91020),
+            placement: tekes_ui_controls::composition::ToolbarPlacement::PrimaryAction,
+            order: 0,
+            contents: crate::window_toolbar::Contents::Menu(
+                crate::window_toolbar::MenuDeclaration {
+                    id: 99,
+                    title: "Bad".into(),
+                    accessible_name: None,
+                    icon: Some("missing-extension".into()),
+                    icon_position: tekes_ui_controls::ButtonImagePosition::Leading,
+                    icon_slot: true,
+                    tooltip: None,
+                    enabled: true,
+                    selected: false,
+                    tone: tekes_ui_controls::ButtonTone::Default,
+                    entries: vec![],
+                },
+            ),
+            source: crate::window_toolbar::Source::Title,
+        };
+        let err = mounted
+            .sync(
+                tekes_ui_scene::Rect::new(0., 0., 400., 48.),
+                vec![tekes_ui_controls::composition::ToolbarRegion::new(
+                    ComponentId(91020),
+                    tekes_ui_scene::Rect::new(0., 0., 400., 48.),
+                )],
+                vec![bad_menu],
+            )
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("unknown toolkit menu icon"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn existing_side_chat_factory_and_legacy_workflow_icon_aliases_validate_and_render() {
+        let focus = LocalContainer::new(
+            "focus",
+            Content::new(ComponentId(1), TextFieldContent::new("Workspace", "")),
+        )
+        .unwrap()
+        .title("Workspace")
+        .switcher_icon("tekes-access-workspace")
+        .toolbar_items(vec![
+            LocalToolbarItem::Button(
+                LocalToolbarButton::new(1, "Complete").icon("tekes-goal-completed"),
+            ),
+            LocalToolbarItem::Menu(
+                LocalToolbarMenu::new(2, "Access", vec![]).icon("tekes-access-workspace"),
+            ),
+        ]);
+        let app = AppWindow::from_containers(
+            vec![focus.into()],
+            PresentationOptions::new("focus").others(OthersOptions::new(vec![])),
+        )
+        .unwrap()
+        .container_factories(vec![
+            ContainerFactory::local(
+                "side-chat",
+                "SideChat",
+                ContainerMultiplicity::Single,
+                |id| {
+                    LocalContainer::new(
+                        id,
+                        Content::new(ComponentId(2), TextFieldContent::new("SideChat", "")),
+                    )
+                },
+            )
+            .switcher_icon("tekes-side-chat"),
+        ])
+        .unwrap();
+        let (_menus, mut hosted) = app.into_window_handler().unwrap();
+        let created_id = hosted.0.create_container("side-chat").unwrap();
+        assert!(created_id.starts_with("side-chat-instance-"));
+        if let Ok(mut renderer) = tekes_ui_render::Renderer::new_headless() {
+            let (scene, _) = hosted
+                .build_headless_scene(
+                    &mut renderer,
+                    tekes_ui_scene::Rect::new(0., 0., 960., 640.),
+                    2.0,
+                    true,
+                )
+                .unwrap();
+            assert!(
+                scene
+                    .primitives()
+                    .iter()
+                    .any(|p| matches!(p, tekes_ui_scene::Primitive::Image(_)))
+            );
+        }
     }
 }

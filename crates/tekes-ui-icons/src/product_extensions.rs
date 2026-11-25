@@ -198,10 +198,6 @@ pub(crate) const ALL: &[Glyph] = &[
         svg: include_str!("../assets/tekes-access-read.svg"),
     },
     Glyph {
-        name: "tekes-access-workspace",
-        svg: include_str!("../assets/tekes-access-workspace.svg"),
-    },
-    Glyph {
         name: "tekes-advanced-params",
         svg: include_str!("../assets/tekes-advanced-params.svg"),
     },
@@ -312,6 +308,14 @@ pub(crate) const ALL: &[Glyph] = &[
     Glyph {
         name: "tekes-cad-window-select",
         svg: include_str!("../packs/product-extensions/assets/tekes-cad-window-select.svg"),
+    },
+    Glyph {
+        name: "tekes-chat",
+        svg: include_str!("../assets/tekes-chat.svg"),
+    },
+    Glyph {
+        name: "tekes-check-circle",
+        svg: include_str!("../assets/tekes-check-circle.svg"),
     },
     Glyph {
         name: "tekes-clear-group",
@@ -498,6 +502,10 @@ pub(crate) const ALL: &[Glyph] = &[
         svg: include_str!("../assets/tekes-folder.svg"),
     },
     Glyph {
+        name: "tekes-folder-edit",
+        svg: include_str!("../assets/tekes-folder-edit.svg"),
+    },
+    Glyph {
         name: "tekes-folder-open",
         svg: include_str!("../assets/tekes-folder-open.svg"),
     },
@@ -516,10 +524,6 @@ pub(crate) const ALL: &[Glyph] = &[
     Glyph {
         name: "tekes-goal",
         svg: include_str!("../packs/product-extensions/assets/tekes-goal.svg"),
-    },
-    Glyph {
-        name: "tekes-goal-completed",
-        svg: include_str!("../assets/tekes-goal-completed.svg"),
     },
     Glyph {
         name: "tekes-goal-state-active",
@@ -748,10 +752,6 @@ pub(crate) const ALL: &[Glyph] = &[
     Glyph {
         name: "tekes-side-bar-collapsed",
         svg: include_str!("../assets/tekes-side-bar-collapsed.svg"),
-    },
-    Glyph {
-        name: "tekes-side-chat",
-        svg: include_str!("../assets/tekes-side-chat.svg"),
     },
     Glyph {
         name: "tekes-side-panel",

@@ -44,10 +44,11 @@ pub(super) struct SwitcherState {
     width: f32,
     viewport: Rect,
 }
-fn icon(id: ComponentId, name: &str) -> Result<Content> {
+fn icon(id: ComponentId, name: &str, extensions: &[tekes_ui_icons::Glyph]) -> Result<Content> {
     Ok(Content::new(
         id,
-        IconContent::new(name).map_err(|e| anyhow::anyhow!("switcher icon: {e:?}"))?,
+        IconContent::new_with_extensions(name, extensions)
+            .map_err(|e| anyhow::anyhow!("switcher icon: {e:?}"))?,
     ))
 }
 impl Host {
@@ -306,7 +307,11 @@ impl Host {
                 let mut menu = MenuContent::new("Create Container", Vec::new())
                     .with_trigger_content(
                         "Create Container",
-                        icon(ComponentId(CREATE.0 + 1), "tekes-new")?,
+                        icon(
+                            ComponentId(CREATE.0 + 1),
+                            "tekes-new",
+                            &self.extension_icons,
+                        )?,
                     )
                     .map_err(|e| anyhow::anyhow!("creation trigger: {e:?}"))?;
                 menu.set_popup_viewport(Some(whole));
@@ -377,13 +382,17 @@ impl Host {
                     let (_, _, image, _) =
                         choices.iter().find(|(id, _, _, _)| id == value).unwrap();
                     let id = ComponentId(CREATION_GRID_ROOT.0 + 10 + index as u64 * 10);
-                    let mut button = Button::icon_label(image, label.clone())
-                        .map_err(|e| anyhow::anyhow!("creation tile icon: {e:?}"))?
-                        .with_accessible_name(if value.starts_with("open:") {
-                            label.clone()
-                        } else {
-                            format!("Create {label}")
-                        });
+                    let mut button = Button::icon_label_with_extensions(
+                        image,
+                        label.clone(),
+                        &self.extension_icons,
+                    )
+                    .map_err(|e| anyhow::anyhow!("creation tile icon: {e:?}"))?
+                    .with_accessible_name(if value.starts_with("open:") {
+                        label.clone()
+                    } else {
+                        format!("Create {label}")
+                    });
                     button.set_image_position(ButtonImagePosition::Above);
                     button.set_disabled(*disabled);
                     children.push(Content::new(id, button));

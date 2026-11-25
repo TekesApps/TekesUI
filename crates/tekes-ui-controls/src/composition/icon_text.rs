@@ -41,8 +41,23 @@ impl IconTextContent {
         text_id: ComponentId,
         text: impl Into<String>,
     ) -> Result<Self, IconRenderError> {
+        Self::icon_label_with_extensions(icon_id, canonical_icon, text_id, text, &[])
+    }
+
+    /// Construct a standard [`IconContent`] paired with plain [`TextContent`], resolving
+    /// core glyphs first and falling back to `extensions`.
+    pub fn icon_label_with_extensions(
+        icon_id: ComponentId,
+        icon_name: &str,
+        text_id: ComponentId,
+        text: impl Into<String>,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<Self, IconRenderError> {
         Ok(Self::new(
-            Content::new(icon_id, IconContent::new(canonical_icon)?),
+            Content::new(
+                icon_id,
+                IconContent::new_with_extensions(icon_name, extensions)?,
+            ),
             Content::new(text_id, TextContent::new(text)),
         ))
     }

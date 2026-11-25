@@ -110,6 +110,12 @@ impl IconCatalog {
             if RETIRED.contains(&name) {
                 continue;
             }
+            // Compatibility alias files coexist in assets/ alongside their canonical SVGs.
+            if let Some(canonical) = tekes_ui_icons::Glyph::compat_alias_target(name)
+                && dir.join(format!("{canonical}.svg")).is_file()
+            {
+                continue;
+            }
             // A flat export may also contain scaled copies; the canonical SVG wins.
             if let Some(base) = name
                 .strip_suffix("-2x")
@@ -662,26 +668,27 @@ mod tests {
     fn approved_defaults_preserve_the_original_comparison_after_merging() {
         let names: Vec<_> = tekes_ui_icons::Icon::ALL
             .iter()
-            .map(|icon| icon.name())
+            .map(|icon| tekes_ui_icons::Glyph::canonical_name(icon.name()))
             .collect();
         let mut catalog = IconCatalog::fixture(&names);
         catalog.add_proposals();
         for icon in tekes_ui_icons::Icon::ALL {
+            let canonical_name = tekes_ui_icons::Glyph::canonical_name(icon.name());
             let entry = catalog
                 .entries
                 .iter()
-                .find(|e| e.name == icon.name())
+                .find(|e| e.name == canonical_name)
                 .unwrap();
             let embedded = proposal_assets::ASSETS
                 .iter()
-                .find(|e| e.0 == icon.name())
+                .find(|e| e.0 == canonical_name)
                 .unwrap();
             assert_eq!(
                 embedded.3,
                 icon.svg(),
                 "Gallery must use the shared default"
             );
-            assert_eq!(entry.before.as_ref().unwrap().name, icon.name());
+            assert_eq!(entry.before.as_ref().unwrap().name, canonical_name);
             assert_eq!(entry.kind, "refine");
         }
         assert_eq!(catalog.entries.len(), 23);

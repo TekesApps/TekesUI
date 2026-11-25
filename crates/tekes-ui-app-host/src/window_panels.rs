@@ -219,11 +219,20 @@ impl Panel {
         connection.drain_frames()
     }
 
+    pub(super) fn set_extension_icons(&mut self, icons: Vec<tekes_ui_icons::Glyph>) {
+        self.content_icons.set_extensions(icons.clone());
+        self.mounted_toolbar.icons.set_extensions(icons);
+    }
+
     pub(super) fn retire(&mut self, mut unregister: impl FnMut(ImageId)) {
         self.retired = true;
         self.needs_launch = false;
         self.mounted_toolbar.host.blur();
+        let toolbar_extensions = self.mounted_toolbar.icons.extensions().to_vec();
         self.mounted_toolbar = crate::window_toolbar::MountedToolbar::new();
+        self.mounted_toolbar
+            .icons
+            .set_extensions(toolbar_extensions);
         if let Some(local) = &mut self.local {
             local.set_active(false);
             local.cancel();
@@ -242,7 +251,7 @@ impl Panel {
             connection.close();
         }
         self.process.cancel();
-        self.content_icons = Default::default();
+        self.content_icons.clear();
         self.logically_visible = false;
     }
 

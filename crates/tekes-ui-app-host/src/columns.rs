@@ -830,7 +830,36 @@ impl From<Column> for Container {
         }
     }
 }
-pub(crate) fn validate(columns: &[Column]) -> Result<()> {
+pub(crate) fn validate_extension_icons(icons: &[tekes_ui_icons::Glyph]) -> Result<()> {
+    use anyhow::Context as _;
+    let mut seen = std::collections::HashSet::with_capacity(icons.len());
+    let options = resvg::usvg::Options {
+        image_href_resolver: resvg::usvg::ImageHrefResolver {
+            resolve_data: Box::new(|_, _, _| None),
+            resolve_string: Box::new(|_, _| None),
+        },
+        ..resvg::usvg::Options::default()
+    };
+    for icon in icons {
+        anyhow::ensure!(
+            !icon.name.is_empty() && icon.name.trim() == icon.name,
+            "invalid extension icon name: {}",
+            icon.name
+        );
+        anyhow::ensure!(
+            seen.insert(icon.name),
+            "duplicate extension icon: {}",
+            icon.name
+        );
+        resvg::usvg::Tree::from_str(icon.svg, &options)
+            .with_context(|| format!("invalid extension icon SVG for {}", icon.name))?;
+    }
+    Ok(())
+}
+pub(crate) fn validate_with_icons(
+    columns: &[Column],
+    extension_icons: &[tekes_ui_icons::Glyph],
+) -> Result<()> {
     anyhow::ensure!(
         (1..=3).contains(&columns.len()),
         "legacy horizontal AppWindow requires one to three columns"
@@ -848,9 +877,19 @@ pub(crate) fn validate(columns: &[Column]) -> Result<()> {
             }
         }
     }
-    validate_ids(columns.iter().map(|c| (c.id(), c.options())))
+    validate_ids_with_icons(
+        columns.iter().map(|c| (c.id(), c.options())),
+        extension_icons,
+    )
 }
+#[cfg(test)]
 pub(crate) fn validate_containers(containers: &[Container]) -> Result<()> {
+    validate_containers_with_icons(containers, &[])
+}
+pub(crate) fn validate_containers_with_icons(
+    containers: &[Container],
+    extension_icons: &[tekes_ui_icons::Glyph],
+) -> Result<()> {
     for container in containers {
         match container {
             Container::Local(local) => {
@@ -864,10 +903,14 @@ pub(crate) fn validate_containers(containers: &[Container]) -> Result<()> {
             }
         }
     }
-    validate_ids(containers.iter().map(|c| (c.id(), c.container_options())))
+    validate_ids_with_icons(
+        containers.iter().map(|c| (c.id(), c.container_options())),
+        extension_icons,
+    )
 }
-pub(crate) fn validate_ids<'a>(
+pub(crate) fn validate_ids_with_icons<'a>(
     containers: impl IntoIterator<Item = (&'a str, &'a ContainerOptions)>,
+    extension_icons: &[tekes_ui_icons::Glyph],
 ) -> Result<()> {
     let mut ids = std::collections::HashSet::new();
     let mut destinations = Vec::new();
@@ -896,10 +939,9 @@ pub(crate) fn validate_ids<'a>(
             "invalid content padding for {id}"
         );
         anyhow::ensure!(
-            options
-                .switcher_icon
-                .as_deref()
-                .is_none_or(|icon| tekes_ui_icons::Glyph::named(icon).is_some()),
+            options.switcher_icon.as_deref().is_none_or(|icon| {
+                tekes_ui_icons::Glyph::resolve_with_extensions(icon, extension_icons).is_some()
+            }),
             "unknown switcher icon for {id}"
         );
         let mut secondary = std::collections::HashSet::new();

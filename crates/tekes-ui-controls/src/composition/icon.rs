@@ -51,10 +51,9 @@ pub struct IconContent {
     rotation: Option<tekes_ui_motion::linear_rotation::LinearRotation>,
 }
 impl IconContent {
-    pub fn new(canonical_name: &str) -> Result<Self, IconRenderError> {
-        let glyph =
-            tekes_ui_icons::Glyph::named(canonical_name).ok_or(IconRenderError::UnknownIcon)?;
-        Ok(Self {
+    /// Wrap a resolved canonical or extension [`tekes_ui_icons::Glyph`].
+    pub fn from_glyph(glyph: tekes_ui_icons::Glyph) -> Self {
+        Self {
             glyph,
             view: IconView::default(),
             ink_leading: false,
@@ -67,21 +66,46 @@ impl IconContent {
             status_tone: None,
             disabled: false,
             rotation: None,
-        })
+        }
+    }
+    pub fn new(canonical_name: &str) -> Result<Self, IconRenderError> {
+        Self::new_with_extensions(canonical_name, &[])
+    }
+    /// Resolve a canonical core icon first, then caller-supplied extension icons.
+    pub fn new_with_extensions(
+        name: &str,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<Self, IconRenderError> {
+        let glyph = tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
+            .ok_or(IconRenderError::UnknownIcon)?;
+        Ok(Self::from_glyph(glyph))
     }
     pub fn glyph(&self) -> tekes_ui_icons::Glyph {
         self.glyph
     }
     pub fn set_glyph(&mut self, name: &str) -> Result<bool, IconRenderError> {
-        let next = tekes_ui_icons::Glyph::named(name).ok_or(IconRenderError::UnknownIcon)?;
+        self.set_glyph_with_extensions(name, &[])
+    }
+    /// Replace the active glyph using core names or caller-supplied extension icons.
+    pub fn set_glyph_with_extensions(
+        &mut self,
+        name: &str,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<bool, IconRenderError> {
+        let next = tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
+            .ok_or(IconRenderError::UnknownIcon)?;
+        Ok(self.set_glyph_value(next))
+    }
+    /// Replace the active glyph directly when already resolved, clearing cached resources on change.
+    pub fn set_glyph_value(&mut self, next: tekes_ui_icons::Glyph) -> bool {
         if next == self.glyph {
-            return Ok(false);
+            return false;
         }
         self.glyph = next;
         self.leading_ink_inset = None;
         self.resource = None;
         self.error = None;
-        Ok(true)
+        true
     }
     /// Align the canonical painted outline to this content slot's leading edge.
     /// The fixed slot, measurement and semantics are unchanged. Default false

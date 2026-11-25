@@ -53,7 +53,7 @@ impl Icon {
         match self {
             Self::Settings => include_str!("../assets/tekes-settings.svg"),
             Self::NewGoal => include_str!("../assets/tekes-new-goal.svg"),
-            Self::GoalCompleted => include_str!("../assets/tekes-goal-completed.svg"),
+            Self::GoalCompleted => include_str!("../assets/tekes-check-circle.svg"),
             Self::Memory => include_str!("../assets/tekes-memory.svg"),
             Self::Think => include_str!("../assets/tekes-think.svg"),
             Self::Router => include_str!("../assets/tekes-router.svg"),
@@ -62,23 +62,29 @@ impl Icon {
         }
     }
 
-    /// Exact canonical lookup; unknown names remain available for the caller's fallback.
+    /// Canonical or compatibility-alias lookup; unknown names remain available for caller fallback.
     pub fn named(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|icon| icon.name() == name)
+        let canonical = Glyph::canonical_name(name);
+        Self::ALL
+            .into_iter()
+            .find(|icon| Glyph::canonical_name(icon.name()) == canonical)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Icon;
+    use super::{Glyph, Icon};
 
     #[test]
     fn canonical_names_resolve_to_the_approved_artwork() {
         for icon in Icon::ALL {
             assert_eq!(Icon::named(icon.name()), Some(icon));
+            assert_eq!(Icon::named(Glyph::canonical_name(icon.name())), Some(icon));
+            assert_eq!(Glyph::named(icon.name()).unwrap().svg, icon.svg());
             assert!(icon.svg().contains("viewBox=\"0 0 24 24\""));
             assert!(icon.svg().contains("currentColor"));
         }
+        assert_eq!(Icon::named("tekes-check-circle"), Some(Icon::GoalCompleted));
         assert_eq!(Icon::named("tekes-search"), None);
         assert_eq!(Icon::named("tekes-settings-old"), None);
     }

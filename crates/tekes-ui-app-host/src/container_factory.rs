@@ -141,7 +141,10 @@ impl ContainerFactory {
         Ok(container)
     }
 }
-pub(crate) fn validate(factories: &[ContainerFactory]) -> Result<()> {
+pub(crate) fn validate_with_icons(
+    factories: &[ContainerFactory],
+    extension_icons: &[tekes_ui_icons::Glyph],
+) -> Result<()> {
     let mut ids = std::collections::HashSet::new();
     for factory in factories {
         if let Some(definition) = factory.definition() {
@@ -182,7 +185,8 @@ pub(crate) fn validate(factories: &[ContainerFactory]) -> Result<()> {
             "empty container factory title"
         );
         anyhow::ensure!(
-            tekes_ui_icons::Glyph::named(&factory.icon).is_some(),
+            tekes_ui_icons::Glyph::resolve_with_extensions(&factory.icon, extension_icons)
+                .is_some(),
             "unknown container factory icon"
         );
     }

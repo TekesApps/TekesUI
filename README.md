@@ -45,7 +45,7 @@ Enable opt-in crate features only when needed:
 
 - `tekes-ui-controls`: `svg-icons` (`resvg`), `bitmap-images` (`tekes-ui-render`), `syntax-highlighting` (`syntect`).
 - `tekes-ui-icons`: `product-icons` adds 46 domain/workflow icons (`tekes-cad-*`, `tekes-drama-*`, workflow glyphs) on top of the 133 core glyphs.
-- `tekes-ui-settings`: `--no-default-features` keeps pure data schema/types with only `serde`; enable `fs-store` for TOML persistence and `ui` for Settings form views.
+- `tekes-ui-settings`: `default = ["fs-store", "ui"]` enables filesystem persistence and Settings form views by default; `--no-default-features` disables `fs-store` and `ui` to keep the pure data schema/value/snapshot model (unconditional dependencies are `serde` and internal `toml`, exposed via owned `Value`/`Table`/`SettingsError` types).
 - `tekes-ui-scene3d`: `simulation` enables optional city/apartment demo simulation data.
 
 ## Custom Brands & Design System

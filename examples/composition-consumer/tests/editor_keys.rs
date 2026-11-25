@@ -573,7 +573,7 @@ fn actual_public_editor_policies_keep_shared_surfaces_and_record_bounded_token_r
                     assert!(
                         lookups
                             .iter()
-                            .any(|(family, id)| family == "color" && id == "transcript-input")
+                            .any(|(family, id)| family == "color" && id == "input-surface")
                     );
                     assert!(f.surface().caret().max_y() <= f.surface().inner().max_y() + 0.01);
                     cases.push(serde_json::json!({"component":"tui.text-field","mode":if multiline {"multiline"}else{"single-line"},"policy":policy,"theme":format!("{theme:?}"),"brand":brand,"state_asserted":true,"lookups":lookups}));

@@ -221,20 +221,29 @@ impl Host {
                     control.set_axis(axis);
                     for (id, name) in templates {
                         control
-                            .set_action_template_icon(id, Some(&name))
+                            .set_action_template_icon_with_extensions(
+                                id,
+                                Some(&name),
+                                &self.extension_icons,
+                            )
                             .map_err(|error| anyhow::anyhow!("toolbar measure icon: {error:?}"))?;
                     }
                     content
                 }
                 Contents::Menu(decl) => Content::new(
                     ComponentId(1),
-                    crate::window_toolbar::build_menu_content(&decl, Rect::default()),
+                    crate::window_toolbar::build_menu_content(
+                        &decl,
+                        Rect::default(),
+                        &self.extension_icons,
+                    ),
                 ),
                 Contents::CapsuleGroup(decl) => {
                     let mut group = crate::window_toolbar::build_capsule_group_content(
                         tekes_ui_controls::composition::ToolbarPlacement::PrimaryAction,
                         &decl,
                         Rect::default(),
+                        &self.extension_icons,
                     );
                     group.set_axis(axis);
                     Content::new(ComponentId(1), group)

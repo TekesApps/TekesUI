@@ -117,7 +117,7 @@ impl Host {
             .retire_created(id);
         Ok(())
     }
-    pub(super) fn create_container(&mut self, factory_id: &str) -> Result<String> {
+    pub(crate) fn create_container(&mut self, factory_id: &str) -> Result<String> {
         self.mount_initial_containers();
         let index = self
             .panel_mgr
@@ -151,7 +151,7 @@ impl Host {
             }
         };
         let container = factory.create(&id, ordinal)?;
-        crate::columns::validate_ids(
+        crate::columns::validate_ids_with_icons(
             self.panel_mgr
                 .panels
                 .iter()
@@ -160,6 +160,7 @@ impl Host {
                     container.id(),
                     container.container_options(),
                 ))),
+            &self.extension_icons,
         )?;
         let state = self.layout.presentation.as_mut().unwrap();
         state.register_created(&container, &factory);

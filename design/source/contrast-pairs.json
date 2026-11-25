@@ -89,7 +89,7 @@
     },
     {
       "foreground": "primary-text",
-      "background": "transcript-input",
+      "background": "input-surface",
       "normal": 4.5,
       "ic": 7.0,
       "kind": "text"
@@ -166,7 +166,7 @@
     },
     {
       "foreground": "secondary-text",
-      "background": "transcript-input",
+      "background": "input-surface",
       "normal": 4.5,
       "ic": 7.0,
       "kind": "text"
@@ -243,7 +243,7 @@
     },
     {
       "foreground": "tertiary-text",
-      "background": "transcript-input",
+      "background": "input-surface",
       "normal": 3.5,
       "ic": 7.0,
       "kind": "text"
@@ -478,14 +478,14 @@
     },
     {
       "foreground": "border",
-      "background": "transcript-input",
+      "background": "input-surface",
       "normal": 3,
       "ic": 3,
       "kind": "non-text"
     },
     {
       "foreground": "border-focused",
-      "background": "transcript-input",
+      "background": "input-surface",
       "normal": 3,
       "ic": 3,
       "kind": "non-text"
@@ -680,7 +680,7 @@
     },
     {
       "foreground": "selected-text",
-      "background": "transcript-input",
+      "background": "input-surface",
       "overlay": {
         "color": "text-selection",
         "opacity_by_theme": {

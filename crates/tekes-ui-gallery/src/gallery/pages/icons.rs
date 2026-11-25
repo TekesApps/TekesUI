@@ -751,7 +751,7 @@ mod tests {
         for scale in [1.25, 1.5] {
             text.set_type_scale(scale);
             let title = text.proposal_label(
-                "tekes-goal-completed",
+                "tekes-check-circle",
                 proposal::TextRole::UiBody,
                 Some(242.0),
             );
@@ -802,7 +802,7 @@ mod tests {
         assert_eq!(caption.lines.len(), 3);
 
         let title = text.proposal_label(
-            "tekes-goal-completed",
+            "tekes-check-circle",
             proposal::TextRole::UiBody,
             Some(242.0),
         );

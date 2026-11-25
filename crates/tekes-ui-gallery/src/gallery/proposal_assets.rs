@@ -73,7 +73,7 @@ pub const ASSETS: &[(&str, &str, &str, &str)] = &[
         tekes_ui_icons::Icon::NewGoal.svg(),
     ),
     (
-        "tekes-goal-completed",
+        "tekes-check-circle",
         "完成目标",
         "refine",
         tekes_ui_icons::Icon::GoalCompleted.svg(),
@@ -121,7 +121,7 @@ pub const ASSETS: &[(&str, &str, &str, &str)] = &[
         include_str!("../../../../design/proposals/icons-20261015/svg/tekes-access-read.svg"),
     ),
     (
-        "tekes-access-workspace",
+        "tekes-folder-edit",
         "工作区写入",
         "rebuild",
         include_str!("../../../../design/proposals/icons-20261015/svg/tekes-access-workspace.svg"),

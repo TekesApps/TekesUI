@@ -214,6 +214,22 @@
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
+    "color:p-input-surface": {
+      "tier": "primitive",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.4.12",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "color:input-surface": {
+      "tier": "semantic",
+      "unit": "sRGB",
+      "status": "proposed",
+      "since": "0.4.12",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
     "color:p-transcript-input": {
       "tier": "primitive",
       "unit": "sRGB",
@@ -877,6 +893,14 @@
       "unit": "logical-pt",
       "status": "proposed",
       "since": "0.1.0-proposal.1",
+      "source": "this-proposal",
+      "owner_role": "design-maintainer"
+    },
+    "radius:radius-marker": {
+      "tier": "semantic",
+      "unit": "logical-pt",
+      "status": "proposed",
+      "since": "0.4.12",
       "source": "this-proposal",
       "owner_role": "design-maintainer"
     },
