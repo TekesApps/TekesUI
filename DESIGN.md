@@ -14,7 +14,12 @@
 
 ### 架构关系与已交付边界（2026-10-26）
 
-当前 `v0.4.11` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+当前 `v0.4.12` 代码基线的机器状态为 `theme_system.delivery_status = theme-and-surface-packets-active`：`tekes-ui-tokens` 与 `tekes-ui-controls` 已在共享控件与组合适配器中接入 `resolve_surface*` / `resolve_toggle_surface` / `resolve_range_surface` 状态包并启用柔和对比度 token，Gallery 已接入同一 Theme 管线；Design System 统一拥有 Gold7 体验目标、Theme Schema/定义、生成校验和组件契约，完整整页视觉与原生交互验收继续单独追踪（[#55](https://github.com/TekesApps/TekesUI/issues/55)、[#56](https://github.com/TekesApps/TekesUI/issues/56)、[#12](https://github.com/TekesApps/TekesUI/issues/12)）。
+
+### 审计缺陷收敛与跨包契约修复（`v0.4.12` / #409–#416）
+
+- **macOS 辅助窗释放、重绘去重与 Presentation 裁剪（#409, #410, #411）**：将 `ViewIvars.shared` 改为 `Weak<Shared>` 并按退出顺序在 `autoreleasepool` 中析构 `Shared.objects` 与 `retire_closed_windows()`，消除永久关闭辅助窗后的 `NSWindow`/`TekesView` 强引用环同时保持默认主窗 `⌘W` 休眠与 `⌘N`/Dock 原窗重开（#409）；合并单次原生 resize 为单次重绘、以请求代次区分已被同步绘制满足的重绘与后续失效请求（#410）；`Presentation` 仅计算实际使用的活动布局（#411）。
+- **大树与远程表格线性化与宿主/设计契约收敛（#412–#416）**：移除 `TreeContent`/`KeyedTree` 同一操作中的重复全树遍历校验与 `tekes-ui-module-runtime` 中的二次扫描同时保留首次校验、准入与代次/身份检查（#412, #413）；打通宿主自定义扩展图标端到端注册与解析并将产品图标迁为中性名且保留旧兼容别名（#414）；引入中性 `p-input-surface`、`input-surface`、`radius-marker` 并保留 `CustomPaletteSource` 双向别名回退（#415）；修正 `tekes-ui-settings` 依赖文档以匹配已发布 `default = ["fs-store", "ui"]`（#416）。
 
 ### 全量组件边距、行高与几何尺寸审计收敛（`v0.4.11` / #397–#405）
 
