@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "110557374ec335bb6f3d82a22b295b40f927af6f",
+  "head": "a750b67314ed2ed88f7b15f351cbb562e7ce9584",
   "source": "Incremental #294 source review on fedb69b6: affected original Gallery fixtures and AppHost/Controls integration; scoped CPU checks through Check380 and release build Check381 passed. Original programs and failed checks retain identity; r3 native acceptance and public delivery remain separate.",
   "audited_at": "2026-11-23",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
@@ -2078,7 +2078,7 @@
     "tui.data-table"
   ],
   "source_sha256": {
-    "DESIGN.md": "7ebf8302a9d71841266f4f195a1292ba10fec88f09a5ef6a9cff050e9a362acf",
+    "DESIGN.md": "b80729fb5e76ff5e52ff17f02b46f0a269762e7551c2130aa6725c2d4c1b2bce",
     "crates/tekes-ui-app-host/src/lib.rs": "8660053aadd0b687350f54d86a853b5b5b21b94212b0ad52ccd13c27f5c2aef0",
     "crates/tekes-ui-app-host/src/window.rs": "240bc9f38b9ce90765f6ceefd4e6bf01e4b74049fcbe4da9c7d7a1291820dd22",
     "crates/tekes-ui-app-host/src/window_toolbar.rs": "a0551811b60d9456395ec9e07d5d90be0258ef77e029a47a8f2b872a3f1a2b6f",
