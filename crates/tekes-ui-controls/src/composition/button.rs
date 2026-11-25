@@ -166,18 +166,20 @@ impl Button {
                 || self.button.state.selected
                 || (self.button.state.focused && self.button.state.focus_visible))
     }
-    pub(crate) fn set_toolbar_template_icon(&mut self, name: &str) {
+    pub(crate) fn set_toolbar_template_glyph(&mut self, glyph: tekes_ui_icons::Glyph) {
         if self.content.first().is_some_and(|content| {
             content
                 .component::<IconContent>()
-                .is_some_and(|icon| icon.glyph().name == name)
+                .is_some_and(|icon| icon.glyph() == glyph)
         }) {
             return;
         }
-        self.set_contents(Content::new(
-            ComponentId(0),
-            IconContent::new(name).expect("Toolbar validates canonical template artwork"),
-        ));
+        self.set_contents(Content::new(ComponentId(0), IconContent::from_glyph(glyph)));
+    }
+    pub(crate) fn set_toolbar_template_icon(&mut self, name: &str) {
+        let glyph = tekes_ui_icons::Glyph::named(name)
+            .expect("Toolbar validates canonical template artwork");
+        self.set_toolbar_template_glyph(glyph);
     }
     // ToolbarControl retains its original Button owners rather than mounting
     // another action tree. Paint only this passive child after its owner chrome
@@ -206,8 +208,17 @@ impl Button {
     /// Construct a button displaying a canonical vector glyph alongside a text label,
     /// without mounting a separate child `ComponentId`.
     pub fn icon_label(icon_name: &str, label: impl Into<String>) -> Result<Self, IconRenderError> {
+        Self::icon_label_with_extensions(icon_name, label, &[])
+    }
+
+    /// Construct a button resolving a canonical or extension vector glyph alongside a text label.
+    pub fn icon_label_with_extensions(
+        icon_name: &str,
+        label: impl Into<String>,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<Self, IconRenderError> {
         let mut button = Self::new("");
-        button.set_icon_label(icon_name, label)?;
+        button.set_icon_label_with_extensions(icon_name, label, extensions)?;
         Ok(button)
     }
 
@@ -217,13 +228,23 @@ impl Button {
         icon_name: &str,
         label: impl Into<String>,
     ) -> Result<(), IconRenderError> {
+        self.set_icon_label_with_extensions(icon_name, label, &[])
+    }
+
+    /// Replace this button's presentation with a canonical or extension glyph and label.
+    pub fn set_icon_label_with_extensions(
+        &mut self,
+        icon_name: &str,
+        label: impl Into<String>,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<(), IconRenderError> {
         self.image = None;
         self.content.clear();
         self.custom = false;
         if let Some(icon) = &mut self.icon {
-            icon.set_glyph(icon_name)?;
+            icon.set_glyph_with_extensions(icon_name, extensions)?;
         } else {
-            self.icon = Some(IconContent::new(icon_name)?);
+            self.icon = Some(IconContent::new_with_extensions(icon_name, extensions)?);
         }
         self.label = label.into();
         self.measured = Size::default();

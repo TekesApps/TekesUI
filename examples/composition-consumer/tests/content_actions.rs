@@ -542,7 +542,7 @@ fn typed_delivery_reuses_original_button_input_tokens_for_all_sources_and_themes
             assert!(
                 lookups
                     .iter()
-                    .any(|(family, id)| family == "color" && id == "transcript-input")
+                    .any(|(family, id)| family == "color" && id == "input-surface")
             );
             cases.push(serde_json::json!({"component":"tui.text-field","source":"Keyboard","kind":"Submit","theme":format!("{theme:?}"),"brand":brand,"state_asserted":true,"lookups":lookups}));
         }

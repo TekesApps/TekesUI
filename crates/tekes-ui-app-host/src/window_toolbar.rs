@@ -170,14 +170,18 @@ fn validate_menu_entries(entries: &[MenuEntry]) -> Result<()> {
     }
     Ok(())
 }
-pub(crate) fn apply_button_declaration(button: &mut Button, decl: &ButtonDeclaration) {
+pub(crate) fn apply_button_declaration(
+    button: &mut Button,
+    decl: &ButtonDeclaration,
+    extensions: &[tekes_ui_icons::Glyph],
+) {
     button.set_variant(tekes_ui_controls::ButtonVariant::Toolbar);
     button.set_selection_fill_only(true);
     let icon_slot = decl.icon.is_some() && decl.title.trim().is_empty();
     button.set_toolbar_icon_slot(icon_slot);
     if let Some(icon) = &decl.icon {
         button
-            .set_icon_label(icon, decl.title.clone())
+            .set_icon_label_with_extensions(icon, decl.title.clone(), extensions)
             .expect("button icon validated before sync");
     } else {
         button.set_contents(decl.title.clone());
@@ -188,15 +192,19 @@ pub(crate) fn apply_button_declaration(button: &mut Button, decl: &ButtonDeclara
     button.set_selected(decl.selected);
     button.set_tone(decl.tone);
 }
-pub(crate) fn build_button_content(decl: &ButtonDeclaration) -> Button {
+pub(crate) fn build_button_content(
+    decl: &ButtonDeclaration,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> Button {
     let mut button = Button::new(decl.title.clone());
-    apply_button_declaration(&mut button, decl);
+    apply_button_declaration(&mut button, decl, extensions);
     button
 }
 pub(crate) fn apply_menu_declaration(
     menu: &mut MenuContent,
     decl: &MenuDeclaration,
     viewport: Rect,
+    extensions: &[tekes_ui_icons::Glyph],
 ) {
     menu.set_popup_viewport(Some(viewport));
     menu.set_trigger_variant(tekes_ui_controls::ButtonVariant::Toolbar);
@@ -204,7 +212,7 @@ pub(crate) fn apply_menu_declaration(
     menu.set_trigger_toolbar_icon_slot(decl.icon_slot);
     menu.set_trigger_image_position(decl.icon_position);
     if let Some(icon) = &decl.icon {
-        menu.set_trigger_icon_label(icon, decl.title.clone())
+        menu.set_trigger_icon_label_with_extensions(icon, decl.title.clone(), extensions)
             .expect("menu icon validated before sync");
     } else {
         menu.set_trigger_contents(decl.title.clone());
@@ -217,26 +225,32 @@ pub(crate) fn apply_menu_declaration(
     menu.set_entries(decl.entries.clone())
         .expect("menu entries validated before sync");
 }
-pub(crate) fn build_menu_content(decl: &MenuDeclaration, viewport: Rect) -> MenuContent {
+pub(crate) fn build_menu_content(
+    decl: &MenuDeclaration,
+    viewport: Rect,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> MenuContent {
     let mut menu = MenuContent::new(decl.title.clone(), Vec::new());
-    apply_menu_declaration(&mut menu, decl, viewport);
+    apply_menu_declaration(&mut menu, decl, viewport, extensions);
     menu
 }
 pub(crate) fn build_capsule_group_content(
     placement: ToolbarPlacement,
     decl: &CapsuleGroupDeclaration,
     viewport: Rect,
+    extensions: &[tekes_ui_icons::Glyph],
 ) -> ToolbarGroup {
     let children = decl
         .members
         .iter()
         .map(|member| match member {
             CapsuleGroupMember::Button { component_id, decl } => {
-                Content::new(*component_id, build_button_content(decl))
+                Content::new(*component_id, build_button_content(decl, extensions))
             }
-            CapsuleGroupMember::Menu { component_id, decl } => {
-                Content::new(*component_id, build_menu_content(decl, viewport))
-            }
+            CapsuleGroupMember::Menu { component_id, decl } => Content::new(
+                *component_id,
+                build_menu_content(decl, viewport, extensions),
+            ),
         })
         .collect();
     let mut group =
@@ -325,14 +339,17 @@ impl MountedToolbar {
         regions: Vec<ToolbarRegion>,
         declarations: Vec<Declaration>,
     ) -> Result<()> {
+        let extensions = self.icons.extensions();
         for declaration in &declarations {
             for (_, name) in declaration.contents.templates() {
-                tekes_ui_icons::Glyph::named(name).context("unknown toolkit template icon")?;
+                tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
+                    .context("unknown toolkit template icon")?;
             }
             match &declaration.contents {
                 Contents::Menu(menu) => {
                     if let Some(name) = &menu.icon {
-                        tekes_ui_icons::Glyph::named(name).context("unknown toolkit menu icon")?;
+                        tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
+                            .context("unknown toolkit menu icon")?;
                     }
                     validate_menu_entries(&menu.entries)?;
                 }
@@ -341,14 +358,18 @@ impl MountedToolbar {
                         match member {
                             CapsuleGroupMember::Button { decl, .. } => {
                                 if let Some(name) = &decl.icon {
-                                    tekes_ui_icons::Glyph::named(name)
-                                        .context("unknown toolkit button icon")?;
+                                    tekes_ui_icons::Glyph::resolve_with_extensions(
+                                        name, extensions,
+                                    )
+                                    .context("unknown toolkit button icon")?;
                                 }
                             }
                             CapsuleGroupMember::Menu { decl, .. } => {
                                 if let Some(name) = &decl.icon {
-                                    tekes_ui_icons::Glyph::named(name)
-                                        .context("unknown toolkit menu icon")?;
+                                    tekes_ui_icons::Glyph::resolve_with_extensions(
+                                        name, extensions,
+                                    )
+                                    .context("unknown toolkit menu icon")?;
                                 }
                                 validate_menu_entries(&decl.entries)?;
                             }
@@ -473,9 +494,14 @@ impl MountedToolbar {
                                                 control.set_action_icon(b.id, b.icon);
                                                 control.set_action_help(b.id, b.hint.clone());
                                             }
+                                            let extensions = self.icons.extensions();
                                             for (id, name) in d.contents.templates() {
                                                 control
-                                                    .set_action_template_icon(*id, Some(name))
+                                                    .set_action_template_icon_with_extensions(
+                                                        *id,
+                                                        Some(name),
+                                                        extensions,
+                                                    )
                                                     .expect("template names validated before sync");
                                             }
                                         },
@@ -483,9 +509,10 @@ impl MountedToolbar {
                                     .map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                             }
                             (_, Contents::Menu(decl)) => {
+                                let extensions = self.icons.extensions();
                                 self.host
                                     .update_component::<MenuContent>(d.id, target, |menu| {
-                                        apply_menu_declaration(menu, decl, viewport)
+                                        apply_menu_declaration(menu, decl, viewport, extensions)
                                     })
                                     .map_err(|e| anyhow::anyhow!("toolbar values: {e:?}"))?;
                             }
@@ -535,13 +562,20 @@ impl MountedToolbar {
                                             CapsuleGroupMember::Button { component_id, decl } => {
                                                 Content::new(
                                                     *component_id,
-                                                    build_button_content(decl),
+                                                    build_button_content(
+                                                        decl,
+                                                        self.icons.extensions(),
+                                                    ),
                                                 )
                                             }
                                             CapsuleGroupMember::Menu { component_id, decl } => {
                                                 Content::new(
                                                     *component_id,
-                                                    build_menu_content(decl, viewport),
+                                                    build_menu_content(
+                                                        decl,
+                                                        viewport,
+                                                        self.icons.extensions(),
+                                                    ),
                                                 )
                                             }
                                         })
@@ -582,11 +616,16 @@ impl MountedToolbar {
                                                 decl: b,
                                             },
                                         ) if a != b => {
+                                            let extensions = self.icons.extensions();
                                             self.host
                                                 .update_component::<Button>(
                                                     d.id,
                                                     *component_id,
-                                                    |button| apply_button_declaration(button, b),
+                                                    |button| {
+                                                        apply_button_declaration(
+                                                            button, b, extensions,
+                                                        )
+                                                    },
                                                 )
                                                 .map_err(|e| {
                                                     anyhow::anyhow!("toolbar button values: {e:?}")
@@ -599,12 +638,15 @@ impl MountedToolbar {
                                                 decl: b,
                                             },
                                         ) if a != b => {
+                                            let extensions = self.icons.extensions();
                                             self.host
                                                 .update_component::<MenuContent>(
                                                     d.id,
                                                     *component_id,
                                                     |menu| {
-                                                        apply_menu_declaration(menu, b, viewport)
+                                                        apply_menu_declaration(
+                                                            menu, b, viewport, extensions,
+                                                        )
                                                     },
                                                 )
                                                 .map_err(|e| {
@@ -677,7 +719,11 @@ impl MountedToolbar {
                         }
                         for (id, name) in d.contents.templates() {
                             control
-                                .set_action_template_icon(*id, Some(name))
+                                .set_action_template_icon_with_extensions(
+                                    *id,
+                                    Some(name),
+                                    self.icons.extensions(),
+                                )
                                 .expect("template names validated before sync");
                         }
                     }
@@ -699,7 +745,10 @@ impl MountedToolbar {
                         d.id,
                         ToolbarGroup::new(
                             d.placement,
-                            vec![Content::new(target, build_menu_content(decl, viewport))],
+                            vec![Content::new(
+                                target,
+                                build_menu_content(decl, viewport, self.icons.extensions()),
+                            )],
                         ),
                     ),
                     vec![ToolbarCommandBinding {
@@ -723,7 +772,12 @@ impl MountedToolbar {
                     (
                         Content::new(
                             d.id,
-                            build_capsule_group_content(d.placement, decl, viewport),
+                            build_capsule_group_content(
+                                d.placement,
+                                decl,
+                                viewport,
+                                self.icons.extensions(),
+                            ),
                         ),
                         bindings,
                     )
@@ -1567,7 +1621,7 @@ mod tests {
                 id: 101,
                 title: String::new(),
                 accessible_name: Some("Access".into()),
-                icon: Some("tekes-access-workspace".into()),
+                icon: Some("tekes-folder-edit".into()),
                 icon_position: ButtonImagePosition::Leading,
                 icon_slot: true,
                 tooltip: Some("Access".into()),

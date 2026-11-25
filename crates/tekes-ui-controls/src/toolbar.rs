@@ -69,7 +69,7 @@ pub struct ToolbarControl {
     popup: Option<crate::feedback_view::MenuLayout>,
     text_role: proposal::TextRole,
     icons: std::collections::HashMap<u64, ImageId>,
-    template_icons: std::collections::HashMap<u64, &'static str>,
+    template_icons: std::collections::HashMap<u64, tekes_ui_icons::Glyph>,
     selected: std::collections::HashSet<u64>,
     action_help: std::collections::HashMap<u64, (String, u64)>,
     help_revision: u64,
@@ -256,22 +256,31 @@ impl ToolbarControl {
         id: u64,
         name: Option<&str>,
     ) -> Result<bool, crate::composition::IconRenderError> {
-        let name = name
+        self.set_action_template_icon_with_extensions(id, name, &[])
+    }
+    /// Variant of [`Self::set_action_template_icon`] that also resolves caller-supplied
+    /// extension glyphs after the core icon catalog.
+    pub fn set_action_template_icon_with_extensions(
+        &mut self,
+        id: u64,
+        name: Option<&str>,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<bool, crate::composition::IconRenderError> {
+        let glyph = name
             .map(|name| {
-                tekes_ui_icons::Glyph::named(name)
-                    .map(|glyph| glyph.name)
+                tekes_ui_icons::Glyph::resolve_with_extensions(name, extensions)
                     .ok_or(crate::composition::IconRenderError::UnknownIcon)
             })
             .transpose()?;
         if !self.actions.iter().any(|action| action.id == id)
-            || self.template_icons.get(&id).copied() == name && !self.icons.contains_key(&id)
+            || self.template_icons.get(&id).copied() == glyph && !self.icons.contains_key(&id)
         {
             return Ok(false);
         }
         self.cancel();
         self.icons.remove(&id);
-        if let Some(name) = name {
-            self.template_icons.insert(id, name);
+        if let Some(glyph) = glyph {
+            self.template_icons.insert(id, glyph);
         } else {
             self.template_icons.remove(&id);
         }
@@ -588,8 +597,8 @@ impl ToolbarControl {
             self.buttons[i].button.chrome_height = None;
             self.buttons[i].button.state.disabled = !self.actions[i].enabled;
             self.buttons[i].button.state.selected = self.selected.contains(&self.actions[i].id);
-            if let Some(name) = self.template_icons.get(&self.actions[i].id) {
-                self.buttons[i].set_toolbar_template_icon(name);
+            if let Some(glyph) = self.template_icons.get(&self.actions[i].id) {
+                self.buttons[i].set_toolbar_template_glyph(*glyph);
             } else {
                 let content = match self.icons.get(&self.actions[i].id) {
                     Some(&image) => crate::composition::ButtonContents::Image(image),
@@ -2112,6 +2121,36 @@ mod composition_tests {
                 .unwrap()
                 .take_action(),
             Some(7)
+        );
+    }
+
+    #[test]
+    fn template_toolbar_icons_resolve_registered_extensions_and_reject_unknown() {
+        const EXT: tekes_ui_icons::Glyph = tekes_ui_icons::Glyph {
+            name: "host-custom-tool",
+            svg: r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="1.5"/></svg>"#,
+        };
+        let mut toolbar = ToolbarControl::window();
+        toolbar.set_actions(vec![ToolbarAction {
+            id: 1,
+            title: "Custom Tool".into(),
+            enabled: true,
+        }]);
+        assert_eq!(
+            toolbar.set_action_template_icon_with_extensions(1, Some("host-custom-tool"), &[]),
+            Err(crate::composition::IconRenderError::UnknownIcon)
+        );
+        assert_eq!(
+            toolbar.set_action_template_icon_with_extensions(1, Some("host-custom-tool"), &[EXT]),
+            Ok(true)
+        );
+        assert_eq!(
+            toolbar.set_action_template_icon_with_extensions(1, Some("host-custom-tool"), &[EXT]),
+            Ok(false)
+        );
+        assert_eq!(
+            toolbar.set_action_template_icon_with_extensions(1, Some("missing-tool"), &[EXT]),
+            Err(crate::composition::IconRenderError::UnknownIcon)
         );
     }
 }

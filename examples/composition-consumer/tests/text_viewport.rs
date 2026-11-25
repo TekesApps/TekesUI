@@ -422,7 +422,7 @@ fn actual_viewport_modes_reuse_current_input_tokens_across_themes_and_brands() {
                     assert!(
                         lookups
                             .iter()
-                            .any(|(family, id)| family == "color" && id == "transcript-input")
+                            .any(|(family, id)| family == "color" && id == "input-surface")
                     );
                     assert_eq!(input.width().is_some(), wrap);
                     if matches!(viewport, TextViewport::Grow { .. }) {

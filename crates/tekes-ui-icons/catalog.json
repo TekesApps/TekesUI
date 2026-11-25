@@ -16,6 +16,11 @@
     "tekes-perm-read-only",
     "tekes-perm-workspace-write"
   ],
+  "aliases": {
+    "tekes-access-workspace": "tekes-folder-edit",
+    "tekes-goal-completed": "tekes-check-circle",
+    "tekes-side-chat": "tekes-chat"
+  },
   "icons": [
     {
       "name": "tekes-access-full",
@@ -30,13 +35,6 @@
       "sha256": "b2feb397185f48167fec84fa66a857dc3804083a5f1647a2143f0d78f8f915ba",
       "origin": "published-proposal",
       "sourceSha256": "335c0a5618e0ae5f9b102c5723eabb5cc3189db9ad821e1861ab733f0d3559e5"
-    },
-    {
-      "name": "tekes-access-workspace",
-      "file": "assets/tekes-access-workspace.svg",
-      "sha256": "bfb873a4ea7b44335cfa70590d2498b00a1c2c2480363da1741aed5da49b76e0",
-      "origin": "published-proposal",
-      "sourceSha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64"
     },
     {
       "name": "tekes-advanced-params",
@@ -122,6 +120,20 @@
       "sha256": "221fca47e39a63b8587f0c92609559876d19e258b2957302845e46120df61b96",
       "origin": "promoted-catalog",
       "sourceSha256": "41b9971e3465eec255281b57cfab47e8eb2c702e47bdf2058444cced1e045478"
+    },
+    {
+      "name": "tekes-chat",
+      "file": "assets/tekes-chat.svg",
+      "sha256": "7e86a00b8d0e0869c1c2f23e9bf5f7782b8dc0508fb242bbca5758bf64a6192b",
+      "origin": "promoted-catalog",
+      "sourceSha256": "c115093267943b0eabb1b3f9b61e009f68045783f1b09bd6e53356e565cb0317"
+    },
+    {
+      "name": "tekes-check-circle",
+      "file": "assets/tekes-check-circle.svg",
+      "sha256": "f8bed10c6662f25c57b522b63496dae794855aa3f8f7cf04408c70cd2e001922",
+      "origin": "approved-default",
+      "sourceSha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947"
     },
     {
       "name": "tekes-clear-group",
@@ -348,6 +360,13 @@
       "sourceSha256": "e76973bd2bf74691ef38b34bceca83e18c107f8d65e072a728ea870b22adf24a"
     },
     {
+      "name": "tekes-folder-edit",
+      "file": "assets/tekes-folder-edit.svg",
+      "sha256": "bfb873a4ea7b44335cfa70590d2498b00a1c2c2480363da1741aed5da49b76e0",
+      "origin": "published-proposal",
+      "sourceSha256": "6c7812760ec90c2ecd666482e3a3a99f12503dc5f8f9a3367c9a511586b59d64"
+    },
+    {
       "name": "tekes-folder-open",
       "file": "assets/tekes-folder-open.svg",
       "sha256": "262a7e86b8a7b009c6923ff11c9c8654d5b46776d1dfe1b6656b0c150532fa08",
@@ -375,13 +394,6 @@
       "sha256": "5ce5d7732fc4444c87b0287e8856b403c9f6197688f62da7f6e225df82dee8a0",
       "origin": "promoted-catalog",
       "sourceSha256": "df19a72302291fdce7194cb25a2abe9e615e82ac488282341284073dd98b045d"
-    },
-    {
-      "name": "tekes-goal-completed",
-      "file": "assets/tekes-goal-completed.svg",
-      "sha256": "f8bed10c6662f25c57b522b63496dae794855aa3f8f7cf04408c70cd2e001922",
-      "origin": "approved-default",
-      "sourceSha256": "13bbd3053b4af1cd0ea9f8dfde05b6c13a3d96567e9c0ba03830afa03ee4b947"
     },
     {
       "name": "tekes-hide",
@@ -726,13 +738,6 @@
       "sha256": "026436e005ed43c911b22a4ad7055ae37ae0af8f3a2403029e8ba12a640e4cf8",
       "origin": "published-apphost",
       "sourceSha256": "026436e005ed43c911b22a4ad7055ae37ae0af8f3a2403029e8ba12a640e4cf8"
-    },
-    {
-      "name": "tekes-side-chat",
-      "file": "assets/tekes-side-chat.svg",
-      "sha256": "7e86a00b8d0e0869c1c2f23e9bf5f7782b8dc0508fb242bbca5758bf64a6192b",
-      "origin": "promoted-catalog",
-      "sourceSha256": "c115093267943b0eabb1b3f9b61e009f68045783f1b09bd6e53356e565cb0317"
     },
     {
       "name": "tekes-side-panel",

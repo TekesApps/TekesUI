@@ -366,6 +366,7 @@ pub struct Host {
     pub(crate) theme: Theme,
     palette_source: Option<std::rc::Rc<std::cell::Cell<Palette>>>,
     window_title: Option<String>,
+    pub(super) extension_icons: Vec<tekes_ui_icons::Glyph>,
     pub(crate) renderer: Option<Renderer>,
     pub(crate) text: Text,
     completion: Option<SyncSender<SyncSender<()>>>,
@@ -446,6 +447,17 @@ impl Host {
         self.window_title = title;
         self
     }
+    pub(crate) fn with_extension_icons(mut self, icons: Vec<tekes_ui_icons::Glyph>) -> Self {
+        self.set_extension_icons(icons);
+        self
+    }
+    pub(super) fn set_extension_icons(&mut self, icons: Vec<tekes_ui_icons::Glyph>) {
+        self.extension_icons = icons.clone();
+        self.layout.presentation_icons.set_extensions(icons.clone());
+        for panel in &mut self.panel_mgr.panels {
+            panel.set_extension_icons(icons.clone());
+        }
+    }
     #[cfg(test)]
     pub(crate) fn window_title(&self) -> Option<&str> {
         self.window_title.as_deref()
@@ -466,6 +478,7 @@ impl Host {
             theme: Theme::LIGHT,
             palette_source: None,
             window_title: None,
+            extension_icons: Vec::new(),
             renderer: None,
             text: Text::new(),
             completion: None,
@@ -487,18 +500,35 @@ impl Host {
         host.panel_mgr.column_definitions = Some(columns);
         host
     }
+    #[cfg(test)]
     pub(crate) fn from_containers(
         containers: Vec<crate::Container>,
         acceptance: bool,
         navigation: Option<NavigationOptions>,
         presentation: Option<crate::PresentationOptions>,
     ) -> Self {
+        Self::from_containers_with_icons(
+            containers,
+            acceptance,
+            navigation,
+            presentation,
+            Vec::new(),
+        )
+    }
+    pub(crate) fn from_containers_with_icons(
+        containers: Vec<crate::Container>,
+        acceptance: bool,
+        navigation: Option<NavigationOptions>,
+        presentation: Option<crate::PresentationOptions>,
+        extension_icons: Vec<tekes_ui_icons::Glyph>,
+    ) -> Self {
         let columns: Vec<_> = containers.into_iter().map(crate::Column::from).collect();
         let state = presentation.map(|options| {
-            crate::PresentationState::from_columns(&columns, options)
+            crate::PresentationState::from_columns_with_icons(&columns, options, &extension_icons)
                 .expect("AppWindow validates presentation before mounting")
         });
         let mut host = Self::from_columns(columns, acceptance, navigation);
+        host.set_extension_icons(extension_icons);
         if let Some(state) = &state {
             host.layout.focused = host
                 .panel_mgr
@@ -515,7 +545,9 @@ impl Host {
         host
     }
     fn mount_column(&self, index: usize, column: crate::Column) -> Panel {
-        Panel::from_column(index, column, self.layout.presentation.as_ref())
+        let mut panel = Panel::from_column(index, column, self.layout.presentation.as_ref());
+        panel.set_extension_icons(self.extension_icons.clone());
+        panel
     }
     pub(super) fn mount_columns(&mut self) -> bool {
         if let Some(columns) = self.panel_mgr.column_definitions.take() {
@@ -541,7 +573,11 @@ impl Host {
                 .iter()
                 .cloned()
                 .enumerate()
-                .map(|(index, id)| Panel::new(index as u32, id))
+                .map(|(index, id)| {
+                    let mut panel = Panel::new(index as u32, id);
+                    panel.set_extension_icons(self.extension_icons.clone());
+                    panel
+                })
                 .collect();
         }
     }

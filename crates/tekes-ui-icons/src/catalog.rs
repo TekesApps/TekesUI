@@ -15,10 +15,6 @@ impl Glyph {
             svg: include_str!("../assets/tekes-access-read.svg"),
         },
         Self {
-            name: "tekes-access-workspace",
-            svg: include_str!("../assets/tekes-access-workspace.svg"),
-        },
-        Self {
             name: "tekes-advanced-params",
             svg: include_str!("../assets/tekes-advanced-params.svg"),
         },
@@ -65,6 +61,14 @@ impl Glyph {
         Self {
             name: "tekes-brief",
             svg: include_str!("../assets/tekes-brief.svg"),
+        },
+        Self {
+            name: "tekes-chat",
+            svg: include_str!("../assets/tekes-chat.svg"),
+        },
+        Self {
+            name: "tekes-check-circle",
+            svg: include_str!("../assets/tekes-check-circle.svg"),
         },
         Self {
             name: "tekes-clear-group",
@@ -195,6 +199,10 @@ impl Glyph {
             svg: include_str!("../assets/tekes-folder.svg"),
         },
         Self {
+            name: "tekes-folder-edit",
+            svg: include_str!("../assets/tekes-folder-edit.svg"),
+        },
+        Self {
             name: "tekes-folder-open",
             svg: include_str!("../assets/tekes-folder-open.svg"),
         },
@@ -209,10 +217,6 @@ impl Glyph {
         Self {
             name: "tekes-fullscreen",
             svg: include_str!("../assets/tekes-fullscreen.svg"),
-        },
-        Self {
-            name: "tekes-goal-completed",
-            svg: include_str!("../assets/tekes-goal-completed.svg"),
         },
         Self {
             name: "tekes-hide",
@@ -411,10 +415,6 @@ impl Glyph {
             svg: include_str!("../assets/tekes-side-bar-collapsed.svg"),
         },
         Self {
-            name: "tekes-side-chat",
-            svg: include_str!("../assets/tekes-side-chat.svg"),
-        },
-        Self {
             name: "tekes-side-panel",
             svg: include_str!("../assets/tekes-side-panel.svg"),
         },
@@ -546,8 +546,30 @@ impl Glyph {
     #[cfg(feature = "product-icons")]
     pub const PRODUCT_EXTENSIONS: &'static [Self] = crate::product_extensions::EXTENSIONS;
 
+    pub const COMPAT_ALIASES: &'static [(&'static str, &'static str)] = &[
+        ("tekes-access-workspace", "tekes-folder-edit"),
+        ("tekes-goal-completed", "tekes-check-circle"),
+        ("tekes-side-chat", "tekes-chat"),
+    ];
+
+    /// Resolve a legacy product-named alias to its neutral canonical core glyph name, if any.
+    pub fn compat_alias_target(name: &str) -> Option<&'static str> {
+        Self::COMPAT_ALIASES
+            .iter()
+            .find_map(|&(alias, canonical)| (alias == name).then_some(canonical))
+    }
+
+    /// Normalize a glyph name or compatibility alias to its canonical name.
+    pub fn canonical_name(name: &str) -> &str {
+        Self::compat_alias_target(name).unwrap_or(name)
+    }
+
     pub fn named(name: &str) -> Option<Self> {
-        Self::ALL.iter().copied().find(|icon| icon.name == name)
+        let canonical = Self::canonical_name(name);
+        Self::ALL
+            .iter()
+            .copied()
+            .find(|icon| icon.name == canonical)
     }
 
     /// Resolve a canonical core icon first, then fall back to caller-supplied extension icons.
@@ -576,6 +598,20 @@ mod tests {
             assert!(!icon.svg.contains("#000"));
         }
         assert!(Glyph::named("tekes-shell").is_some());
+        assert!(Glyph::named("tekes-chat").is_some());
+        assert!(Glyph::named("tekes-check-circle").is_some());
+        assert!(Glyph::named("tekes-folder-edit").is_some());
+        for (alias, canonical) in Glyph::COMPAT_ALIASES {
+            assert_eq!(
+                Glyph::named(alias),
+                Glyph::named(canonical),
+                "compat alias {alias} -> {canonical}"
+            );
+            assert_eq!(
+                Glyph::resolve_with_extensions(alias, &[]),
+                Glyph::named(canonical)
+            );
+        }
         assert!(Glyph::named("tekes-annotation").is_none());
         #[cfg(not(feature = "product-icons"))]
         {

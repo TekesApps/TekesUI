@@ -1,9 +1,9 @@
 // Generated from catalog.json. Original SVG geometry is owned by TekesUI.
-export const iconNames = Object.freeze(["tekes-access-full", "tekes-access-read", "tekes-access-workspace", "tekes-advanced-params", "tekes-ahead-behind", "tekes-annotate", "tekes-app-server", "tekes-appearance", "tekes-approval", "tekes-archive", "tekes-attach", "tekes-authorized-fill", "tekes-back", "tekes-branch", "tekes-brief", "tekes-clear-group", "tekes-collapse", "tekes-command", "tekes-commands", "tekes-commit", "tekes-compact", "tekes-compare", "tekes-confirm", "tekes-context", "tekes-context-usage", "tekes-copy", "tekes-delete", "tekes-desktop-control", "tekes-diff-annotation", "tekes-diff-list", "tekes-diff-split-h", "tekes-diff-split-v", "tekes-edit", "tekes-error", "tekes-error-fill", "tekes-expand", "tekes-file-added", "tekes-file-code", "tekes-file-generic", "tekes-file-link", "tekes-file-rich", "tekes-file-text", "tekes-files", "tekes-filter", "tekes-flash", "tekes-flash-fill", "tekes-folder", "tekes-folder-open", "tekes-fork", "tekes-forward", "tekes-fullscreen", "tekes-goal-completed", "tekes-hide", "tekes-image", "tekes-info", "tekes-job", "tekes-jump-bottom", "tekes-lock-fill", "tekes-logout", "tekes-memory", "tekes-mention", "tekes-merge", "tekes-more", "tekes-new", "tekes-new-goal", "tekes-new-project", "tekes-no-default-app", "tekes-note", "tekes-oauth-key", "tekes-open-external", "tekes-pause", "tekes-pending-task", "tekes-pin", "tekes-pinned", "tekes-plugin", "tekes-plugins", "tekes-popup-menu", "tekes-profile", "tekes-progress", "tekes-provider", "tekes-pull-request", "tekes-quick-panel", "tekes-quote", "tekes-read", "tekes-rebuild", "tekes-redo", "tekes-refresh", "tekes-remove-one", "tekes-report", "tekes-resume", "tekes-review-plan", "tekes-rewind", "tekes-router", "tekes-scheduled", "tekes-search", "tekes-send", "tekes-settings", "tekes-shell", "tekes-show", "tekes-side-bar", "tekes-side-bar-collapsed", "tekes-side-chat", "tekes-side-panel", "tekes-side-panel-collapsed", "tekes-sort", "tekes-stop", "tekes-swap-horizontal", "tekes-tab-diffs", "tekes-tab-summary", "tekes-tag", "tekes-task", "tekes-test-connection", "tekes-think", "tekes-thumbs-down", "tekes-thumbs-down-fill", "tekes-thumbs-up", "tekes-thumbs-up-fill", "tekes-time", "tekes-tools", "tekes-trust", "tekes-undo", "tekes-unknown-fallback", "tekes-unknown-tool", "tekes-unpushed", "tekes-untracked-folder", "tekes-verify", "tekes-warning", "tekes-warning-fill", "tekes-web-fetch", "tekes-web-search", "tekes-write", "tekes-zoom-in", "tekes-zoom-out"]);
+export const iconNames = Object.freeze(["tekes-access-full", "tekes-access-read", "tekes-advanced-params", "tekes-ahead-behind", "tekes-annotate", "tekes-app-server", "tekes-appearance", "tekes-approval", "tekes-archive", "tekes-attach", "tekes-authorized-fill", "tekes-back", "tekes-branch", "tekes-brief", "tekes-chat", "tekes-check-circle", "tekes-clear-group", "tekes-collapse", "tekes-command", "tekes-commands", "tekes-commit", "tekes-compact", "tekes-compare", "tekes-confirm", "tekes-context", "tekes-context-usage", "tekes-copy", "tekes-delete", "tekes-desktop-control", "tekes-diff-annotation", "tekes-diff-list", "tekes-diff-split-h", "tekes-diff-split-v", "tekes-edit", "tekes-error", "tekes-error-fill", "tekes-expand", "tekes-file-added", "tekes-file-code", "tekes-file-generic", "tekes-file-link", "tekes-file-rich", "tekes-file-text", "tekes-files", "tekes-filter", "tekes-flash", "tekes-flash-fill", "tekes-folder", "tekes-folder-edit", "tekes-folder-open", "tekes-fork", "tekes-forward", "tekes-fullscreen", "tekes-hide", "tekes-image", "tekes-info", "tekes-job", "tekes-jump-bottom", "tekes-lock-fill", "tekes-logout", "tekes-memory", "tekes-mention", "tekes-merge", "tekes-more", "tekes-new", "tekes-new-goal", "tekes-new-project", "tekes-no-default-app", "tekes-note", "tekes-oauth-key", "tekes-open-external", "tekes-pause", "tekes-pending-task", "tekes-pin", "tekes-pinned", "tekes-plugin", "tekes-plugins", "tekes-popup-menu", "tekes-profile", "tekes-progress", "tekes-provider", "tekes-pull-request", "tekes-quick-panel", "tekes-quote", "tekes-read", "tekes-rebuild", "tekes-redo", "tekes-refresh", "tekes-remove-one", "tekes-report", "tekes-resume", "tekes-review-plan", "tekes-rewind", "tekes-router", "tekes-scheduled", "tekes-search", "tekes-send", "tekes-settings", "tekes-shell", "tekes-show", "tekes-side-bar", "tekes-side-bar-collapsed", "tekes-side-panel", "tekes-side-panel-collapsed", "tekes-sort", "tekes-stop", "tekes-swap-horizontal", "tekes-tab-diffs", "tekes-tab-summary", "tekes-tag", "tekes-task", "tekes-test-connection", "tekes-think", "tekes-thumbs-down", "tekes-thumbs-down-fill", "tekes-thumbs-up", "tekes-thumbs-up-fill", "tekes-time", "tekes-tools", "tekes-trust", "tekes-undo", "tekes-unknown-fallback", "tekes-unknown-tool", "tekes-unpushed", "tekes-untracked-folder", "tekes-verify", "tekes-warning", "tekes-warning-fill", "tekes-web-fetch", "tekes-web-search", "tekes-write", "tekes-zoom-in", "tekes-zoom-out"]);
+export const iconAliases = Object.freeze({"tekes-access-workspace": "tekes-folder-edit", "tekes-goal-completed": "tekes-check-circle", "tekes-side-chat": "tekes-chat"});
 const urls = Object.freeze({
   "tekes-access-full": new URL("../assets/tekes-access-full.svg", import.meta.url).href,
   "tekes-access-read": new URL("../assets/tekes-access-read.svg", import.meta.url).href,
-  "tekes-access-workspace": new URL("../assets/tekes-access-workspace.svg", import.meta.url).href,
   "tekes-advanced-params": new URL("../assets/tekes-advanced-params.svg", import.meta.url).href,
   "tekes-ahead-behind": new URL("../assets/tekes-ahead-behind.svg", import.meta.url).href,
   "tekes-annotate": new URL("../assets/tekes-annotate.svg", import.meta.url).href,
@@ -16,6 +16,8 @@ const urls = Object.freeze({
   "tekes-back": new URL("../assets/tekes-back.svg", import.meta.url).href,
   "tekes-branch": new URL("../assets/tekes-branch.svg", import.meta.url).href,
   "tekes-brief": new URL("../assets/tekes-brief.svg", import.meta.url).href,
+  "tekes-chat": new URL("../assets/tekes-chat.svg", import.meta.url).href,
+  "tekes-check-circle": new URL("../assets/tekes-check-circle.svg", import.meta.url).href,
   "tekes-clear-group": new URL("../assets/tekes-clear-group.svg", import.meta.url).href,
   "tekes-collapse": new URL("../assets/tekes-collapse.svg", import.meta.url).href,
   "tekes-command": new URL("../assets/tekes-command.svg", import.meta.url).href,
@@ -48,11 +50,11 @@ const urls = Object.freeze({
   "tekes-flash": new URL("../assets/tekes-flash.svg", import.meta.url).href,
   "tekes-flash-fill": new URL("../assets/tekes-flash-fill.svg", import.meta.url).href,
   "tekes-folder": new URL("../assets/tekes-folder.svg", import.meta.url).href,
+  "tekes-folder-edit": new URL("../assets/tekes-folder-edit.svg", import.meta.url).href,
   "tekes-folder-open": new URL("../assets/tekes-folder-open.svg", import.meta.url).href,
   "tekes-fork": new URL("../assets/tekes-fork.svg", import.meta.url).href,
   "tekes-forward": new URL("../assets/tekes-forward.svg", import.meta.url).href,
   "tekes-fullscreen": new URL("../assets/tekes-fullscreen.svg", import.meta.url).href,
-  "tekes-goal-completed": new URL("../assets/tekes-goal-completed.svg", import.meta.url).href,
   "tekes-hide": new URL("../assets/tekes-hide.svg", import.meta.url).href,
   "tekes-image": new URL("../assets/tekes-image.svg", import.meta.url).href,
   "tekes-info": new URL("../assets/tekes-info.svg", import.meta.url).href,
@@ -102,7 +104,6 @@ const urls = Object.freeze({
   "tekes-show": new URL("../assets/tekes-show.svg", import.meta.url).href,
   "tekes-side-bar": new URL("../assets/tekes-side-bar.svg", import.meta.url).href,
   "tekes-side-bar-collapsed": new URL("../assets/tekes-side-bar-collapsed.svg", import.meta.url).href,
-  "tekes-side-chat": new URL("../assets/tekes-side-chat.svg", import.meta.url).href,
   "tekes-side-panel": new URL("../assets/tekes-side-panel.svg", import.meta.url).href,
   "tekes-side-panel-collapsed": new URL("../assets/tekes-side-panel-collapsed.svg", import.meta.url).href,
   "tekes-sort": new URL("../assets/tekes-sort.svg", import.meta.url).href,
@@ -136,6 +137,7 @@ const urls = Object.freeze({
   "tekes-zoom-out": new URL("../assets/tekes-zoom-out.svg", import.meta.url).href,
 });
 export function getIconUrl(name) {
-  if (!Object.hasOwn(urls, name)) throw new Error(`Unknown TekesUI icon: ${name}`);
-  return urls[name];
+  const canonical = Object.hasOwn(iconAliases, name) ? iconAliases[name] : name;
+  if (!Object.hasOwn(urls, canonical)) throw new Error(`Unknown TekesUI icon: ${name}`);
+  return urls[canonical];
 }

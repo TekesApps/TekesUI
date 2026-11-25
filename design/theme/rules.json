@@ -222,7 +222,7 @@
     },
     "input": {
       "disabled": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "separator",
         "focus": null,
         "helper": "secondary-text",
@@ -231,7 +231,7 @@
         "text": "disabled-text"
       },
       "hover": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",
@@ -240,7 +240,7 @@
         "text": "primary-text"
       },
       "pressed": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",
@@ -249,7 +249,7 @@
         "text": "primary-text"
       },
       "rest": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",
@@ -258,7 +258,7 @@
         "text": "primary-text"
       },
       "selected": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",
@@ -267,7 +267,7 @@
         "text": "primary-text"
       },
       "selected-disabled": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "separator",
         "focus": null,
         "helper": "secondary-text",
@@ -276,7 +276,7 @@
         "text": "disabled-text"
       },
       "selected-hover": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",
@@ -285,7 +285,7 @@
         "text": "primary-text"
       },
       "selected-pressed": {
-        "background": "transcript-input",
+        "background": "input-surface",
         "boundary": "border",
         "focus": "border-focused",
         "helper": "secondary-text",

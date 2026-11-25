@@ -529,7 +529,7 @@ impl IconPainter<'_> {
                         r.size.height * 0.6,
                     ),
                     clear(self.theme),
-                    metric("radius", "radius-agent-marker") * r.size.width.min(r.size.height)
+                    metric("radius", "radius-marker") * r.size.width.min(r.size.height)
                         / tekes_ui_icons::ARTBOARD_SIZE,
                     Some(ink),
                     stroke,
@@ -547,7 +547,7 @@ impl IconPainter<'_> {
                         r.size.height * 0.8,
                     ),
                     clear(self.theme),
-                    metric("radius", "radius-agent-marker") * r.size.width.min(r.size.height)
+                    metric("radius", "radius-marker") * r.size.width.min(r.size.height)
                         / tekes_ui_icons::ARTBOARD_SIZE,
                     Some(ink),
                     stroke,
@@ -1338,7 +1338,7 @@ fn field(p: &mut Painter<'_>, s: State<'_>, r: Rect, kind: Field) {
         r.size.width - 2. * INSET,
         h.min(r.size.height - 40.),
     );
-    p.control(q, s, "transcript-input", "radius-input");
+    p.control(q, s, "input-surface", "radius-input");
     let inset = if matches!(kind, Field::Search) {
         metric("size", "size-icon-standard") + 2. * INSET
     } else {
@@ -1437,7 +1437,7 @@ fn combo(p: &mut Painter<'_>, s: State<'_>, r: Rect) {
         r.size.width - 2. * INSET,
         metric("size", "size-button-md"),
     );
-    p.control(q, s, "transcript-input", "radius-input");
+    p.control(q, s, "input-surface", "radius-input");
     p.label(
         text_slot(q, INSET),
         if s.is("selected") {

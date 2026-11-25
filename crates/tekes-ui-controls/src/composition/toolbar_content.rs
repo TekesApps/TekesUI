@@ -1494,7 +1494,7 @@ mod capsule_group_tests {
         icon_menu.set_trigger_variant(crate::paint::ButtonVariant::Toolbar);
         icon_menu.set_trigger_toolbar_icon_slot(true);
         icon_menu
-            .set_trigger_icon_label("tekes-access-workspace", "")
+            .set_trigger_icon_label("tekes-folder-edit", "")
             .unwrap();
         icon_menu.set_trigger_accessible_name(Some("Access".into()));
         icon_menu.set_trigger_help(Some("Access scope".into()));

@@ -1950,7 +1950,7 @@ impl TextSurface {
                         if self.input.read_only {
                             "surface-1"
                         } else {
-                            "transcript-input"
+                            "input-surface"
                         },
                         theme,
                     ),
@@ -2214,7 +2214,7 @@ mod tests {
                                     if read_only {
                                         "surface-1"
                                     } else {
-                                        "transcript-input"
+                                        "input-surface"
                                     },
                                     theme.into()
                                 )
@@ -2654,5 +2654,71 @@ mod tests {
         assert_eq!(surface.input.text, "");
         assert_eq!(surface.command(TextEditCommand::Yank), Some(true));
         assert_eq!(surface.input.text, " world");
+    }
+
+    #[test]
+    fn editable_field_uses_input_surface_while_honoring_legacy_transcript_input_brand_overrides() {
+        fn legacy_override(
+            _id: usize,
+            role: &str,
+            _theme: tekes_ui_tokens::Theme,
+        ) -> Option<tekes_ui_tokens::Rgba> {
+            (role == "transcript-input").then(|| tekes_ui_tokens::Rgba::rgb8(18, 52, 86))
+        }
+        let frame = Rect::new(0., 0., 200., 40.);
+        for theme in tekes_ui_tokens::Theme::ALL {
+            let legacy_palette = tekes_ui_tokens::Palette::from_custom(
+                theme,
+                tekes_ui_tokens::CustomPaletteSource::new(
+                    701,
+                    "legacy-transcript-brand",
+                    legacy_override,
+                ),
+            );
+            let mut editable = TextSurface::new("edit", false, false);
+            editable.layout_with(frame, None, 1., 1., |_, _| Rc::new(empty_paragraph()));
+            let mut editable_scene = Scene::new();
+            editable.draw(
+                &mut RecordingRenderer::default(),
+                &mut editable_scene,
+                legacy_palette,
+                false,
+                false,
+            );
+            let editable_fill = editable_scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some(q.fill),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(editable_fill, tekes_ui_tokens::Rgba::rgb8(18, 52, 86));
+
+            let mut readonly = TextSurface::new("ro", false, true);
+            readonly.layout_with(frame, None, 1., 1., |_, _| Rc::new(empty_paragraph()));
+            let mut readonly_scene = Scene::new();
+            readonly.draw(
+                &mut RecordingRenderer::default(),
+                &mut readonly_scene,
+                legacy_palette,
+                false,
+                false,
+            );
+            let readonly_fill = readonly_scene
+                .primitives()
+                .iter()
+                .find_map(|p| match p {
+                    Primitive::Quad(q) if q.rect == frame => Some(q.fill),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(
+                readonly_fill,
+                tekes_ui_tokens::Palette::from(theme)
+                    .color("surface-1")
+                    .unwrap()
+            );
+        }
     }
 }

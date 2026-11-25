@@ -333,7 +333,17 @@ impl MenuContent {
         icon: &str,
         label: impl Into<String>,
     ) -> Result<(), IconRenderError> {
-        self.trigger.set_icon_label(icon, label)
+        self.set_trigger_icon_label_with_extensions(icon, label, &[])
+    }
+    /// Configure the menu trigger using a core icon or caller-supplied extension glyph.
+    pub fn set_trigger_icon_label_with_extensions(
+        &mut self,
+        icon: &str,
+        label: impl Into<String>,
+        extensions: &[tekes_ui_icons::Glyph],
+    ) -> Result<(), IconRenderError> {
+        self.trigger
+            .set_icon_label_with_extensions(icon, label, extensions)
     }
     pub fn set_trigger_contents(&mut self, contents: impl Into<ButtonContents>) {
         self.trigger.set_contents(contents);

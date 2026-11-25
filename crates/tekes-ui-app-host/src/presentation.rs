@@ -186,22 +186,40 @@ pub struct PresentationLayout {
 }
 impl PresentationState {
     pub fn new(containers: &[Container], options: PresentationOptions) -> Result<Self> {
-        crate::columns::validate_containers(containers)?;
+        Self::new_with_icons(containers, options, &[])
+    }
+    /// Validate containers and presentation state against both core and host-registered extension glyphs.
+    pub fn new_with_icons(
+        containers: &[Container],
+        options: PresentationOptions,
+        extension_icons: &[tekes_ui_icons::Glyph],
+    ) -> Result<Self> {
+        crate::columns::validate_containers_with_icons(containers, extension_icons)?;
         Self::assemble(
             containers.iter().map(|c| (c.id(), c.container_options())),
             options,
+            extension_icons,
         )
     }
-    pub(crate) fn from_columns(
+    pub(crate) fn from_columns_with_icons(
         containers: &[Column],
         options: PresentationOptions,
+        extension_icons: &[tekes_ui_icons::Glyph],
     ) -> Result<Self> {
-        crate::columns::validate_ids(containers.iter().map(|c| (c.id(), c.options())))?;
-        Self::assemble(containers.iter().map(|c| (c.id(), c.options())), options)
+        crate::columns::validate_ids_with_icons(
+            containers.iter().map(|c| (c.id(), c.options())),
+            extension_icons,
+        )?;
+        Self::assemble(
+            containers.iter().map(|c| (c.id(), c.options())),
+            options,
+            extension_icons,
+        )
     }
     fn assemble<'a>(
         containers: impl IntoIterator<Item = (&'a str, &'a ContainerOptions)>,
         options: PresentationOptions,
+        extension_icons: &[tekes_ui_icons::Glyph],
     ) -> Result<Self> {
         let members: Vec<_> = containers
             .into_iter()
@@ -272,7 +290,8 @@ impl PresentationState {
                 );
                 ensure!(!group.title.trim().is_empty(), "empty Others group title");
                 ensure!(
-                    tekes_ui_icons::Glyph::named(&group.icon).is_some(),
+                    tekes_ui_icons::Glyph::resolve_with_extensions(&group.icon, extension_icons)
+                        .is_some(),
                     "unknown Others group icon: {}",
                     group.icon
                 );

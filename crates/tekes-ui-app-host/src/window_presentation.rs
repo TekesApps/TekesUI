@@ -39,7 +39,17 @@ pub(super) fn render_test_tabs<B: Clone + std::fmt::Debug>(
     text: &mut Text,
     palette: Palette,
 ) -> Result<()> {
-    with_test_icons(text, |text| host.render(scene, text, palette))
+    render_test_tabs_with_extensions(host, scene, text, palette, &[])
+}
+#[cfg(test)]
+pub(super) fn render_test_tabs_with_extensions<B: Clone + std::fmt::Debug>(
+    host: &mut ToolbarHost<B>,
+    scene: &mut Scene,
+    text: &mut Text,
+    palette: Palette,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> Result<()> {
+    with_test_icons_with_extensions(text, extensions, |text| host.render(scene, text, palette))
 }
 #[cfg(test)]
 pub(super) fn render_test_tabs_layers<B: Clone + std::fmt::Debug>(
@@ -61,8 +71,21 @@ fn with_test_icons(
     )
         -> std::result::Result<(), tekes_ui_controls::composition::CompositionError>,
 ) -> Result<()> {
-    struct Icons;
-    impl tekes_ui_controls::layout_view::IconRenderer for Icons {
+    with_test_icons_with_extensions(text, &[], render)
+}
+#[cfg(test)]
+fn with_test_icons_with_extensions(
+    text: &mut Text,
+    extensions: &[tekes_ui_icons::Glyph],
+    render: impl FnOnce(
+        &mut dyn tekes_ui_controls::ButtonTextRenderer,
+    )
+        -> std::result::Result<(), tekes_ui_controls::composition::CompositionError>,
+) -> Result<()> {
+    struct Icons<'a> {
+        extensions: &'a [tekes_ui_icons::Glyph],
+    }
+    impl tekes_ui_controls::layout_view::IconRenderer for Icons<'_> {
         fn prepare_icon(
             &mut self,
             name: &str,
@@ -73,7 +96,9 @@ fn with_test_icons(
             tekes_ui_controls::composition::IconImage,
             tekes_ui_controls::composition::IconRenderError,
         > {
-            assert!(tekes_ui_icons::Glyph::named(name).is_some());
+            assert!(
+                tekes_ui_icons::Glyph::resolve_with_extensions(name, self.extensions).is_some()
+            );
             Ok(tekes_ui_controls::composition::IconImage::new(
                 ImageId(99),
                 std::rc::Rc::new(()),
@@ -83,8 +108,9 @@ fn with_test_icons(
             panic!("Tabs must retain a prepared icon lease");
         }
     }
+    let mut icons = Icons { extensions };
     render(&mut tekes_ui_controls::composition::WithIconRenderer::new(
-        text, &mut Icons,
+        text, &mut icons,
     ))
     .map_err(|e| anyhow::anyhow!("test container tabs toolbar: {e:?}"))
 }
@@ -391,18 +417,30 @@ fn local_button_contents(
         }
     }
 }
-fn measure_menu_width(text: &mut Text, decl: &MenuDeclaration) -> f32 {
-    let mut menu = build_menu_content(decl, Rect::default());
+fn measure_menu_width(
+    text: &mut Text,
+    decl: &MenuDeclaration,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> f32 {
+    let mut menu = build_menu_content(decl, Rect::default(), extensions);
     Component::measure(&mut menu, text, tekes_ui_scene::Size::new(100_000., 64.))
         .size
         .width
 }
-fn measure_contents_width(text: &mut Text, contents: &Contents) -> f32 {
+fn measure_contents_width(
+    text: &mut Text,
+    contents: &Contents,
+    extensions: &[tekes_ui_icons::Glyph],
+) -> f32 {
     match contents {
-        Contents::Menu(decl) => measure_menu_width(text, decl),
+        Contents::Menu(decl) => measure_menu_width(text, decl, extensions),
         Contents::CapsuleGroup(decl) => {
-            let mut group =
-                build_capsule_group_content(ToolbarPlacement::PrimaryAction, decl, Rect::default());
+            let mut group = build_capsule_group_content(
+                ToolbarPlacement::PrimaryAction,
+                decl,
+                Rect::default(),
+                extensions,
+            );
             Component::measure(&mut group, text, tekes_ui_scene::Size::new(100_000., 64.))
                 .size
                 .width
@@ -425,7 +463,11 @@ fn measure_contents_width(text: &mut Text, contents: &Contents) -> f32 {
             );
             if let Some(control) = content.component_mut::<ToolbarControl>() {
                 for (id, name) in contents.templates() {
-                    let _ = control.set_action_template_icon(*id, Some(name));
+                    let _ = control.set_action_template_icon_with_extensions(
+                        *id,
+                        Some(name),
+                        extensions,
+                    );
                 }
                 if let Contents::SelectedTemplateCommands { selected, .. } = contents {
                     control.set_selected_ids(selected);
@@ -442,6 +484,7 @@ fn occupied_region_width(
     text: &mut Text,
     existing: &[&Declaration],
     new_placement: ToolbarPlacement,
+    extensions: &[tekes_ui_icons::Glyph],
 ) -> f32 {
     let gap = toolbar_spacing(text, "space-regular");
     let tight = toolbar_spacing(text, "space-tight");
@@ -449,7 +492,7 @@ fn occupied_region_width(
     let mut sec1 = Vec::new();
     let mut sec2 = Vec::new();
     for decl in existing {
-        let width = measure_contents_width(text, &decl.contents);
+        let width = measure_contents_width(text, &decl.contents, extensions);
         match decl.placement {
             ToolbarPlacement::Navigation => sec0.push(width),
             ToolbarPlacement::PrimaryAction | ToolbarPlacement::SecondaryAction => sec2.push(width),
@@ -755,6 +798,7 @@ fn emit_local_bucket_declarations(
     button_only_order: i32,
     overflow_role: u64,
     include_icons: bool,
+    extensions: &[tekes_ui_icons::Glyph],
     budget: Option<(&mut Text, f32)>,
     out: &mut Vec<Declaration>,
 ) {
@@ -859,10 +903,10 @@ fn emit_local_bucket_declarations(
         );
         let item_widths: Vec<_> = item_contents
             .iter()
-            .map(|contents| measure_contents_width(text, contents))
+            .map(|contents| measure_contents_width(text, contents, extensions))
             .collect();
         let overflow_decl = overflow_menu_declaration(0, &overflow_entries, include_icons);
-        let overflow_width = measure_menu_width(text, &overflow_decl);
+        let overflow_width = measure_menu_width(text, &overflow_decl, extensions);
         let k = fitting_prefix_count(&item_widths, overflow_width, available, gap);
         let mut split_choice: Option<(Contents, LocalOverflowEntry)> = None;
         if let Some(boundary) = visible_entries.get(k)
@@ -884,7 +928,7 @@ fn emit_local_bucket_declarations(
                         include_icons,
                     ),
                 });
-                let prefix_w = measure_contents_width(text, &prefix_contents);
+                let prefix_w = measure_contents_width(text, &prefix_contents, extensions);
                 let tail_subs = boundary.sub_entries[keep..].to_vec();
                 let tail_entry = LocalOverflowEntry {
                     item: crate::LocalToolbarItem::Group(crate::LocalToolbarGroup {
@@ -906,7 +950,7 @@ fn emit_local_bucket_declarations(
                         .map(|entry| entry.to_overflow_entry()),
                 );
                 let split_decl = overflow_menu_declaration(0, &split_overflow, include_icons);
-                let split_overflow_w = measure_menu_width(text, &split_decl);
+                let split_overflow_w = measure_menu_width(text, &split_decl, extensions);
                 if prefix_used + prefix_w + gap + split_overflow_w <= available {
                     split_choice = Some((prefix_contents, tail_entry));
                     break;
@@ -1281,7 +1325,13 @@ impl Host {
                 )?;
             } else {
                 #[cfg(test)]
-                render_test_tabs(host, scene, &mut self.text, palette)?;
+                render_test_tabs_with_extensions(
+                    host,
+                    scene,
+                    &mut self.text,
+                    palette,
+                    &self.extension_icons,
+                )?;
                 #[cfg(not(test))]
                 host.render(scene, &mut self.text, palette)
                     .map_err(|e| anyhow::anyhow!("container tabs paint: {e:?}"))?;
@@ -1304,7 +1354,7 @@ impl Host {
                 )?;
             } else {
                 #[cfg(test)]
-                with_test_icons(&mut self.text, |text| {
+                with_test_icons_with_extensions(&mut self.text, &self.extension_icons, |text| {
                     grid.host
                         .render(scene, text, grid_frame, grid_frame, palette)
                 })?;
@@ -2137,6 +2187,7 @@ impl Host {
                                 &mut self.text,
                                 &matching,
                                 ToolbarPlacement::PrimaryAction,
+                                &self.extension_icons,
                             )
                         }
                     };
@@ -2159,6 +2210,7 @@ impl Host {
                 10,
                 if is_window_host { 0 } else { 3 },
                 include_icons,
+                &self.extension_icons,
                 budget_ctx.map(|avail| (&mut self.text, avail)),
                 declarations,
             );
@@ -2235,6 +2287,7 @@ impl Host {
             &self.panel_mgr.panels,
             &self.layout,
             &self.nav_mgr,
+            &self.extension_icons,
             include_icons,
             None,
         );
@@ -2265,7 +2318,7 @@ impl Host {
         let (mut c0, mut c2) = (0usize, 0usize);
         let mut sum = 0.0f32;
         for decl in &others_decls {
-            sum += measure_contents_width(&mut self.text, &decl.contents);
+            sum += measure_contents_width(&mut self.text, &decl.contents, &self.extension_icons);
             if matches!(decl.placement, ToolbarPlacement::Navigation) {
                 c0 += 1;
             } else {
@@ -2278,7 +2331,8 @@ impl Host {
             + gap * c2.saturating_sub(1) as f32
             + if c0 > 0 && c2 > 0 { gap } else { 0. };
         let empty_overflow = overflow_menu_declaration(0, &[], include_icons);
-        let overflow_trigger_w = measure_menu_width(&mut self.text, &empty_overflow);
+        let overflow_trigger_w =
+            measure_menu_width(&mut self.text, &empty_overflow, &self.extension_icons);
         let min_business_w = (2. * gap + overflow_trigger_w).min(business_w);
         let (full_tabs_w, min_tabs_w) = self.measure_switcher_widths();
         if full_tabs_w <= 0. {
@@ -2395,6 +2449,7 @@ impl Host {
             &self.panel_mgr.panels,
             &self.layout,
             &self.nav_mgr,
+            &self.extension_icons,
             include_icons,
             None,
         )
@@ -2403,6 +2458,7 @@ impl Host {
         panels: &[window_panels::Panel],
         layout: &window_layout::WindowLayoutState,
         nav_mgr: &NavigationCoordinator,
+        extension_icons: &[tekes_ui_icons::Glyph],
         include_icons: bool,
         mut budget_ctx: Option<(&mut Text, &BTreeMap<ComponentId, f32>)>,
     ) -> Vec<Vec<Declaration>> {
@@ -2834,7 +2890,12 @@ impl Host {
                             .iter()
                             .filter(|decl| decl.region == ComponentId(region))
                             .collect();
-                        let used = occupied_region_width(text, &existing, primary_placement);
+                        let used = occupied_region_width(
+                            text,
+                            &existing,
+                            primary_placement,
+                            extension_icons,
+                        );
                         (&mut **text, (usable_w - used).max(0.))
                     }),
                     None => None,
@@ -2853,6 +2914,7 @@ impl Host {
                 index as i32,
                 overflow_role,
                 include_icons,
+                extension_icons,
                 budget,
                 &mut declarations[target_presenter],
             );
@@ -2969,6 +3031,7 @@ impl Host {
             &self.panel_mgr.panels,
             &self.layout,
             &self.nav_mgr,
+            &self.extension_icons,
             include_icons,
             Some((&mut self.text, &budgets)),
         );
@@ -3033,6 +3096,7 @@ impl Host {
                 &self.panel_mgr.panels,
                 &self.layout,
                 &self.nav_mgr,
+                &self.extension_icons,
                 include_icons,
                 Some((&mut self.text, &budgets)),
             );
@@ -3087,7 +3151,13 @@ fn measure_presentation_toolbar_host(
     } else {
         #[cfg(test)]
         {
-            render_test_tabs(&mut toolbar.host, &mut measure, text, palette)
+            render_test_tabs_with_extensions(
+                &mut toolbar.host,
+                &mut measure,
+                text,
+                palette,
+                toolbar.icons.extensions(),
+            )
         }
         #[cfg(not(test))]
         {
@@ -6809,7 +6879,7 @@ mod input_regressions {
                         vec![
                             LocalToolbarItem::Menu(
                                 LocalToolbarMenu::new(101, "", access_entries)
-                                    .icon("tekes-access-workspace")
+                                    .icon("tekes-folder-edit")
                                     .tooltip("Access")
                                     .dropdown_indicator(false),
                             ),
@@ -7241,7 +7311,7 @@ mod input_regressions {
             }
 
             let vm = Rc::new(RefCell::new(DynVm {
-                icon: "tekes-access-workspace".into(),
+                icon: "tekes-folder-edit".into(),
                 model: "claude-sonnet-4".into(),
                 tone: LocalToolbarTone::Secondary,
                 include_fourth: false,
@@ -7517,7 +7587,7 @@ mod input_regressions {
                                         disabled: false,
                                     }],
                                 )
-                                .icon("tekes-access-workspace")
+                                .icon("tekes-folder-edit")
                                 .tooltip("Access")
                                 .dropdown_indicator(false),
                             ),
@@ -7824,7 +7894,7 @@ mod input_regressions {
                                 vec![
                                     LocalToolbarItem::Menu(
                                         LocalToolbarMenu::new(21, "", access_entries.clone())
-                                            .icon("tekes-access-workspace")
+                                            .icon("tekes-folder-edit")
                                             .tooltip("Access")
                                             .dropdown_indicator(false),
                                     ),
@@ -7860,7 +7930,7 @@ mod input_regressions {
                             vec![
                                 LocalToolbarItem::Menu(
                                     LocalToolbarMenu::new(41, "", access_entries)
-                                        .icon("tekes-access-workspace")
+                                        .icon("tekes-folder-edit")
                                         .tooltip("Access")
                                         .dropdown_indicator(false),
                                 ),

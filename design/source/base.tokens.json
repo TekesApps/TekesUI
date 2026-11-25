@@ -173,14 +173,24 @@
         "value": "{p-button-pressed}"
       },
       {
-        "name": "p-transcript-input",
-        "usage": "保留旧名，重绑定到显式表面阶梯；见迁移表",
+        "name": "p-input-surface",
+        "usage": "通用可编辑输入区表面阶梯；与 surface-3 等值并保留中性输入语义",
         "value": "{p-surface-3}"
       },
       {
+        "name": "input-surface",
+        "usage": "通用可编辑输入表面语义角色",
+        "value": "{p-input-surface}"
+      },
+      {
+        "name": "p-transcript-input",
+        "usage": "保留旧名兼容别名，指向 p-input-surface",
+        "value": "{p-input-surface}"
+      },
+      {
         "name": "transcript-input",
-        "usage": "transcript input 语义角色",
-        "value": "{p-transcript-input}"
+        "usage": "保留旧名兼容别名，指向 input-surface",
+        "value": "{input-surface}"
       },
       {
         "name": "p-border",
@@ -1046,9 +1056,14 @@
         "value": "{p-radius-0}"
       },
       {
-        "name": "radius-agent-marker",
-        "usage": "radius-agent-marker",
+        "name": "radius-marker",
+        "usage": "通用标记圆角半径",
         "value": "{p-radius-3}"
+      },
+      {
+        "name": "radius-agent-marker",
+        "usage": "保留旧名兼容别名，指向 radius-marker",
+        "value": "{radius-marker}"
       },
       {
         "name": "radius-badge",
