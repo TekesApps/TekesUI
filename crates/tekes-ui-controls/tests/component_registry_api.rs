@@ -1580,6 +1580,10 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         &mut actual,
         "tekes_ui_controls::composition::SemanticPart",
     );
+    public_type::<tekes_ui_controls::composition::SemanticScope<'_>>(
+        &mut actual,
+        "tekes_ui_controls::composition::SemanticScope",
+    );
     public_type::<tekes_ui_controls::composition::SeparatorContent>(
         &mut actual,
         "tekes_ui_controls::composition::SeparatorContent",
@@ -2279,7 +2283,7 @@ fn every_classified_public_type_is_accessible_to_a_library_consumer() {
         "tekes_ui_controls::layout_view::IconLayout",
     );
     #[allow(dead_code)]
-    fn public_trait_429<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
+    fn public_trait_430<T: tekes_ui_controls::layout_view::IconRenderer + ?Sized>() {}
     actual.push("tekes_ui_controls::layout_view::IconRenderer");
     public_type::<tekes_ui_controls::layout_view::IconView>(
         &mut actual,
