@@ -305,3 +305,113 @@ fn scrolled_inspector_key_value_table_projects_consistently_without_quadratic_wo
         full_layout.carets.len()
     );
 }
+
+#[test]
+fn disabled_datatable_keeps_header_column_and_cell_row_ax_parent_chains() {
+    use tekes_ui_controls::extended::{
+        KeyedTableColumn, KeyedTableRow, KeyedTableSnapshot, TableBudget, TableColumnKey,
+        TableDatasetKey, TableRowKey,
+    };
+    let snapshot = KeyedTableSnapshot {
+        dataset: TableDatasetKey(1),
+        columns: vec![KeyedTableColumn {
+            key: TableColumnKey(1),
+            name: "Col".into(),
+        }],
+        rows: vec![KeyedTableRow {
+            key: TableRowKey(1),
+            name: "Row".into(),
+            cells: vec!["Val".into()],
+        }],
+        display_rows: vec![TableRowKey(1)],
+    };
+    let mut displays = TableDisplays {
+        headers: vec![TableHeaderDisplay {
+            key: TableColumnKey(1),
+            display: TableDisplayUpdate::Keep,
+        }],
+        rows: vec![TableRowDisplay {
+            key: TableRowKey(1),
+            id: ComponentId(101),
+            replace_wrapper: false,
+            cells: vec![TableCellDisplay {
+                column: TableColumnKey(1),
+                display: TableDisplayUpdate::Keep,
+                accessory: TableDisplayUpdate::Keep,
+            }],
+        }],
+    };
+    let table = DataTableContent::new(
+        "DisabledChainTable",
+        &snapshot,
+        &mut displays,
+        TableBudget {
+            max_units: 1000,
+            max_utf8_bytes: 100_000,
+        },
+    )
+    .unwrap();
+    let mut h = ContentHost::new(Content::new(ComponentId(10), table)).unwrap();
+    let frame = Rect::new(0., 0., 240., 160.);
+
+    for disabled in [false, true, false] {
+        h.get_mut(ComponentId(10))
+            .unwrap()
+            .component_mut::<DataTableContent>()
+            .unwrap()
+            .set_disabled(disabled)
+            .unwrap();
+        h.render(
+            &mut Scene::new(),
+            &mut Text,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let nodes = content_nodes(&h);
+        let table_node = nodes
+            .iter()
+            .find(|n| matches!(n.role, AccessibilityRole::Table))
+            .unwrap();
+        let col_node = nodes
+            .iter()
+            .find(|n| matches!(n.role, AccessibilityRole::TableColumn { index: 0 }))
+            .unwrap();
+        let header_node = nodes
+            .iter()
+            .find(|n| {
+                matches!(
+                    n.role,
+                    AccessibilityRole::TableColumnHeader { index: 0, .. }
+                )
+            })
+            .unwrap();
+        let row_node = nodes
+            .iter()
+            .find(|n| matches!(n.role, AccessibilityRole::TableRow { index: 0 }))
+            .unwrap();
+        let cell_node = nodes
+            .iter()
+            .find(|n| matches!(n.role, AccessibilityRole::TableCell { row: 0, column: 0 }))
+            .unwrap();
+
+        assert_eq!(col_node.parent, Some(table_node.key));
+        assert_eq!(header_node.parent, Some(col_node.key));
+        assert_eq!(row_node.parent, Some(table_node.key));
+        assert_eq!(cell_node.parent, Some(row_node.key));
+        assert_eq!(table_node.enabled, !disabled);
+        assert_eq!(col_node.enabled, !disabled);
+        assert_eq!(header_node.enabled, !disabled);
+        assert_eq!(row_node.enabled, !disabled);
+        assert_eq!(cell_node.enabled, !disabled);
+
+        if disabled {
+            assert!(!content_action(&mut h, row_node.key, AccessibilityAction::Press).consumed);
+            assert!(!content_action(&mut h, header_node.key, AccessibilityAction::Press).consumed);
+        } else {
+            assert!(content_action(&mut h, row_node.key, AccessibilityAction::Press).consumed);
+        }
+        assert!(!content_action(&mut h, cell_node.key, AccessibilityAction::Press).consumed);
+    }
+}

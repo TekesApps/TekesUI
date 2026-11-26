@@ -1632,7 +1632,7 @@ impl Component for DataTableContent {
         out
     }
     fn semantic_part_parent(&self, part: usize) -> Option<usize> {
-        if !self.available() || self.view.layout_keyed(&self.model).is_none() {
+        if !self.publishable() || self.view.layout_keyed(&self.model).is_none() {
             return None;
         }
         let p = self.exposures.iter().find(|(_, e)| e.token == part)?.0;

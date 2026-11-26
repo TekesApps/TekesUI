@@ -897,3 +897,98 @@ fn matching_numbers_from_another_host_never_authorize_a_drained_intent() {
     assert_eq!(i.dataset, other.dataset);
     assert_ne!(i, other);
 }
+
+#[test]
+fn disabled_table_preserves_parent_chain_ordinals_and_action_rejection_across_toggles() {
+    let s = KeyedTableSnapshot {
+        dataset: TableDatasetKey(1),
+        columns: vec![KeyedTableColumn {
+            key: TableColumnKey(1),
+            name: "col0".into(),
+        }],
+        rows: vec![KeyedTableRow {
+            key: TableRowKey(1),
+            name: "row0".into(),
+            cells: vec!["cell00".into()],
+        }],
+        display_rows: vec![TableRowKey(1)],
+    };
+    let mut d = displays(&s);
+    let mut h = ContentHost::new(Content::new(
+        TABLE,
+        DataTableContent::new("Table1x1", &s, &mut d, budget()).unwrap(),
+    ))
+    .unwrap();
+    paint(&mut h);
+
+    for disabled in [false, true, false] {
+        h.get_mut(TABLE)
+            .unwrap()
+            .component_mut::<DataTableContent>()
+            .unwrap()
+            .set_disabled(disabled)
+            .unwrap();
+        paint(&mut h);
+        let p = parts(&h);
+        assert_eq!(p.len(), 4);
+        let col = part(&h, ContentRole::TableColumn { index: 0 });
+        let header = part(
+            &h,
+            ContentRole::TableColumnHeader {
+                index: 0,
+                sort: None,
+            },
+        );
+        let row = part(&h, ContentRole::TableRow { index: 0 });
+        let cell = part(&h, ContentRole::TableCell { row: 0, column: 0 });
+
+        assert_eq!(h.semantic_part_parent(TABLE, col.index), None);
+        assert_eq!(h.semantic_part_parent(TABLE, header.index), Some(col.index));
+        assert_eq!(h.semantic_part_parent(TABLE, row.index), None);
+        assert_eq!(h.semantic_part_parent(TABLE, cell.index), Some(row.index));
+        for part in [&col, &header, &row, &cell] {
+            assert_eq!(part.semantics.disabled, disabled);
+        }
+        assert_eq!(cell.semantics.value.as_deref(), Some("cell00"));
+
+        // Readonly parts and disabled state reject actions.
+        assert!(
+            !h.accessibility_action(TABLE, Some(cell.index), AccessibilityAction::Press)
+                .consumed
+        );
+        assert!(
+            !h.accessibility_action(TABLE, Some(col.index), AccessibilityAction::Press)
+                .consumed
+        );
+        if disabled {
+            assert!(
+                !h.accessibility_action(TABLE, Some(row.index), AccessibilityAction::Press)
+                    .consumed
+            );
+            assert!(
+                !h.accessibility_action(TABLE, Some(header.index), AccessibilityAction::Press)
+                    .consumed
+            );
+            assert!(!h.focus(Some(TABLE), true));
+        } else {
+            assert!(
+                h.accessibility_action(TABLE, Some(row.index), AccessibilityAction::Press)
+                    .consumed
+            );
+        }
+    }
+
+    // Stale token rejection after structure replacement.
+    let stale_row_token = part(&h, ContentRole::TableRow { index: 0 }).index;
+    let mut next = s.clone();
+    next.dataset = TableDatasetKey(2);
+    let mut next_displays = displays(&next);
+    h.replace_table_snapshot(TABLE, &next, &mut next_displays, None)
+        .unwrap();
+    paint(&mut h);
+    assert_eq!(h.semantic_part_parent(TABLE, stale_row_token), None);
+    assert!(
+        !h.accessibility_action(TABLE, Some(stale_row_token), AccessibilityAction::Press)
+            .consumed
+    );
+}

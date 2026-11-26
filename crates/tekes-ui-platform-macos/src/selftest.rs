@@ -2427,6 +2427,9 @@ pub fn exclusive_reentry_contract() {
                 anchor_window.isKeyWindow()
             );
             assert!(cover.is_closed());
+            // #423: retaining a closed handle and calling present_exclusive must not re-show it or hide anchor.
+            window.present_exclusive(&cover);
+            assert!(!cover_window.isVisible());
             assert!(anchor_window.isVisible() && other_window.isVisible());
             assert!(!hidden_window.isVisible());
             assert!(

@@ -33,7 +33,14 @@ pub(crate) fn retire_closed_windows() {
         closed
     });
     if !retired.is_empty() {
-        objc2::rc::autoreleasepool(|_| drop(retired));
+        objc2::rc::autoreleasepool(|_| {
+            // Tear down retired windows eagerly so callers retaining closed handles
+            // still release native NSWindow/TekesView objects cleanly.
+            for handle in &retired {
+                handle._owner.delegate.teardown_window(&handle.shared);
+            }
+            drop(retired);
+        });
     }
     let _ = windows();
 }
@@ -860,6 +867,9 @@ pub(crate) fn open_window(
 }
 
 pub(crate) fn present_exclusive(child: &Rc<Shared>, anchor: &Rc<Shared>) {
+    if child.closed.get() || anchor.closed.get() || Rc::ptr_eq(child, anchor) {
+        return;
+    }
     let Some(objects) = child.objects() else {
         return;
     };
