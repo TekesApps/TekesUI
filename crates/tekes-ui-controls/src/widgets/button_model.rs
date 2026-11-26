@@ -1019,7 +1019,7 @@ impl ButtonModel {
     pub(crate) fn pointer_move_changed(&mut self, point: Point) -> bool {
         let before = (self.state.hovered, self.state.pressed);
         self.pointer_move_at(point);
-        (self.state.hovered, self.state.pressed) != before
+        (self.state.hovered, self.state.pressed) != before || self.state.pressed
     }
 
     pub(crate) fn set_clip_region(&mut self, region: Option<tekes_ui_scene::ClipRegion>) {

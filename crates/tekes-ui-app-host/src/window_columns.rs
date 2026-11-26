@@ -1925,7 +1925,9 @@ mod redraw_efficiency_tests {
         TextFieldContent,
     };
     use tekes_ui_module_runtime::ContentClipboard;
-    use tekes_ui_platform_macos::{Event, KeyEvent, KeyEventKind, Modifiers};
+    use tekes_ui_platform_macos::{
+        Event, KeyEvent, KeyEventKind, Modifiers, TextKeyContext, TextKeyDisposition, TextKeyEvent,
+    };
     use tekes_ui_scene::{Point, Rect, Scene};
     use tekes_ui_tokens::Theme;
 
@@ -2134,9 +2136,10 @@ mod redraw_efficiency_tests {
         }
         let button_center = button_center.expect("button bounds");
         let blank_point = Point::new(frame.max_x() - 10., frame.max_y() - 10.);
+        // Blank move causes no state/render change and preserves AX publication currency.
+        let publication_before_blank = host.content_accessibility_publication(true).unwrap();
+        assert!(publication_before_blank.is_current());
         let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
-
-        // Blank move causes no state/render change.
         let blank_move = ContentEvent::Pointer(PointerEvent {
             position: blank_point,
             phase: PointerPhase::Move,
@@ -2149,6 +2152,7 @@ mod redraw_efficiency_tests {
                 .hover_event_needs_redraw(&blank_move, &mut host.text)
                 .unwrap()
         );
+        assert!(publication_before_blank.is_current());
 
         // Real hover enter redraws; moving within blank after hover exit redraws once on exit.
         let enter_btn = ContentEvent::Pointer(PointerEvent {
@@ -2192,7 +2196,7 @@ mod redraw_efficiency_tests {
                 .unwrap()
         );
 
-        // Unhandled key on button focus must not request redraw.
+        // Unhandled key on button focus must not request redraw and preserves AX currency.
         panel.with_host(&mut |h| {
             h.focus(Some(ComponentId(11)), false);
         });
@@ -2205,8 +2209,13 @@ mod redraw_efficiency_tests {
                 Theme::LIGHT.into(),
             )
             .unwrap();
+        let publication_before_key = host.content_accessibility_publication(true).unwrap();
+        assert!(publication_before_key.is_current());
         assert!(
-            !panel
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
                 .window_event(
                     &Event::Key(key_event(105, "")),
                     &NoClipboard,
@@ -2214,6 +2223,44 @@ mod redraw_efficiency_tests {
                 )
                 .unwrap()
         );
+        assert!(publication_before_key.is_current());
+        let ctx = TextKeyContext {
+            id: 1,
+            key: key_event(105, ""),
+            composing_at_start: false,
+        };
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::TextKey(TextKeyEvent::Started(ctx.clone())),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::TextKey(TextKeyEvent::Finished {
+                        context: ctx,
+                        input_context_handled: Some(false),
+                        disposition: TextKeyDisposition::Unhandled,
+                        text_callbacks: 0,
+                        command_callbacks: 0,
+                    }),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(publication_before_key.is_current());
+        let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
 
         // Valid text commit on focused TextField requests redraw.
         panel.with_host(&mut |h| {

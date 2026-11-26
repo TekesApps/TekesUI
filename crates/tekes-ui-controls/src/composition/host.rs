@@ -7,6 +7,24 @@ use std::collections::BTreeSet;
 use tekes_ui_scene::{Point, Rect, Scene};
 use tekes_ui_tokens::Palette;
 
+#[derive(PartialEq)]
+struct PassiveEventSnapshot {
+    dirty: bool,
+    reveal_pending: bool,
+    focused: Option<ComponentId>,
+    focus_epoch: u64,
+    captured: Option<ComponentId>,
+    captured_mount: Option<u64>,
+    modal: Option<(ComponentId, Option<(ComponentId, u64)>)>,
+    overlays: usize,
+    popovers: usize,
+    actions: usize,
+    text_wheel: bool,
+    text_wheel_retired: bool,
+    item_reveal: bool,
+    list_navigation_reveal: bool,
+    help: help::HelpStateKey,
+}
 #[derive(Debug)]
 pub struct ContentHost {
     pub(super) root: Content,
@@ -925,7 +943,26 @@ impl ContentHost {
         if self.search_pointer_blocked(event) {
             return ContentResponse::default();
         }
-        self.reveal_clock.invalidate_input();
+        let passive_noop_candidate = matches!(
+            event,
+            ContentEvent::PointerMove(_)
+                | ContentEvent::Key { .. }
+                | ContentEvent::KeyInput(_)
+                | ContentEvent::TextKeyStart { .. }
+                | ContentEvent::TextKeyEnd { .. }
+                | ContentEvent::Scroll { .. }
+        ) || matches!(
+            event,
+            ContentEvent::Pointer(p)
+                if matches!(
+                    p.phase,
+                    PointerPhase::Move | PointerPhase::Enter | PointerPhase::Exit
+                )
+        );
+        let pre_event_state = passive_noop_candidate.then(|| self.passive_event_snapshot());
+        if !passive_noop_candidate {
+            self.reveal_clock.invalidate_input();
+        }
         self.event_bubbled = None;
         let overlay_barrier = self.overlay_scope_id().is_some();
         let reader_lease = self.focused.and_then(|id| {
@@ -1049,9 +1086,49 @@ impl ContentHost {
             self.event_bubbled = Some(false);
         }
         self.dirty |= result.changed;
+        if let Some(before) = pre_event_state {
+            let delegated_text_key_start = matches!(event, ContentEvent::TextKeyStart { .. })
+                && self.text_keys.last().is_some_and(|f| f.delegated);
+            let provenance_only = matches!(
+                event,
+                ContentEvent::TextKeyStart { .. } | ContentEvent::TextKeyEnd { .. }
+            );
+            if (!provenance_only && result.consumed)
+                || delegated_text_key_start
+                || result.changed
+                || result.capture_pointer
+                || result.activated
+                || result
+                    .text_key
+                    .is_some_and(|key| key.disposition != TextKeyDisposition::Unhandled)
+                || self.pointer_focus_requested
+                || self.passive_event_snapshot() != before
+            {
+                self.reveal_clock.invalidate_input();
+            }
+        }
         self.event_bubbled =
             Some(self.modal.is_none() && self.event_bubbled.unwrap_or(!result.consumed));
         result
+    }
+    fn passive_event_snapshot(&self) -> PassiveEventSnapshot {
+        PassiveEventSnapshot {
+            dirty: self.dirty,
+            reveal_pending: self.reveal_clock.pending,
+            focused: self.focused,
+            focus_epoch: self.focus_epoch,
+            captured: self.captured,
+            captured_mount: self.captured_mount,
+            modal: self.modal,
+            overlays: self.overlay_scopes.len(),
+            popovers: self.popover_order.len(),
+            actions: self.actions.as_ref().map_or(0, Vec::len),
+            text_wheel: self.text_wheel.is_some(),
+            text_wheel_retired: self.text_wheel_retired,
+            item_reveal: self.item_reveal.is_some(),
+            list_navigation_reveal: self.list_navigation_reveal.is_some(),
+            help: self.help.state_key(),
+        }
     }
     pub(super) fn retire_text_wheel(&mut self) {
         if let Some(lease) = self.text_wheel.take() {

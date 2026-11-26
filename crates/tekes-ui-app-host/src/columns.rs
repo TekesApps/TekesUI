@@ -409,12 +409,12 @@ impl LocalContainer {
             result = tekes_ui_module_runtime::dispatch_content_window_event_with_text(
                 host, event, clipboard, text,
             )
-            .map(|response| {
-                if matches!(event, tekes_ui_platform_macos::Event::Scroll(_)) {
-                    response.is_some()
-                } else {
-                    response.is_some_and(|r| r.consumed || r.changed) || host.has_visual_changes()
+            .map(|response| match event {
+                tekes_ui_platform_macos::Event::Scroll(_) => response.is_some(),
+                tekes_ui_platform_macos::Event::TextKey(_) => {
+                    response.is_some_and(|r| r.changed || r.activated) || host.has_visual_changes()
                 }
+                _ => response.is_some_and(|r| r.consumed || r.changed) || host.has_visual_changes(),
             })
             .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
             if let Some(callback) = callback {

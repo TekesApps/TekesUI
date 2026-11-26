@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "2d7f8529991d9403d27c142fd738ca558f65f53d",
+  "head": "8511fe3581a3a9be759b72a8fc031704ec7adb17",
   "source": "Incremental #294 source review on fedb69b6: affected original Gallery fixtures and AppHost/Controls integration; scoped CPU checks through Check380 and release build Check381 passed. Original programs and failed checks retain identity; r3 native acceptance and public delivery remain separate.",
   "audited_at": "2026-11-23",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
@@ -2096,9 +2096,9 @@
     "crates/tekes-ui-controls/src/composition/content_reveal.rs": "1d2173c778670f825e67257ea54912d04f497d555f293ced0228e19f8a1b2dde",
     "crates/tekes-ui-controls/src/composition/disclosure.rs": "8e03ce6eec2c204fdf3114d7eb97775ddcf365e840b9f80a943a597f706243cd",
     "crates/tekes-ui-controls/src/composition/empty_state.rs": "06e2275b9310bce8e609db97d01874afae6825183c57a799860d5917a733c95d",
-    "crates/tekes-ui-controls/src/composition/help.rs": "c26cbd0bbb5b214ec1171541f9d722681eb30e7518e620ca2cf5bc73dd8dd18e",
+    "crates/tekes-ui-controls/src/composition/help.rs": "359f5fba95452049dc1d7e438dc92e0e278ec9e16df97efd6a4c0303a5610bc5",
     "crates/tekes-ui-controls/src/composition/icon.rs": "c67425c22d54d24ff2d0a8daf954182d86a88bfc4cf94565bb853efd115d0645",
-    "crates/tekes-ui-controls/src/composition/key.rs": "8429253cc52479c05f4b6611d3f26aa20b50dffea78325dcad5a78f77e835cfe",
+    "crates/tekes-ui-controls/src/composition/key.rs": "bf808b390660e617a1596fac2810f76b2232ef18b1e546ca31595cc5b426a0f5",
     "crates/tekes-ui-controls/src/composition/label.rs": "b661efd05a04f092c95b1d87f1474416081738f9f296f5d59a55da6926eed0ab",
     "crates/tekes-ui-controls/src/composition/link.rs": "ed81b47826c295b567763ef513c87db2d715de37b769fbf05b7f73ae9eb4669d",
     "crates/tekes-ui-controls/src/composition/menu.rs": "8bc81d36eb7528e629e52fa92bb2429d6b890bdd93697d1d57a24f1f44de4a61",
@@ -2255,7 +2255,7 @@
     "docs/archive/design-logs/datatable-public-content-20261024.md": "812988af6954e21b11d6aca4fe769bfb405f26f256685c400f88cc28ef377cf9",
     "docs/archive/design-logs/disclosure-public-content-20261024.md": "1d9a5e8149c04ab5320ffe8639026034b25dfdd267c38631dd8f9c3f2b078f39",
     "docs/archive/design-logs/media-viewer-design-20261031.md": "1b3205a11b7d11f67c8d628e9a7c684283ddfea46a1fb5c54097d86ab11d52b0",
-    "crates/tekes-ui-app-host/src/columns.rs": "3a997c16c4b1f72cd6dbf918f77bfeb434688389708a112fcac7eb56f3f22063",
+    "crates/tekes-ui-app-host/src/columns.rs": "9057cf274909688773830e6433f4ef8fd69a505811d0187622b3375abc9179bf",
     "crates/tekes-ui-app-host/src/presentation.rs": "3d46ce1b3a1b7c17169d6ff2b62b430dbefc0346da4fb0ea7860d05e4657761a",
     "crates/tekes-ui-app-host/src/window_presentation.rs": "608b112bb9c374c39d1507713c38d709fd3f95100984dfa66f0886541caa4d56",
     "crates/tekes-ui-controls/src/composition/toolbar_host.rs": "693c11db0d132a34f7a194735bd5662620d7870e8c1c702e2c6ab25f4450a53f",
@@ -2268,7 +2268,7 @@
     "crates/tekes-ui-gallery/src/gallery/workbench/search_input.rs": "7e5ff7d8e874b267b22c81974c12e17a28d6dfe79702227186242252e40d44d4",
     "crates/tekes-ui-gallery/src/gallery/workbench/select_story.rs": "bfbe571c2a41f0f292f87bc007d98e998e51c1014ad16521cfb32baa9921dcb6",
     "crates/tekes-ui-gallery/src/gallery/workbench/search_host.rs": "33952996bc0fb6299b882b2ff5b7d9d3e9e699ee7ac38b1003973b82933e1869",
-    "crates/tekes-ui-app-host/src/window_columns.rs": "1281a409f673dd03b673f75e23f728c8c98cba76864b0b530647b36070848a49",
+    "crates/tekes-ui-app-host/src/window_columns.rs": "a0d43eb7aa5eca102d0c58b738f90b69fd9d48de28130fe1bdf1836d5cfb5e91",
     "examples/composition-consumer/tests/rich_content.rs": "69a118ab0bee11de3530b2a671b5958372a846e4e60a7d3d10db4824579ca94f",
     "crates/tekes-ui-controls/src/composition/key_value_table.rs": "e89428d40e8dea12df26de7e0be227669d8e05068a7a73a6745f08cd42cdec72",
     "crates/tekes-ui-app-host/src/window_panels.rs": "6a8c3bc11d9c2b625925b2ad5909f314cef15a1cb6ec38af797f67d47c99392a",
@@ -2294,7 +2294,7 @@
     "crates/tekes-ui-controls/src/composite/dialog.rs": "b690a83035993f675afbbcf41906d10264db48e0cfa7befca831c8153d782b86",
     "crates/tekes-ui-controls/src/feedback_view/notices.rs": "43b66590c5e575a3f520bb29cdbdfb0e8ccb90101678a1b224f70dfce0899f2a",
     "crates/tekes-ui-controls/src/feedback_view/status_and_empty.rs": "1b873031f1ce1dcb2b3ff1173cc57ba01efe8bcfb39ee5795084445c2ffec9af",
-    "crates/tekes-ui-controls/src/composition/host.rs": "fcf5dc5bf747e391476df2db3f6ecb190ff0a05bc13f00be28ebc7ec2e15f14b",
+    "crates/tekes-ui-controls/src/composition/host.rs": "43322c8283a6df3233226711b4e9b1cc496edc69a8e03d35cffc602b3d11695e",
     "crates/tekes-ui-controls/src/composition/host_ops.rs": "46bfc0fd6372693d2c551dcd0ecea9172eba81571e8ddde15ba320fa75dee604",
     "crates/tekes-ui-controls/src/composition/content_node.rs": "f270a84d02eb01ef1814c5e3752ea2513b668e113a161a81739f61c5e95216a3",
     "examples/composition-consumer/examples/actions_acceptance.rs": "ba17812ecd156f95bd5b74b33e7c37c109fdaa8b5164eb2dbad2c550a0de3e58",
@@ -2332,12 +2332,12 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/host.rs",
-      "line": 462,
+      "line": 480,
       "anchor": "pub fn render("
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/host.rs",
-      "line": 915,
+      "line": 933,
       "anchor": "pub fn event(&mut self, event: &ContentEvent) -> ContentResponse {"
     },
     {
@@ -2549,13 +2549,13 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/host.rs",
-      "line": 380,
+      "line": 398,
       "anchor": "pub fn capture_focus(&self) -> Option<(ComponentId, u64)> {",
       "purpose": "Existing mount identity reused for temporary presentation focus intent"
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/host.rs",
-      "line": 393,
+      "line": 411,
       "anchor": "pub fn restore_focus(&mut self, captured: Option<(ComponentId, u64)>) -> bool {",
       "purpose": "Same mount/current eligibility validation; Dialog shares this implementation"
     },
@@ -2627,7 +2627,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/host.rs",
-      "line": 406,
+      "line": 424,
       "anchor": "fn check_text_services(",
       "purpose": "Single existing text-capability traversal and cancellation reused at all render layout boundaries"
     },
@@ -2685,7 +2685,7 @@
     },
     {
       "path": "crates/tekes-ui-controls/src/composition/help.rs",
-      "line": 272,
+      "line": 282,
       "anchor": "pub fn help_tooltip(&self) -> Option<(ComponentId, &str, OverlayLayout)> {"
     },
     {

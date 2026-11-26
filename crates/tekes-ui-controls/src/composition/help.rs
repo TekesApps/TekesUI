@@ -101,7 +101,7 @@ impl Content {
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
-struct Request {
+pub(super) struct Request {
     id: ComponentId,
     mount: u64,
     part: Option<usize>,
@@ -118,6 +118,8 @@ impl Request {
             && self.keyboard == other.keyboard
     }
 }
+#[derive(PartialEq)]
+pub(super) struct HelpStateKey(Option<Request>, Option<Duration>, bool, bool);
 #[derive(Debug)]
 pub(super) struct HelpState {
     request: Option<Request>,
@@ -164,6 +166,14 @@ impl HelpState {
     }
     pub(super) fn needs_frame(&self) -> bool {
         self.request.is_some() && self.since.is_some() && !self.ready && !self.blocked
+    }
+    pub(super) fn state_key(&self) -> HelpStateKey {
+        HelpStateKey(
+            self.request,
+            self.since,
+            self.ready,
+            self.blocked && (self.request.is_some() || self.since.is_some() || self.ready),
+        )
     }
 }
 impl ContentHost {
