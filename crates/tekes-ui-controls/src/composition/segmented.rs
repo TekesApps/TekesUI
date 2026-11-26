@@ -520,8 +520,7 @@ impl Component for SegmentedControlContent {
         let mut r = ContentResponse::default();
         match event {
             ContentEvent::PointerMove(p) => {
-                self.view.pointer_move(*p);
-                r.changed = true;
+                r.changed = self.view.pointer_move_changed(*p);
             }
             ContentEvent::PointerUp(p) => {
                 let selected = self.view.pointer_up(*p, &mut self.model);

@@ -150,6 +150,9 @@ impl tekes_ui_controls::TextSurfaceHost for Text {
     fn type_scale(&self) -> f32 {
         self.0.type_scale()
     }
+    fn caret_visible(&self) -> bool {
+        self.0.caret_visible()
+    }
     fn shape_surface(
         &mut self,
         value: &str,

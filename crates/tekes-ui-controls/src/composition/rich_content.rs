@@ -390,6 +390,9 @@ impl RichContent {
         self.revision = revision;
         Ok(self.version())
     }
+    pub fn has_link_actions(&self) -> bool {
+        !self.links.is_empty()
+    }
     pub fn drain_link_actions(&mut self) -> Vec<RichLinkAction> {
         std::mem::take(&mut self.links)
     }

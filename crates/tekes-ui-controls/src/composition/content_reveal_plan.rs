@@ -76,13 +76,19 @@ impl Default for RevealClock {
     }
 }
 impl RevealClock {
-    pub(super) fn invalidate_input(&mut self) {
+    pub(super) fn invalidate_geometry_lease(&mut self) {
         let _ = self.geometry_lease.fetch_update(
             std::sync::atomic::Ordering::AcqRel,
             std::sync::atomic::Ordering::Acquire,
             |n| Some(n.saturating_add(1)),
         );
+    }
+    pub(super) fn invalidate_input_stamp(&mut self) {
         self.input = self.input.and_then(|n| n.checked_add(1));
+    }
+    pub(super) fn invalidate_input(&mut self) {
+        self.invalidate_geometry_lease();
+        self.invalidate_input_stamp();
     }
     pub(super) fn invalidate_geometry(&mut self) {
         let _ = self.geometry_lease.fetch_update(

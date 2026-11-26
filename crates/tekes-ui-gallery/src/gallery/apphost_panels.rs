@@ -225,8 +225,16 @@ fn document_notice(host: &mut ContentHost, message: &str) {
 }
 
 /// Called only by the existing post-input action callback, even when the ordinary
-/// action queue is empty. Rich links intentionally have their own owned queue.
+/// action queue is empty. Rich links intentionally have their own owned queue;
+/// read-only check first so empty queues do not dirty ContentHost or AX geometry.
 pub(super) fn consume_document_links(host: &mut ContentHost, pending_focus: &Cell<Option<u64>>) {
+    if !host
+        .get(DOCUMENT_READER)
+        .and_then(|node| node.component::<RichContent>())
+        .is_some_and(RichContent::has_link_actions)
+    {
+        return;
+    }
     let links = host
         .get_mut(DOCUMENT_READER)
         .unwrap()

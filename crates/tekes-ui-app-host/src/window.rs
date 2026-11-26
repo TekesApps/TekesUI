@@ -1697,6 +1697,28 @@ impl Host {
         {
             return Ok(());
         }
+        if matches!(
+            &event,
+            Event::Key(_)
+                | Event::TextKey(_)
+                | Event::TextCommit { .. }
+                | Event::TextPreedit { .. }
+                | Event::TextUnmark
+                | Event::TextCommand(_)
+                | Event::Accessibility { .. }
+                | Event::Focus(true)
+        ) || matches!(
+            &event,
+            Event::Mouse(m)
+                if matches!(
+                    m.kind,
+                    MouseEventKind::Down { .. }
+                        | MouseEventKind::Up { .. }
+                        | MouseEventKind::Dragged { .. }
+                )
+        ) {
+            self.text.0.caret_visible = true;
+        }
 
         if matches!(
             &event,
@@ -1759,26 +1781,30 @@ impl Host {
             w.request_redraw();
             return Ok(());
         }
-        if self.presentation_event(&event, w)? {
-            if matches!(&event, Event::Scroll(scroll) if self.layout.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))
-            {
-                // Apply every native delta immediately, but coalesce painting on
-                // the existing runloop redraw path. A header wheel must not
-                // synchronously render all containers and submit a GPU frame
-                // for every input sample. Pointer/selection geometry stays on
-                // the synchronous path below.
-                self.layout.presentation_scroll_pending = true;
-                if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
-                    eprintln!(
-                        "OTHERS_SCROLL_QUEUED draw={}",
-                        self.diagnostics.diagnostic_draw
-                    );
+        match self.presentation_event(&event, w)? {
+            window_presentation::PresentationEventResult::Unhandled => {}
+            window_presentation::PresentationEventResult::ConsumedNoDraw => return Ok(()),
+            window_presentation::PresentationEventResult::Handled => {
+                if matches!(&event, Event::Scroll(scroll) if self.layout.presentation_layout.tabs.is_some_and(|frame| frame.contains(Point::new(scroll.position.x as f32, scroll.position.y as f32))))
+                {
+                    // Apply every native delta immediately, but coalesce painting on
+                    // the existing runloop redraw path. A header wheel must not
+                    // synchronously render all containers and submit a GPU frame
+                    // for every input sample. Pointer/selection geometry stays on
+                    // the synchronous path below.
+                    self.layout.presentation_scroll_pending = true;
+                    if std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some() {
+                        eprintln!(
+                            "OTHERS_SCROLL_QUEUED draw={}",
+                            self.diagnostics.diagnostic_draw
+                        );
+                    }
+                    w.request_redraw();
+                } else {
+                    self.draw(w)?;
                 }
-                w.request_redraw();
-            } else {
-                self.draw(w)?;
+                return Ok(());
             }
-            return Ok(());
         }
         if self.route_toolbar_event(&event, w)? {
             // Publish current geometry before the next native input/AX callback.
@@ -1838,6 +1864,12 @@ impl Host {
             Event::Mouse(m) if w.is_active() => {
                 let content_event = toolbar_pointer(m);
                 let p = Point::new(m.position.x as f32, m.position.y as f32);
+                let mut needs_redraw = matches!(
+                    m.kind,
+                    MouseEventKind::Down { .. }
+                        | MouseEventKind::Up { .. }
+                        | MouseEventKind::Dragged { .. }
+                );
                 match m.kind {
                     MouseEventKind::Down {
                         button: MouseButton::Left,
@@ -2006,17 +2038,30 @@ impl Host {
                                 && local_input_open
                                 && let Some(local) = &mut panel.local
                             {
-                                local.event(&content_event, &mut self.text)?;
+                                needs_redraw |= local
+                                    .hover_event_needs_redraw(&content_event, &mut self.text)?;
                             }
+                        }
+                        if !needs_redraw {
+                            needs_redraw = self.panel_mgr.panels.iter().any(|p| {
+                                p.mounted_toolbar.host.content_host().has_visual_changes()
+                            }) || self
+                                .layout
+                                .presentation_tabs
+                                .as_ref()
+                                .is_some_and(|t| t.content_host().has_visual_changes())
+                                || self
+                                    .layout
+                                    .presentation_creation_grid
+                                    .as_ref()
+                                    .is_some_and(|g| g.host.has_visual_changes());
                         }
                     }
                     _ => {}
                 }
-                w.request_redraw();
-            }
-            Event::Key(k) if w.is_active() => {
-                let _ = k;
-                w.request_redraw();
+                if needs_redraw {
+                    w.request_redraw();
+                }
             }
             Event::Accessibility { .. } => {
                 w.request_redraw();
@@ -2052,6 +2097,7 @@ impl Host {
                 w.request_redraw();
             }
             Event::Focus(false) => {
+                self.text.0.caret_visible = true;
                 if let Some(header) = &mut self.layout.presentation_tabs {
                     header.set_window_active(false);
                 }

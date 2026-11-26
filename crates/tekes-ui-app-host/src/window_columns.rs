@@ -311,6 +311,18 @@ impl Host {
             .with_host(&mut |h| state = crate::columns::text_state(h));
         state
     }
+    pub(super) fn handle_local_caret_blink(&mut self, active: bool) -> bool {
+        if self
+            .local_text_state(active)
+            .is_some_and(|s| !s.read_only && s.selection.is_empty())
+        {
+            self.text.0.caret_visible = !self.text.0.caret_visible;
+            true
+        } else {
+            self.text.0.caret_visible = true;
+            false
+        }
+    }
     pub(super) fn local_content_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
         if !w.is_active()
             || self
@@ -337,6 +349,9 @@ impl Host {
                 .is_some_and(|n| n.busy || !n.host.input_open)
         {
             return Ok(false);
+        }
+        if matches!(event, Event::CaretBlink) {
+            return Ok(self.handle_local_caret_blink(w.is_active()));
         }
         if let Event::Accessibility { target, action } = event {
             use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
@@ -441,7 +456,6 @@ impl Host {
                 }
                 local.window_event(event, w, &mut self.text)
             }
-            Event::CaretBlink => Ok(true),
             _ => Ok(false),
         }
     }
@@ -1900,5 +1914,688 @@ mod local_scroll_tests {
                 }
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod redraw_efficiency_tests {
+    use crate::{AppWindow, LocalContainer};
+    use tekes_ui_controls::composition::{
+        Button, ComponentId, Content, ContentEvent, PointerEvent, PointerPhase, StackContent,
+        TextFieldContent,
+    };
+    use tekes_ui_module_runtime::ContentClipboard;
+    use tekes_ui_platform_macos::{
+        Event, KeyEvent, KeyEventKind, Modifiers, TextKeyContext, TextKeyDisposition, TextKeyEvent,
+    };
+    use tekes_ui_scene::{Point, Rect, Scene};
+    use tekes_ui_tokens::Theme;
+
+    struct NoClipboard;
+    impl ContentClipboard for NoClipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            None
+        }
+        fn set_clipboard_text(&self, _: &str) {}
+    }
+
+    fn key_event(key_code: u16, chars: &str) -> KeyEvent {
+        KeyEvent {
+            key_code,
+            kind: KeyEventKind::Down,
+            modifiers: Modifiers::default(),
+            characters: chars.to_owned(),
+            characters_ignoring_modifiers: chars.to_owned(),
+            is_repeat: false,
+        }
+    }
+
+    #[test]
+    fn caret_blink_produces_two_real_scene_phases_and_skips_readonly_unfocused_and_selected() {
+        let editable = TextFieldContent::new("Edit", "abc");
+        let content = Content::new(ComponentId(1), editable);
+        let local = LocalContainer::new("edit", content).unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 320., 120.);
+        {
+            let panel = &mut host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel.local.as_mut().unwrap().with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+            });
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        assert!(!host.handle_local_caret_blink(false));
+        assert!(host.text.0.caret_visible);
+
+        // Collapsed selection + editable + active -> alternates visible/hidden phases.
+        assert!(host.handle_local_caret_blink(true));
+        assert!(!host.text.0.caret_visible);
+        let mut scene_hidden = Scene::new();
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut scene_hidden,
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        assert!(host.handle_local_caret_blink(true));
+        assert!(host.text.0.caret_visible);
+        let mut scene_visible = Scene::new();
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut scene_visible,
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        assert_ne!(
+            scene_visible.primitives().len(),
+            scene_hidden.primitives().len(),
+            "two caret blink phases must emit distinct scene primitives"
+        );
+
+        // Non-empty selection must not emit periodic blink redraws.
+        let selected = Content::new(ComponentId(1), TextFieldContent::new("Edit", "abc"));
+        let sel_local = LocalContainer::new("sel", selected).unwrap();
+        let mut sel_host = AppWindow::from_columns(vec![sel_local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(sel_host.mount_columns());
+        sel_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+                h.get_mut(ComponentId(1))
+                    .and_then(|n| n.component_mut::<TextFieldContent>())
+                    .unwrap()
+                    .set_selection(0, 2);
+            });
+        sel_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut sel_host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(!sel_host.handle_local_caret_blink(true));
+
+        // Read-only focused field must not blink/redraw.
+        let ro_field = TextFieldContent::new("RO", "abc").with_read_only(true);
+        let ro_local = LocalContainer::new("ro", Content::new(ComponentId(1), ro_field)).unwrap();
+        let mut ro_host = AppWindow::from_columns(vec![ro_local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(ro_host.mount_columns());
+        ro_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+            });
+        ro_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut ro_host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(!ro_host.handle_local_caret_blink(true));
+    }
+
+    #[test]
+    fn blank_mouse_move_and_unhandled_key_skip_redraw_while_hover_and_typing_redraw() {
+        let content = Content::new(
+            ComponentId(10),
+            StackContent::vertical(
+                16.,
+                vec![
+                    Content::new(ComponentId(11), Button::new("HoverTarget")),
+                    Content::new(ComponentId(12), TextFieldContent::new("Input", "abc")),
+                ],
+            ),
+        );
+        let local = LocalContainer::new("main", content).unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 360., 280.);
+        let mut button_center = None;
+        {
+            let panel = &mut host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+            panel.local.as_mut().unwrap().with_host(&mut |h| {
+                button_center = h
+                    .semantics()
+                    .into_iter()
+                    .find(|n| n.id == ComponentId(11))
+                    .map(|n| {
+                        let b = n.frame;
+                        Point::new(
+                            b.min_x() + b.size.width / 2.,
+                            b.min_y() + b.size.height / 2.,
+                        )
+                    });
+            });
+        }
+        let button_center = button_center.expect("button bounds");
+        let blank_point = Point::new(frame.max_x() - 10., frame.max_y() - 10.);
+        // Blank move causes no state/render change and preserves AX publication currency.
+        let publication_before_blank = host.content_accessibility_publication(true).unwrap();
+        assert!(publication_before_blank.is_current());
+        let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
+        let blank_move = ContentEvent::Pointer(PointerEvent {
+            position: blank_point,
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        });
+        assert!(
+            !panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+        assert!(publication_before_blank.is_current());
+
+        // Real hover enter redraws; moving within blank after hover exit redraws once on exit.
+        let enter_btn = ContentEvent::Pointer(PointerEvent {
+            position: button_center,
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        });
+        assert!(
+            panel
+                .hover_event_needs_redraw(&enter_btn, &mut host.text)
+                .unwrap()
+        );
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(
+            panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(
+            !panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+
+        // Unhandled key on button focus must not request redraw and preserves AX currency.
+        panel.with_host(&mut |h| {
+            h.focus(Some(ComponentId(11)), false);
+        });
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let publication_before_key = host.content_accessibility_publication(true).unwrap();
+        assert!(publication_before_key.is_current());
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::Key(key_event(105, "")),
+                    &NoClipboard,
+                    &mut host.text
+                )
+                .unwrap()
+        );
+        assert!(publication_before_key.is_current());
+        let ctx = TextKeyContext {
+            id: 1,
+            key: key_event(105, ""),
+            composing_at_start: false,
+        };
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::TextKey(TextKeyEvent::Started(ctx.clone())),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::TextKey(TextKeyEvent::Finished {
+                        context: ctx,
+                        input_context_handled: Some(false),
+                        disposition: TextKeyDisposition::Unhandled,
+                        text_callbacks: 0,
+                        command_callbacks: 0,
+                    }),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(publication_before_key.is_current());
+        let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
+
+        // Valid text commit on focused TextField requests redraw.
+        panel.with_host(&mut |h| {
+            h.focus(Some(ComponentId(12)), false);
+        });
+        assert!(
+            panel
+                .window_event(
+                    &Event::TextCommit {
+                        text: "d".into(),
+                        replacement: None,
+                    },
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn on_action_callback_and_rich_link_drain_drive_redraw_and_ax_currency() {
+        use std::cell::Cell;
+        use std::rc::Rc;
+        use tekes_ui_controls::composition::{
+            AccessibilityAction, RichContent, RichDocument, TextContent,
+        };
+        let handled_links = Rc::new(Cell::new(0usize));
+        let handled_links_cb = handled_links.clone();
+        let reader_id = ComponentId(701);
+        let notice_id = ComponentId(702);
+        let btn_id = ComponentId(703);
+        let body_id = ComponentId(704);
+        let content = Content::new(
+            ComponentId(700),
+            StackContent::vertical(
+                8.,
+                vec![
+                    Content::new(notice_id, TextContent::new("initial")),
+                    Content::new(
+                        reader_id,
+                        RichContent::new(
+                            "manual",
+                            1,
+                            RichDocument::from_markdown("[Number](number-field.md)"),
+                        )
+                        .unwrap(),
+                    ),
+                    Content::new(btn_id, Button::new("Trigger")),
+                    Content::new(body_id, TextContent::new("body-initial")),
+                ],
+            ),
+        );
+        let local = LocalContainer::new("doc-panel", content)
+            .unwrap()
+            .on_action(move |host, records| {
+                // Case (a)/(b): read-only check before get_mut for RichContent links.
+                if host
+                    .get(reader_id)
+                    .and_then(|c| c.component::<RichContent>())
+                    .is_some_and(RichContent::has_link_actions)
+                {
+                    let links = host
+                        .get_mut(reader_id)
+                        .unwrap()
+                        .component_mut::<RichContent>()
+                        .unwrap()
+                        .drain_link_actions();
+                    handled_links_cb.set(handled_links_cb.get() + links.len());
+                    host.get_mut(notice_id)
+                        .unwrap()
+                        .component_mut::<TextContent>()
+                        .unwrap()
+                        .set_text("link-handled");
+                }
+                // Case (c): ordinary action callback mutates body.
+                if records.iter().any(|r| r.action.target == btn_id) {
+                    host.get_mut(body_id)
+                        .unwrap()
+                        .component_mut::<TextContent>()
+                        .unwrap()
+                        .set_text("body-mutated-by-callback");
+                }
+            });
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 360., 320.);
+        {
+            let panel = &mut host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+
+        // Case (a): both action and rich link queues empty -> no redraw and AX stays current.
+        let pub_a = host.content_accessibility_publication(true).unwrap();
+        assert!(pub_a.is_current());
+        let blank_move = ContentEvent::Pointer(PointerEvent {
+            position: Point::new(frame.max_x() - 4., frame.max_y() - 4.),
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        });
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+        assert!(pub_a.is_current());
+        assert!(
+            !host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::Key(key_event(105, "")),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(pub_a.is_current());
+        assert_eq!(handled_links.get(), 0);
+
+        // Case (b): ordinary action queue empty, RichContent link queued -> handled once & redraws.
+        {
+            let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
+            panel.with_host(&mut |h| {
+                assert!(h.focus(Some(reader_id), false));
+                h.accessibility_action(reader_id, None, AccessibilityAction::SetSelection(2..2));
+            });
+            panel
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+            let mut enter = key_event(36, "\r");
+            enter.modifiers.command = true;
+            assert!(
+                panel
+                    .window_event(&Event::Key(enter), &NoClipboard, &mut host.text)
+                    .unwrap()
+            );
+            assert_eq!(handled_links.get(), 1);
+            panel.with_host(&mut |h| {
+                assert_eq!(
+                    h.get(notice_id)
+                        .unwrap()
+                        .component::<TextContent>()
+                        .unwrap()
+                        .text(),
+                    "link-handled"
+                );
+            });
+            panel
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+            assert!(
+                !panel
+                    .hover_event_needs_redraw(&blank_move, &mut host.text)
+                    .unwrap()
+            );
+            assert_eq!(handled_links.get(), 1);
+        }
+
+        // Case (c): on_action callback mutates body on keyboard Enter press AND on hover callback path -> redraws & publishes new AX.
+        let mut btn_center = None;
+        {
+            let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
+            panel.with_host(&mut |h| {
+                btn_center = h
+                    .semantics()
+                    .into_iter()
+                    .find(|n| n.id == btn_id)
+                    .map(|n| Point::new(n.frame.min_x() + 4., n.frame.min_y() + 4.));
+                assert!(h.focus(Some(btn_id), false));
+            });
+            panel
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        let pub_before_cb = host.content_accessibility_publication(true).unwrap();
+        assert!(pub_before_cb.is_current());
+        assert!(
+            host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .window_event(
+                    &Event::Key(key_event(36, "\r")),
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
+        assert!(!pub_before_cb.is_current());
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let pub_after_cb = host.content_accessibility_publication(true).unwrap();
+        assert!(pub_after_cb.is_current());
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert_eq!(
+                    h.get(body_id)
+                        .unwrap()
+                        .component::<TextContent>()
+                        .unwrap()
+                        .text(),
+                    "body-mutated-by-callback"
+                );
+            });
+
+        // Verify hover_event_needs_redraw also accounts for mutations made inside on_action.
+        let hover_cb_local = LocalContainer::new(
+            "hover-cb",
+            Content::new(ComponentId(710), TextContent::new("hover-before")),
+        )
+        .unwrap()
+        .on_action(|h, _| {
+            if h.get(ComponentId(710))
+                .unwrap()
+                .component::<TextContent>()
+                .unwrap()
+                .text()
+                == "hover-before"
+            {
+                h.get_mut(ComponentId(710))
+                    .unwrap()
+                    .component_mut::<TextContent>()
+                    .unwrap()
+                    .set_text("hover-after");
+            }
+        });
+        let mut hover_host = AppWindow::from_columns(vec![hover_cb_local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(hover_host.mount_columns());
+        {
+            let panel = &mut hover_host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut hover_host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        let hover_pub_before = hover_host.content_accessibility_publication(true).unwrap();
+        assert!(hover_pub_before.is_current());
+        assert!(
+            hover_host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .hover_event_needs_redraw(&blank_move, &mut hover_host.text)
+                .unwrap()
+        );
+        assert!(!hover_pub_before.is_current());
+        hover_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut hover_host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let hover_pub_after = hover_host.content_accessibility_publication(true).unwrap();
+        assert!(hover_pub_after.is_current());
+        assert!(
+            !hover_host.panel_mgr.panels[0]
+                .local
+                .as_mut()
+                .unwrap()
+                .hover_event_needs_redraw(&blank_move, &mut hover_host.text)
+                .unwrap()
+        );
+        assert!(hover_pub_after.is_current());
+        let _ = btn_center;
     }
 }

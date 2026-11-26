@@ -2082,7 +2082,18 @@ impl Host {
                 return Ok(true);
             }
             Event::CaretBlink => {
-                w.request_redraw();
+                if w.is_active()
+                    && settings
+                        .text_state()
+                        .is_some_and(|s| !s.read_only && s.selection.is_empty())
+                {
+                    drop(state);
+                    self.text.0.caret_visible = !self.text.0.caret_visible;
+                    w.request_redraw();
+                } else {
+                    drop(state);
+                    self.text.0.caret_visible = true;
+                }
                 return Ok(true);
             }
             Event::Created

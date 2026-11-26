@@ -1534,7 +1534,37 @@ impl Host {
             marked
         })
     }
-    pub(super) fn presentation_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum PresentationEventResult {
+    Unhandled,
+    ConsumedNoDraw,
+    Handled,
+}
+
+impl Host {
+    pub(super) fn presentation_event(
+        &mut self,
+        event: &Event,
+        w: &Window,
+    ) -> Result<PresentationEventResult> {
+        let mut draw_needed = true;
+        let handled = self.presentation_event_inner(event, w, &mut draw_needed)?;
+        Ok(if !handled {
+            PresentationEventResult::Unhandled
+        } else if draw_needed {
+            PresentationEventResult::Handled
+        } else {
+            PresentationEventResult::ConsumedNoDraw
+        })
+    }
+    fn presentation_event_inner(
+        &mut self,
+        event: &Event,
+        w: &Window,
+        draw_needed: &mut bool,
+    ) -> Result<bool> {
         if let Event::Scroll(scroll) = event
             && std::env::var_os("TEKESUI_OTHERS_SCROLL_TRACE").is_some()
         {
@@ -1664,7 +1694,8 @@ impl Host {
                 .unwrap()
                 .size
                 .height;
-            self.layout
+            *draw_needed = self
+                .layout
                 .presentation
                 .as_mut()
                 .unwrap()

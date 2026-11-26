@@ -1155,6 +1155,76 @@ fn refused_corner_input_requires_render_before_frozen_repaint() {
 }
 
 #[test]
+fn passive_noop_events_preserve_geometry_lease_while_hover_change_and_corner_down_retire_it() {
+    const BTN: ComponentId = ComponentId(99);
+    let mut host = ContentHost::new(Content::new(
+        ROOT,
+        panel(
+            Content::new(
+                FIELD,
+                StackContent::vertical(0., vec![Content::new(BTN, Button::new("Press Item"))]),
+            ),
+            false,
+        ),
+    ))
+    .unwrap();
+    host.set_window_active(true);
+    let mut text = Text::new(true);
+    let bounds = Rect::new(0., 0., 160., 120.);
+    render(&mut host, &mut text, bounds);
+    let snapshot = host.geometry_snapshot().unwrap();
+    assert!(snapshot.is_current());
+
+    let blank = Point::new(150., 110.);
+    for event in [
+        ContentEvent::PointerMove(blank),
+        ContentEvent::Pointer(PointerEvent {
+            position: blank,
+            phase: PointerPhase::Enter,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        }),
+        ContentEvent::Pointer(PointerEvent {
+            position: blank,
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        }),
+        ContentEvent::Key {
+            key: tekes_ui_controls::ControlKey::Escape,
+            down: true,
+        },
+        ContentEvent::Scroll {
+            position: blank,
+            delta: Point::new(0., 0.),
+            precise: true,
+            begin: false,
+            end: false,
+            momentum: false,
+            time: 0.,
+        },
+    ] {
+        let response = host.event(&event);
+        assert!(!response.consumed && !response.changed);
+        assert!(snapshot.is_current());
+        assert!(!host.has_visual_changes());
+    }
+
+    let button_center = host
+        .semantics()
+        .into_iter()
+        .find(|n| n.id == BTN)
+        .map(|n| Point::new(n.frame.min_x() + 10., n.frame.min_y() + 10.))
+        .unwrap();
+    let hover = host.event(&ContentEvent::PointerMove(button_center));
+    assert!(hover.changed);
+    assert!(!snapshot.is_current());
+    assert!(host.has_visual_changes());
+}
+
+#[test]
 fn arranged_context_replacement_keeps_stale_input_closed_without_false_removal() {
     use std::cell::RefCell;
     #[derive(Debug)]

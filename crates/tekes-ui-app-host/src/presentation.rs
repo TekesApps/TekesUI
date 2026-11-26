@@ -140,9 +140,17 @@ impl OthersListScroll {
             Size::new(1., total_height.max(0.)),
         );
     }
-    fn wheel(&mut self, delta: f32, precise: bool, viewport_height: f32, total_height: f32) {
+    fn wheel(
+        &mut self,
+        delta: f32,
+        precise: bool,
+        viewport_height: f32,
+        total_height: f32,
+    ) -> bool {
         self.sync_bounds(viewport_height, total_height);
+        let before = self.scroll.offset.y;
         let _ = self.scroll.scroll_wheel(0., delta, precise);
+        (self.scroll.offset.y - before).abs() > 0.
     }
     fn scroll_by(&mut self, delta: f32, viewport_height: f32, total_height: f32) {
         self.sync_bounds(viewport_height, total_height);
@@ -615,13 +623,18 @@ impl PresentationState {
         Ok(())
     }
     /// Native wheel admission; programmatic scroll_list offsets remain points.
-    pub(crate) fn scroll_list_wheel(&mut self, delta: f32, precise: bool, viewport_height: f32) {
+    pub(crate) fn scroll_list_wheel(
+        &mut self,
+        delta: f32,
+        precise: bool,
+        viewport_height: f32,
+    ) -> bool {
         if !delta.is_finite() || !viewport_height.is_finite() {
-            return;
+            return false;
         }
         let height: f32 = self.list_ids().iter().map(|id| self.list_height(id)).sum();
         self.list_scroll
-            .wheel(delta, precise, viewport_height, height);
+            .wheel(delta, precise, viewport_height, height)
     }
     pub fn scroll_list(&mut self, delta: f32, viewport_height: f32) {
         if !delta.is_finite() || !viewport_height.is_finite() {
@@ -945,11 +958,11 @@ mod tests {
         state.select_tab(OthersTab::List).unwrap();
         let height = 100.;
         let step = tekes_ui_tokens::proposal::metric("size", "size-row-height").unwrap();
-        state.scroll_list_wheel(0.1, false, height);
+        assert!(state.scroll_list_wheel(0.1, false, height));
         assert!((state.list_scroll() - 0.1 * step).abs() < 0.0001);
-        state.scroll_list_wheel(0.1, true, height);
+        assert!(state.scroll_list_wheel(0.1, true, height));
         assert!((state.list_scroll() - (0.1 * step + 0.1)).abs() < 0.0001);
-        state.scroll_list_wheel(10000., false, height);
+        assert!(state.scroll_list_wheel(10000., false, height));
         let maximum = state
             .list_ids()
             .iter()
@@ -957,8 +970,12 @@ mod tests {
             .sum::<f32>()
             - height;
         assert_eq!(state.list_scroll(), maximum);
-        state.scroll_list_wheel(-10000., false, height);
+        assert!(!state.scroll_list_wheel(10., false, height));
+        assert!(!state.scroll_list_wheel(0., true, height));
+        assert!(state.scroll_list_wheel(-10000., false, height));
         assert_eq!(state.list_scroll(), 0.);
+        assert!(!state.scroll_list_wheel(-10., false, height));
+        assert!(!state.scroll_list_wheel(10., false, maximum + height + 100.));
     }
     #[test]
     fn ordinary_toolbars_stay_on_native_row_and_list_content_uses_remaining_viewport() {

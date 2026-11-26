@@ -1085,6 +1085,9 @@ impl ContentHost {
     }
     pub(super) fn hover_preview_event(&mut self, event: &ContentEvent) -> bool {
         let versions = self.preview_versions();
+        if versions.is_empty() {
+            return false;
+        }
         let routing = event.routing_event();
         match routing.as_ref() {
             ContentEvent::PointerMove(point) if event.is_primary_pointer() => {
@@ -1101,6 +1104,7 @@ impl ContentHost {
                     && self.captured.is_none()
                     && self.scope().overlay_id().is_none()
                     && self.last_layout.is_some();
+                let mut changed = false;
                 for version in versions {
                     let frame = self.preview_anchor(version);
                     let popup = self
@@ -1109,6 +1113,12 @@ impl ContentHost {
                         .unwrap()
                         .component_mut::<HoverPreviewContent>()
                         .unwrap();
+                    let before = (
+                        popup.hovered,
+                        popup.is_open(),
+                        popup.blocked,
+                        popup.owner_frame,
+                    );
                     let hovered = active == Some(version.owner) && frame.is_some();
                     if !hovered {
                         popup.retire(false);
@@ -1128,8 +1138,17 @@ impl ContentHost {
                             );
                         }
                     }
+                    let after = (
+                        popup.hovered,
+                        popup.is_open(),
+                        popup.blocked,
+                        popup.owner_frame,
+                    );
+                    changed |= after != before;
                 }
-                self.dirty = true;
+                if changed {
+                    self.dirty = true;
+                }
             }
             ContentEvent::Key {
                 key: ControlKey::Escape,

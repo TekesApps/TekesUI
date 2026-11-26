@@ -2502,3 +2502,121 @@ fn apphost_documents_switching_between_playground_and_docs_has_zero_origin_jump(
         assert!(live_max_x <= frame.max_x());
     }
 }
+
+#[test]
+fn apphost_document_panel_noop_empty_queues_rich_link_and_callback_body_mutation() {
+    use tekes_ui_controls::composition::{AccessibilityAction, Component};
+    let state = state(FORM_ROUTE);
+    state.borrow_mut().select(Some("name"));
+    let mut doc_panel = panel("documents", "Documents", state.clone(), false).unwrap();
+    let mut text = super::super::text::TextEngine::new();
+    let document_focus = Cell::new(None);
+    let source = RichDocument::from_markdown(document_source("tui.number-field").unwrap());
+    let target = source
+        .links()
+        .iter()
+        .find(|link| link.target() == "ticking-number.md")
+        .unwrap()
+        .target();
+    let mut reader_link_part = 0usize;
+
+    // Seed with a valid document link and render cleanly.
+    doc_panel.with_host(&mut |host| {
+        publish_document(
+            host,
+            "tui.number-field",
+            &format!("[Ticking Number]({target})"),
+            &document_focus,
+        );
+        render_text_host(host, &mut text);
+        reader_link_part = host
+            .get(DOCUMENT_READER)
+            .unwrap()
+            .component::<RichContent>()
+            .unwrap()
+            .semantic_parts()[0]
+            .index;
+    });
+
+    // Case (a): both ordinary action queue and RichContent link queue are empty.
+    // Passive hover/key + consume_document_links must not dirty host or invalidate AX geometry.
+    let mut snap_before_noop = None;
+    doc_panel.with_host(&mut |host| {
+        snap_before_noop = host.geometry_snapshot();
+        assert!(snap_before_noop.as_ref().unwrap().is_current());
+        let move_res = host.event(&ContentEvent::PointerMove(tekes_ui_scene::Point::new(
+            2., 2.,
+        )));
+        assert!(!move_res.consumed && !move_res.changed);
+        let right_res = host.event(&ContentEvent::Key {
+            key: tekes_ui_controls::ControlKey::Right,
+            down: true,
+        });
+        assert!(!right_res.consumed && !right_res.changed);
+        let records = host.drain_action_records();
+        assert!(records.is_empty());
+        consume_document_links(host, &document_focus);
+        consume_chooser_actions(&state, records);
+        assert!(!host.has_visual_changes());
+        assert!(snap_before_noop.as_ref().unwrap().is_current());
+    });
+
+    // Case (b): ordinary action queue empty, RichContent link queued -> handled once and mutates body.
+    doc_panel.with_host(&mut |host| {
+        assert!(
+            host.accessibility_action(
+                DOCUMENT_READER,
+                Some(reader_link_part),
+                AccessibilityAction::Press
+            )
+            .consumed
+        );
+        let records = host.drain_action_records();
+        assert!(records.is_empty());
+        consume_document_links(host, &document_focus);
+        assert!(host.has_visual_changes());
+        assert!(!snap_before_noop.as_ref().unwrap().is_current());
+        render_text_host(host, &mut text);
+        assert!(!host.has_visual_changes());
+        let snap_after_link = host.geometry_snapshot().unwrap();
+        assert!(snap_after_link.is_current());
+        assert_eq!(
+            host.get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap()
+                .version()
+                .identity(),
+            "supplemental.ticking-number"
+        );
+        // Second passive pass sees empty link queue -> zero redraw, AX valid.
+        consume_document_links(host, &document_focus);
+        assert!(!host.has_visual_changes());
+        assert!(snap_after_link.is_current());
+    });
+
+    // Case (c): chooser callback selects another document -> body mutates and publishes new AX geometry.
+    let before_cb_snap = {
+        let mut s = None;
+        doc_panel.with_host(&mut |host| s = host.geometry_snapshot());
+        s.unwrap()
+    };
+    assert!(before_cb_snap.is_current());
+    state.borrow_mut().select(Some("owner"));
+    doc_panel.with_host(&mut |host| {
+        assert_eq!(
+            host.get(DOCUMENT_READER)
+                .unwrap()
+                .component::<RichContent>()
+                .unwrap()
+                .version()
+                .identity(),
+            "tui.text-field"
+        );
+        assert!(host.has_visual_changes());
+        assert!(!before_cb_snap.is_current());
+        render_text_host(host, &mut text);
+        assert!(!host.has_visual_changes());
+        assert!(host.geometry_snapshot().unwrap().is_current());
+    });
+}

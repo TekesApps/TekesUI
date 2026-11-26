@@ -43,7 +43,7 @@ pub(super) struct KeyFrame {
     focus_epoch: u64,
     mount: Option<u64>,
     binding: Option<Vec<u8>>,
-    delegated: bool,
+    pub(super) delegated: bool,
     input_context_consumed: bool,
     key: ContentKeyEvent,
     composing: bool,

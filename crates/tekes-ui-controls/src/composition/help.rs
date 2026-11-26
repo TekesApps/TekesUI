@@ -101,7 +101,7 @@ impl Content {
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
-struct Request {
+pub(super) struct Request {
     id: ComponentId,
     mount: u64,
     part: Option<usize>,
@@ -118,6 +118,8 @@ impl Request {
             && self.keyboard == other.keyboard
     }
 }
+#[derive(PartialEq)]
+pub(super) struct HelpStateKey(Option<Request>, Option<Duration>, bool, bool);
 #[derive(Debug)]
 pub(super) struct HelpState {
     request: Option<Request>,
@@ -164,6 +166,14 @@ impl HelpState {
     }
     pub(super) fn needs_frame(&self) -> bool {
         self.request.is_some() && self.since.is_some() && !self.ready && !self.blocked
+    }
+    pub(super) fn state_key(&self) -> HelpStateKey {
+        HelpStateKey(
+            self.request,
+            self.since,
+            self.ready,
+            self.blocked && (self.request.is_some() || self.since.is_some() || self.ready),
+        )
     }
 }
 impl ContentHost {
@@ -240,11 +250,15 @@ impl ContentHost {
             && (self.presented_dialog.is_none() || self.modal.is_some())
     }
     pub(super) fn help_focus(&mut self, id: Option<ComponentId>, visible: bool) {
+        let was_visible = self.help_tooltip().is_some();
         if visible && self.help_available() {
             let r = id.and_then(|id| self.help_request(id, true, None));
             self.help.arm(r);
         } else {
             self.help.suppress();
+        }
+        if was_visible && self.help_tooltip().is_none() {
+            self.dirty = true;
         }
     }
     fn help_owner(&self) -> Option<&Content> {
@@ -286,6 +300,9 @@ impl ContentHost {
         if self.hover_preview_event(event) {
             return true;
         }
+        let was_visible = self.help_tooltip().is_some();
+        let before_owner = self.help.request.map(|r| (r.id, r.mount, r.part));
+        let mut escape_dismissed = false;
         let routing = event.routing_event();
         match routing.as_ref() {
             ContentEvent::PointerMove(p) => {
@@ -312,11 +329,15 @@ impl ContentHost {
                     None
                 };
                 self.help.arm(r);
+                if self.help.request.is_some()
+                    && self.help.request.map(|r| (r.id, r.mount, r.part)) != before_owner
+                {
+                    self.dirty = true;
+                }
             }
             ContentEvent::Scroll { .. } => self.help.clear(),
             ContentEvent::PointerDown(_) | ContentEvent::PointerUp(_) => self.help.suppress(),
             ContentEvent::Key { key, down: true } => {
-                let visible = self.help_tooltip().is_some();
                 let composing = self
                     .focused_text()
                     .is_some_and(|s| s.input.marked.is_some())
@@ -330,7 +351,8 @@ impl ContentHost {
                     false
                 };
                 self.help.suppress();
-                return *key == ControlKey::Escape && visible && dismissed && !composing;
+                escape_dismissed =
+                    *key == ControlKey::Escape && was_visible && dismissed && !composing;
             }
             ContentEvent::KeyInput(k) if k.down => self.help.suppress(),
             ContentEvent::Commit { .. }
@@ -338,7 +360,10 @@ impl ContentHost {
             | ContentEvent::TextCommand(_) => self.help.suppress(),
             _ => {}
         }
-        false
+        if was_visible && self.help_tooltip().is_none() {
+            self.dirty = true;
+        }
+        escape_dismissed
     }
     pub(super) fn render_help(
         &mut self,

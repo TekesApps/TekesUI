@@ -226,6 +226,7 @@ pub struct CoreTextHost {
     pub motion_context: Option<ControlMotionContext>,
     pub animation_requested: bool,
     pub services_enabled: bool,
+    pub caret_visible: bool,
     pub paragraph_diagnostic: Option<ParagraphLayoutDiagnostic>,
     frame_paragraphs: Option<HashMap<ParagraphLayoutKey, (Rc<Paragraph>, f32)>>,
     frame_surfaces: Option<HashMap<SurfaceLayoutKey, Rc<Paragraph>>>,
@@ -261,6 +262,7 @@ impl CoreTextHost {
             motion_context: None,
             animation_requested: false,
             services_enabled: true,
+            caret_visible: true,
             paragraph_diagnostic: None,
             frame_paragraphs: None,
             frame_surfaces: None,
@@ -552,6 +554,9 @@ impl TextSurfaceHost for CoreTextHost {
     }
     fn type_scale(&self) -> f32 {
         self.type_scale
+    }
+    fn caret_visible(&self) -> bool {
+        self.caret_visible
     }
     fn shape_surface(
         &mut self,
