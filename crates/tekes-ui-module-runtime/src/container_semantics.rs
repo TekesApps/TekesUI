@@ -1532,4 +1532,183 @@ mod runtime_validation_and_reuse_tests {
         );
         assert!(parts3[5].index > next_after_first);
     }
+
+    #[test]
+    fn disabled_remote_datatable_snapshot_keeps_parent_chain_and_rejects_actions() {
+        use tekes_ui_controls::composition::{
+            ComponentId, Content, ContentHost, ContentRole, DataTableContent, TableCellDisplay,
+            TableDisplayUpdate, TableDisplays, TableHeaderDisplay, TableRowDisplay,
+        };
+        use tekes_ui_controls::extended::{
+            KeyedTableColumn, KeyedTableRow, KeyedTableSnapshot, TableBudget, TableColumnKey,
+            TableDatasetKey, TableRowKey,
+        };
+        use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer};
+        use tekes_ui_scene::{Scene, Size};
+        use tekes_ui_tokens::{Rgba, Theme, proposal};
+
+        struct DummyText;
+        impl ButtonTextRenderer for DummyText {
+            fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+                Size::new((s.len() as f32 * 8.).min(w), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+
+        let snapshot = KeyedTableSnapshot {
+            dataset: TableDatasetKey(1),
+            columns: vec![KeyedTableColumn {
+                key: TableColumnKey(1),
+                name: "Col0".into(),
+            }],
+            rows: vec![KeyedTableRow {
+                key: TableRowKey(1),
+                name: "Row0".into(),
+                cells: vec!["Val0".into()],
+            }],
+            display_rows: vec![TableRowKey(1)],
+        };
+        let mut displays = TableDisplays {
+            headers: vec![TableHeaderDisplay {
+                key: TableColumnKey(1),
+                display: TableDisplayUpdate::Keep,
+            }],
+            rows: vec![TableRowDisplay {
+                key: TableRowKey(1),
+                id: ComponentId(101),
+                replace_wrapper: false,
+                cells: vec![TableCellDisplay {
+                    column: TableColumnKey(1),
+                    display: TableDisplayUpdate::Keep,
+                    accessory: TableDisplayUpdate::Keep,
+                }],
+            }],
+        };
+        let table = DataTableContent::new(
+            "RemoteTable",
+            &snapshot,
+            &mut displays,
+            TableBudget {
+                max_units: 1000,
+                max_utf8_bytes: 100_000,
+            },
+        )
+        .unwrap();
+        let mut host = ContentHost::new(Content::new(ComponentId(10), table)).unwrap();
+        let frame = Rect::new(0., 0., 240., 160.);
+        let mut previous_tokens = Vec::new();
+
+        for disabled in [false, true, false] {
+            host.get_mut(ComponentId(10))
+                .unwrap()
+                .component_mut::<DataTableContent>()
+                .unwrap()
+                .set_disabled(disabled)
+                .unwrap();
+            host.render(
+                &mut Scene::new(),
+                &mut DummyText,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+            let snap = crate::content_accessibility::snapshot(&host).unwrap();
+            let mut remote = RemoteSemantics::default();
+            remote.update(semantic_test_snapshot(snap)).unwrap();
+            let parts = remote.parts(frame, frame, false);
+            assert_eq!(parts.len(), 5);
+            let tbl = parts
+                .iter()
+                .find(|p| p.semantics.role == ContentRole::Table)
+                .unwrap();
+            let col = parts
+                .iter()
+                .find(|p| matches!(p.semantics.role, ContentRole::TableColumn { index: 0 }))
+                .unwrap();
+            let hdr = parts
+                .iter()
+                .find(|p| {
+                    matches!(
+                        p.semantics.role,
+                        ContentRole::TableColumnHeader { index: 0, .. }
+                    )
+                })
+                .unwrap();
+            let row = parts
+                .iter()
+                .find(|p| matches!(p.semantics.role, ContentRole::TableRow { index: 0 }))
+                .unwrap();
+            let cell = parts
+                .iter()
+                .find(|p| {
+                    matches!(
+                        p.semantics.role,
+                        ContentRole::TableCell { row: 0, column: 0 }
+                    )
+                })
+                .unwrap();
+
+            assert_eq!(remote.parent(col.index), Some(tbl.index));
+            assert_eq!(remote.parent(hdr.index), Some(col.index));
+            assert_eq!(remote.parent(row.index), Some(tbl.index));
+            assert_eq!(remote.parent(cell.index), Some(row.index));
+            for part in [&tbl, &col, &hdr, &row, &cell] {
+                assert_eq!(part.semantics.disabled, disabled);
+            }
+            for (part, expected_allow) in [
+                (row, Some(!disabled)),
+                (hdr, Some(!disabled)),
+                (cell, Some(false)),
+            ] {
+                let (_, target, part_id) = remote.callback(part.index).unwrap();
+                assert_eq!(
+                    remote.collection_action_admission(
+                        target,
+                        part_id,
+                        frame,
+                        frame,
+                        &wire::AccessibilityAction::Press
+                    ),
+                    expected_allow
+                );
+            }
+            previous_tokens.push((row.index, remote.callback(row.index).unwrap()));
+        }
+
+        // Stale remote token and invalid hierarchy rejection still apply.
+        let mut stale_snap = crate::content_accessibility::snapshot(&host).unwrap();
+        // Corrupt cell parent to None -> rejected by RemoteSemantics::update.
+        stale_snap[0].parts[3].parent = None;
+        let mut rejected_remote = RemoteSemantics::default();
+        assert!(
+            rejected_remote
+                .update(semantic_test_snapshot(stale_snap))
+                .is_err()
+        );
+
+        let stale_remote = RemoteSemantics::default();
+        let (stale_idx, (_, target, part_id)) = previous_tokens[0];
+        assert_eq!(stale_remote.parent(stale_idx), None);
+        assert_eq!(
+            stale_remote.collection_action_admission(
+                target,
+                part_id,
+                frame,
+                frame,
+                &wire::AccessibilityAction::Press
+            ),
+            None
+        );
+    }
 }
