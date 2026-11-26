@@ -406,21 +406,28 @@ impl LocalContainer {
         let callback = &mut self.action;
         self.source.with_host(&mut |host| {
             host.set_window_active(self.active);
-            result = tekes_ui_module_runtime::dispatch_content_window_event_with_text(
+            let event_result = tekes_ui_module_runtime::dispatch_content_window_event_with_text(
                 host, event, clipboard, text,
-            )
-            .map(|response| match event {
-                tekes_ui_platform_macos::Event::Scroll(_) => response.is_some(),
-                tekes_ui_platform_macos::Event::TextKey(_) => {
-                    response.is_some_and(|r| r.changed || r.activated) || host.has_visual_changes()
-                }
-                _ => response.is_some_and(|r| r.consumed || r.changed) || host.has_visual_changes(),
-            })
-            .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
+            );
             if let Some(callback) = callback {
                 let records = host.drain_action_records();
                 callback(host, records);
             }
+            result = event_result
+                .map(|response| match event {
+                    tekes_ui_platform_macos::Event::Scroll(_) => {
+                        response.is_some() || host.has_visual_changes()
+                    }
+                    tekes_ui_platform_macos::Event::TextKey(_) => {
+                        response.is_some_and(|r| r.changed || r.activated)
+                            || host.has_visual_changes()
+                    }
+                    _ => {
+                        response.is_some_and(|r| r.consumed || r.changed)
+                            || host.has_visual_changes()
+                    }
+                })
+                .map_err(|e| anyhow::anyhow!("Container input: {e:?}"));
         });
         result
     }
@@ -460,17 +467,18 @@ impl LocalContainer {
         let callback = &mut self.action;
         self.source.with_host(&mut |h| {
             h.set_window_active(self.active);
-            match h.event_with_text(event, text) {
+            let event_result = h.event_with_text(event, text);
+            if let Some(callback) = callback {
+                let records = h.drain_action_records();
+                callback(h, records);
+            }
+            match event_result {
                 Ok(response) => {
                     needs_redraw = response.changed || h.has_visual_changes();
                 }
                 Err(e) => {
                     result = Err(anyhow::anyhow!("Container input: {e:?}"));
                 }
-            }
-            if let Some(callback) = callback {
-                let records = h.drain_action_records();
-                callback(h, records);
             }
         });
         result.map(|()| needs_redraw)

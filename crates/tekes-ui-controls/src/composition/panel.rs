@@ -1378,4 +1378,99 @@ mod frozen_generation_tests {
         );
         assert!(no_scroll.focused().is_none());
     }
+
+    #[test]
+    fn visible_tooltip_dismissed_by_unhandled_right_requests_one_redraw_then_zero() {
+        struct TooltipText {
+            now: std::time::Duration,
+        }
+        impl ButtonTextRenderer for TooltipText {
+            fn measure(&mut self, text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+                Size::new((text.chars().count() as f32 * 7.).min(max_width), 18.)
+            }
+            fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+                Some(crate::ControlMotionContext {
+                    now: self.now,
+                    reduced_motion: true,
+                })
+            }
+            fn draw(
+                &mut self,
+                _scene: &mut Scene,
+                _text: &str,
+                _role: proposal::TextRole,
+                _rect: Rect,
+                _align: ButtonTextAlign,
+                _ink: Rgba,
+            ) {
+            }
+        }
+
+        let button = Content::new(ComponentId(9951), Button::new("HelpBtn")).with_help("Help text");
+        let label = Content::new(ComponentId(9952), TextContent::new("Unfocused body"));
+        let root = Content::new(
+            ComponentId(9950),
+            PanelContent::new(Content::new(
+                ComponentId(9953),
+                StackContent {
+                    model: Stack {
+                        axis: Axis::Vertical,
+                        gap: 8.,
+                    },
+                    flexible_child: None,
+                    children: vec![button, label],
+                },
+            ))
+            .unwrap(),
+        );
+        let mut host = ContentHost::new(root).unwrap();
+        let frame = Rect::new(0., 0., 280., 160.);
+        let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+        let mut text = TooltipText {
+            now: std::time::Duration::from_secs(1),
+        };
+        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .unwrap();
+        let btn_frame = host.get(ComponentId(9951)).unwrap().frame();
+        let hover_pt = Point::new(
+            btn_frame.min_x() + btn_frame.size.width / 2.,
+            btn_frame.min_y() + btn_frame.size.height / 2.,
+        );
+        let move_ev = ContentEvent::PointerMove(hover_pt);
+        host.event(&move_ev);
+        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .unwrap();
+        text.now +=
+            std::time::Duration::from_secs_f32(proposal::tooltip_hover_delay().unwrap() + 0.5);
+        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .unwrap();
+        assert!(host.help_tooltip().is_some());
+        assert!(!host.has_visual_changes());
+        let snap1 = host.geometry_snapshot().unwrap();
+        assert!(snap1.is_current());
+
+        let right = ContentEvent::Key {
+            key: ControlKey::Right,
+            down: true,
+        };
+        let r1 = host.event(&right);
+        assert!(!r1.consumed);
+        assert!(!r1.changed);
+        assert!(host.help_tooltip().is_none());
+        assert!(host.has_visual_changes());
+        assert!(!snap1.is_current());
+
+        host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .unwrap();
+        assert!(!host.has_visual_changes());
+        let snap2 = host.geometry_snapshot().unwrap();
+        assert!(snap2.is_current());
+
+        let r2 = host.event(&right);
+        assert!(!r2.consumed);
+        assert!(!r2.changed);
+        assert!(host.help_tooltip().is_none());
+        assert!(!host.has_visual_changes());
+        assert!(snap2.is_current());
+    }
 }
