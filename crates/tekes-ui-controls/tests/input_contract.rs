@@ -302,3 +302,183 @@ fn pointer_snapshot_uses_visible_geometry_and_existing_selection_capture() {
         }
     }
 }
+
+#[test]
+fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics() {
+    #[path = "support/coretext.rs"]
+    mod coretext;
+    use tekes_ui_controls::composition::{
+        AccessibilityAction, Component, ComponentId, Content, ContentHost, MarkdownEditorContent,
+        TextFieldContent,
+    };
+
+    assert_eq!(proposal::TextRole::MultilineBody.id(), "multiline-body");
+    let multiline_style = proposal::TextRole::MultilineBody.style();
+    let composer_style = proposal::TextRole::ComposerBody.style();
+    assert_eq!(multiline_style.size, 14.0);
+    assert_eq!(multiline_style.line_height, 20.0);
+    assert_eq!(multiline_style.weight, 400);
+    assert_eq!(
+        proposal::text_family(proposal::TextRole::MultilineBody.id()),
+        Some("ui")
+    );
+    assert_eq!(
+        multiline_style.size, composer_style.size,
+        "neutral multiline role keeps 14 pt size"
+    );
+    assert_eq!(
+        multiline_style.line_height, composer_style.line_height,
+        "neutral multiline role keeps 20 pt line height"
+    );
+    assert_eq!(multiline_style.weight, composer_style.weight);
+
+    // Ordinary public inputs and surface constructors.
+    let single_field = TextFieldContent::new("Title", "Hello");
+    assert_eq!(single_field.role(), proposal::TextRole::UiBody);
+
+    let multiline_field = TextFieldContent::multiline("Notes", "Hello");
+    assert_eq!(multiline_field.role(), proposal::TextRole::MultilineBody);
+
+    let explicit_composer = TextFieldContent::multiline("Composer", "Hello")
+        .with_role(proposal::TextRole::ComposerBody);
+    assert_eq!(explicit_composer.role(), proposal::TextRole::ComposerBody);
+
+    let ro_doc =
+        TextFieldContent::read_only_content("Doc", "Read-only body", proposal::TextRole::DocBody);
+    assert_eq!(ro_doc.role(), proposal::TextRole::DocBody);
+
+    let md = MarkdownEditorContent::new("md-doc", 1, "Paragraph one").expect("markdown editor");
+    assert_eq!(
+        md.text_surface().expect("markdown text surface").role(),
+        proposal::TextRole::UiBody
+    );
+
+    assert_eq!(
+        TextSurface::new("a", false, false).role(),
+        proposal::TextRole::UiBody
+    );
+    assert_eq!(
+        TextSurface::new("a", true, false).role(),
+        proposal::TextRole::MultilineBody
+    );
+    assert_eq!(
+        TextSurface::new("a", true, true).role(),
+        proposal::TextRole::MultilineBody
+    );
+
+    // Compare layout, type scaling, line wrapping, selection, and IME candidate/caret geometry
+    // between default MultilineBody and explicit ComposerBody through ContentHost + CoreText.
+    let sample =
+        "Ordinary multiline input wraps smoothly across lines when narrowed; 中文输入候选定位。";
+    let frame = Rect::new(0., 0., 200., 220.);
+    let palette = Palette::from(Theme::LIGHT);
+
+    for type_scale in [1.0_f32, 1.5_f32] {
+        let mut text = coretext::Text::new(type_scale);
+        text.services = true;
+
+        let mut neutral_host = ContentHost::new(Content::new(
+            ComponentId(1),
+            TextFieldContent::multiline("Notes", sample),
+        ))
+        .unwrap();
+        let mut composer_host = ContentHost::new(Content::new(
+            ComponentId(2),
+            TextFieldContent::multiline("Notes", sample)
+                .with_role(proposal::TextRole::ComposerBody),
+        ))
+        .unwrap();
+
+        let mut s1 = Scene::new();
+        let mut s2 = Scene::new();
+        neutral_host
+            .render(&mut s1, &mut text, frame, frame, palette)
+            .expect("render neutral multiline");
+        composer_host
+            .render(&mut s2, &mut text, frame, frame, palette)
+            .expect("render explicit composer");
+
+        {
+            let surf_n = neutral_host.text_surface(ComponentId(1)).unwrap();
+            let surf_c = composer_host.text_surface(ComponentId(2)).unwrap();
+            assert_eq!(surf_n.role(), proposal::TextRole::MultilineBody);
+            assert_eq!(surf_c.role(), proposal::TextRole::ComposerBody);
+
+            let pn = surf_n.paragraph().expect("shaped neutral paragraph");
+            let pc = surf_c.paragraph().expect("shaped composer paragraph");
+            assert!(pn.lines.len() >= 2, "expected wrapped multiline layout");
+            assert_eq!(pn.lines.len(), pc.lines.len());
+            assert_eq!(pn.height.to_bits(), pc.height.to_bits());
+            assert_eq!(pn.width.to_bits(), pc.width.to_bits());
+            assert_eq!(surf_n.scroll().limit(), surf_c.scroll().limit());
+            assert_eq!(
+                surf_n.minimum_outer_height(type_scale).to_bits(),
+                surf_c.minimum_outer_height(type_scale).to_bits()
+            );
+        }
+
+        // Selection range & rects parity.
+        let r1 = neutral_host.accessibility_action(
+            ComponentId(1),
+            None,
+            AccessibilityAction::SetSelection(9..20),
+        );
+        let r2 = composer_host.accessibility_action(
+            ComponentId(2),
+            None,
+            AccessibilityAction::SetSelection(9..20),
+        );
+        assert!(r1.consumed && r1.changed && r2.consumed && r2.changed);
+        assert_eq!(
+            neutral_host
+                .text_surface(ComponentId(1))
+                .unwrap()
+                .selection_rects(9..20),
+            composer_host
+                .text_surface(ComponentId(2))
+                .unwrap()
+                .selection_rects(9..20)
+        );
+
+        // Active IME composition + candidate/marked geometry parity.
+        let clauses = vec![0..2, 2..5];
+        assert!(
+            neutral_host
+                .get_mut(ComponentId(1))
+                .unwrap()
+                .component_mut::<TextFieldContent>()
+                .unwrap()
+                .set_composition_preview("nihao", 2..5, None, clauses.clone())
+        );
+        assert!(
+            composer_host
+                .get_mut(ComponentId(2))
+                .unwrap()
+                .component_mut::<TextFieldContent>()
+                .unwrap()
+                .set_composition_preview("nihao", 2..5, None, clauses)
+        );
+        neutral_host
+            .render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .expect("render neutral IME");
+        composer_host
+            .render(&mut Scene::new(), &mut text, frame, frame, palette)
+            .expect("render composer IME");
+
+        let snap_n = neutral_host
+            .semantic_text_input_snapshot(ComponentId(1))
+            .unwrap();
+        let snap_c = composer_host
+            .semantic_text_input_snapshot(ComponentId(2))
+            .unwrap();
+        assert_eq!(snap_n.marked, snap_c.marked);
+        let surf_n = neutral_host.text_surface(ComponentId(1)).unwrap();
+        let surf_c = composer_host.text_surface(ComponentId(2)).unwrap();
+        let marked = surf_n.marked().expect("active marked range");
+        assert_eq!(
+            surf_n.selection_rects(marked.clone()),
+            surf_c.selection_rects(marked)
+        );
+        assert_eq!(surf_n.caret(), surf_c.caret());
+    }
+}

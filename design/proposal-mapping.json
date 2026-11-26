@@ -2481,6 +2481,7 @@
   },
   "text_profiles": [
     "ui-body",
+    "multiline-body",
     "ui-label",
     "ui-secondary",
     "ui-caption",
