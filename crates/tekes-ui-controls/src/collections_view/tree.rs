@@ -31,6 +31,7 @@ pub struct TreeView {
     pub(super) buttons: Vec<ButtonModel>,
     pub(super) icons: Vec<IconView>,
     icon_slots: Vec<TreeIconSlot>,
+    has_children: Vec<bool>,
 }
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TreeContentRow {
@@ -73,6 +74,7 @@ impl Default for TreeView {
             buttons: Vec::new(),
             icons: Vec::new(),
             icon_slots: Vec::new(),
+            has_children: Vec::new(),
         }
     }
 }
@@ -93,6 +95,7 @@ impl TreeView {
         self.buttons.clear();
         self.icons.clear();
         self.icon_slots.clear();
+        self.has_children.clear();
     }
     /// Automatic identity reconciliation; callers never need to forward deltas.
     pub fn reconcile_model(&mut self, model: &Tree) {
@@ -311,13 +314,16 @@ impl TreeView {
     ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
         let slot =
             proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
+        let per_level = tree_indent_step();
+        let depths = compute_tree_depths(model);
         let min_row = row_height_for(compact);
         let inset = ButtonSize::Body.scaled_horizontal_inset(text, proposal::TextRole::UiBody);
         model
             .visible()
             .into_iter()
             .map(|id| {
-                let row_width = (width - depth_indent(model, id)).max(0.);
+                let indent = depths.get(id).copied().unwrap_or(0) as f32 * per_level;
+                let row_width = (width - indent).max(0.);
                 let width = (row_width - inset * 2. - slot).max(0.);
                 let resolved = crate::ButtonLayout::resolve_with_text(
                     text,
@@ -410,11 +416,22 @@ impl TreeView {
                 return;
             }
         }
+        self.has_children = vec![false; model.nodes().len()];
+        for node in model.nodes() {
+            if let Some(p) = node.parent
+                && p < self.has_children.len()
+            {
+                self.has_children[p] = true;
+            }
+        }
+        let depths = compute_tree_depths(model);
+        let per_level = tree_indent_step();
         let slot =
             proposal::metric("size", "size-inline-action").expect("Tree expand action slot token");
         let mut y = frame.min_y();
         for &(id, size, custom) in metrics {
-            let indent = depth_indent(model, id);
+            let depth = depths.get(id).copied().unwrap_or(0);
+            let indent = depth as f32 * per_level;
             let width = (frame.size.width - indent).max(0.);
             let height = Self::resolved_row_height(text, size, custom, width, self.compact);
             let r = Rect::new(frame.min_x() + indent, y, width, height);
@@ -435,16 +452,7 @@ impl TreeView {
             let content = button.content;
             let side = slot.min(content.size.width);
             let text_width = (content.size.width - side).max(0.);
-            let label_size = if custom {
-                size
-            } else {
-                text.measure(
-                    &model.nodes()[id].label,
-                    proposal::TextRole::UiBody,
-                    text_width,
-                )
-            };
-            let label_height = label_size.height.min(r.size.height);
+            let label_height = size.height.min(r.size.height);
             let display = Rect::new(
                 content.min_x() + side,
                 r.center().y - label_height * 0.5,
@@ -455,7 +463,7 @@ impl TreeView {
                 id,
                 frame: r,
                 visible: if own.is_some() { button.visible } else { None },
-                depth: tree_depth(model, id),
+                depth,
             });
             self.rows.push(TreeContentRow {
                 id,
@@ -492,11 +500,30 @@ impl TreeView {
         let Some(own) = self.layout.visible else {
             return;
         };
+        if self.has_children.len() != model.nodes().len() {
+            self.has_children = vec![false; model.nodes().len()];
+            for node in model.nodes() {
+                if let Some(p) = node.parent
+                    && p < self.has_children.len()
+                {
+                    self.has_children[p] = true;
+                }
+            }
+        }
         self.buttons
             .resize_with(model.nodes().len(), ButtonModel::default);
         self.buttons.truncate(model.nodes().len());
+        let start = self
+            .layout
+            .items
+            .partition_point(|item| item.frame.max_y() <= own.min_y());
+        let end = start
+            + self.layout.items[start..].partition_point(|item| item.frame.min_y() < own.max_y());
         scene.push_clip(own);
-        for (item, row) in self.layout.items.iter().zip(&self.rows) {
+        for (item, row) in self.layout.items[start..end]
+            .iter()
+            .zip(&self.rows[start..end])
+        {
             let id = item.id;
             let node = &model.nodes()[id];
             let focused = self.state.focused == Some(id) && self.state.window_active;
@@ -548,7 +575,7 @@ impl TreeView {
                     tint,
                 );
             }
-            if model.nodes().iter().any(|n| n.parent == Some(id)) {
+            if self.has_children.get(id).copied().unwrap_or(false) {
                 self.icon_slots.push(TreeIconSlot {
                     name: if node.expanded {
                         "tekes-expand"
@@ -810,19 +837,44 @@ impl TreeView {
     }
 }
 
-fn tree_depth(tree: &Tree, mut id: usize) -> usize {
-    let mut depth = 0;
-    while let Some(parent) = tree.nodes().get(id).and_then(|n| n.parent) {
-        depth += 1;
-        id = parent;
-        if depth > tree.nodes().len() {
-            break;
+fn tree_indent_step() -> f32 {
+    proposal::metric("size", "size-icon-standard").expect("tree indent icon")
+        + tekes_ui_tokens::Spacing::Tight.value()
+}
+fn compute_tree_depths(tree: &Tree) -> Vec<usize> {
+    let nodes = tree.nodes();
+    let n = nodes.len();
+    let mut depths = vec![usize::MAX; n];
+    let mut stack = Vec::new();
+    for start in 0..n {
+        if depths[start] != usize::MAX {
+            continue;
+        }
+        let mut cur = start;
+        while cur < n && depths[cur] == usize::MAX && stack.len() <= n {
+            stack.push(cur);
+            match nodes[cur].parent {
+                Some(p) if p < n => cur = p,
+                _ => break,
+            }
+        }
+        let mut d = if stack.len() > n {
+            // Bounded cycle fallback matching original tree_depth cap.
+            0
+        } else if let Some(&last) = stack.last() {
+            match nodes[last].parent {
+                Some(p) if p < n && depths[p] != usize::MAX => depths[p] + 1,
+                _ => 0,
+            }
+        } else {
+            0
+        };
+        while let Some(idx) = stack.pop() {
+            if depths[idx] == usize::MAX {
+                depths[idx] = d;
+            }
+            d += 1;
         }
     }
-    depth
-}
-fn depth_indent(tree: &Tree, id: usize) -> f32 {
-    let per_level = proposal::metric("size", "size-icon-standard").expect("tree indent icon")
-        + tekes_ui_tokens::Spacing::Tight.value();
-    tree_depth(tree, id) as f32 * per_level
+    depths
 }

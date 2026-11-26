@@ -169,6 +169,9 @@ struct Prepared {
     next: usize,
     ids: BTreeSet<ComponentId>,
 }
+type TreeMetricCacheKey = (u32, u32, u32, usize, u64, bool);
+type TreeMetricCache = (TreeMetricCacheKey, Vec<(usize, tekes_ui_scene::Size, bool)>);
+
 #[derive(Debug)]
 pub struct TreeContent {
     name: String,
@@ -186,6 +189,7 @@ pub struct TreeContent {
     last_intent: Option<TreeIntent>,
     icon_error: Option<IconRenderError>,
     icon_images: Vec<IconImage>,
+    metrics_cache: Option<TreeMetricCache>,
 }
 impl TreeContent {
     pub fn new(
@@ -208,6 +212,7 @@ impl TreeContent {
             last_intent: None,
             icon_error: None,
             icon_images: Vec::new(),
+            metrics_cache: None,
         };
         let prepared = tree.prepare(dataset, nodes)?;
         tree.commit(dataset, prepared)?;
@@ -509,7 +514,52 @@ impl TreeContent {
     fn invalidate(&mut self) {
         self.view.reconcile_model(&self.model);
         self.view.invalidate_content_layout();
+        self.metrics_cache = None;
         self.icon_images.clear();
+    }
+    fn measure_key(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        compact: bool,
+    ) -> TreeMetricCacheKey {
+        (
+            width.to_bits(),
+            text.resolved_font_size(proposal::TextRole::UiBody)
+                .to_bits(),
+            text.backing_scale().to_bits(),
+            std::sync::Arc::as_ptr(&self.model.model_identity()) as usize,
+            self.model.model_revision(),
+            compact,
+        )
+    }
+    fn compute_metrics(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        height: f32,
+        compact: bool,
+    ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
+        let rows = &mut self.rows;
+        TreeView::measure_rows(
+            &self.model,
+            width,
+            text,
+            compact,
+            |text, i, w, custom_width| {
+                let custom = !rows[i]
+                    .component::<RowSlot>()
+                    .expect("row")
+                    .display
+                    .is_empty();
+                let size = if custom {
+                    rows[i].measure(text, Size::new(custom_width, height)).size
+                } else {
+                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
+                };
+                (size, custom)
+            },
+        )
     }
     fn geometry_actionable(&self, index: usize) -> bool {
         self.view.layout_for(&self.model).is_some_and(|l| {
@@ -696,28 +746,9 @@ impl Component for TreeContent {
             return MeasuredChild::new(Size::default());
         }
         let compact = self.view.compact();
-        let rows = &mut self.rows;
-        let metrics = TreeView::measure_rows(
-            &self.model,
-            available.width,
-            text,
-            compact,
-            |text, i, w, custom_width| {
-                let custom = !rows[i]
-                    .component::<RowSlot>()
-                    .expect("row")
-                    .display
-                    .is_empty();
-                let size = if custom {
-                    rows[i]
-                        .measure(text, Size::new(custom_width, available.height))
-                        .size
-                } else {
-                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
-                };
-                (size, custom)
-            },
-        );
+        let key = self.measure_key(text, available.width, compact);
+        let metrics = self.compute_metrics(text, available.width, available.height, compact);
+        self.metrics_cache = Some((key, metrics.clone()));
         MeasuredChild::new(Size::new(
             available.width,
             TreeView::rows_height(text, available.width, &metrics, compact),
@@ -729,28 +760,16 @@ impl Component for TreeContent {
             return;
         }
         let compact = self.view.compact();
-        let rows = &mut self.rows;
-        let metrics = TreeView::measure_rows(
-            &self.model,
-            frame.size.width,
-            text,
-            compact,
-            |text, i, w, custom_width| {
-                let custom = !rows[i]
-                    .component::<RowSlot>()
-                    .expect("row")
-                    .display
-                    .is_empty();
-                let size = if custom {
-                    rows[i]
-                        .measure(text, Size::new(custom_width, frame.size.height))
-                        .size
-                } else {
-                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
-                };
-                (size, custom)
-            },
-        );
+        let key = self.measure_key(text, frame.size.width, compact);
+        let metrics = if let Some((cached_key, cached)) = &self.metrics_cache
+            && *cached_key == key
+        {
+            cached.clone()
+        } else {
+            let computed = self.compute_metrics(text, frame.size.width, frame.size.height, compact);
+            self.metrics_cache = Some((key, computed.clone()));
+            computed
+        };
         self.view.arrange_rows(
             &mut TextAdapter(text),
             &self.model,
