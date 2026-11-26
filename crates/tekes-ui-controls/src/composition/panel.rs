@@ -206,6 +206,7 @@ struct GeometryEntry {
 pub struct ContentGeometrySnapshot {
     pub generation: u64,
     entries: Vec<GeometryEntry>,
+    index_by_key: std::collections::HashMap<(ComponentId, Option<usize>), usize>,
     lease: std::sync::Arc<std::sync::atomic::AtomicU64>,
     lease_generation: u64,
 }
@@ -218,9 +219,9 @@ impl ContentGeometrySnapshot {
         if !self.is_current() {
             return None;
         }
-        self.entries
-            .iter()
-            .find(|e| e.id == id && e.part == part)
+        self.index_by_key
+            .get(&(id, part))
+            .and_then(|&idx| self.entries.get(idx))
             .map(|e| e.mount)
     }
     pub fn hit_test(&self, point: Point) -> Option<(ComponentId, u64, Option<usize>)> {
@@ -248,7 +249,11 @@ impl ContentGeometrySnapshot {
         if !self.is_current() {
             return Err(tekes_ui_scene::ClipError::StaleShapeKey);
         }
-        let Some(e) = self.entries.iter().find(|e| e.id == id && e.part == part) else {
+        let Some(e) = self
+            .index_by_key
+            .get(&(id, part))
+            .and_then(|&idx| self.entries.get(idx))
+        else {
             return Ok(None);
         };
         bounds(&e.shapes, rect)
@@ -651,9 +656,14 @@ impl ContentHost {
         }
         let mut entries = Vec::new();
         collect(self.scope(), &mut entries);
+        let mut index_by_key = std::collections::HashMap::with_capacity(entries.len());
+        for (idx, entry) in entries.iter().enumerate() {
+            index_by_key.entry((entry.id, entry.part)).or_insert(idx);
+        }
         Some(ContentGeometrySnapshot {
             generation: self.reveal_clock.stamp().ok()?.0,
             entries,
+            index_by_key,
             lease: self.reveal_clock.geometry_lease.clone(),
             lease_generation: self
                 .reveal_clock

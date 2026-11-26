@@ -38,6 +38,8 @@ pub(crate) struct RemoteSemantics {
     attachment: Option<(Session, u64)>,
     snapshot: Option<ProcessContentSnapshot>,
     entries: Vec<Entry>,
+    entry_by_index: std::collections::HashMap<usize, usize>,
+    entry_by_key: std::collections::HashMap<Key, usize>,
     next: usize,
     dirty: bool,
 }
@@ -560,6 +562,8 @@ impl RemoteSemantics {
     /// Revoke publication without resetting the monotonic ID allocator.
     pub fn revoke(&mut self) {
         self.entries.clear();
+        self.entry_by_index.clear();
+        self.entry_by_key.clear();
         self.snapshot = None;
         self.attachment = None;
         self.dirty = true;
@@ -579,13 +583,8 @@ impl RemoteSemantics {
         }
         let attachment = snapshot.semantic_attachment();
         let same = self.attachment.as_ref() == Some(&attachment);
-        let old_by_key: Option<std::collections::HashMap<Key, usize>> = same.then(|| {
-            self.entries
-                .iter()
-                .enumerate()
-                .map(|(i, e)| (e.key, i))
-                .collect()
-        });
+        let old_by_key: Option<&std::collections::HashMap<Key, usize>> =
+            same.then_some(&self.entry_by_key);
         let total = nodes.iter().map(|n| 1 + n.parts.len()).sum();
         let mut entries = Vec::with_capacity(total);
         let mut parents = Vec::with_capacity(total);
@@ -668,15 +667,34 @@ impl RemoteSemantics {
                 parents.push(parent);
             }
         }
-        for (e, parent) in entries.iter_mut().zip(parents) {
+        let mut entry_by_index = std::collections::HashMap::with_capacity(entries.len());
+        let mut entry_by_key = std::collections::HashMap::with_capacity(entries.len());
+        for (i, (e, parent)) in entries.iter_mut().zip(parents).enumerate() {
             e.parent = parent.and_then(|key| new_index_by_key.get(&key).copied());
+            entry_by_index.insert(e.index, i);
+            entry_by_key.insert(e.key, i);
         }
         self.next = next;
         self.entries = entries;
+        self.entry_by_index = entry_by_index;
+        self.entry_by_key = entry_by_key;
         self.attachment = Some(attachment);
         self.snapshot = Some(snapshot);
         self.dirty = false;
         Ok(())
+    }
+    fn entry_visible_frame(e: &Entry, frame: Rect, clip: Rect) -> Rect {
+        let raw = rect(e.frame).offset(frame.min_x(), frame.min_y());
+        let bounds = e
+            .visible
+            .and_then(|r| {
+                rect(r)
+                    .offset(frame.min_x(), frame.min_y())
+                    .intersection(&raw)
+            })
+            .and_then(|r| r.intersection(&frame))
+            .and_then(|r| r.intersection(&clip));
+        bounds.unwrap_or_else(|| Rect::new(frame.min_x(), frame.min_y(), 0., 0.))
     }
     /// Admit only original Table/Tree actions that the current parent Host
     /// projection still maps to a visible part. This shares the same identity
@@ -693,9 +711,9 @@ impl RemoteSemantics {
             return None;
         }
         let entry = self
-            .entries
-            .iter()
-            .find(|entry| entry.key == (Key { target, part }))?;
+            .entry_by_key
+            .get(&Key { target, part })
+            .and_then(|&i| self.entries.get(i))?;
         use tekes_ui_controls::composition::ContentRole as R;
         let role = semantics(&entry.semantics).role;
         let table_role = matches!(
@@ -710,21 +728,18 @@ impl RemoteSemantics {
         if !table_role && !tree_item {
             return None;
         }
-        let visible = self
-            .parts(frame, clip, false)
-            .into_iter()
-            .find(|projected| projected.index == entry.index)?;
+        let visible_frame = Self::entry_visible_frame(entry, frame, clip);
         use wire::AccessibilityAction as A;
         if table_role {
             return Some(
                 matches!(role, R::TableColumnHeader { .. } | R::TableRow { .. })
                     && matches!(action, A::Focus | A::Press)
-                    && !visible.frame.is_empty()
-                    && !visible.semantics.disabled,
+                    && !visible_frame.is_empty()
+                    && !entry.semantics.disabled,
             );
         }
         Some(
-            !matches!(action, A::Focus | A::Press | A::SetExpanded(_)) || !visible.frame.is_empty(),
+            !matches!(action, A::Focus | A::Press | A::SetExpanded(_)) || !visible_frame.is_empty(),
         )
     }
 
@@ -735,18 +750,7 @@ impl RemoteSemantics {
         self.entries
             .iter()
             .map(|e| {
-                let raw = rect(e.frame).offset(frame.min_x(), frame.min_y());
-                let bounds = e
-                    .visible
-                    .and_then(|r| {
-                        rect(r)
-                            .offset(frame.min_x(), frame.min_y())
-                            .intersection(&raw)
-                    })
-                    .and_then(|r| r.intersection(&frame))
-                    .and_then(|r| r.intersection(&clip));
-                let frame =
-                    bounds.unwrap_or_else(|| Rect::new(frame.min_x(), frame.min_y(), 0., 0.));
+                let frame = Self::entry_visible_frame(e, frame, clip);
                 let table_part = matches!(
                     e.semantics.role,
                     wire::SemanticRole::Table
@@ -766,23 +770,29 @@ impl RemoteSemantics {
     }
     pub fn parent(&self, index: usize) -> Option<usize> {
         (!self.needs_refresh())
-            .then(|| self.entries.iter().find(|e| e.index == index)?.parent)
+            .then(|| {
+                self.entry_by_index
+                    .get(&index)
+                    .and_then(|&i| self.entries.get(i))?
+                    .parent
+            })
             .flatten()
     }
     pub fn preserves_focus(&self, index: usize) -> bool {
         !self.needs_refresh()
             && self
-                .entries
-                .iter()
-                .any(|e| e.index == index && e.preserves_focus)
+                .entry_by_index
+                .get(&index)
+                .and_then(|&i| self.entries.get(i))
+                .is_some_and(|e| e.preserves_focus)
     }
     pub fn value_range(&self, index: usize) -> Option<std::ops::RangeInclusive<f64>> {
         if self.needs_refresh() {
             return None;
         }
-        self.entries
-            .iter()
-            .find(|e| e.index == index)?
+        self.entry_by_index
+            .get(&index)
+            .and_then(|&i| self.entries.get(i))?
             .value_range
             .map(|r| r[0]..=r[1])
     }
@@ -796,9 +806,9 @@ impl RemoteSemantics {
             return None;
         }
         let t = self
-            .entries
-            .iter()
-            .find(|e| e.index == index)?
+            .entry_by_index
+            .get(&index)
+            .and_then(|&i| self.entries.get(i))?
             .text_layout
             .as_ref()?;
         let offset = |r| rect(r).offset(frame.min_x(), frame.min_y());
@@ -837,7 +847,10 @@ impl RemoteSemantics {
         if self.needs_refresh() {
             return None;
         }
-        let e = self.entries.iter().find(|e| e.index == index)?;
+        let e = self
+            .entry_by_index
+            .get(&index)
+            .and_then(|&i| self.entries.get(i))?;
         Some((self.snapshot.clone()?, e.key.target, e.key.part))
     }
 }
@@ -1605,6 +1618,8 @@ mod runtime_validation_and_reuse_tests {
         .unwrap();
         let mut host = ContentHost::new(Content::new(ComponentId(10), table)).unwrap();
         let frame = Rect::new(0., 0., 240., 160.);
+        let mut remote = RemoteSemantics::default();
+        let mut base_tbl_index = None;
         let mut previous_tokens = Vec::new();
 
         for disabled in [false, true, false] {
@@ -1624,7 +1639,6 @@ mod runtime_validation_and_reuse_tests {
             .unwrap();
 
             let snap = crate::content_accessibility::snapshot(&host).unwrap();
-            let mut remote = RemoteSemantics::default();
             remote.update(semantic_test_snapshot(snap)).unwrap();
             let parts = remote.parts(frame, frame, false);
             assert_eq!(parts.len(), 5);
@@ -1632,6 +1646,11 @@ mod runtime_validation_and_reuse_tests {
                 .iter()
                 .find(|p| p.semantics.role == ContentRole::Table)
                 .unwrap();
+            if let Some(expected_tbl) = base_tbl_index {
+                assert_eq!(tbl.index, expected_tbl);
+            } else {
+                base_tbl_index = Some(tbl.index);
+            }
             let col = parts
                 .iter()
                 .find(|p| matches!(p.semantics.role, ContentRole::TableColumn { index: 0 }))
@@ -1672,41 +1691,298 @@ mod runtime_validation_and_reuse_tests {
                 (cell, Some(false)),
             ] {
                 let (_, target, part_id) = remote.callback(part.index).unwrap();
-                assert_eq!(
-                    remote.collection_action_admission(
-                        target,
-                        part_id,
-                        frame,
-                        frame,
-                        &wire::AccessibilityAction::Press
-                    ),
-                    expected_allow
-                );
+                for action in [
+                    wire::AccessibilityAction::Focus,
+                    wire::AccessibilityAction::Press,
+                ] {
+                    assert_eq!(
+                        remote.collection_action_admission(target, part_id, frame, frame, &action),
+                        expected_allow
+                    );
+                }
+            }
+            for &(_, (_, old_target, old_part_id)) in &previous_tokens {
+                for action in [
+                    wire::AccessibilityAction::Focus,
+                    wire::AccessibilityAction::Press,
+                ] {
+                    assert_ne!(
+                        remote.collection_action_admission(
+                            old_target,
+                            old_part_id,
+                            frame,
+                            frame,
+                            &action
+                        ),
+                        Some(true),
+                        "stale row/header token from prior state must remain rejected"
+                    );
+                }
             }
             previous_tokens.push((row.index, remote.callback(row.index).unwrap()));
+            previous_tokens.push((hdr.index, remote.callback(hdr.index).unwrap()));
         }
 
-        // Stale remote token and invalid hierarchy rejection still apply.
+        // Submitting a corrupted cell parent while the same receiver still holds a
+        // valid projection must error AND revoke the previous projection cleanly.
+        assert_eq!(remote.parts(frame, frame, false).len(), 5);
         let mut stale_snap = crate::content_accessibility::snapshot(&host).unwrap();
-        // Corrupt cell parent to None -> rejected by RemoteSemantics::update.
         stale_snap[0].parts[3].parent = None;
-        let mut rejected_remote = RemoteSemantics::default();
-        assert!(
-            rejected_remote
-                .update(semantic_test_snapshot(stale_snap))
-                .is_err()
+        assert!(remote.update(semantic_test_snapshot(stale_snap)).is_err());
+        assert!(remote.parts(frame, frame, false).is_empty());
+        for (stale_idx, (_, target, part_id)) in previous_tokens {
+            assert_eq!(remote.parent(stale_idx), None);
+            for action in [
+                wire::AccessibilityAction::Focus,
+                wire::AccessibilityAction::Press,
+            ] {
+                assert_eq!(
+                    remote.collection_action_admission(target, part_id, frame, frame, &action),
+                    None
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn remote_table_and_tree_ax_publication_preserves_ids_parents_clipping_and_action_admission() {
+        use tekes_ui_controls::composition::{
+            ComponentId, Content, ContentHost, ContentRole, DataTableContent, IconImage,
+            IconRenderError, TableCellDisplay, TableDisplayUpdate, TableDisplays,
+            TableHeaderDisplay, TableRowDisplay, TreeContent, TreeContentNode, TreeDisplayUpdate,
+        };
+        use tekes_ui_controls::extended::{
+            KeyedTableColumn, KeyedTableRow, KeyedTableSnapshot, KeyedTreeNode, TableBudget,
+            TableColumnKey, TableDatasetKey, TableRowKey, TreeDatasetKey, TreeNodeKey,
+        };
+        use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, layout_view::IconRenderer};
+        use tekes_ui_scene::{ImageId, Scene, Size};
+        use tekes_ui_tokens::{Rgba, Theme, proposal};
+
+        struct DummyIcons;
+        impl IconRenderer for DummyIcons {
+            fn draw_icon(&mut self, _: &mut Scene, _: &str, _: Rect, _: Rgba) {}
+            fn prepare_icon(
+                &mut self,
+                _: &str,
+                _: f32,
+                _: f32,
+                _: Rgba,
+            ) -> Result<IconImage, IconRenderError> {
+                Ok(IconImage::new(ImageId(1), std::rc::Rc::new(())))
+            }
+        }
+        struct DummyText(DummyIcons);
+        impl ButtonTextRenderer for DummyText {
+            fn icon_renderer(&mut self) -> Option<&mut dyn IconRenderer> {
+                Some(&mut self.0)
+            }
+            fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+                Size::new((s.len() as f32 * 8.).min(w), 20.)
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                _: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+            }
+        }
+
+        let frame = Rect::new(0., 0., 800., 600.);
+        let mut rows = Vec::with_capacity(100);
+        let mut display_rows = Vec::with_capacity(100);
+        let mut row_displays = Vec::with_capacity(100);
+        for r in 0..100usize {
+            let rk = TableRowKey((r + 1) as u64);
+            display_rows.push(rk);
+            rows.push(KeyedTableRow {
+                key: rk,
+                name: format!("Row {r}"),
+                cells: vec![format!("V{r}")],
+            });
+            row_displays.push(TableRowDisplay {
+                key: rk,
+                id: ComponentId(1000 + r as u64),
+                replace_wrapper: false,
+                cells: vec![TableCellDisplay {
+                    column: TableColumnKey(1),
+                    display: TableDisplayUpdate::Keep,
+                    accessory: TableDisplayUpdate::Keep,
+                }],
+            });
+        }
+        let table = DataTableContent::new(
+            "RemoteTable",
+            &KeyedTableSnapshot {
+                dataset: TableDatasetKey(1),
+                columns: vec![KeyedTableColumn {
+                    key: TableColumnKey(1),
+                    name: "Col0".into(),
+                }],
+                rows,
+                display_rows,
+            },
+            &mut TableDisplays {
+                headers: vec![TableHeaderDisplay {
+                    key: TableColumnKey(1),
+                    display: TableDisplayUpdate::Keep,
+                }],
+                rows: row_displays,
+            },
+            TableBudget {
+                max_units: 100_000,
+                max_utf8_bytes: 10_000_000,
+            },
+        )
+        .unwrap();
+        let mut table_host = ContentHost::new(Content::new(ComponentId(10), table)).unwrap();
+        table_host
+            .render(
+                &mut Scene::new(),
+                &mut DummyText(DummyIcons),
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let snap1 = crate::content_accessibility::snapshot(&table_host).unwrap();
+        let mut remote = RemoteSemantics::default();
+        remote
+            .update(semantic_test_snapshot(snap1.clone()))
+            .unwrap();
+        let parts1 = remote.parts(frame, frame, false);
+        assert_eq!(parts1.len(), 203);
+        let hdr = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableColumnHeader { .. }))
+            .unwrap();
+        let col = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableColumn { .. }))
+            .unwrap();
+        let row0 = parts1
+            .iter()
+            .find(|p| matches!(p.semantics.role, ContentRole::TableRow { index: 0 }))
+            .unwrap();
+        let cell0 = parts1
+            .iter()
+            .find(|p| {
+                matches!(
+                    p.semantics.role,
+                    ContentRole::TableCell { row: 0, column: 0 }
+                )
+            })
+            .unwrap();
+        assert_eq!(remote.parent(hdr.index), Some(col.index));
+        assert_eq!(remote.parent(cell0.index), Some(row0.index));
+        let (_, row0_target, row0_part) = remote.callback(row0.index).unwrap();
+        assert_eq!(
+            remote.collection_action_admission(
+                row0_target,
+                row0_part,
+                frame,
+                frame,
+                &wire::AccessibilityAction::Press,
+            ),
+            Some(true)
+        );
+        // Zero-intersection clip blocks row actions while preserving identity map.
+        let empty_clip = Rect::new(0., 590., 800., 10.);
+        assert_eq!(
+            remote.collection_action_admission(
+                row0_target,
+                row0_part,
+                frame,
+                empty_clip,
+                &wire::AccessibilityAction::Press,
+            ),
+            Some(false)
+        );
+        // Unchanged bindings reuse every AX ID across snapshot refreshes.
+        remote.update(semantic_test_snapshot(snap1)).unwrap();
+        let parts2 = remote.parts(frame, frame, false);
+        assert_eq!(
+            parts1.iter().map(|p| p.index).collect::<Vec<_>>(),
+            parts2.iter().map(|p| p.index).collect::<Vec<_>>()
         );
 
-        let stale_remote = RemoteSemantics::default();
-        let (stale_idx, (_, target, part_id)) = previous_tokens[0];
-        assert_eq!(stale_remote.parent(stale_idx), None);
+        // Tree hierarchy + clipping + action admission + revocation.
+        let mut tree_nodes = Vec::with_capacity(64);
+        tree_nodes.push(TreeContentNode {
+            row_id: ComponentId(2000),
+            node: KeyedTreeNode {
+                key: TreeNodeKey(1),
+                parent: None,
+                label: "Root".into(),
+                disabled: false,
+                initially_expanded: true,
+            },
+            display: TreeDisplayUpdate::DefaultLabel,
+        });
+        for i in 1..64usize {
+            tree_nodes.push(TreeContentNode {
+                row_id: ComponentId(2000 + i as u64),
+                node: KeyedTreeNode {
+                    key: TreeNodeKey((i + 1) as u64),
+                    parent: Some(TreeNodeKey(1)),
+                    label: format!("Leaf {i}"),
+                    disabled: false,
+                    initially_expanded: false,
+                },
+                display: TreeDisplayUpdate::DefaultLabel,
+            });
+        }
+        let tree = TreeContent::new("RemoteTree", TreeDatasetKey(1), tree_nodes).unwrap();
+        let mut tree_host = ContentHost::new(Content::new(ComponentId(20), tree)).unwrap();
+        tree_host
+            .render(
+                &mut Scene::new(),
+                &mut DummyText(DummyIcons),
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        let tree_snap = crate::content_accessibility::snapshot(&tree_host).unwrap();
+        let mut remote_tree = RemoteSemantics::default();
+        remote_tree
+            .update(semantic_test_snapshot(tree_snap))
+            .unwrap();
+        let tree_parts = remote_tree.parts(frame, frame, false);
+        assert_eq!(tree_parts.len(), 65);
+        let root_item = tree_parts
+            .iter()
+            .find(|p| p.semantics.name == "Root")
+            .unwrap();
+        let leaf_item = tree_parts
+            .iter()
+            .find(|p| p.semantics.name == "Leaf 1")
+            .unwrap();
+        assert_eq!(remote_tree.parent(leaf_item.index), Some(root_item.index));
+        let (_, leaf_target, leaf_part) = remote_tree.callback(leaf_item.index).unwrap();
         assert_eq!(
-            stale_remote.collection_action_admission(
-                target,
-                part_id,
+            remote_tree.collection_action_admission(
+                leaf_target,
+                leaf_part,
                 frame,
                 frame,
-                &wire::AccessibilityAction::Press
+                &wire::AccessibilityAction::Focus,
+            ),
+            Some(true)
+        );
+        remote_tree.revoke();
+        assert_eq!(remote_tree.parent(leaf_item.index), None);
+        assert_eq!(
+            remote_tree.collection_action_admission(
+                leaf_target,
+                leaf_part,
+                frame,
+                frame,
+                &wire::AccessibilityAction::Focus,
             ),
             None
         );

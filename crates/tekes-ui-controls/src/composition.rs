@@ -1027,6 +1027,7 @@ pub use content_node::{
     RequiredFocusSpace,
 };
 pub use host::ContentHost;
+pub use host_ops::SemanticScope;
 
 #[cfg(test)]
 mod core_tests;

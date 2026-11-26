@@ -490,6 +490,7 @@ impl ContentHost {
         // Disabled controls remain readable to accessibility. This query grants
         // no input authority; accessibility_action retains the disabled guard.
         if let Some(part) = part {
+            let layout = owner.component.semantic_part_text_layout(part)?;
             if !owner
                 .component
                 .semantic_parts()
@@ -498,7 +499,7 @@ impl ContentHost {
             {
                 return None;
             }
-            owner.component.semantic_part_text_layout(part)
+            Some(layout)
         } else {
             if owner.component.semantics().role.is_selection() {
                 return None;
@@ -1266,31 +1267,192 @@ impl ContentHost {
             return None;
         }
         let owner = self.scope().find_active(id)?;
-        if !owner
-            .component
-            .semantic_parts()
-            .iter()
-            .any(|p| p.index == part)
-        {
-            return None;
-        }
-        if owner
-            .component
-            .semantic_parts()
-            .iter()
-            .any(|p| p.index == part && p.semantics.role.is_selection())
-        {
-            return None;
-        }
         let range = owner.component.semantic_part_value_range(part)?;
-        (range.start().is_finite() && range.end().is_finite() && range.start() <= range.end())
+        if !(range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()) {
+            return None;
+        }
+        owner
+            .component
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part && !p.semantics.role.is_selection())
             .then_some(range)
+    }
+    /// Single-pass read-only semantic lookup table built from `scope()` so AX
+    /// publication queries run in O(1) per node/part without re-walking the tree.
+    pub fn semantic_scope(&self) -> SemanticScope<'_> {
+        let scope = self.scope();
+        let mut by_id = std::collections::HashMap::new();
+        fn collect_active<'a>(
+            c: &'a Content,
+            out: &mut std::collections::HashMap<ComponentId, &'a Content>,
+        ) {
+            if !c.active() {
+                return;
+            }
+            out.entry(c.id).or_insert(c);
+            for child in c.component.children() {
+                collect_active(child, out);
+            }
+        }
+        collect_active(scope, &mut by_id);
+        let mut split_hidden = std::collections::HashSet::new();
+        fn collect_split_hidden(
+            c: &Content,
+            hidden: bool,
+            out: &mut std::collections::HashSet<ComponentId>,
+        ) {
+            let pane = c.component::<super::split_view::PaneSlot<true>>().is_some()
+                || c.component::<super::split_view::PaneSlot<false>>()
+                    .is_some();
+            let hidden = hidden || (pane && c.visible().is_none());
+            if hidden {
+                out.insert(c.id);
+            }
+            for child in c.component.children() {
+                collect_split_hidden(child, hidden, out);
+            }
+        }
+        collect_split_hidden(&self.root, false, &mut split_hidden);
+        SemanticScope {
+            host: self,
+            scope,
+            by_id,
+            split_hidden,
+        }
     }
     /// Actual mounted tree projection; this is not a platform accessibility bridge.
     pub fn semantics(&self) -> Vec<SemanticNode> {
         let mut nodes = Vec::new();
         self.scope().semantic_nodes(None, self.focused, &mut nodes);
         nodes
+    }
+}
+/// Single-pass read-only semantic lookup table built from `ContentHost::scope()`.
+#[derive(Debug)]
+pub struct SemanticScope<'a> {
+    host: &'a ContentHost,
+    scope: &'a Content,
+    by_id: std::collections::HashMap<ComponentId, &'a Content>,
+    split_hidden: std::collections::HashSet<ComponentId>,
+}
+impl<'a> SemanticScope<'a> {
+    pub fn semantics(&self) -> Vec<SemanticNode> {
+        let mut nodes = Vec::new();
+        self.scope
+            .semantic_nodes(None, self.host.focused, &mut nodes);
+        nodes
+    }
+    pub fn semantic_mount(&self, id: ComponentId) -> Option<u64> {
+        if !self.host.window_active {
+            return None;
+        }
+        self.by_id.get(&id).map(|node| node.mount)
+    }
+    pub fn text_surface(&self, id: ComponentId) -> Option<&crate::TextSurface> {
+        self.by_id.get(&id).and_then(|c| {
+            (!c.component.semantics().role.is_selection())
+                .then(|| c.component.text_surface())
+                .flatten()
+        })
+    }
+    pub fn semantic_text_input_snapshot(&self, id: ComponentId) -> Option<ContentTextInput> {
+        if !self.host.window_active {
+            return None;
+        }
+        let owner = self.by_id.get(&id)?;
+        if owner.component.semantics().disabled || owner.component.semantics().role.is_selection() {
+            return None;
+        }
+        let mut input = owner.component.text_input_snapshot()?;
+        if self.split_hidden.contains(&id) {
+            input.caret = None;
+            input.clip = None;
+            input.carets.clear();
+        }
+        Some(input)
+    }
+    pub fn semantic_text_layout_snapshot(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> Option<ContentTextLayout> {
+        if !self.host.window_active || self.split_hidden.contains(&id) {
+            return None;
+        }
+        let owner = self.by_id.get(&id)?;
+        if let Some(part) = part {
+            let layout = owner.component.semantic_part_text_layout(part)?;
+            if !owner
+                .component
+                .semantic_parts()
+                .iter()
+                .any(|p| p.index == part && !p.semantics.role.is_selection())
+            {
+                return None;
+            }
+            Some(layout)
+        } else {
+            if owner.component.semantics().role.is_selection() {
+                return None;
+            }
+            owner.component.semantic_text_layout()
+        }
+    }
+    pub fn value_range(&self, id: ComponentId) -> Option<RangeInclusive<f64>> {
+        self.by_id
+            .get(&id)
+            .and_then(|n| {
+                (!n.component.semantics().role.is_selection())
+                    .then(|| n.component.value_range())
+                    .flatten()
+            })
+            .filter(|range| {
+                range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()
+            })
+    }
+    pub fn semantic_value_range(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> Option<RangeInclusive<f64>> {
+        let Some(part) = part else {
+            return self.value_range(id);
+        };
+        if !self.host.window_active {
+            return None;
+        }
+        let owner = self.by_id.get(&id)?;
+        let range = owner.component.semantic_part_value_range(part)?;
+        if !(range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()) {
+            return None;
+        }
+        owner
+            .component
+            .semantic_parts()
+            .iter()
+            .any(|p| p.index == part && !p.semantics.role.is_selection())
+            .then_some(range)
+    }
+    pub fn semantic_part_parent(&self, id: ComponentId, part: usize) -> Option<usize> {
+        self.by_id.get(&id)?.component.semantic_part_parent(part)
+    }
+    pub fn can_show_context_menu(&self, id: ComponentId) -> bool {
+        self.host.can_show_context_menu(id)
+    }
+    pub fn semantic_preserves_activation_focus(
+        &self,
+        id: ComponentId,
+        part: Option<usize>,
+    ) -> bool {
+        self.by_id.get(&id).is_some_and(|node| {
+            node.preserve_activation_focus
+                || node.component.preserves_activation_focus()
+                || part.is_some_and(|part| {
+                    node.component
+                        .semantic_part_preserves_activation_focus(part)
+                })
+        })
     }
 }
 impl Drop for ContentHost {

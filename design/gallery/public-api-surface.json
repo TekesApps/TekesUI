@@ -1920,6 +1920,15 @@
       "reason": "Existing experimental composition protocol/runtime, stable identity, routed events, semantics and lifecycle; not an additional Gallery component."
     },
     {
+      "api": "tekes_ui_controls::composition::SemanticScope",
+      "category": "composition",
+      "components": [],
+      "reason": "Read-only single-pass semantic lookup table over ContentHost::scope() for O(1) AX publication queries; not an additional Gallery component or state owner.",
+      "type_arguments": [
+        "'_"
+      ]
+    },
+    {
       "api": "tekes_ui_controls::composition::SeparatorContent",
       "category": "component",
       "components": [

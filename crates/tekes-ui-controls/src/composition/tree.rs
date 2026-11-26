@@ -169,6 +169,35 @@ struct Prepared {
     next: usize,
     ids: BTreeSet<ComponentId>,
 }
+type TreeMetricCacheKey = (u32, u32, u32, usize, u64, bool);
+type TreeMetricCache = (TreeMetricCacheKey, Vec<(usize, tekes_ui_scene::Size, bool)>);
+
+struct TreeStructureCache {
+    dirty: std::sync::atomic::AtomicBool,
+}
+impl TreeStructureCache {
+    fn new(dirty: bool) -> Self {
+        Self {
+            dirty: std::sync::atomic::AtomicBool::new(dirty),
+        }
+    }
+    fn mark_dirty(&self) {
+        self.dirty.store(true, std::sync::atomic::Ordering::Release);
+    }
+    fn mark_clean(&self) {
+        self.dirty
+            .store(false, std::sync::atomic::Ordering::Release);
+    }
+    fn is_dirty(&self) -> bool {
+        self.dirty.load(std::sync::atomic::Ordering::Acquire)
+    }
+}
+impl std::fmt::Debug for TreeStructureCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("TreeStructureCache")
+    }
+}
+
 #[derive(Debug)]
 pub struct TreeContent {
     name: String,
@@ -178,14 +207,17 @@ pub struct TreeContent {
     // Declaration/instance bindings stay independent of the publicly mutable Vec.
     registered_rows: BTreeMap<TreeNodeKey, (ComponentId, std::sync::Arc<()>)>,
     exposures: BTreeMap<TreeNodeKey, Exposure>,
+    token_to_key: std::collections::HashMap<usize, TreeNodeKey>,
     next: usize,
     activity_epoch: u64,
     window_active: bool,
     mounted: bool,
     exhausted: bool,
+    structure_cache: TreeStructureCache,
     last_intent: Option<TreeIntent>,
     icon_error: Option<IconRenderError>,
     icon_images: Vec<IconImage>,
+    metrics_cache: Option<TreeMetricCache>,
 }
 impl TreeContent {
     pub fn new(
@@ -200,14 +232,17 @@ impl TreeContent {
             rows: Vec::new(),
             registered_rows: BTreeMap::new(),
             exposures: BTreeMap::new(),
+            token_to_key: std::collections::HashMap::new(),
             next: 0,
             activity_epoch: 0,
             window_active: true,
             mounted: false,
             exhausted: false,
+            structure_cache: TreeStructureCache::new(false),
             last_intent: None,
             icon_error: None,
             icon_images: Vec::new(),
+            metrics_cache: None,
         };
         let prepared = tree.prepare(dataset, nodes)?;
         tree.commit(dataset, prepared)?;
@@ -292,7 +327,7 @@ impl TreeContent {
                 .is_some_and(|i| !self.model.nodes()[i].disabled && self.model.is_node_visible(i))
     }
     fn available(&self) -> bool {
-        self.mounted && self.window_active && !self.exhausted && self.validate_rows().is_ok()
+        self.mounted && self.window_active && !self.exhausted && self.validate_rows_cached().is_ok()
     }
     fn validate_structure(&self) -> Result<(), TreeContentError> {
         let invalid = TreeContentError::InvalidStructure;
@@ -328,6 +363,13 @@ impl TreeContent {
             row.ids(&mut ids)?;
         }
         Ok(ids)
+    }
+    fn validate_rows_cached(&self) -> Result<(), TreeContentError> {
+        if self.structure_cache.is_dirty() {
+            self.validate_rows()?;
+            self.structure_cache.mark_clean();
+        }
+        Ok(())
     }
     fn validate_rows(&self) -> Result<(), TreeContentError> {
         self.validate_structure()?;
@@ -478,10 +520,19 @@ impl TreeContent {
             }
         }
         self.exposures = p.exposures;
+        self.rebuild_token_to_key();
         self.next = p.next;
+        self.structure_cache.mark_clean();
         self.update_active_validated();
         self.invalidate();
         Ok(())
+    }
+    fn rebuild_token_to_key(&mut self) {
+        self.token_to_key.clear();
+        self.token_to_key.reserve(self.exposures.len());
+        for (&key, e) in &self.exposures {
+            self.token_to_key.insert(e.token, key);
+        }
     }
     fn update_active_validated(&mut self) {
         let visible = self.model.visible_flags();
@@ -497,11 +548,13 @@ impl TreeContent {
         match self.plan_exposures(&self.model) {
             Ok((m, n)) => {
                 self.exposures = m;
+                self.rebuild_token_to_key();
                 self.next = n;
             }
             Err(_) => {
                 self.exhausted = true;
                 self.exposures.clear();
+                self.token_to_key.clear();
             }
         }
         self.update_active_validated();
@@ -509,7 +562,52 @@ impl TreeContent {
     fn invalidate(&mut self) {
         self.view.reconcile_model(&self.model);
         self.view.invalidate_content_layout();
+        self.metrics_cache = None;
         self.icon_images.clear();
+    }
+    fn measure_key(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        compact: bool,
+    ) -> TreeMetricCacheKey {
+        (
+            width.to_bits(),
+            text.resolved_font_size(proposal::TextRole::UiBody)
+                .to_bits(),
+            text.backing_scale().to_bits(),
+            std::sync::Arc::as_ptr(&self.model.model_identity()) as usize,
+            self.model.model_revision(),
+            compact,
+        )
+    }
+    fn compute_metrics(
+        &mut self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        height: f32,
+        compact: bool,
+    ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
+        let rows = &mut self.rows;
+        TreeView::measure_rows(
+            &self.model,
+            width,
+            text,
+            compact,
+            |text, i, w, custom_width| {
+                let custom = !rows[i]
+                    .component::<RowSlot>()
+                    .expect("row")
+                    .display
+                    .is_empty();
+                let size = if custom {
+                    rows[i].measure(text, Size::new(custom_width, height)).size
+                } else {
+                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
+                };
+                (size, custom)
+            },
+        )
     }
     fn geometry_actionable(&self, index: usize) -> bool {
         self.view.layout_for(&self.model).is_some_and(|l| {
@@ -634,6 +732,7 @@ impl Component for TreeContent {
         if self.validate_structure().is_err() {
             return None;
         }
+        self.structure_cache.mark_dirty();
         Some(&mut self.rows)
     }
     fn requires_icon_services(&self) -> bool {
@@ -685,72 +784,42 @@ impl Component for TreeContent {
             Lifecycle::Unmounted => {
                 self.mounted = false;
                 self.exposures.clear();
+                self.token_to_key.clear();
                 self.view.blur();
                 self.invalidate();
             }
         }
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
-        if self.validate_rows().is_err() {
+        if self.validate_rows_cached().is_err() {
             self.invalidate();
             return MeasuredChild::new(Size::default());
         }
         let compact = self.view.compact();
-        let rows = &mut self.rows;
-        let metrics = TreeView::measure_rows(
-            &self.model,
-            available.width,
-            text,
-            compact,
-            |text, i, w, custom_width| {
-                let custom = !rows[i]
-                    .component::<RowSlot>()
-                    .expect("row")
-                    .display
-                    .is_empty();
-                let size = if custom {
-                    rows[i]
-                        .measure(text, Size::new(custom_width, available.height))
-                        .size
-                } else {
-                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
-                };
-                (size, custom)
-            },
-        );
+        let key = self.measure_key(text, available.width, compact);
+        let metrics = self.compute_metrics(text, available.width, available.height, compact);
+        self.metrics_cache = Some((key, metrics.clone()));
         MeasuredChild::new(Size::new(
             available.width,
             TreeView::rows_height(text, available.width, &metrics, compact),
         ))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
-        if self.validate_rows().is_err() {
+        if self.validate_rows_cached().is_err() {
             self.invalidate();
             return;
         }
         let compact = self.view.compact();
-        let rows = &mut self.rows;
-        let metrics = TreeView::measure_rows(
-            &self.model,
-            frame.size.width,
-            text,
-            compact,
-            |text, i, w, custom_width| {
-                let custom = !rows[i]
-                    .component::<RowSlot>()
-                    .expect("row")
-                    .display
-                    .is_empty();
-                let size = if custom {
-                    rows[i]
-                        .measure(text, Size::new(custom_width, frame.size.height))
-                        .size
-                } else {
-                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
-                };
-                (size, custom)
-            },
-        );
+        let key = self.measure_key(text, frame.size.width, compact);
+        let metrics = if let Some((cached_key, cached)) = &self.metrics_cache
+            && *cached_key == key
+        {
+            cached.clone()
+        } else {
+            let computed = self.compute_metrics(text, frame.size.width, frame.size.height, compact);
+            self.metrics_cache = Some((key, computed.clone()));
+            computed
+        };
         self.view.arrange_rows(
             &mut TextAdapter(text),
             &self.model,
@@ -885,7 +954,9 @@ impl Component for TreeContent {
     }
     fn semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(ContentRole::Tree, &self.name);
-        s.disabled = !self.window_active || self.exhausted || self.validate_structure().is_err();
+        s.disabled = !self.window_active
+            || self.exhausted
+            || (self.structure_cache.is_dirty() && self.validate_structure().is_err());
         s
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
@@ -896,6 +967,8 @@ impl Component for TreeContent {
             return Vec::new();
         };
         let nodes = self.model.nodes();
+        let selected_key = self.selected_key();
+        let focused_index = self.view.focused_index(&self.model);
         let mut has_child = vec![false; nodes.len()];
         for n in nodes {
             if let Some(p) = n.parent
@@ -913,7 +986,7 @@ impl Component for TreeContent {
                 let node = &nodes[row.id];
                 let mut s =
                     ContentSemantics::new(ContentRole::TreeItem { level: row.depth }, &node.label);
-                s.selected = self.selected_key() == Some(key);
+                s.selected = selected_key == Some(key);
                 s.disabled = node.disabled;
                 s.expanded = has_child[row.id].then_some(node.expanded);
                 Some(SemanticPart {
@@ -924,8 +997,7 @@ impl Component for TreeContent {
                         0.,
                         0.,
                     )),
-                    focused: row.visible.is_some()
-                        && self.view.focused_index(&self.model) == Some(row.id),
+                    focused: row.visible.is_some() && focused_index == Some(row.id),
                     semantics: s,
                 })
             })
@@ -936,8 +1008,8 @@ impl Component for TreeContent {
             return None;
         }
         self.view.layout_for(&self.model)?;
-        let (key, _) = self.exposures.iter().find(|(_, e)| e.token == part)?;
-        let index = self.model.node_index(*key)?;
+        let &key = self.token_to_key.get(&part)?;
+        let index = self.model.node_index(key)?;
         let parent = self.model.nodes()[index].parent?;
         self.exposures
             .get(&self.model.node_key(parent)?)
@@ -953,11 +1025,9 @@ impl Component for TreeContent {
             self.invalidate();
             return ContentResponse::default();
         }
-        let Some((key, _)) = part.and_then(|p| self.exposures.iter().find(|(_, e)| e.token == p))
-        else {
+        let Some(key) = part.and_then(|p| self.token_to_key.get(&p).copied()) else {
             return ContentResponse::default();
         };
-        let key = *key;
         let Some(i) = self.model.node_index(key) else {
             return ContentResponse::default();
         };

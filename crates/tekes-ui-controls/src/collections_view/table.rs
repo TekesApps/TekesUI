@@ -22,11 +22,81 @@ pub struct DataTableLayout {
     pub content_height: f32,
 }
 // Optional passive measurements consumed by the original table layout service.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct TableContentMetrics {
     pub surface: Option<&'static str>,
     pub headers: Vec<Option<tekes_ui_scene::Size>>,
     pub cells: Vec<Vec<(Option<tekes_ui_scene::Size>, Option<tekes_ui_scene::Size>)>>,
+}
+#[derive(Clone, Debug)]
+struct TableMeasureKey {
+    width_bits: u32,
+    font_size_bits: u32,
+    backing_scale_bits: u32,
+    compact: bool,
+    columns: usize,
+    rows: usize,
+    sort: Option<(usize, crate::extended::SortDirection)>,
+    content_metrics: Option<TableContentMetrics>,
+    keyed_revision: Option<(std::sync::Arc<()>, u64)>,
+    unkeyed_headers: Vec<String>,
+    unkeyed_order: Vec<usize>,
+    unkeyed_rows: Vec<Vec<String>>,
+}
+impl TableMeasureKey {
+    #[allow(clippy::too_many_arguments)]
+    fn matches(
+        &self,
+        width: f32,
+        font_size: f32,
+        backing_scale: f32,
+        compact: bool,
+        model: &DataTable,
+        headers: &[String],
+        rows: &[Vec<String>],
+        row_order: &[usize],
+        content_metrics: Option<&TableContentMetrics>,
+        keyed: Option<(&std::sync::Arc<()>, u64)>,
+    ) -> bool {
+        if self.width_bits != width.to_bits()
+            || self.font_size_bits != font_size.to_bits()
+            || self.backing_scale_bits != backing_scale.to_bits()
+            || self.compact != compact
+            || self.columns != model.columns
+            || self.rows != model.rows
+            || self.sort != model.sort
+            || self.content_metrics.as_ref() != content_metrics
+        {
+            return false;
+        }
+        match (&self.keyed_revision, keyed) {
+            (Some((id_a, rev_a)), Some((id_b, rev_b))) => {
+                std::sync::Arc::ptr_eq(id_a, id_b) && *rev_a == rev_b
+            }
+            (None, None) => {
+                self.unkeyed_headers.as_slice() == headers
+                    && self.unkeyed_order.as_slice() == row_order
+                    && self.unkeyed_rows.as_slice() == rows
+            }
+            _ => false,
+        }
+    }
+}
+#[derive(Clone, Debug)]
+struct TableMeasureResult {
+    key: TableMeasureKey,
+    cw: f32,
+    width: f32,
+    gap: f32,
+    cell_inset: f32,
+    accessory_gap: f32,
+    header_labels: Vec<String>,
+    header_label_sizes: Vec<Option<tekes_ui_scene::Size>>,
+    header_band: f32,
+    row_start: f32,
+    valid_order: Vec<usize>,
+    row_heights: Vec<f32>,
+    content_height: f32,
 }
 // Accepted identity at the last model-aware call; no selection/sort copy.
 #[derive(Clone, Debug)]
@@ -55,6 +125,7 @@ pub struct DataTableView {
     keyed: Option<TableViewIdentity>,
     pub(super) unavailable_layout: DataTableLayout,
     pub(super) content_metrics: Option<TableContentMetrics>,
+    measure_cache: Option<TableMeasureResult>,
 }
 impl Default for DataTableView {
     fn default() -> Self {
@@ -72,6 +143,7 @@ impl Default for DataTableView {
             keyed: None,
             unavailable_layout: DataTableLayout::default(),
             content_metrics: None,
+            measure_cache: None,
         }
     }
 }
@@ -174,24 +246,41 @@ impl DataTableView {
         if self.keyed.take().is_some() {
             self.blur();
             self.layout = DataTableLayout::default();
+            self.measure_cache = None;
         }
         self.render_impl(
             scene, text, model, headers, rows, row_order, frame, clip, palette,
         )
     }
-    fn render_impl(
+    fn ensure_measured(
         &mut self,
-        scene: &mut Scene,
         text: &mut impl ButtonTextRenderer,
         model: &DataTable,
         headers: &[String],
         rows: &[Vec<String>],
         row_order: &[usize],
-        frame: Rect,
-        clip: Option<Rect>,
-        palette: Palette,
-    ) -> DataTableLayout {
-        let width = frame.size.width.max(0.0);
+        width: f32,
+        keyed: Option<(&std::sync::Arc<()>, u64)>,
+    ) {
+        let width = width.max(0.0);
+        let font_size = text.resolved_font_size(proposal::TextRole::UiBody);
+        let backing_scale = text.backing_scale();
+        if let Some(cache) = &self.measure_cache
+            && cache.key.matches(
+                width,
+                font_size,
+                backing_scale,
+                self.compact,
+                model,
+                headers,
+                rows,
+                row_order,
+                self.content_metrics.as_ref(),
+                keyed,
+            )
+        {
+            return;
+        }
         let columns = model.columns.max(1);
         let cw = width / columns as f32;
         // Preserve the Gallery's existing table contract: 34pt header and
@@ -205,19 +294,11 @@ impl DataTableView {
         let header_h = minimum;
         let rh = minimum;
         let gap = row_gap();
-        let own_clip = own_clip(frame, clip);
         let valid_order = row_order
             .iter()
             .copied()
             .filter(|id| *id < model.rows && *id < rows.len())
             .collect::<Vec<_>>();
-        self.state.retain_ids(&valid_order);
-        if self
-            .focused_header
-            .is_some_and(|column| column >= model.columns)
-        {
-            self.focused_header = None;
-        }
         let cell_inset = Self::cell_horizontal_inset(text);
         let cell_chrome = cell_inset * 2.0;
         let header_labels = (0..model.columns)
@@ -236,31 +317,38 @@ impl DataTableView {
             .collect::<Vec<_>>();
         let cell_v_pad = Self::cell_vertical_padding(text);
         let accessory_gap = Self::cell_accessory_gap(text);
-        let header_heights = header_labels
-            .iter()
-            .enumerate()
-            .map(|(col, title)| {
-                if let Some(size) = self
-                    .content_metrics
-                    .as_ref()
-                    .and_then(|m| m.headers.get(col))
-                    .copied()
-                    .flatten()
-                {
-                    (size.height + cell_v_pad).max(header_h)
+        let header_max_w = (cw - cell_chrome).max(0.0);
+        let mut header_label_sizes = Vec::with_capacity(model.columns);
+        let mut header_heights = Vec::with_capacity(model.columns);
+        for (col, title) in header_labels.iter().enumerate() {
+            if let Some(size) = self
+                .content_metrics
+                .as_ref()
+                .and_then(|m| m.headers.get(col))
+                .copied()
+                .flatten()
+            {
+                header_label_sizes.push(None);
+                header_heights.push((size.height + cell_v_pad).max(header_h));
+            } else {
+                let label_size = if title.is_empty() {
+                    tekes_ui_scene::Size::default()
                 } else {
-                    ButtonModel::measure(
-                        text,
-                        title,
-                        cw,
-                        ButtonSize::Body,
-                        proposal::TextRole::UiBody,
-                    )
-                    .height
-                    .max(header_h)
-                }
-            })
-            .collect::<Vec<_>>();
+                    text.measure(title, proposal::TextRole::UiBody, header_max_w)
+                };
+                let btn_h = ButtonModel::measure_content(
+                    text,
+                    label_size,
+                    cw,
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                )
+                .height
+                .max(header_h);
+                header_label_sizes.push(Some(label_size));
+                header_heights.push(btn_h);
+            }
+        }
         let header_band = header_heights.iter().copied().fold(header_h, f32::max);
         let row_start = header_band + tekes_ui_tokens::Spacing::Snug.value();
         let row_heights = valid_order
@@ -303,27 +391,171 @@ impl DataTableView {
                 + row_heights.iter().sum::<f32>()
                 + gap * valid_order.len().saturating_sub(1) as f32
         };
-        let mut result = DataTableLayout {
-            frame,
-            visible: own_clip,
-            content_height,
-            ..Default::default()
+        let key = TableMeasureKey {
+            width_bits: width.to_bits(),
+            font_size_bits: font_size.to_bits(),
+            backing_scale_bits: backing_scale.to_bits(),
+            compact: self.compact,
+            columns: model.columns,
+            rows: model.rows,
+            sort: model.sort,
+            content_metrics: self.content_metrics.clone(),
+            keyed_revision: keyed.map(|(id, rev)| (id.clone(), rev)),
+            unkeyed_headers: if keyed.is_some() {
+                Vec::new()
+            } else {
+                headers.to_vec()
+            },
+            unkeyed_order: if keyed.is_some() {
+                Vec::new()
+            } else {
+                row_order.to_vec()
+            },
+            unkeyed_rows: if keyed.is_some() {
+                Vec::new()
+            } else {
+                rows.to_vec()
+            },
         };
-        result.columns = (0..model.columns)
+        self.measure_cache = Some(TableMeasureResult {
+            key,
+            cw,
+            width,
+            gap,
+            cell_inset,
+            accessory_gap,
+            header_labels,
+            header_label_sizes,
+            header_band,
+            row_start,
+            valid_order,
+            row_heights,
+            content_height,
+        });
+    }
+    fn layout_from_measure(&self, frame: Rect, clip: Option<Rect>) -> DataTableLayout {
+        let m = self.measure_cache.as_ref().expect("measured table");
+        let own_clip = own_clip(frame, clip);
+        let columns = (0..m.key.columns)
             .map(|i| {
                 Rect::new(
-                    frame.min_x() + i as f32 * cw,
+                    frame.min_x() + i as f32 * m.cw,
                     frame.min_y(),
-                    cw,
+                    m.cw,
                     frame.size.height,
                 )
             })
             .collect();
+        let headers = (0..m.key.columns)
+            .map(|id| {
+                let r = Rect::new(
+                    frame.min_x() + id as f32 * m.cw,
+                    frame.min_y(),
+                    m.cw,
+                    m.header_band,
+                );
+                CollectionItemLayout {
+                    id,
+                    frame: r,
+                    visible: own_clip.and_then(|c| r.intersection(&c)),
+                    depth: 0,
+                }
+            })
+            .collect();
+        let mut rows_layout = Vec::with_capacity(m.valid_order.len());
+        let mut y = frame.min_y() + m.row_start;
+        for (display, id) in m.valid_order.iter().copied().enumerate() {
+            let r = Rect::new(frame.min_x(), y, m.width, m.row_heights[display]);
+            rows_layout.push(CollectionItemLayout {
+                id,
+                frame: r,
+                visible: own_clip.and_then(|c| r.intersection(&c)),
+                depth: 0,
+            });
+            y += m.row_heights[display] + m.gap;
+        }
+        DataTableLayout {
+            frame,
+            visible: own_clip,
+            headers,
+            rows: rows_layout,
+            columns,
+            content_height: m.content_height,
+        }
+    }
+    fn arrange_impl(
+        &mut self,
+        text: &mut impl ButtonTextRenderer,
+        model: &DataTable,
+        headers: &[String],
+        rows: &[Vec<String>],
+        row_order: &[usize],
+        frame: Rect,
+        clip: Option<Rect>,
+        keyed: Option<(&std::sync::Arc<()>, u64)>,
+    ) -> DataTableLayout {
+        self.ensure_measured(
+            text,
+            model,
+            headers,
+            rows,
+            row_order,
+            frame.size.width,
+            keyed,
+        );
+        let (
+            valid_order,
+            columns,
+            content_height,
+            cw,
+            width,
+            header_band,
+            row_start,
+            gap,
+            row_heights,
+        ) = {
+            let m = self.measure_cache.as_ref().expect("measured table");
+            (
+                m.valid_order.clone(),
+                m.key.columns,
+                m.content_height,
+                m.cw,
+                m.width,
+                m.header_band,
+                m.row_start,
+                m.gap,
+                m.row_heights.clone(),
+            )
+        };
+        self.state.retain_ids(&valid_order);
+        if self
+            .focused_header
+            .is_some_and(|column| column >= model.columns)
+        {
+            self.focused_header = None;
+        }
+        let own_clip = own_clip(frame, clip);
         if own_clip.is_none() {
+            let mut result = DataTableLayout {
+                frame,
+                visible: None,
+                content_height,
+                columns: (0..columns)
+                    .map(|i| {
+                        Rect::new(
+                            frame.min_x() + i as f32 * cw,
+                            frame.min_y(),
+                            cw,
+                            frame.size.height,
+                        )
+                    })
+                    .collect(),
+                ..Default::default()
+            };
             if mounted_bounds(frame, clip) {
                 self.state.captured = None;
                 self.state.hovered = None;
-                result.headers = (0..model.columns)
+                result.headers = (0..columns)
                     .map(|id| CollectionItemLayout {
                         id,
                         frame: Rect::new(
@@ -360,29 +592,52 @@ impl DataTableView {
             self.layout = result.clone();
             return result;
         }
-        scene.push_clip(own_clip.expect("checked table clip"));
+        let result = self.layout_from_measure(frame, clip);
+        self.layout = result.clone();
+        result
+    }
+    fn paint_impl(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &DataTable,
+        rows: &[Vec<String>],
+        clip: Option<Rect>,
+        palette: Palette,
+    ) {
+        let Some(own_clip) = self.layout.visible else {
+            return;
+        };
+        let Some(m) = self.measure_cache.as_ref() else {
+            return;
+        };
+        let cw = m.cw;
+        let cell_inset = m.cell_inset;
+        let cell_chrome = cell_inset * 2.0;
+        let accessory_gap = m.accessory_gap;
+        let header_labels = m.header_labels.clone();
+        let header_label_sizes = m.header_label_sizes.clone();
+        let headers_layout = self.layout.headers.clone();
+        let rows_layout = self.layout.rows.clone();
+        let frame = self.layout.frame;
+
+        scene.push_clip(own_clip);
         self.header_buttons
             .resize_with(model.columns, ButtonModel::default);
         self.row_buttons
             .resize_with(model.rows, ButtonModel::default);
-        for (col, _header_height) in header_heights.iter().copied().enumerate() {
-            let r = Rect::new(
-                frame.min_x() + col as f32 * cw,
-                frame.min_y(),
-                cw,
-                header_band,
-            );
+        let surface = self
+            .content_metrics
+            .as_ref()
+            .and_then(|metrics| metrics.surface)
+            .filter(|s| *s != "base");
+        for (col, header_item) in headers_layout.iter().enumerate() {
+            let r = header_item.frame;
             let custom = self
                 .content_metrics
                 .as_ref()
-                .and_then(|m| m.headers.get(col))
+                .and_then(|metrics| metrics.headers.get(col))
                 .is_some_and(Option::is_some);
-            let title = if custom { "" } else { &header_labels[col] };
-            let surface = self
-                .content_metrics
-                .as_ref()
-                .and_then(|m| m.surface)
-                .filter(|s| *s != "base");
             let button = &mut self.header_buttons[col];
             if let Some(surface) = surface {
                 button.set_surface(surface);
@@ -391,25 +646,29 @@ impl DataTableView {
             }
             let header_focused = self.focused_header == Some(col) && self.state.window_active;
             button.state = control_state(false, false, header_focused, self.disabled, false);
-            let button_layout =
-                render_quiet_button(button, scene, text, title, r, own_clip, palette);
-            result.headers.push(CollectionItemLayout {
-                id: col,
-                frame: r,
-                visible: button_layout.visible,
-                depth: 0,
-            });
+            if custom {
+                render_quiet_button(button, scene, text, "", r, Some(own_clip), palette);
+            } else {
+                let label_size = header_label_sizes[col].unwrap_or_default();
+                button.render_measured(
+                    scene,
+                    text,
+                    &header_labels[col],
+                    label_size,
+                    r,
+                    Some(own_clip),
+                    palette,
+                    ButtonVariant::Quiet,
+                    ButtonSize::Body,
+                    proposal::TextRole::UiBody,
+                    ButtonTextAlign::Leading,
+                );
+            }
         }
-        let mut y = frame.min_y() + row_start;
-        for (display, id) in valid_order.iter().copied().enumerate() {
-            let row_height = row_heights[display];
-            let r = Rect::new(frame.min_x(), y, width, row_height);
+        for row_item in &rows_layout {
+            let id = row_item.id;
+            let r = row_item.frame;
             let focused = self.state.focused == Some(id) && self.state.window_active;
-            let surface = self
-                .content_metrics
-                .as_ref()
-                .and_then(|m| m.surface)
-                .filter(|s| *s != "base");
             let button = &mut self.row_buttons[id];
             if let Some(surface) = surface {
                 button.set_surface(surface);
@@ -423,13 +682,14 @@ impl DataTableView {
                 self.disabled,
                 self.state.captured == Some(id),
             );
-            let row_layout = render_quiet_button(button, scene, text, "", r, own_clip, palette);
+            let row_layout =
+                render_quiet_button(button, scene, text, "", r, Some(own_clip), palette);
             for col in 0..model.columns {
                 let (custom, accessory) = self
                     .content_metrics
                     .as_ref()
-                    .and_then(|m| m.cells.get(id))
-                    .and_then(|r| r.get(col))
+                    .and_then(|metrics| metrics.cells.get(id))
+                    .and_then(|row| row.get(col))
                     .copied()
                     .unwrap_or_default();
                 if custom.is_some() {
@@ -443,9 +703,9 @@ impl DataTableView {
                 };
                 let cell = Rect::new(
                     frame.min_x() + col as f32 * cw + cell_inset,
-                    y,
+                    r.min_y(),
                     (cw - cell_chrome - acc_gap - aw).max(0.),
-                    row_height,
+                    r.size.height,
                 );
                 if let Some(v) = visible(cell, row_layout.visible) {
                     scene.push_clip(v);
@@ -460,20 +720,13 @@ impl DataTableView {
                     scene.pop_clip();
                 }
             }
-            result.rows.push(CollectionItemLayout {
-                id,
-                frame: r,
-                visible: row_layout.visible,
-                depth: 0,
-            });
-            y += row_height + gap;
         }
         scene.pop_clip();
         if !self.disabled && self.state.window_active && self.state.focus_visible {
             let focused = if let Some(column) = self.focused_header {
-                result.headers.iter().find(|i| i.id == column)
+                self.layout.headers.iter().find(|i| i.id == column)
             } else {
-                result
+                self.layout
                     .rows
                     .iter()
                     .find(|i| Some(i.id) == self.state.focused)
@@ -482,8 +735,22 @@ impl DataTableView {
                 paint_collection_focus(scene, item, frame, clip, palette);
             }
         }
-        self.layout = result.clone();
-        result
+    }
+    fn render_impl(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &DataTable,
+        headers: &[String],
+        rows: &[Vec<String>],
+        row_order: &[usize],
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: Palette,
+    ) -> DataTableLayout {
+        let layout = self.arrange_impl(text, model, headers, rows, row_order, frame, clip, None);
+        self.paint_impl(scene, text, model, rows, clip, palette);
+        layout
     }
     pub fn pointer_move(&mut self, point: Point) -> bool {
         if self.keyed.is_some() {
@@ -901,8 +1168,8 @@ impl DataTableView {
             .iter()
             .map(|r| r.cells.clone())
             .collect::<Vec<_>>();
-        let layout = self.render_impl(
-            scene,
+        let keyed_id = model.view_identity();
+        let layout = self.arrange_impl(
             text,
             model.original(),
             &headers,
@@ -910,28 +1177,110 @@ impl DataTableView {
             model.display_indices(),
             frame,
             clip,
-            palette,
+            Some((&keyed_id, model.revision())),
         );
+        self.paint_impl(scene, text, model.original(), &rows, clip, palette);
         self.keyed.as_mut().expect("guarded table").arranged = true;
         layout
     }
-    pub(crate) fn render_content_keyed(
+    pub(crate) fn measure_content_keyed(
         &mut self,
-        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedDataTable,
+        width: f32,
+        metrics: TableContentMetrics,
+    ) -> f32 {
+        let headers = model
+            .snapshot()
+            .columns
+            .iter()
+            .map(|c| c.name.clone())
+            .collect::<Vec<_>>();
+        let rows = model
+            .snapshot()
+            .rows
+            .iter()
+            .map(|r| r.cells.clone())
+            .collect::<Vec<_>>();
+        let keyed_id = model.view_identity();
+        self.content_metrics = Some(metrics);
+        self.ensure_measured(
+            text,
+            model.original(),
+            &headers,
+            &rows,
+            model.display_indices(),
+            width,
+            Some((&keyed_id, model.revision())),
+        );
+        self.content_metrics = None;
+        self.measure_cache
+            .as_ref()
+            .expect("measured table")
+            .content_height
+    }
+    pub(crate) fn arrange_content_keyed(
+        &mut self,
         text: &mut impl ButtonTextRenderer,
         model: &crate::extended::KeyedDataTable,
         frame: Rect,
         clip: Option<Rect>,
-        palette: Palette,
         metrics: TableContentMetrics,
     ) -> DataTableLayout {
+        self.guard_table(model);
+        let headers = model
+            .snapshot()
+            .columns
+            .iter()
+            .map(|c| c.name.clone())
+            .collect::<Vec<_>>();
+        let rows = model
+            .snapshot()
+            .rows
+            .iter()
+            .map(|r| r.cells.clone())
+            .collect::<Vec<_>>();
+        let keyed_id = model.view_identity();
         self.content_metrics = Some(metrics);
-        let layout = self.render_keyed(scene, text, model, frame, clip, palette);
+        let layout = self.arrange_impl(
+            text,
+            model.original(),
+            &headers,
+            &rows,
+            model.display_indices(),
+            frame,
+            clip,
+            Some((&keyed_id, model.revision())),
+        );
         self.content_metrics = None;
+        self.keyed.as_mut().expect("guarded table").arranged = true;
         layout
+    }
+    pub(crate) fn paint_content_keyed(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        model: &crate::extended::KeyedDataTable,
+        clip: Option<Rect>,
+        palette: Palette,
+        metrics: TableContentMetrics,
+    ) {
+        if !self.table_current(model) {
+            return;
+        }
+        let rows = model
+            .snapshot()
+            .rows
+            .iter()
+            .map(|r| r.cells.clone())
+            .collect::<Vec<_>>();
+        self.content_metrics = Some(metrics);
+        self.paint_impl(scene, text, model.original(), &rows, clip, palette);
+        self.content_metrics = None;
     }
     pub(crate) fn invalidate_content_layout(&mut self) {
         self.layout = DataTableLayout::default();
+        self.measure_cache = None;
         if let Some(k) = &mut self.keyed {
             k.arranged = false;
         }

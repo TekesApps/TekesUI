@@ -91,6 +91,8 @@ pub struct KeyedList {
     budget: ListBudget,
     indices: std::collections::BTreeMap<ListItemKey, usize>,
     display_indices: Vec<usize>,
+    displayed_mask: Vec<bool>,
+    display_ordinals: Vec<Option<usize>>,
     incarnations: Vec<u64>,
     identity: std::sync::Arc<()>,
     revision: u64,
@@ -104,6 +106,8 @@ impl Clone for KeyedList {
             budget: self.budget,
             indices: self.indices.clone(),
             display_indices: self.display_indices.clone(),
+            displayed_mask: self.displayed_mask.clone(),
+            display_ordinals: self.display_ordinals.clone(),
             incarnations: self.incarnations.clone(),
             identity: std::sync::Arc::new(()),
             revision: self.revision,
@@ -116,6 +120,8 @@ pub(crate) struct ListStage {
     pub(crate) snapshot: KeyedListSnapshot,
     indices: std::collections::BTreeMap<ListItemKey, usize>,
     pub(crate) display_indices: Vec<usize>,
+    displayed_mask: Vec<bool>,
+    display_ordinals: Vec<Option<usize>>,
     pub(crate) incarnations: Vec<u64>,
     next_incarnation: u64,
     selected: Option<usize>,
@@ -170,6 +176,7 @@ impl KeyedList {
             }
         }
         let mut bytes = 0usize;
+        let mut indices = std::collections::BTreeMap::new();
         for (i, item) in snapshot.items.iter().enumerate() {
             bytes = bytes
                 .checked_add(item.name.len())
@@ -177,27 +184,33 @@ impl KeyedList {
             if bytes > budget.max_utf8_bytes {
                 return Err(ListUpdateError::BudgetExceeded(Utf8Bytes));
             }
-            if snapshot.items[..i].iter().any(|r| r.key == item.key) {
+            if indices.insert(item.key, i).is_some() {
                 return Err(ListUpdateError::DuplicateItem(item.key));
             }
         }
-        for (i, key) in snapshot.display_items.iter().enumerate() {
-            if !snapshot.items.iter().any(|r| r.key == *key) {
+        let mut displayed_mask = vec![false; snapshot.items.len()];
+        let mut display_ordinals = vec![None; snapshot.items.len()];
+        let mut display_indices = Vec::with_capacity(snapshot.display_items.len());
+        for (ord, key) in snapshot.display_items.iter().enumerate() {
+            let Some(&idx) = indices.get(key) else {
                 return Err(ListUpdateError::MissingDisplayItem(*key));
-            }
-            if snapshot.display_items[..i].contains(key) {
+            };
+            if displayed_mask[idx] {
                 return Err(ListUpdateError::DuplicateDisplayItem(*key));
             }
+            displayed_mask[idx] = true;
+            display_ordinals[idx] = Some(ord);
+            display_indices.push(idx);
         }
-        let continuous = |key: ListItemKey| -> Option<u64> {
-            let o = old.filter(|o| o.dataset_key() == snapshot.dataset)?;
+        let same_dataset = old.filter(|o| o.dataset_key() == snapshot.dataset);
+        let continuous = |new_idx: usize, key: ListItemKey| -> Option<u64> {
+            let o = same_dataset?;
             let i = o.item_index(key)?;
-            (o.item_displayed(i) == snapshot.display_items.contains(&key))
-                .then_some(o.incarnations[i])
+            (o.item_displayed(i) == displayed_mask[new_idx]).then_some(o.incarnations[i])
         };
         let mut needed = 0u64;
-        for item in &snapshot.items {
-            if continuous(item.key).is_none() {
+        for (new_idx, item) in snapshot.items.iter().enumerate() {
+            if continuous(new_idx, item.key).is_none() {
                 needed = needed
                     .checked_add(1)
                     .ok_or(ListUpdateError::CounterExhausted)?;
@@ -207,29 +220,22 @@ impl KeyedList {
         let final_counter = counter
             .checked_add(needed)
             .ok_or(ListUpdateError::CounterExhausted)?;
-        let indices: std::collections::BTreeMap<_, _> = snapshot
-            .items
-            .iter()
-            .enumerate()
-            .map(|(i, r)| (r.key, i))
-            .collect();
-        let display_indices = snapshot.display_items.iter().map(|k| indices[k]).collect();
         let incarnations = snapshot
             .items
             .iter()
-            .map(|r| {
-                continuous(r.key).unwrap_or_else(|| {
+            .enumerate()
+            .map(|(new_idx, r)| {
+                continuous(new_idx, r.key).unwrap_or_else(|| {
                     // Capacity was checked for the entire transaction above.
                     counter += 1;
                     counter
                 })
             })
             .collect();
-        let selected = old
-            .filter(|o| o.dataset_key() == snapshot.dataset)
+        let selected = same_dataset
             .and_then(Self::selected_key)
-            .filter(|k| snapshot.display_items.contains(k))
-            .map(|k| indices[&k]);
+            .and_then(|k| indices.get(&k).copied())
+            .filter(|&idx| displayed_mask[idx]);
         let old_items_to_new = old
             .map(|o| {
                 o.snapshot
@@ -247,6 +253,8 @@ impl KeyedList {
             snapshot,
             indices,
             display_indices,
+            displayed_mask,
+            display_ordinals,
             incarnations,
             next_incarnation: final_counter,
             selected,
@@ -264,6 +272,8 @@ impl KeyedList {
             budget,
             indices: s.indices,
             display_indices: s.display_indices,
+            displayed_mask: s.displayed_mask,
+            display_ordinals: s.display_ordinals,
             incarnations: s.incarnations,
             identity: std::sync::Arc::new(()),
             revision: 0,
@@ -295,7 +305,9 @@ impl KeyedList {
         self.indices.get(&key).copied()
     }
     pub fn display_ordinal(&self, key: ListItemKey) -> Option<usize> {
-        self.snapshot.display_items.iter().position(|k| *k == key)
+        self.indices
+            .get(&key)
+            .and_then(|&idx| self.display_ordinals.get(idx).copied().flatten())
     }
     pub fn display_indices(&self) -> &[usize] {
         &self.display_indices
@@ -335,12 +347,14 @@ impl KeyedList {
         self.snapshot = s.snapshot;
         self.indices = s.indices;
         self.display_indices = s.display_indices;
+        self.displayed_mask = s.displayed_mask;
+        self.display_ordinals = s.display_ordinals;
         self.incarnations = s.incarnations;
         self.next_incarnation = s.next_incarnation;
         self.revision = s.reconcile.revision;
     }
     pub(crate) fn item_displayed(&self, index: usize) -> bool {
-        self.display_indices.contains(&index)
+        self.displayed_mask.get(index).copied().unwrap_or(false)
     }
     pub(crate) fn item_incarnation(&self, index: usize) -> Option<u64> {
         self.incarnations.get(index).copied()

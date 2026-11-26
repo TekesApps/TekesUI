@@ -51,5 +51,9 @@ name = "table_gpu"
 path = "examples/table_gpu.rs"
 required-features = ["svg-icons"]
 
+[[test]]
+name = "curve_budget_isolation"
+harness = false
+
 [lints]
 workspace = true

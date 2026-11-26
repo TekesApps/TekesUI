@@ -7,7 +7,7 @@
 
 use tekes_ui_controls::composition::{
     AccessibilityAction as ContentAction, ComponentId, ContentHost, ContentResponse, ContentRole,
-    ContentSemantics, ContentTextLayout,
+    ContentSemantics, ContentTextLayout, SemanticScope,
 };
 use tekes_ui_platform_macos::{
     AccessibilityAction, AccessibilityKey, AccessibilityNode, AccessibilityRange,
@@ -63,7 +63,7 @@ fn text_layout(layout: ContentTextLayout) -> AccessibilityTextLayout {
     }
 }
 fn enrich_with_layout(
-    host: &ContentHost,
+    scope: &SemanticScope<'_>,
     id: ComponentId,
     part: Option<usize>,
     semantics: &ContentSemantics,
@@ -72,7 +72,7 @@ fn enrich_with_layout(
     text_layouts_out: Option<&mut HashMap<AccessibilityKey, AccessibilityTextLayout>>,
 ) {
     if semantics.role == ContentRole::ProgressIndicator {
-        let range = host
+        let range = scope
             .semantic_value_range(id, part)
             .and_then(|range| AccessibilityRange::new(*range.start(), *range.end()));
         node.role = AccessibilityRole::ProgressIndicator(range);
@@ -88,8 +88,8 @@ fn enrich_with_layout(
         });
     }
     if part.is_none() {
-        node.can_show_menu = host.can_show_context_menu(id);
-        add_slider_range(host, id, semantics, node);
+        node.can_show_menu = scope.can_show_context_menu(id);
+        add_slider_range(scope, id, semantics, node);
         // Preserve the existing value/selection contract before shaping. When a shaped
         // layout already exists, `layout.input` below is identical unless disabled.
         if layout.is_none()
@@ -100,12 +100,12 @@ fn enrich_with_layout(
                     | ContentRole::SearchInput
                     | ContentRole::Image
             )
-            && let Some(input) = host.semantic_text_input_snapshot(id)
+            && let Some(input) = scope.semantic_text_input_snapshot(id)
         {
             if !matches!(
                 semantics.role,
                 ContentRole::Image | ContentRole::ComboBox | ContentRole::SearchInput
-            ) && host
+            ) && scope
                 .text_surface(id)
                 .is_some_and(|surface| surface.input().is_multiline())
             {
@@ -150,7 +150,7 @@ struct ProjectedHostAccessibility {
     id_by_mount: HashMap<u64, ComponentId>,
 }
 fn resolve_mount(
-    host: &ContentHost,
+    scope: &SemanticScope<'_>,
     id: ComponentId,
     mount_by_id: &mut HashMap<ComponentId, u64>,
     id_by_mount: &mut HashMap<u64, ComponentId>,
@@ -158,7 +158,7 @@ fn resolve_mount(
     if let Some(&mount) = mount_by_id.get(&id) {
         return Some(mount);
     }
-    let mount = host.semantic_mount(id)?;
+    let mount = scope.semantic_mount(id)?;
     mount_by_id.insert(id, mount);
     id_by_mount.insert(mount, id);
     Some(mount)
@@ -174,11 +174,12 @@ fn project_host_accessibility(
             id_by_mount: HashMap::new(),
         });
     }
-    let semantics = host.semantics();
+    let scope = host.semantic_scope();
+    let semantics = scope.semantics();
     let mut mount_by_id = HashMap::with_capacity(semantics.len());
     let mut id_by_mount = HashMap::with_capacity(semantics.len());
     for n in &semantics {
-        if let Some(mount) = host.semantic_mount(n.id) {
+        if let Some(mount) = scope.semantic_mount(n.id) {
             mount_by_id.insert(n.id, mount);
             id_by_mount.insert(mount, n.id);
         }
@@ -196,11 +197,11 @@ fn project_host_accessibility(
             component,
             part: None,
         };
-        let layout = host.semantic_text_layout_snapshot(n.id, None);
+        let layout = scope.semantic_text_layout_snapshot(n.id, None);
         if n.semantics.role == ContentRole::Select
             && (layout.is_some()
-                || host.text_surface(n.id).is_some()
-                || host.semantic_text_input_snapshot(n.id).is_some())
+                || scope.text_surface(n.id).is_some()
+                || scope.semantic_text_input_snapshot(n.id).is_some())
         {
             return None;
         }
@@ -208,7 +209,7 @@ fn project_host_accessibility(
             n.semantics.role,
             ContentRole::ComboBox | ContentRole::SearchInput
         ) && (layout.as_ref().is_some_and(|l| l.multiline)
-            || host
+            || scope
                 .text_surface(n.id)
                 .is_some_and(|surface| surface.input().is_multiline()))
         {
@@ -216,7 +217,7 @@ fn project_host_accessibility(
         }
         let parent = n
             .parent
-            .and_then(|p| resolve_mount(host, p, &mut mount_by_id, &mut id_by_mount))
+            .and_then(|p| resolve_mount(&scope, p, &mut mount_by_id, &mut id_by_mount))
             .map(|component| AccessibilityKey {
                 component,
                 part: None,
@@ -229,12 +230,12 @@ fn project_host_accessibility(
             &n.semantics,
         );
         if n.semantics.role == ContentRole::Splitter {
-            let range = host.semantic_value_range(n.id, None)?;
+            let range = scope.semantic_value_range(n.id, None)?;
             owner.role =
                 AccessibilityRole::Splitter(AccessibilityRange::new(*range.start(), *range.end())?);
         }
         enrich_with_layout(
-            host,
+            &scope,
             n.id,
             None,
             &n.semantics,
@@ -247,7 +248,7 @@ fn project_host_accessibility(
             if part.semantics.role == ContentRole::Image && part.semantics.name.is_empty() {
                 continue;
             }
-            let part_layout = host.semantic_text_layout_snapshot(n.id, Some(part.index));
+            let part_layout = scope.semantic_text_layout_snapshot(n.id, Some(part.index));
             if part.semantics.role == ContentRole::Select && part_layout.is_some() {
                 return None;
             }
@@ -264,7 +265,7 @@ fn project_host_accessibility(
             };
             let parent = Some(AccessibilityKey {
                 component,
-                part: host.semantic_part_parent(n.id, part.index),
+                part: scope.semantic_part_parent(n.id, part.index),
             });
             let mut node = project(part_key, parent, part.frame, part.focused, &part.semantics);
             if matches!(
@@ -273,7 +274,7 @@ fn project_host_accessibility(
             ) {
                 // A virtual adjustable part must retain its original real domain.
                 // Unlike the legacy local-owner branch, no Group fallback is valid.
-                let range = host.semantic_value_range(n.id, Some(part.index))?;
+                let range = scope.semantic_value_range(n.id, Some(part.index))?;
                 let range = AccessibilityRange::new(*range.start(), *range.end())?;
                 node.role = if part.semantics.role == ContentRole::Splitter {
                     AccessibilityRole::Splitter(range)
@@ -282,7 +283,7 @@ fn project_host_accessibility(
                 };
             }
             enrich_with_layout(
-                host,
+                &scope,
                 n.id,
                 Some(part.index),
                 &part.semantics,
@@ -315,7 +316,7 @@ pub fn content_text_layouts(
         .unwrap_or_default()
 }
 fn add_slider_range(
-    host: &ContentHost,
+    scope: &SemanticScope<'_>,
     id: ComponentId,
     semantics: &ContentSemantics,
     projected: &mut AccessibilityNode,
@@ -323,7 +324,7 @@ fn add_slider_range(
     if !matches!(semantics.role, ContentRole::Slider) {
         return;
     }
-    if let Some(range) = host.value_range(id) {
+    if let Some(range) = scope.value_range(id) {
         if let Some(range) = AccessibilityRange::new(*range.start(), *range.end()) {
             projected.role = AccessibilityRole::Slider(range);
         }
@@ -785,13 +786,14 @@ mod image_role_local_port_tests {
             ImageWithTextSurface(TextSurface::new("not image alt", true, false)),
         ))
         .unwrap();
+        let scope = host.semantic_scope();
         enrich_with_layout(
-            &host,
+            &scope,
             ComponentId(120),
             None,
             &semantics,
             &mut image,
-            host.semantic_text_layout_snapshot(ComponentId(120), None),
+            scope.semantic_text_layout_snapshot(ComponentId(120), None),
             None,
         );
         assert_eq!(
