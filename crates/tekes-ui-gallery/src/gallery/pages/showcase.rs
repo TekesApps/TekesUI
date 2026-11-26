@@ -1357,7 +1357,7 @@ fn field(p: &mut Painter<'_>, s: State<'_>, r: Rect, kind: Field) {
         "示例项目名称"
     };
     let role = if matches!(kind, Field::Area) {
-        proposal::TextRole::ComposerBody
+        proposal::TextRole::MultilineBody
     } else {
         proposal::TextRole::UiBody
     };

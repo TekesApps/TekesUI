@@ -1781,6 +1781,14 @@
           {
             "color": "{primary-text}",
             "family": "ui",
+            "fontSize": 14,
+            "fontWeight": 400,
+            "lineHeight": 20,
+            "name": "multiline-body"
+          },
+          {
+            "color": "{primary-text}",
+            "family": "ui",
             "fontSize": 13,
             "fontWeight": 500,
             "lineHeight": 16,

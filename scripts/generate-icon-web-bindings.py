@@ -32,14 +32,17 @@ def main():
         '}\n'
     )
     alias_keys = sorted(aliases)
-    types = '// Generated from catalog.json.\nexport type IconName = ' + ' | '.join(json.dumps(name) for name in names) + ';\n'
+    types = '// Generated from catalog.json.\n'
+    types += 'export type CanonicalIconName = ' + ' | '.join(json.dumps(name) for name in names) + ';\n'
     if alias_keys:
         types += 'export type LegacyIconAlias = ' + ' | '.join(json.dumps(alias) for alias in alias_keys) + ';\n'
-        types += 'export declare const iconNames: readonly IconName[];\n'
-        types += 'export declare const iconAliases: Readonly<Record<LegacyIconAlias, IconName>>;\n'
-        types += 'export declare function getIconUrl(name: IconName | LegacyIconAlias): string;\n'
+        types += 'export type IconName = CanonicalIconName | LegacyIconAlias;\n'
+        types += 'export declare const iconNames: readonly CanonicalIconName[];\n'
+        types += 'export declare const iconAliases: Readonly<Record<LegacyIconAlias, CanonicalIconName>>;\n'
+        types += 'export declare function getIconUrl(name: IconName): string;\n'
     else:
-        types += 'export declare const iconNames: readonly IconName[];\n'
+        types += 'export type IconName = CanonicalIconName;\n'
+        types += 'export declare const iconNames: readonly CanonicalIconName[];\n'
         types += 'export declare const iconAliases: Readonly<Record<string, never>>;\n'
         types += 'export declare function getIconUrl(name: IconName): string;\n'
     for name, content in [('index.mjs', javascript), ('index.d.ts', types)]:
