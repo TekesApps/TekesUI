@@ -34,9 +34,14 @@ test('retired names and unknown names fail instead of silently substituting artw
 test('published typed declarations and Rust catalog cover exactly the same names',async()=>{
   const types=await readFile(new URL('./index.d.ts',import.meta.url),'utf8');
   const rust=await readFile(new URL('../src/catalog.rs',import.meta.url),'utf8');
+  const canonicalTypeLine=types.match(/^export type CanonicalIconName = .*$/m)?.[0] ?? '';
+  const aliasTypeLine=types.match(/^export type LegacyIconAlias = .*$/m)?.[0] ?? '';
   const iconTypeLine=types.match(/^export type IconName = .*$/m)?.[0] ?? '';
-  const typedNames = [...iconTypeLine.matchAll(/"(tekes-[^"]+)"/g)].map(match=>match[1]);
+  const typedNames = [...canonicalTypeLine.matchAll(/"(tekes-[^"]+)"/g)].map(match=>match[1]);
+  const typedAliases = [...aliasTypeLine.matchAll(/"(tekes-[^"]+)"/g)].map(match=>match[1]);
   const rustNames = [...rust.matchAll(/name: "(tekes-[^"]+)"/g)].map(match=>match[1]);
   assert.deepEqual(typedNames, iconNames);
+  assert.deepEqual(typedAliases, Object.keys(iconAliases).sort());
+  assert.equal(iconTypeLine, 'export type IconName = CanonicalIconName | LegacyIconAlias;');
   assert.deepEqual(rustNames.sort(), [...iconNames].sort());
 });
