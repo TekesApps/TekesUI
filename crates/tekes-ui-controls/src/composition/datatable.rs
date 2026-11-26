@@ -285,6 +285,8 @@ struct Prepared {
     next: usize,
     ids: BTreeSet<ComponentId>,
 }
+type SlotMetricsKey = (u32, u32, u32, usize, u64, bool);
+
 #[derive(Debug)]
 pub struct DataTableContent {
     name: String,
@@ -302,6 +304,7 @@ pub struct DataTableContent {
     exhausted: bool,
     last_intent: Option<TableIntent>,
     metrics: TableContentMetrics,
+    slot_metrics_cache: Option<(SlotMetricsKey, TableContentMetrics)>,
 }
 impl DataTableContent {
     /// Borrowed staging: every error preserves the complete caller input, including
@@ -336,6 +339,7 @@ impl DataTableContent {
             exhausted: false,
             last_intent: None,
             metrics: TableContentMetrics::default(),
+            slot_metrics_cache: None,
         };
         let p = t.prepare(snapshot, displays, (0, 0))?;
         let mut range =
@@ -357,6 +361,7 @@ impl DataTableContent {
         if self.view.compact() != compact {
             self.view.set_compact(compact);
             self.view.invalidate_content_layout();
+            self.slot_metrics_cache = None;
         }
     }
     pub fn compact(&self) -> bool {
@@ -1040,6 +1045,7 @@ impl DataTableContent {
         self.exposures = p.exposures;
         self.next = p.next;
         self.metrics = TableContentMetrics::default();
+        self.slot_metrics_cache = None;
         self.view.cancel();
         if reset_focus {
             self.view.blur();
@@ -1273,44 +1279,18 @@ impl DataTableContent {
         }
     }
 }
-struct MeasureText<'a>(&'a mut dyn ButtonTextRenderer);
-impl ButtonTextRenderer for MeasureText<'_> {
-    fn measure(&mut self, t: &str, r: proposal::TextRole, w: f32) -> Size {
-        self.0.measure(t, r, w)
-    }
-    fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
-        self.0.text_surface_host()
-    }
-    fn icon_renderer(&mut self) -> Option<&mut dyn crate::layout_view::IconRenderer> {
-        self.0.icon_renderer()
-    }
-    fn resolved_font_size(&mut self, r: proposal::TextRole) -> f32 {
-        self.0.resolved_font_size(r)
-    }
-    fn motion_context(&self) -> Option<crate::ControlMotionContext> {
-        self.0.motion_context()
-    }
-    fn animation_frames_allowed(&self) -> bool {
-        self.0.animation_frames_allowed()
-    }
-    fn backing_scale(&self) -> f32 {
-        self.0.backing_scale()
-    }
-    fn first_line_height(&mut self, t: &str, r: proposal::TextRole, w: f32) -> f32 {
-        self.0.first_line_height(t, r, w)
-    }
-    fn draw(
-        &mut self,
-        _: &mut Scene,
-        _: &str,
-        _: proposal::TextRole,
-        _: Rect,
-        _: ButtonTextAlign,
-        _: Rgba,
-    ) {
-    }
-}
 impl DataTableContent {
+    fn slot_metrics_key(&self, text: &mut dyn ButtonTextRenderer, width: f32) -> SlotMetricsKey {
+        (
+            width.max(0.).to_bits(),
+            text.resolved_font_size(proposal::TextRole::UiBody)
+                .to_bits(),
+            text.backing_scale().to_bits(),
+            Arc::as_ptr(&self.model.view_identity()) as usize,
+            self.model.revision(),
+            self.disabled,
+        )
+    }
     pub(super) fn prepare_table_action(
         &self,
         request: ComponentActionRequest<'_>,
@@ -1468,31 +1448,33 @@ impl Component for DataTableContent {
         if self.validate_all().is_err() {
             return MeasuredChild::new(Size::default());
         }
+        let key = self.slot_metrics_key(text, a.width);
         let m = self.measured(text, a.width, a.height);
-        let mut view = self.view.clone();
-        let l = view.render_content_keyed(
-            &mut Scene::new(),
-            &mut MeasureText(text),
-            &self.model,
-            Rect::new(0., 0., a.width, 1e8),
-            None,
-            tekes_ui_tokens::Theme::LIGHT.into(),
-            m,
-        );
-        MeasuredChild::new(Size::new(a.width, l.content_height))
+        self.slot_metrics_cache = Some((key, m.clone()));
+        let height =
+            self.view
+                .measure_content_keyed(&mut TextAdapter(text), &self.model, a.width, m);
+        MeasuredChild::new(Size::new(a.width, height))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
         if self.validate_all().is_err() {
             return;
         }
-        self.metrics = self.measured(text, f.size.width, f.size.height);
-        let l = self.view.render_content_keyed(
-            &mut Scene::new(),
-            &mut MeasureText(text),
+        let key = self.slot_metrics_key(text, f.size.width);
+        self.metrics = if let Some((cached_key, cached)) = &self.slot_metrics_cache
+            && *cached_key == key
+        {
+            cached.clone()
+        } else {
+            let computed = self.measured(text, f.size.width, f.size.height);
+            self.slot_metrics_cache = Some((key, computed.clone()));
+            computed
+        };
+        let l = self.view.arrange_content_keyed(
+            &mut TextAdapter(text),
             &self.model,
             f,
             Some(c),
-            tekes_ui_tokens::Theme::LIGHT.into(),
             self.metrics.clone(),
         );
         self.arrange_slots(text, &l, c);
@@ -1508,15 +1490,13 @@ impl Component for DataTableContent {
         if !self.mounted || self.exhausted || self.validate_all().is_err() {
             return;
         }
-        if let Some(l) = self.view.layout_keyed(&self.model) {
-            let frame = l.frame;
+        if self.view.layout_keyed(&self.model).is_some() {
             let mut metrics = self.metrics.clone();
             metrics.surface = t.surface_declared.then_some(t.surface());
-            self.view.render_content_keyed(
+            self.view.paint_content_keyed(
                 s,
                 &mut TextAdapter(text),
                 &self.model,
-                frame,
                 Some(c),
                 t.palette,
                 metrics,
@@ -2301,5 +2281,248 @@ mod datatable_private_tests {
             assert_eq!(format!("{h:?}"), before);
             assert_eq!(format!("{displays:?}"), before_displays);
         }
+    }
+
+    #[test]
+    fn datatable_paint_reuses_arranged_geometry_and_relayouts_on_width_and_font_size_changes() {
+        use crate::extended::{KeyedTableColumn, KeyedTableRow, TableDatasetKey};
+        use std::cell::Cell;
+        struct MetricText {
+            font_scale: f32,
+            measures: Cell<usize>,
+            cell_measures: Cell<usize>,
+            cell_draws: Cell<usize>,
+            target: &'static str,
+        }
+        impl MetricText {
+            fn new(target: &'static str) -> Self {
+                Self {
+                    font_scale: 1.0,
+                    measures: Cell::new(0),
+                    cell_measures: Cell::new(0),
+                    cell_draws: Cell::new(0),
+                    target,
+                }
+            }
+            fn reset(&self) {
+                self.measures.set(0);
+                self.cell_measures.set(0);
+                self.cell_draws.set(0);
+            }
+        }
+        impl ButtonTextRenderer for MetricText {
+            fn resolved_font_size(&mut self, role: proposal::TextRole) -> f32 {
+                role.style().size * self.font_scale
+            }
+            fn measure(&mut self, text: &str, role: proposal::TextRole, width: f32) -> Size {
+                self.measures.set(self.measures.get() + 1);
+                if text == self.target {
+                    self.cell_measures.set(self.cell_measures.get() + 1);
+                }
+                let char_w = 8. * self.font_scale;
+                let line_h = role.style().line_height * self.font_scale;
+                let lines = ((text.chars().count() as f32 * char_w) / width.max(1.))
+                    .ceil()
+                    .max(1.);
+                Size::new(
+                    (text.chars().count() as f32 * char_w).min(width),
+                    lines * line_h,
+                )
+            }
+            fn draw(
+                &mut self,
+                _: &mut Scene,
+                text: &str,
+                _: proposal::TextRole,
+                _: Rect,
+                _: ButtonTextAlign,
+                _: Rgba,
+            ) {
+                if text == self.target {
+                    self.cell_draws.set(self.cell_draws.get() + 1);
+                }
+            }
+        }
+
+        // 1. Single-cell probe: Host::render measures cell once, draws once; standalone paint = 0 measures.
+        let cell_text = "AlphaCell Wrapping Probe Words";
+        let snap = KeyedTableSnapshot {
+            dataset: TableDatasetKey(1),
+            columns: vec![KeyedTableColumn {
+                key: C(1),
+                name: "Name".into(),
+            }],
+            rows: vec![KeyedTableRow {
+                key: R(1),
+                name: "Row1".into(),
+                cells: vec![cell_text.into()],
+            }],
+            display_rows: vec![R(1)],
+        };
+        let mut displays = TableDisplays {
+            headers: vec![TableHeaderDisplay {
+                key: C(1),
+                display: TableDisplayUpdate::Keep,
+            }],
+            rows: vec![TableRowDisplay {
+                key: R(1),
+                id: ComponentId(101),
+                replace_wrapper: false,
+                cells: vec![TableCellDisplay {
+                    column: C(1),
+                    display: TableDisplayUpdate::Keep,
+                    accessory: TableDisplayUpdate::Keep,
+                }],
+            }],
+        };
+        let mut table = DataTableContent::new(
+            "Tbl",
+            &snap,
+            &mut displays,
+            TableBudget {
+                max_units: 1000,
+                max_utf8_bytes: 100_000,
+            },
+        )
+        .unwrap();
+        let mut text = MetricText::new(cell_text);
+        let wide = Rect::new(0., 0., 360., 200.);
+        let measured_wide = table.measure(&mut text, wide.size);
+        assert_eq!(text.cell_measures.get(), 1);
+        text.reset();
+        table.arrange(&mut text, wide, wide);
+        assert_eq!(
+            text.measures.get(),
+            0,
+            "arrange at same width/font must reuse cached measure"
+        );
+        table.mounted = true;
+        let mut scene = Scene::new();
+        table.paint(
+            &mut scene,
+            &mut text,
+            wide,
+            wide,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(text.measures.get(), 0, "paint must perform 0 measures");
+        assert_eq!(text.cell_draws.get(), 1);
+
+        // 2. Narrower width invalidates cache and wraps taller.
+        let narrow = Rect::new(0., 0., 110., 240.);
+        text.reset();
+        let measured_narrow = table.measure(&mut text, narrow.size);
+        assert!(measured_narrow.size.height > measured_wide.size.height);
+        assert_eq!(text.cell_measures.get(), 1);
+        table.arrange(&mut text, narrow, narrow);
+        text.reset();
+        table.paint(
+            &mut Scene::new(),
+            &mut text,
+            narrow,
+            narrow,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(text.measures.get(), 0);
+        assert_eq!(text.cell_draws.get(), 1);
+
+        // 3. Larger font scale invalidates cache cleanly and wraps taller.
+        text.font_scale = 1.6;
+        text.reset();
+        let measured_scaled = table.measure(&mut text, narrow.size);
+        assert!(measured_scaled.size.height > measured_narrow.size.height);
+        assert_eq!(text.cell_measures.get(), 1);
+        table.arrange(&mut text, narrow, narrow);
+        text.reset();
+        table.paint(
+            &mut Scene::new(),
+            &mut text,
+            narrow,
+            narrow,
+            Palette::from(tekes_ui_tokens::Theme::LIGHT).into(),
+        );
+        assert_eq!(text.measures.get(), 0);
+        assert_eq!(text.cell_draws.get(), 1);
+
+        // 4. Custom header, custom cell, trailing accessory: clip, focus, and hit-test.
+        let custom_snap = KeyedTableSnapshot {
+            dataset: TableDatasetKey(2),
+            columns: vec![KeyedTableColumn {
+                key: C(1),
+                name: "Col".into(),
+            }],
+            rows: vec![KeyedTableRow {
+                key: R(1),
+                name: "Row1".into(),
+                cells: vec!["ignored".into()],
+            }],
+            display_rows: vec![R(1)],
+        };
+        let mut custom_displays = TableDisplays {
+            headers: vec![TableHeaderDisplay {
+                key: C(1),
+                display: TableDisplayUpdate::Replace(Content::new(
+                    ComponentId(201),
+                    TextContent::new("CustomHdr"),
+                )),
+            }],
+            rows: vec![TableRowDisplay {
+                key: R(1),
+                id: ComponentId(202),
+                replace_wrapper: true,
+                cells: vec![TableCellDisplay {
+                    column: C(1),
+                    display: TableDisplayUpdate::Replace(Content::new(
+                        ComponentId(203),
+                        TextContent::new("CustomCell"),
+                    )),
+                    accessory: TableDisplayUpdate::Replace(Content::new(
+                        ComponentId(204),
+                        TextContent::new("Tag"),
+                    )),
+                }],
+            }],
+        };
+        let custom_table = DataTableContent::new(
+            "CustomTbl",
+            &custom_snap,
+            &mut custom_displays,
+            TableBudget {
+                max_units: 1000,
+                max_utf8_bytes: 100_000,
+            },
+        )
+        .unwrap();
+        let mut host = ContentHost::new(Content::new(ComponentId(300), custom_table)).unwrap();
+        let mut host_text = MetricText::new("CustomCell");
+        let clip = Rect::new(0., 0., 220., 160.);
+        host.render(
+            &mut Scene::new(),
+            &mut host_text,
+            clip,
+            clip,
+            tekes_ui_tokens::Theme::LIGHT.into(),
+        )
+        .unwrap();
+        let hdr_frame = host.get(ComponentId(201)).unwrap().frame();
+        let cell_frame = host.get(ComponentId(203)).unwrap().frame();
+        let acc_frame = host.get(ComponentId(204)).unwrap().frame();
+        assert!(clip.contains(hdr_frame.center()));
+        assert!(clip.contains(cell_frame.center()));
+        assert!(clip.contains(acc_frame.center()));
+        assert!(acc_frame.min_x() >= cell_frame.max_x());
+
+        assert!(host.focus(Some(ComponentId(300)), true));
+        let row_pt = Point::new(cell_frame.center().x, cell_frame.center().y);
+        assert!(host.event(&ContentEvent::PointerDown(row_pt)).consumed);
+        assert!(host.event(&ContentEvent::PointerUp(row_pt)).consumed);
+        assert_eq!(
+            host.get(ComponentId(300))
+                .unwrap()
+                .component::<DataTableContent>()
+                .unwrap()
+                .selected_key(),
+            Some(R(1))
+        );
     }
 }

@@ -449,6 +449,41 @@ impl ButtonModel {
     // resolve their own semantic radius. This is internal geometry plumbing;
     // public ButtonModel callers continue to use the size-specific ButtonModel token.
     #[allow(clippy::too_many_arguments)]
+    pub(crate) fn render_measured(
+        &mut self,
+        scene: &mut Scene,
+        text: &mut impl ButtonTextRenderer,
+        label: &str,
+        measured_content: Size,
+        frame: Rect,
+        clip: Option<Rect>,
+        palette: impl Into<Palette>,
+        variant: crate::paint::ButtonVariant,
+        size: ButtonSize,
+        role: proposal::TextRole,
+        align: ButtonTextAlign,
+    ) -> ButtonLayout {
+        let context = text.motion_context();
+        self.render_with_motion_context(
+            scene,
+            text,
+            label,
+            frame,
+            clip,
+            palette,
+            variant,
+            size,
+            role,
+            align,
+            context,
+            Some(measured_content),
+            None,
+            None,
+            false,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn render_with_radius(
         &mut self,
         scene: &mut Scene,
