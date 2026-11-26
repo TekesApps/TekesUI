@@ -647,6 +647,10 @@ impl Component for NumberFieldContent {
         self.editor_frame.origin.y += (f.size.height - height).max(0.) * 0.5;
         self.editor_frame.size.height = height;
         self.editor.arrange(t, self.editor_frame, c);
+        self.sync_buttons();
+        for i in 0..2 {
+            self.buttons[i].arrange(t, self.frames[i], c);
+        }
     }
     fn prepare_text_input(&mut self, t: &mut dyn ButtonTextRenderer, _: Rect, c: Rect) {
         self.editor.prepare_text_input(t, self.editor_frame, c);

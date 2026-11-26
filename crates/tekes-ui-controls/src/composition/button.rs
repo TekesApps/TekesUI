@@ -895,6 +895,11 @@ impl Component for Button {
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, frame: Rect, clip: Rect) {
         self.measure_button(text, frame.size);
         let layout = resolve_action_slot(self, self.measured, frame, clip, text);
+        if crate::widgets::valid_frame(frame) && crate::widgets::valid_clip(clip) {
+            self.button.set_arranged_layout(Some(layout));
+        } else {
+            self.button.clear_layout();
+        }
         let body = self.body_frame(layout);
         if let Some(content) = self.content.first_mut() {
             content.arrange(text, body, body.intersection(&clip).unwrap_or_default());
@@ -1063,8 +1068,7 @@ impl Component for Button {
         let mut r = ContentResponse::default();
         match event {
             ContentEvent::PointerMove(p) => {
-                self.button.pointer_move_at(*p);
-                r.changed = true
+                r.changed = self.button.pointer_move_changed(*p);
             }
             ContentEvent::PointerUp(p) => {
                 r.activated = self.button.pointer_up_at(*p);

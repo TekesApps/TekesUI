@@ -311,6 +311,18 @@ impl Host {
             .with_host(&mut |h| state = crate::columns::text_state(h));
         state
     }
+    pub(super) fn handle_local_caret_blink(&mut self, active: bool) -> bool {
+        if self
+            .local_text_state(active)
+            .is_some_and(|s| !s.read_only && s.selection.is_empty())
+        {
+            self.text.0.caret_visible = !self.text.0.caret_visible;
+            true
+        } else {
+            self.text.0.caret_visible = true;
+            false
+        }
+    }
     pub(super) fn local_content_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
         if !w.is_active()
             || self
@@ -337,6 +349,9 @@ impl Host {
                 .is_some_and(|n| n.busy || !n.host.input_open)
         {
             return Ok(false);
+        }
+        if matches!(event, Event::CaretBlink) {
+            return Ok(self.handle_local_caret_blink(w.is_active()));
         }
         if let Event::Accessibility { target, action } = event {
             use tekes_ui_macos_bridge::WindowContentAccessibilityExt;
@@ -441,7 +456,6 @@ impl Host {
                 }
                 local.window_event(event, w, &mut self.text)
             }
-            Event::CaretBlink => Ok(true),
             _ => Ok(false),
         }
     }
@@ -1900,5 +1914,322 @@ mod local_scroll_tests {
                 }
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod redraw_efficiency_tests {
+    use crate::{AppWindow, LocalContainer};
+    use tekes_ui_controls::composition::{
+        Button, ComponentId, Content, ContentEvent, PointerEvent, PointerPhase, StackContent,
+        TextFieldContent,
+    };
+    use tekes_ui_module_runtime::ContentClipboard;
+    use tekes_ui_platform_macos::{Event, KeyEvent, KeyEventKind, Modifiers};
+    use tekes_ui_scene::{Point, Rect, Scene};
+    use tekes_ui_tokens::Theme;
+
+    struct NoClipboard;
+    impl ContentClipboard for NoClipboard {
+        fn clipboard_text(&self) -> Option<String> {
+            None
+        }
+        fn set_clipboard_text(&self, _: &str) {}
+    }
+
+    fn key_event(key_code: u16, chars: &str) -> KeyEvent {
+        KeyEvent {
+            key_code,
+            kind: KeyEventKind::Down,
+            modifiers: Modifiers::default(),
+            characters: chars.to_owned(),
+            characters_ignoring_modifiers: chars.to_owned(),
+            is_repeat: false,
+        }
+    }
+
+    #[test]
+    fn caret_blink_produces_two_real_scene_phases_and_skips_readonly_unfocused_and_selected() {
+        let editable = TextFieldContent::new("Edit", "abc");
+        let content = Content::new(ComponentId(1), editable);
+        let local = LocalContainer::new("edit", content).unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 320., 120.);
+        {
+            let panel = &mut host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel.local.as_mut().unwrap().with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+            });
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        assert!(!host.handle_local_caret_blink(false));
+        assert!(host.text.0.caret_visible);
+
+        // Collapsed selection + editable + active -> alternates visible/hidden phases.
+        assert!(host.handle_local_caret_blink(true));
+        assert!(!host.text.0.caret_visible);
+        let mut scene_hidden = Scene::new();
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut scene_hidden,
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        assert!(host.handle_local_caret_blink(true));
+        assert!(host.text.0.caret_visible);
+        let mut scene_visible = Scene::new();
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut scene_visible,
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+        assert_ne!(
+            scene_visible.primitives().len(),
+            scene_hidden.primitives().len(),
+            "two caret blink phases must emit distinct scene primitives"
+        );
+
+        // Non-empty selection must not emit periodic blink redraws.
+        let selected = Content::new(ComponentId(1), TextFieldContent::new("Edit", "abc"));
+        let sel_local = LocalContainer::new("sel", selected).unwrap();
+        let mut sel_host = AppWindow::from_columns(vec![sel_local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(sel_host.mount_columns());
+        sel_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+                h.get_mut(ComponentId(1))
+                    .and_then(|n| n.component_mut::<TextFieldContent>())
+                    .unwrap()
+                    .set_selection(0, 2);
+            });
+        sel_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut sel_host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(!sel_host.handle_local_caret_blink(true));
+
+        // Read-only focused field must not blink/redraw.
+        let ro_field = TextFieldContent::new("RO", "abc").with_read_only(true);
+        let ro_local = LocalContainer::new("ro", Content::new(ComponentId(1), ro_field)).unwrap();
+        let mut ro_host = AppWindow::from_columns(vec![ro_local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(ro_host.mount_columns());
+        ro_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(Some(ComponentId(1)), false);
+            });
+        ro_host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .render(
+                &mut Scene::new(),
+                &mut ro_host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(!ro_host.handle_local_caret_blink(true));
+    }
+
+    #[test]
+    fn blank_mouse_move_and_unhandled_key_skip_redraw_while_hover_and_typing_redraw() {
+        let content = Content::new(
+            ComponentId(10),
+            StackContent::vertical(
+                16.,
+                vec![
+                    Content::new(ComponentId(11), Button::new("HoverTarget")),
+                    Content::new(ComponentId(12), TextFieldContent::new("Input", "abc")),
+                ],
+            ),
+        );
+        let local = LocalContainer::new("main", content).unwrap();
+        let mut host = AppWindow::from_columns(vec![local.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        let frame = Rect::new(0., 40., 360., 280.);
+        let mut button_center = None;
+        {
+            let panel = &mut host.panel_mgr.panels[0];
+            panel.bounds = frame;
+            panel.geometry.content = frame;
+            panel.content_padding = 0.;
+            panel
+                .local
+                .as_mut()
+                .unwrap()
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+            panel.local.as_mut().unwrap().with_host(&mut |h| {
+                button_center = h
+                    .semantics()
+                    .into_iter()
+                    .find(|n| n.id == ComponentId(11))
+                    .map(|n| {
+                        let b = n.frame;
+                        Point::new(
+                            b.min_x() + b.size.width / 2.,
+                            b.min_y() + b.size.height / 2.,
+                        )
+                    });
+            });
+        }
+        let button_center = button_center.expect("button bounds");
+        let blank_point = Point::new(frame.max_x() - 10., frame.max_y() - 10.);
+        let panel = host.panel_mgr.panels[0].local.as_mut().unwrap();
+
+        // Blank move causes no state/render change.
+        let blank_move = ContentEvent::Pointer(PointerEvent {
+            position: blank_point,
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        });
+        assert!(
+            !panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+
+        // Real hover enter redraws; moving within blank after hover exit redraws once on exit.
+        let enter_btn = ContentEvent::Pointer(PointerEvent {
+            position: button_center,
+            phase: PointerPhase::Move,
+            button: None,
+            click_count: 0,
+            modifiers: Default::default(),
+        });
+        assert!(
+            panel
+                .hover_event_needs_redraw(&enter_btn, &mut host.text)
+                .unwrap()
+        );
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(
+            panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(
+            !panel
+                .hover_event_needs_redraw(&blank_move, &mut host.text)
+                .unwrap()
+        );
+
+        // Unhandled key on button focus must not request redraw.
+        panel.with_host(&mut |h| {
+            h.focus(Some(ComponentId(11)), false);
+        });
+        panel
+            .render(
+                &mut Scene::new(),
+                &mut host.text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+        assert!(
+            !panel
+                .window_event(
+                    &Event::Key(key_event(105, "")),
+                    &NoClipboard,
+                    &mut host.text
+                )
+                .unwrap()
+        );
+
+        // Valid text commit on focused TextField requests redraw.
+        panel.with_host(&mut |h| {
+            h.focus(Some(ComponentId(12)), false);
+        });
+        assert!(
+            panel
+                .window_event(
+                    &Event::TextCommit {
+                        text: "d".into(),
+                        replacement: None,
+                    },
+                    &NoClipboard,
+                    &mut host.text,
+                )
+                .unwrap()
+        );
     }
 }

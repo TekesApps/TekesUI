@@ -194,16 +194,11 @@ impl ContentHost {
         self.dirty = true;
         self.root.find_mut(id)
     }
-    /// Mutation and event invalidation; animation callbacks remain on the
-    /// existing text adapter. A successful render acknowledges this flag.
-    pub fn needs_render(&self) -> bool {
+    /// Whether visual state, layout reveal, help tooltip, or dialog/popover
+    /// animations need a render (excluding input-lease retirement on no-op events).
+    pub fn has_visual_changes(&self) -> bool {
         self.dirty
-            // Even refused input retires the frozen geometry's input lease.
-            // The next frame must acknowledge that generation before repaint.
             || self.reveal_clock.pending
-            || self
-                .last_render_stamp
-                .is_some_and(|last| self.reveal_clock.stamp().ok() != Some(last))
             || self.help.needs_frame()
             || self.popover_animation_pending()
             || self
@@ -211,6 +206,16 @@ impl ContentHost {
                 .and_then(|id| self.root.find(id))
                 .and_then(|node| node.component::<DialogContent>())
                 .is_some_and(DialogContent::needs_animation)
+    }
+    /// Mutation and event invalidation; animation callbacks remain on the
+    /// existing text adapter. A successful render acknowledges this flag.
+    pub fn needs_render(&self) -> bool {
+        self.has_visual_changes()
+            // Even refused input retires the frozen geometry's input lease.
+            // The next frame must acknowledge that generation before repaint.
+            || self
+                .last_render_stamp
+                .is_some_and(|last| self.reveal_clock.stamp().ok() != Some(last))
     }
     pub fn focus_targets(&self) -> Vec<(ComponentId, Rect)> {
         let mut ids = Vec::new();

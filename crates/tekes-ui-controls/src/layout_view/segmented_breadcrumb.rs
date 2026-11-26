@@ -580,17 +580,25 @@ impl SegmentedControlView {
         self.layout.clone()
     }
     pub fn pointer_move(&mut self, p: Point) {
+        let _ = self.pointer_move_changed(p);
+    }
+    pub(crate) fn pointer_move_changed(&mut self, p: Point) -> bool {
         if self.disabled {
-            self.hovered = None;
-            return;
+            let changed = self.hovered.take().is_some();
+            return changed;
         }
+        let before = self.hovered;
         self.hovered = self.layout.items.iter().position(|l| l.hit_test(p));
+        let mut changed = self.hovered != before;
         for (i, b) in self.buttons.iter_mut().enumerate() {
-            b.pointer_move_at(p);
+            changed |= b.pointer_move_changed(p);
             if self.pressed == Some(i) {
-                b.state.pressed = self.hovered == Some(i)
+                let next_pressed = self.hovered == Some(i);
+                changed |= b.state.pressed != next_pressed;
+                b.state.pressed = next_pressed;
             }
         }
+        changed
     }
     pub fn pointer_down(&mut self, p: Point) -> Option<usize> {
         let decision = self.prepare_pointer_down(p, false)?;
