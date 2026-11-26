@@ -1605,6 +1605,8 @@ mod runtime_validation_and_reuse_tests {
         .unwrap();
         let mut host = ContentHost::new(Content::new(ComponentId(10), table)).unwrap();
         let frame = Rect::new(0., 0., 240., 160.);
+        let mut remote = RemoteSemantics::default();
+        let mut base_tbl_index = None;
         let mut previous_tokens = Vec::new();
 
         for disabled in [false, true, false] {
@@ -1624,7 +1626,6 @@ mod runtime_validation_and_reuse_tests {
             .unwrap();
 
             let snap = crate::content_accessibility::snapshot(&host).unwrap();
-            let mut remote = RemoteSemantics::default();
             remote.update(semantic_test_snapshot(snap)).unwrap();
             let parts = remote.parts(frame, frame, false);
             assert_eq!(parts.len(), 5);
@@ -1632,6 +1633,11 @@ mod runtime_validation_and_reuse_tests {
                 .iter()
                 .find(|p| p.semantics.role == ContentRole::Table)
                 .unwrap();
+            if let Some(expected_tbl) = base_tbl_index {
+                assert_eq!(tbl.index, expected_tbl);
+            } else {
+                base_tbl_index = Some(tbl.index);
+            }
             let col = parts
                 .iter()
                 .find(|p| matches!(p.semantics.role, ContentRole::TableColumn { index: 0 }))
@@ -1672,43 +1678,56 @@ mod runtime_validation_and_reuse_tests {
                 (cell, Some(false)),
             ] {
                 let (_, target, part_id) = remote.callback(part.index).unwrap();
-                assert_eq!(
-                    remote.collection_action_admission(
-                        target,
-                        part_id,
-                        frame,
-                        frame,
-                        &wire::AccessibilityAction::Press
-                    ),
-                    expected_allow
-                );
+                for action in [
+                    wire::AccessibilityAction::Focus,
+                    wire::AccessibilityAction::Press,
+                ] {
+                    assert_eq!(
+                        remote.collection_action_admission(target, part_id, frame, frame, &action),
+                        expected_allow
+                    );
+                }
+            }
+            for &(_, (_, old_target, old_part_id)) in &previous_tokens {
+                for action in [
+                    wire::AccessibilityAction::Focus,
+                    wire::AccessibilityAction::Press,
+                ] {
+                    assert_ne!(
+                        remote.collection_action_admission(
+                            old_target,
+                            old_part_id,
+                            frame,
+                            frame,
+                            &action
+                        ),
+                        Some(true),
+                        "stale row/header token from prior state must remain rejected"
+                    );
+                }
             }
             previous_tokens.push((row.index, remote.callback(row.index).unwrap()));
+            previous_tokens.push((hdr.index, remote.callback(hdr.index).unwrap()));
         }
 
-        // Stale remote token and invalid hierarchy rejection still apply.
+        // Submitting a corrupted cell parent while the same receiver still holds a
+        // valid projection must error AND revoke the previous projection cleanly.
+        assert_eq!(remote.parts(frame, frame, false).len(), 5);
         let mut stale_snap = crate::content_accessibility::snapshot(&host).unwrap();
-        // Corrupt cell parent to None -> rejected by RemoteSemantics::update.
         stale_snap[0].parts[3].parent = None;
-        let mut rejected_remote = RemoteSemantics::default();
-        assert!(
-            rejected_remote
-                .update(semantic_test_snapshot(stale_snap))
-                .is_err()
-        );
-
-        let stale_remote = RemoteSemantics::default();
-        let (stale_idx, (_, target, part_id)) = previous_tokens[0];
-        assert_eq!(stale_remote.parent(stale_idx), None);
-        assert_eq!(
-            stale_remote.collection_action_admission(
-                target,
-                part_id,
-                frame,
-                frame,
-                &wire::AccessibilityAction::Press
-            ),
-            None
-        );
+        assert!(remote.update(semantic_test_snapshot(stale_snap)).is_err());
+        assert!(remote.parts(frame, frame, false).is_empty());
+        for (stale_idx, (_, target, part_id)) in previous_tokens {
+            assert_eq!(remote.parent(stale_idx), None);
+            for action in [
+                wire::AccessibilityAction::Focus,
+                wire::AccessibilityAction::Press,
+            ] {
+                assert_eq!(
+                    remote.collection_action_admission(target, part_id, frame, frame, &action),
+                    None
+                );
+            }
+        }
     }
 }
