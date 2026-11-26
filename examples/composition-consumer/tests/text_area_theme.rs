@@ -192,7 +192,7 @@ fn text_area_primary_retained_themes_keep_multiline_selection_scroll_and_real_in
     let mut area = TextSurface::new(&source, true, false);
     let mut text = coretext::Text::new(1.);
     assert!(area.input().is_multiline());
-    assert_eq!(area.role(), proposal::TextRole::ComposerBody);
+    assert_eq!(area.role(), proposal::TextRole::MultilineBody);
     render(&mut area, &mut text, Theme::LIGHT);
     assert!(area.input_mut().select_range(0..4));
     let frame = area.outer();
@@ -274,7 +274,7 @@ fn text_area_original_content_configuration_retains_multiline_input_and_theme_sc
             .component::<TextFieldContent>()
             .unwrap();
         assert!(field.surface().input().is_multiline());
-        assert_eq!(field.surface().role(), proposal::TextRole::ComposerBody);
+        assert_eq!(field.surface().role(), proposal::TextRole::MultilineBody);
         assert_eq!(field.surface().outer(), frame);
         assert_eq!(field.surface().scroll().offset, offset);
         assert_eq!(field.surface().input().selection(), 0..4);

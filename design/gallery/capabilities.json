@@ -10382,7 +10382,7 @@
                 "expected": "fb8612fca83c4a4fab7d2b6f8247389ad320bc935b7ca1b8c3209976ff1b76b1"
               },
               "examples/composition-consumer/tests/text_theme.rs": {
-                "actual": "f592f9ce75e8370cca200fbac9d0a06f34a9e16ff6259f925e2bc16842750298",
+                "actual": "980964cdc4b2b1cd7d952b92638d98f57eb12241175994ebb43af0c1b2f44b59",
                 "expected": "d06f5da2ccd134369542047ad10ac91ac4bc835ee371f4713012265049a4b210"
               }
             },
@@ -20425,7 +20425,7 @@
                 "expected": "043c46f6746522b6f6d3feb6a895e914a465d867e9ac2a3f18e8be43d1d26e25"
               },
               "examples/composition-consumer/tests/text_area_theme.rs": {
-                "actual": "878cfddba7d0b4560e31467eb8574bc64bb63181fb1fc57c7c0adf080beb7edf",
+                "actual": "4d91c6f53d311e28c4e0ce1cdab50f49e46c2a3b6607fb1e884ada6c6ed2fc55",
                 "expected": "cf7792f60f0ccf11c7a675c44a1d13a5d5d165615d0aae25a7fa89caee2b558f"
               }
             },
@@ -88227,9 +88227,9 @@
     "examples/composition-consumer/tests/surface_theme.rs": "ea80660bf10c7af0092bf43ff8dca05c3414eedb21452e40be5c80b83aa9edbf",
     "examples/composition-consumer/tests/switch_theme.rs": "2e9e8bb7242427242bcc1ab34394c63d620ab7723728a27b2af5778a08354a30",
     "examples/composition-consumer/tests/tabs_theme.rs": "2871439953cad2c6c34339e477656cadcc4a05223e9b114014b7c0512f269116",
-    "examples/composition-consumer/tests/text_area_theme.rs": "878cfddba7d0b4560e31467eb8574bc64bb63181fb1fc57c7c0adf080beb7edf",
+    "examples/composition-consumer/tests/text_area_theme.rs": "4d91c6f53d311e28c4e0ce1cdab50f49e46c2a3b6607fb1e884ada6c6ed2fc55",
     "examples/composition-consumer/tests/text_field_theme.rs": "ec7a51cd67d854e2d261e92f1bba7b8b409f51b4b498f5575f72aac5ef955e57",
-    "examples/composition-consumer/tests/text_theme.rs": "f592f9ce75e8370cca200fbac9d0a06f34a9e16ff6259f925e2bc16842750298",
+    "examples/composition-consumer/tests/text_theme.rs": "980964cdc4b2b1cd7d952b92638d98f57eb12241175994ebb43af0c1b2f44b59",
     "examples/composition-consumer/tests/toolbar_theme.rs": "ca5d9222b9f0099148163e89708a368de062207dc0b5bf18324773fb40481736",
     "examples/composition-consumer/tests/tree_theme.rs": "65b3de0d08a695de0a4bbeb4f7597e200410e93f4205e74254fcb3a1abf2d1a9",
     "scripts/component-context.py": "cf614906eb19f6e3ca176c4613107ea6fc8c16b8d31aeea0696ce292723a4c74",
