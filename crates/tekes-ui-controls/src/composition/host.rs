@@ -960,7 +960,11 @@ impl ContentHost {
                 )
         );
         let pre_event_state = passive_noop_candidate.then(|| self.passive_event_snapshot());
-        if !passive_noop_candidate {
+        if passive_noop_candidate {
+            // Preserve ContentGeometrySnapshot::is_current() for AX on passive
+            // no-ops, while still bumping input stamp so Reveal/repaint fences retire.
+            self.reveal_clock.invalidate_input_stamp();
+        } else {
             self.reveal_clock.invalidate_input();
         }
         self.event_bubbled = None;
@@ -1104,7 +1108,7 @@ impl ContentHost {
                 || self.pointer_focus_requested
                 || self.passive_event_snapshot() != before
             {
-                self.reveal_clock.invalidate_input();
+                self.reveal_clock.invalidate_geometry_lease();
             }
         }
         self.event_bubbled =

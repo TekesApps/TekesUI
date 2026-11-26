@@ -1209,7 +1209,7 @@ fn passive_noop_events_preserve_geometry_lease_while_hover_change_and_corner_dow
         let response = host.event(&event);
         assert!(!response.consumed && !response.changed);
         assert!(snapshot.is_current());
-        assert!(!host.needs_render());
+        assert!(!host.has_visual_changes());
     }
 
     let button_center = host
@@ -1221,7 +1221,7 @@ fn passive_noop_events_preserve_geometry_lease_while_hover_change_and_corner_dow
     let hover = host.event(&ContentEvent::PointerMove(button_center));
     assert!(hover.changed);
     assert!(!snapshot.is_current());
-    assert!(host.needs_render());
+    assert!(host.has_visual_changes());
 }
 
 #[test]
