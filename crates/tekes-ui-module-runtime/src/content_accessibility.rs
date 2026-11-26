@@ -5,6 +5,17 @@ use tekes_ui_controls::composition::{
     AccessibilityAction, ComponentId, ContentHost, ContentResponse, ContentRole, ContentSemantics,
 };
 use tekes_ui_scene::Rect;
+
+#[derive(Debug)]
+pub(crate) struct TransportBudgetExceeded;
+
+impl std::fmt::Display for TransportBudgetExceeded {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Content semantic snapshot exceeds transport budget")
+    }
+}
+
+impl std::error::Error for TransportBudgetExceeded {}
 fn rect(r: Rect) -> [f32; 4] {
     [r.min_x(), r.min_y(), r.size.width, r.size.height]
 }
@@ -106,16 +117,18 @@ pub(crate) fn snapshot(host: &ContentHost) -> Result<Vec<wire::SemanticNode>> {
     if !host.is_window_active() {
         return Ok(Vec::new());
     }
+    let scope = host.semantic_scope();
     let target = |id: ComponentId| {
-        host.semantic_mount(id)
+        scope
+            .semantic_mount(id)
             .map(|mount| wire::Target { id: id.0, mount })
     };
     let mut nodes = Vec::new();
-    for node in host.semantics() {
+    for node in scope.semantics() {
         let Some(owner) = target(node.id) else {
             continue;
         };
-        let input = host.semantic_text_input_snapshot(node.id);
+        let input = scope.semantic_text_input_snapshot(node.id);
         let text_binding = input.as_ref().map(|s| s.binding.clone());
         let text = input.map(|s| wire::TextState {
             owner,
@@ -129,7 +142,7 @@ pub(crate) fn snapshot(host: &ContentHost) -> Result<Vec<wire::SemanticNode>> {
             carets: s.carets.into_iter().map(|(i, r)| (i, rect(r))).collect(),
         });
         nodes.push(wire::SemanticNode {
-            text_layout: host
+            text_layout: scope
                 .semantic_text_layout_snapshot(node.id, None)
                 .map(|s| text_layout(owner, s)),
             target: owner,
@@ -138,24 +151,24 @@ pub(crate) fn snapshot(host: &ContentHost) -> Result<Vec<wire::SemanticNode>> {
             visible: node.visible.map(rect),
             focused: node.focused,
             semantics: semantics(node.semantics)?,
-            preserves_activation_focus: host.semantic_preserves_activation_focus(node.id, None),
+            preserves_activation_focus: scope.semantic_preserves_activation_focus(node.id, None),
             parts: node
                 .parts
                 .into_iter()
                 .map(|p| {
                     Ok(wire::SemanticPart {
-                        text_layout: host
+                        text_layout: scope
                             .semantic_text_layout_snapshot(node.id, Some(p.index))
                             .map(|s| text_layout(owner, s)),
-                        value_range: host
+                        value_range: scope
                             .semantic_value_range(node.id, Some(p.index))
                             .map(|r| [*r.start(), *r.end()]),
                         index: p.index,
-                        parent: host.semantic_part_parent(node.id, p.index),
+                        parent: scope.semantic_part_parent(node.id, p.index),
                         frame: rect(p.frame),
                         focused: p.focused,
                         semantics: semantics(p.semantics)?,
-                        preserves_activation_focus: host
+                        preserves_activation_focus: scope
                             .semantic_preserves_activation_focus(node.id, Some(p.index)),
                     })
                 })
@@ -168,10 +181,9 @@ pub(crate) fn snapshot(host: &ContentHost) -> Result<Vec<wire::SemanticNode>> {
     crate::container_semantics::validate(&nodes)?;
     // Leave room for the outer identity/error envelope. Reject an oversized
     // query as a result, never terminate the original actor writing a packet.
-    ensure!(
-        serde_json::to_vec(&nodes)?.len() <= crate::pipes::MAX_PACKET / 2,
-        "Content semantic snapshot exceeds transport budget"
-    );
+    if serde_json::to_vec(&nodes)?.len() > crate::pipes::MAX_PACKET / 2 {
+        return Err(anyhow::Error::new(TransportBudgetExceeded));
+    }
     Ok(nodes)
 }
 pub(crate) fn action(

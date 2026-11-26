@@ -42,11 +42,13 @@ impl WindowAccessibilityPublication {
             if !owners.insert(*owner) || !snapshot.is_valid() {
                 return None;
             }
-            for node in &snapshot.nodes {
+            let mut fragment_nodes = HashMap::with_capacity(snapshot.nodes.len());
+            for (node_idx, node) in snapshot.nodes.iter().enumerate() {
                 if result.nodes.len() >= 100_000 || result.owners.insert(node.key, index).is_some()
                 {
                     return None;
                 }
+                fragment_nodes.insert(node.key, node_idx);
                 bytes = bytes
                     .checked_add(node.label.len())?
                     .checked_add(node.value.as_ref().map_or(0, String::len))?
@@ -57,7 +59,8 @@ impl WindowAccessibilityPublication {
                 result.nodes.push(node.clone());
             }
             for (key, layout) in &snapshot.text_layouts {
-                let node = snapshot.nodes.iter().find(|n| n.key == *key)?;
+                let &node_idx = fragment_nodes.get(key)?;
+                let node = &snapshot.nodes[node_idx];
                 if node.value.as_deref() != Some(layout.state.text.as_str())
                     || !layout.is_valid()
                     || result.text_layouts.insert(*key, layout.clone()).is_some()

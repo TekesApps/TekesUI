@@ -287,6 +287,32 @@ struct Prepared {
 }
 type SlotMetricsKey = (u32, u32, u32, usize, u64, bool);
 
+struct StructureValidationCache {
+    dirty: std::sync::atomic::AtomicBool,
+}
+impl StructureValidationCache {
+    fn new(dirty: bool) -> Self {
+        Self {
+            dirty: std::sync::atomic::AtomicBool::new(dirty),
+        }
+    }
+    fn mark_dirty(&self) {
+        self.dirty.store(true, std::sync::atomic::Ordering::Release);
+    }
+    fn mark_clean(&self) {
+        self.dirty
+            .store(false, std::sync::atomic::Ordering::Release);
+    }
+    fn is_dirty(&self) -> bool {
+        self.dirty.load(std::sync::atomic::Ordering::Acquire)
+    }
+}
+impl std::fmt::Debug for StructureValidationCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("StructureValidationCache")
+    }
+}
+
 #[derive(Debug)]
 pub struct DataTableContent {
     name: String,
@@ -296,12 +322,14 @@ pub struct DataTableContent {
     headers: BTreeMap<C, Option<ComponentId>>,
     rows: BTreeMap<R, (ComponentId, Arc<()>)>,
     exposures: BTreeMap<Part, Exposure>,
+    token_parents: std::collections::HashMap<usize, usize>,
     next: usize,
     mounted: bool,
     disabled: bool,
     window_active: bool,
     activity_epoch: u64,
     exhausted: bool,
+    structure_cache: StructureValidationCache,
     last_intent: Option<TableIntent>,
     metrics: TableContentMetrics,
     slot_metrics_cache: Option<(SlotMetricsKey, TableContentMetrics)>,
@@ -331,12 +359,14 @@ impl DataTableContent {
             headers: BTreeMap::new(),
             rows: BTreeMap::new(),
             exposures: BTreeMap::new(),
+            token_parents: std::collections::HashMap::new(),
             next: 0,
             mounted: false,
             disabled: false,
             window_active: true,
             activity_epoch: 0,
             exhausted: false,
+            structure_cache: StructureValidationCache::new(false),
             last_intent: None,
             metrics: TableContentMetrics::default(),
             slot_metrics_cache: None,
@@ -418,6 +448,7 @@ impl DataTableContent {
         self.disabled = disabled;
         self.activity_epoch = epoch;
         self.exposures = exposures;
+        self.rebuild_token_parents();
         self.next = next;
         self.view.set_disabled(disabled);
         Ok(true)
@@ -521,6 +552,13 @@ impl DataTableContent {
             TableDisplayUpdate::Keep if reuse => self.field_ref(field),
             _ => None,
         }
+    }
+    fn validate_all_cached(&self) -> Result<(), TableContentError> {
+        if self.structure_cache.is_dirty() {
+            self.validate_all()?;
+            self.structure_cache.mark_clean();
+        }
+        Ok(())
     }
     fn validate_all(&self) -> Result<(), TableContentError> {
         self.validate_structure()?;
@@ -1043,7 +1081,9 @@ impl DataTableContent {
         }
         self.model = p.model;
         self.exposures = p.exposures;
+        self.rebuild_token_parents();
         self.next = p.next;
+        self.structure_cache.mark_clean();
         self.metrics = TableContentMetrics::default();
         self.slot_metrics_cache = None;
         self.view.cancel();
@@ -1064,17 +1104,33 @@ impl DataTableContent {
             }
         }
     }
+    fn rebuild_token_parents(&mut self) {
+        self.token_parents.clear();
+        self.token_parents.reserve(self.exposures.len());
+        for (part, exposure) in &self.exposures {
+            let parent = match part {
+                Part::Header(c) => Part::Column(*c),
+                Part::Cell(r, _) => Part::Row(*r),
+                Part::Column(_) | Part::Row(_) => continue,
+            };
+            if let Some(parent_exp) = self.exposures.get(&parent) {
+                self.token_parents.insert(exposure.token, parent_exp.token);
+            }
+        }
+    }
     fn refresh_exposures(&mut self) {
         if let Ok((m, n)) = self.plan_exposures(&self.model) {
             self.exposures = m;
+            self.rebuild_token_parents();
             self.next = n;
         } else {
             self.exhausted = true;
             self.exposures.clear();
+            self.token_parents.clear();
         }
     }
     fn publishable(&self) -> bool {
-        self.mounted && self.window_active && !self.exhausted && self.validate_all().is_ok()
+        self.mounted && self.window_active && !self.exhausted && self.validate_all_cached().is_ok()
     }
     fn available(&self) -> bool {
         self.publishable() && !self.disabled
@@ -1366,9 +1422,10 @@ impl Component for DataTableContent {
         }
     }
     fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
-        self.validate_traversal()
-            .is_ok()
-            .then_some(&mut self.children)
+        self.validate_traversal().is_ok().then(|| {
+            self.structure_cache.mark_dirty();
+            &mut self.children
+        })
     }
     fn interactive(&self) -> bool {
         true
@@ -1402,6 +1459,7 @@ impl Component for DataTableContent {
             if !active {
                 self.bump_epoch();
                 self.exposures.clear();
+                self.token_parents.clear();
                 self.view.invalidate_content_layout();
             } else {
                 self.refresh_exposures();
@@ -1421,6 +1479,7 @@ impl Component for DataTableContent {
             Lifecycle::Unmounted => {
                 self.mounted = false;
                 self.exposures.clear();
+                self.token_parents.clear();
                 self.view.blur();
             }
         }
@@ -1445,7 +1504,7 @@ impl Component for DataTableContent {
         true
     }
     fn measure(&mut self, text: &mut dyn ButtonTextRenderer, a: Size) -> MeasuredChild {
-        if self.validate_all().is_err() {
+        if self.validate_all_cached().is_err() {
             return MeasuredChild::new(Size::default());
         }
         let key = self.slot_metrics_key(text, a.width);
@@ -1457,7 +1516,7 @@ impl Component for DataTableContent {
         MeasuredChild::new(Size::new(a.width, height))
     }
     fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, f: Rect, c: Rect) {
-        if self.validate_all().is_err() {
+        if self.validate_all_cached().is_err() {
             return;
         }
         let key = self.slot_metrics_key(text, f.size.width);
@@ -1487,7 +1546,7 @@ impl Component for DataTableContent {
         c: Rect,
         t: ContentTheme,
     ) {
-        if !self.mounted || self.exhausted || self.validate_all().is_err() {
+        if !self.mounted || self.exhausted || self.validate_all_cached().is_err() {
             return;
         }
         if self.view.layout_keyed(&self.model).is_some() {
@@ -1516,8 +1575,10 @@ impl Component for DataTableContent {
     }
     fn semantics(&self) -> ContentSemantics {
         let mut s = ContentSemantics::new(ContentRole::Table, &self.name);
-        s.disabled =
-            self.disabled || !self.window_active || self.exhausted || self.validate_all().is_err();
+        s.disabled = self.disabled
+            || !self.window_active
+            || self.exhausted
+            || self.validate_all_cached().is_err();
         s
     }
     fn semantic_parts(&self) -> Vec<SemanticPart> {
@@ -1527,7 +1588,15 @@ impl Component for DataTableContent {
         let Some(l) = self.view.layout_keyed(&self.model) else {
             return vec![];
         };
-        let mut out = vec![];
+        let sort_state = self.sort_key_state();
+        let focused_header = self.view.focused_header_keyed(&self.model);
+        let selected_key = self.selected_key();
+        let focused_row = self.view.focused_row_keyed(&self.model);
+        let visible_rect = l.visible.unwrap_or_default();
+        let mut out = Vec::with_capacity(
+            self.model.snapshot().columns.len() * 2
+                + l.rows.len() * (1 + self.model.snapshot().columns.len()),
+        );
         let mut push =
             |part: Part, frame: Rect, visible: Option<Rect>, s: ContentSemantics, focused: bool| {
                 if let Some(e) = self.exposures.get(&part) {
@@ -1548,7 +1617,7 @@ impl Component for DataTableContent {
             push(
                 Part::Column(col.key),
                 frame,
-                frame.intersection(&l.visible.unwrap_or_default()),
+                frame.intersection(&visible_rect),
                 ContentSemantics::new(ContentRole::TableColumn { index: j }, &col.name),
                 false,
             );
@@ -1560,30 +1629,41 @@ impl Component for DataTableContent {
                     ContentSemantics::new(
                         ContentRole::TableColumnHeader {
                             index: j,
-                            sort: self
-                                .sort_key_state()
-                                .filter(|(k, _)| *k == col.key)
-                                .map(|(_, d)| d),
+                            sort: sort_state.filter(|(k, _)| *k == col.key).map(|(_, d)| d),
                         },
                         &col.name,
                     ),
-                    self.view.focused_header_keyed(&self.model) == Some(col.key),
+                    focused_header == Some(col.key),
                 );
             }
         }
+        let mut row_by_id: Option<std::collections::HashMap<usize, usize>> = None;
         for (ordinal, &i) in self.model.display_indices().iter().enumerate() {
             let row = &self.model.snapshot().rows[i];
-            if let Some(r) = l.rows.iter().find(|r| r.id == i) {
+            let r = if let Some(r) = l.rows.get(ordinal).filter(|r| r.id == i) {
+                Some(r)
+            } else {
+                let map = row_by_id.get_or_insert_with(|| {
+                    l.rows
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, r)| (r.id, idx))
+                        .collect()
+                });
+                map.get(&i).map(|&idx| &l.rows[idx])
+            };
+            if let Some(r) = r {
                 let mut s =
                     ContentSemantics::new(ContentRole::TableRow { index: ordinal }, &row.name);
-                s.selected = self.selected_key() == Some(row.key);
+                s.selected = selected_key == Some(row.key);
                 push(
                     Part::Row(row.key),
                     r.frame,
                     r.visible,
                     s,
-                    self.view.focused_row_keyed(&self.model) == Some(row.key),
+                    focused_row == Some(row.key),
                 );
+                let row_visible = r.visible.unwrap_or_default();
                 for (j, col) in self.model.snapshot().columns.iter().enumerate() {
                     let frame = Rect::new(
                         l.columns[j].min_x(),
@@ -1602,7 +1682,7 @@ impl Component for DataTableContent {
                     push(
                         Part::Cell(row.key, col.key),
                         frame,
-                        frame.intersection(&r.visible.unwrap_or_default()),
+                        frame.intersection(&row_visible),
                         s,
                         false,
                     );
@@ -1615,13 +1695,7 @@ impl Component for DataTableContent {
         if !self.publishable() || self.view.layout_keyed(&self.model).is_none() {
             return None;
         }
-        let p = self.exposures.iter().find(|(_, e)| e.token == part)?.0;
-        let parent = match p {
-            Part::Header(c) => Part::Column(*c),
-            Part::Cell(r, _) => Part::Row(*r),
-            _ => return None,
-        };
-        self.exposures.get(&parent).map(|e| e.token)
+        self.token_parents.get(&part).copied()
     }
     fn accessibility_action(
         &mut self,
@@ -2165,6 +2239,16 @@ mod datatable_private_tests {
         assert!(t.exhausted);
         t.window_active_changed(true);
         assert!(!t.available());
+    }
+    #[test]
+    fn datatable_children_mut_tamper_rejects_publication_and_actions() {
+        let mut t = table();
+        t.mounted = true;
+        assert!(t.validate_all().is_ok());
+        t.children_mut().unwrap().pop();
+        assert_eq!(t.validate_all(), Err(TableContentError::InvalidStructure));
+        assert!(!t.available());
+        assert!(t.semantic_parts().is_empty());
     }
 
     #[test]

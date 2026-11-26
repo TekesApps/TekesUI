@@ -155,7 +155,7 @@ pub(crate) fn read_only_projection(
                 .collect(),
         });
     let semantics = crate::content_accessibility::snapshot(host)?;
-    Ok(wire::Reply {
+    let reply = wire::Reply {
         view,
         viewport,
         consumed: false,
@@ -189,7 +189,13 @@ pub(crate) fn read_only_projection(
             .collect(),
         composing: host.is_composing(),
         text,
-    })
+    };
+    if serde_json::to_vec(&reply)?.len() > crate::pipes::MAX_PACKET / 2 {
+        return Err(anyhow::Error::new(
+            crate::content_accessibility::TransportBudgetExceeded,
+        ));
+    }
+    Ok(reply)
 }
 pub(crate) fn event(input: &wire::Input) -> Option<ContentEvent> {
     match input {

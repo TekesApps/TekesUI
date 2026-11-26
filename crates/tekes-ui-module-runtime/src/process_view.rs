@@ -697,12 +697,28 @@ pub(crate) fn run(
                                         Some(reading)
                                     }
                                 };
-                                let reply = crate::content_input::read_only_projection(
+                                let reply = match crate::content_input::read_only_projection(
                                     host,
                                     attach.view,
                                     frame_stamp.viewport,
                                     reading,
-                                )?;
+                                ) {
+                                    Ok(reply) => reply,
+                                    Err(error)
+                                        if error.is::<crate::content_accessibility::TransportBudgetExceeded>() =>
+                                    {
+                                        emitter.output(Output::CurveReplyV1 {
+                                            request: id,
+                                            view: attach.view,
+                                            reply: CurveReply::Rejected {
+                                                transaction_id: envelope.transaction_id,
+                                                code: CurveErrorCode::LimitExceeded,
+                                            },
+                                        })?;
+                                        continue;
+                                    }
+                                    Err(error) => return Err(error),
+                                };
                                 emitter.output(Output::CurveReplyV1 {
                                     request: id,
                                     view: attach.view,
