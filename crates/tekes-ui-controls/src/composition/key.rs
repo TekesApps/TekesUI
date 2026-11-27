@@ -381,7 +381,7 @@ impl ContentHost {
                 let delegated = owner
                     .and_then(|id| self.root.find_active(id))
                     .is_some_and(|c| c.component.delegates_text_keys());
-                self.help.suppress();
+                self.suppress_help();
                 let response = if delegated {
                     self.deliver_native_owner(owner, mount, event)
                 } else {

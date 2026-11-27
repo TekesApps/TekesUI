@@ -37,7 +37,7 @@ def main():
     if alias_keys:
         types += 'export type LegacyIconAlias = ' + ' | '.join(json.dumps(alias) for alias in alias_keys) + ';\n'
         types += 'export type IconName = CanonicalIconName | LegacyIconAlias;\n'
-        types += 'export declare const iconNames: readonly CanonicalIconName[];\n'
+        types += 'export declare const iconNames: readonly IconName[];\n'
         types += 'export declare const iconAliases: Readonly<Record<LegacyIconAlias, CanonicalIconName>>;\n'
         types += 'export declare function getIconUrl(name: IconName): string;\n'
     else:

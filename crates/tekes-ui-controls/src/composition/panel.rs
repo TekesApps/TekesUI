@@ -612,13 +612,16 @@ impl ContentHost {
         Ok(())
     }
     pub fn geometry_snapshot(&self) -> Option<ContentGeometrySnapshot> {
-        if self.reveal_clock.pending
-            || self.last_layout.is_none()
-            || !self.active_curve_geometry_is_current()
-        {
+        self.semantic_scope().geometry_snapshot()
+    }
+    pub(super) fn geometry_snapshot_with_scope(
+        &self,
+        scope: &SemanticScope<'_>,
+    ) -> Option<ContentGeometrySnapshot> {
+        if !scope.has_current_geometry() {
             return None;
         }
-        fn collect(n: &Content, out: &mut Vec<GeometryEntry>) {
+        fn collect(scope: &SemanticScope<'_>, n: &Content, out: &mut Vec<GeometryEntry>) {
             if !n.active() || n.component.semantic_subtree_hidden() {
                 return;
             }
@@ -638,24 +641,24 @@ impl ContentHost {
                     frame: n.component.semantic_frame(n.frame),
                     shapes: shapes.clone(),
                 });
-                for p in n.component.semantic_parts() {
+                for (index, frame) in scope.part_frames(n) {
                     out.push(GeometryEntry {
                         id: n.id,
                         mount: n.mount,
-                        part: Some(p.index),
-                        frame: p.frame,
+                        part: Some(index),
+                        frame,
                         shapes: shapes.clone(),
                     });
                 }
             }
             if !n.component.semantics().role.is_action_owner() {
                 for child in n.component.children() {
-                    collect(child, out);
+                    collect(scope, child, out);
                 }
             }
         }
         let mut entries = Vec::new();
-        collect(self.scope(), &mut entries);
+        collect(scope, self.scope(), &mut entries);
         let mut index_by_key = std::collections::HashMap::with_capacity(entries.len());
         for (idx, entry) in entries.iter().enumerate() {
             index_by_key.entry((entry.id, entry.part)).or_insert(idx);
@@ -1395,6 +1398,9 @@ mod frozen_generation_tests {
             now: std::time::Duration,
         }
         impl ButtonTextRenderer for TooltipText {
+            fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+                Some(self)
+            }
             fn measure(&mut self, text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
                 Size::new((text.chars().count() as f32 * 7.).min(max_width), 18.)
             }
@@ -1413,6 +1419,35 @@ mod frozen_generation_tests {
                 _align: ButtonTextAlign,
                 _ink: Rgba,
             ) {
+            }
+        }
+        impl crate::TextSurfaceTextRenderer for TooltipText {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &tekes_ui_text::Paragraph,
+                _: Point,
+                _: Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceHost for TooltipText {
+            fn shape_surface(
+                &mut self,
+                _text: &str,
+                role: proposal::TextRole,
+                _: Option<f32>,
+            ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+                let line_height = f64::from(role.style().line_height);
+                std::rc::Rc::new(tekes_ui_text::Paragraph {
+                    lines: Vec::new(),
+                    utf16_len: 0,
+                    height: line_height,
+                    width: 0.,
+                    default_line_height: line_height,
+                    fonts: Vec::new(),
+                })
             }
         }
 
@@ -1482,5 +1517,190 @@ mod frozen_generation_tests {
         assert!(host.help_tooltip().is_none());
         assert!(!host.has_visual_changes());
         assert!(snap2.is_current());
+    }
+
+    #[test]
+    fn visible_tooltip_hiding_on_text_key_start_schedules_one_redraw_without_repeat_work() {
+        struct TooltipText {
+            now: std::time::Duration,
+        }
+        impl ButtonTextRenderer for TooltipText {
+            fn text_surface_host(&mut self) -> Option<&mut dyn crate::TextSurfaceHost> {
+                Some(self)
+            }
+            fn measure(&mut self, text: &str, _role: proposal::TextRole, max_width: f32) -> Size {
+                Size::new((text.chars().count() as f32 * 7.).min(max_width), 18.)
+            }
+            fn motion_context(&self) -> Option<crate::ControlMotionContext> {
+                Some(crate::ControlMotionContext {
+                    now: self.now,
+                    reduced_motion: true,
+                })
+            }
+            fn draw(
+                &mut self,
+                _scene: &mut Scene,
+                _text: &str,
+                _role: proposal::TextRole,
+                _rect: Rect,
+                _align: ButtonTextAlign,
+                _ink: Rgba,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceTextRenderer for TooltipText {
+            fn push_visible(
+                &mut self,
+                _: &mut Scene,
+                _: &tekes_ui_text::Paragraph,
+                _: Point,
+                _: Rgba,
+                _: Rect,
+            ) {
+            }
+        }
+        impl crate::TextSurfaceHost for TooltipText {
+            fn shape_surface(
+                &mut self,
+                _text: &str,
+                role: proposal::TextRole,
+                _: Option<f32>,
+            ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+                let line_height = f64::from(role.style().line_height);
+                std::rc::Rc::new(tekes_ui_text::Paragraph {
+                    lines: Vec::new(),
+                    utf16_len: 0,
+                    height: line_height,
+                    width: 0.,
+                    default_line_height: line_height,
+                    fonts: Vec::new(),
+                })
+            }
+        }
+        for case in ["unbound_command", "input_consumed_without_edit"] {
+            let mut ro = TextFieldContent::from_surface(
+                "Notes",
+                crate::TextSurface::new("Readonly content", false, true),
+            );
+            ro.show_metadata = false;
+            let field = Content::new(ComponentId(9961), ro);
+            let button =
+                Content::new(ComponentId(9962), Button::new("Action")).with_help("Action tooltip");
+            let root = Content::new(
+                ComponentId(9960),
+                PanelContent::new(Content::new(
+                    ComponentId(9963),
+                    StackContent {
+                        model: Stack {
+                            axis: Axis::Vertical,
+                            gap: 8.,
+                        },
+                        flexible_child: None,
+                        children: vec![field, button],
+                    },
+                ))
+                .unwrap(),
+            );
+            let mut host = ContentHost::new(root).unwrap();
+            let frame = Rect::new(0., 0., 280., 180.);
+            let palette = Palette::from(tekes_ui_tokens::Theme::LIGHT);
+            let mut text = TooltipText {
+                now: std::time::Duration::from_secs(1),
+            };
+            host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                .unwrap();
+            assert!(host.focus(Some(ComponentId(9961)), true));
+            let btn_frame = host.get(ComponentId(9962)).unwrap().frame();
+            let hover_pt = Point::new(
+                btn_frame.min_x() + btn_frame.size.width / 2.,
+                btn_frame.min_y() + btn_frame.size.height / 2.,
+            );
+            host.event(&ContentEvent::PointerMove(hover_pt));
+            host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                .unwrap();
+            text.now +=
+                std::time::Duration::from_secs_f32(proposal::tooltip_hover_delay().unwrap() + 0.5);
+            host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                .unwrap();
+            assert!(host.help_tooltip().is_some(), "{case}");
+            assert!(!host.has_visual_changes(), "{case}");
+            let snap_before = host.geometry_snapshot().unwrap();
+            assert!(snap_before.is_current(), "{case}");
+
+            let key_input = if case == "unbound_command" {
+                ContentKeyEvent {
+                    key: None,
+                    down: true,
+                    repeat: false,
+                    modifiers: InputModifiers {
+                        command: true,
+                        ..Default::default()
+                    },
+                    native_code: 40,
+                    characters: "k".into(),
+                    characters_ignoring_modifiers: "k".into(),
+                }
+            } else {
+                ContentKeyEvent {
+                    key: None,
+                    down: true,
+                    repeat: false,
+                    modifiers: InputModifiers::default(),
+                    native_code: 0,
+                    characters: "a".into(),
+                    characters_ignoring_modifiers: "a".into(),
+                }
+            };
+            let up_input = ContentKeyEvent {
+                down: false,
+                ..key_input.clone()
+            };
+
+            let send_chain = |host: &mut ContentHost, id: u64, consumed: bool| {
+                let start = host.event(&ContentEvent::TextKeyStart {
+                    id,
+                    key: key_input.clone(),
+                    composing: false,
+                });
+                if !consumed && let Some(k) = key_input.key {
+                    let _ = host.event(&ContentEvent::Key { key: k, down: true });
+                }
+                let end = host.event(&ContentEvent::TextKeyEnd {
+                    id,
+                    input_context_consumed: consumed,
+                });
+                let up = host.event(&ContentEvent::KeyInput(up_input.clone()));
+                (start, end, up)
+            };
+
+            let consumed_flag = case == "input_consumed_without_edit";
+            let (_, end1, _) = send_chain(&mut host, 1, consumed_flag);
+            assert_eq!(
+                end1.text_key.map(|o| o.disposition),
+                Some(if consumed_flag {
+                    TextKeyDisposition::InputConsumed
+                } else {
+                    TextKeyDisposition::Unhandled
+                }),
+                "{case}"
+            );
+            assert!(host.help_tooltip().is_none(), "{case}");
+            assert!(host.has_visual_changes(), "{case}");
+            assert!(!snap_before.is_current(), "{case}");
+
+            host.render(&mut Scene::new(), &mut text, frame, frame, palette)
+                .unwrap();
+            assert!(!host.has_visual_changes(), "{case}");
+            let snap_after = host.geometry_snapshot().unwrap();
+            assert!(snap_after.is_current(), "{case}");
+
+            // Repeat exact same key chain once tooltip is already hidden: zero no-op redraws.
+            let _ = send_chain(&mut host, 2, consumed_flag);
+            assert!(host.help_tooltip().is_none(), "{case}");
+            assert!(!host.has_visual_changes(), "{case}");
+            if !consumed_flag {
+                assert!(snap_after.is_current(), "{case}");
+            }
+        }
     }
 }

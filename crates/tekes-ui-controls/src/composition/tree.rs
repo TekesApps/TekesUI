@@ -169,7 +169,7 @@ struct Prepared {
     next: usize,
     ids: BTreeSet<ComponentId>,
 }
-type TreeMetricCacheKey = (u32, u32, u32, usize, u64, bool);
+type TreeMetricCacheKey = (u32, u32, u32, u32, usize, u64, bool);
 type TreeMetricCache = (TreeMetricCacheKey, Vec<(usize, tekes_ui_scene::Size, bool)>);
 
 struct TreeStructureCache {
@@ -569,10 +569,12 @@ impl TreeContent {
         &self,
         text: &mut dyn ButtonTextRenderer,
         width: f32,
+        height: f32,
         compact: bool,
     ) -> TreeMetricCacheKey {
         (
-            width.to_bits(),
+            width.max(0.).to_bits(),
+            height.max(0.).to_bits(),
             text.resolved_font_size(proposal::TextRole::UiBody)
                 .to_bits(),
             text.backing_scale().to_bits(),
@@ -796,7 +798,7 @@ impl Component for TreeContent {
             return MeasuredChild::new(Size::default());
         }
         let compact = self.view.compact();
-        let key = self.measure_key(text, available.width, compact);
+        let key = self.measure_key(text, available.width, available.height, compact);
         let metrics = self.compute_metrics(text, available.width, available.height, compact);
         self.metrics_cache = Some((key, metrics.clone()));
         MeasuredChild::new(Size::new(
@@ -810,15 +812,16 @@ impl Component for TreeContent {
             return;
         }
         let compact = self.view.compact();
-        let key = self.measure_key(text, frame.size.width, compact);
-        let metrics = if let Some((cached_key, cached)) = &self.metrics_cache
-            && *cached_key == key
+        let key = self.measure_key(text, frame.size.width, frame.size.height, compact);
+        // Single-pass handoff only: consume any pending measurement whose exact
+        // width/height constraints match, and recompute otherwise.
+        let pending = self.metrics_cache.take();
+        let metrics = if let Some((cached_key, cached)) = pending
+            && cached_key == key
         {
-            cached.clone()
+            cached
         } else {
-            let computed = self.compute_metrics(text, frame.size.width, frame.size.height, compact);
-            self.metrics_cache = Some((key, computed.clone()));
-            computed
+            self.compute_metrics(text, frame.size.width, frame.size.height, compact)
         };
         self.view.arrange_rows(
             &mut TextAdapter(text),

@@ -992,3 +992,208 @@ fn disabled_table_preserves_parent_chain_ordinals_and_action_rejection_across_to
             .consumed
     );
 }
+
+#[test]
+fn height_dependent_passive_cell_and_updated_text_renderer_remeasure_while_single_pass_stays_1_1() {
+    #[derive(Debug)]
+    struct HalfHeightPassiveCell;
+    impl Component for HalfHeightPassiveCell {
+        fn has_stable_hooks(&self) -> bool {
+            true
+        }
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(available.width, available.height * 0.5))
+        }
+    }
+
+    let snap = KeyedTableSnapshot {
+        dataset: TableDatasetKey(10),
+        columns: vec![KeyedTableColumn {
+            key: TableColumnKey(1),
+            name: String::new(),
+        }],
+        rows: vec![KeyedTableRow {
+            key: TableRowKey(1),
+            name: "r1".into(),
+            cells: vec!["c1".into()],
+        }],
+        display_rows: vec![TableRowKey(1)],
+    };
+    let mut cell_displays = displays(&snap);
+    cell_displays.rows[0].cells[0].display =
+        TableDisplayUpdate::Replace(Content::new(ComponentId(202), HalfHeightPassiveCell));
+    #[derive(Debug)]
+    struct Measure60Arrange200(Vec<Content>);
+    impl Component for Measure60Arrange200 {
+        fn has_stable_hooks(&self) -> bool {
+            true
+        }
+        fn semantics(&self) -> ContentSemantics {
+            ContentSemantics::new(ContentRole::Group, "Measure60Arrange200")
+        }
+        fn children(&self) -> &[Content] {
+            &self.0
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.0)
+        }
+        fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            let _ = self.0[0].measure(text, Size::new(240., 60.));
+            MeasuredChild::new(available)
+        }
+        fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, _: Rect, _: Rect) {
+            let r = Rect::new(0., 0., 240., 200.);
+            self.0[0].arrange(text, r, r);
+        }
+        fn paint(
+            &mut self,
+            scene: &mut Scene,
+            text: &mut dyn ButtonTextRenderer,
+            _: Rect,
+            _: Rect,
+            theme: ContentTheme,
+        ) {
+            self.0[0].paint(scene, text, theme);
+        }
+    }
+
+    let table =
+        DataTableContent::new("PassiveHeight", &snap, &mut cell_displays, budget()).unwrap();
+    let mut host = ContentHost::new(Content::new(
+        ComponentId(999),
+        Measure60Arrange200(vec![Content::new(TABLE, table)]),
+    ))
+    .unwrap();
+    let mut text = Text;
+    let r = Rect::new(0., 0., 240., 200.);
+    host.render(&mut Scene::new(), &mut text, r, r, Theme::LIGHT.into())
+        .unwrap();
+    let row_frame = parts(&host)
+        .into_iter()
+        .find(|p| matches!(p.semantics.role, ContentRole::TableRow { index: 0 }))
+        .unwrap()
+        .frame;
+    assert_eq!(row_frame.size.height, 108.);
+    let custom_cell = host.get(ComponentId(202)).unwrap().frame();
+    assert_eq!(custom_cell.size.height, 108.);
+    assert!(host.focus(Some(TABLE), true));
+    let hit = Point::new(custom_cell.center().x, row_frame.max_y() - 10.);
+    assert!(host.event(&ContentEvent::PointerDown(hit)).consumed);
+    assert!(host.event(&ContentEvent::PointerUp(hit)).consumed);
+    assert_eq!(t(&host).selected_key(), Some(TableRowKey(1)));
+
+    // Second render with identical width/font_size/backing_scale and updated text height (20 -> 72 pt)
+    // must update row height from 32 pt to 80 pt, while each single ContentHost::render does 1 measure & 1 draw.
+    struct DynamicHeightText {
+        cell_text_height: f32,
+        cell_measures: usize,
+        cell_draws: usize,
+    }
+    impl ButtonTextRenderer for DynamicHeightText {
+        fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+            if s == "probe-cell" {
+                self.cell_measures += 1;
+                Size::new(w.min(80.), self.cell_text_height)
+            } else {
+                Size::new((s.len() as f32 * 8.).min(w), 20.)
+            }
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            s: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+            if s == "probe-cell" {
+                self.cell_draws += 1;
+            }
+        }
+    }
+
+    let plain_snap = KeyedTableSnapshot {
+        dataset: TableDatasetKey(11),
+        columns: vec![KeyedTableColumn {
+            key: TableColumnKey(1),
+            name: String::new(),
+        }],
+        rows: vec![KeyedTableRow {
+            key: TableRowKey(1),
+            name: "probe".into(),
+            cells: vec!["probe-cell".into()],
+        }],
+        display_rows: vec![TableRowKey(1)],
+    };
+    let mut plain_displays = displays(&plain_snap);
+    let plain_table =
+        DataTableContent::new("PlainHeight", &plain_snap, &mut plain_displays, budget()).unwrap();
+    let mut plain_host = ContentHost::new(Content::new(TABLE, plain_table)).unwrap();
+    let frame = Rect::new(0., 0., 240., 200.);
+
+    let mut r1 = DynamicHeightText {
+        cell_text_height: 20.,
+        cell_measures: 0,
+        cell_draws: 0,
+    };
+    plain_host
+        .render(
+            &mut Scene::new(),
+            &mut r1,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    assert_eq!((r1.cell_measures, r1.cell_draws), (1, 1));
+    let row_h1 = parts(&plain_host)
+        .into_iter()
+        .find(|p| matches!(p.semantics.role, ContentRole::TableRow { index: 0 }))
+        .unwrap()
+        .frame
+        .size
+        .height;
+    assert_eq!(row_h1, 32.);
+
+    // repaint_current performs 0 measures and 1 draw.
+    let mut r_repaint = DynamicHeightText {
+        cell_text_height: 20.,
+        cell_measures: 0,
+        cell_draws: 0,
+    };
+    plain_host
+        .repaint_current(
+            &mut Scene::new(),
+            &mut r_repaint,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    assert_eq!((r_repaint.cell_measures, r_repaint.cell_draws), (0, 1));
+
+    let mut r2 = DynamicHeightText {
+        cell_text_height: 72.,
+        cell_measures: 0,
+        cell_draws: 0,
+    };
+    plain_host
+        .render(
+            &mut Scene::new(),
+            &mut r2,
+            frame,
+            frame,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+    assert_eq!((r2.cell_measures, r2.cell_draws), (1, 1));
+    let row_h2 = parts(&plain_host)
+        .into_iter()
+        .find(|p| matches!(p.semantics.role, ContentRole::TableRow { index: 0 }))
+        .unwrap()
+        .frame
+        .size
+        .height;
+    assert_eq!(row_h2, 80.);
+}

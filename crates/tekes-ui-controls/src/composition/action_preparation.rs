@@ -945,7 +945,7 @@ impl ContentHost {
         result.changed |= changed;
         self.dirty |= result.changed;
         if result.consumed && matches!(action, AccessibilityAction::Press) {
-            self.help.suppress();
+            self.suppress_help();
         }
         Some(result)
     }

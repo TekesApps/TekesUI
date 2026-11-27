@@ -415,3 +415,139 @@ fn disabled_datatable_keeps_header_column_and_cell_row_ax_parent_chains() {
         assert!(!content_action(&mut h, cell_node.key, AccessibilityAction::Press).consumed);
     }
 }
+
+#[test]
+fn publication_pass_reuses_semantic_parts_for_valid_text_layouts_and_sliders() {
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use tekes_ui_controls::layout::MeasuredChild;
+
+    #[derive(Debug)]
+    struct CountingPartsOwner {
+        kind_slider: bool,
+        count: usize,
+        calls: Rc<Cell<usize>>,
+        constructed_parts: Rc<Cell<usize>>,
+        frame: std::cell::Cell<Rect>,
+    }
+    impl Component for CountingPartsOwner {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(available)
+        }
+        fn arrange(&mut self, _: &mut dyn ButtonTextRenderer, frame: Rect, _: Rect) {
+            self.frame.set(frame);
+        }
+        fn semantics(&self) -> ContentSemantics {
+            ContentSemantics::new(ContentRole::Group, "CountingPartsOwner")
+        }
+        fn semantic_parts(&self) -> Vec<SemanticPart> {
+            self.calls.set(self.calls.get() + 1);
+            self.constructed_parts
+                .set(self.constructed_parts.get() + self.count);
+            (0..self.count)
+                .map(|i| SemanticPart {
+                    index: i + 1,
+                    frame: Rect::new(4., 4. + i as f32 * 2., 120., 18.),
+                    focused: i == 0,
+                    semantics: if self.kind_slider {
+                        let mut s =
+                            ContentSemantics::new(ContentRole::Slider, format!("Slider {i}"));
+                        s.value = Some("25".into());
+                        s
+                    } else {
+                        let mut s =
+                            ContentSemantics::new(ContentRole::TextInput, format!("Editor {i}"));
+                        s.value = Some(format!("value-{i}"));
+                        s
+                    },
+                })
+                .collect()
+        }
+        fn semantic_part_parent(&self, _: usize) -> Option<usize> {
+            None
+        }
+        fn semantic_part_value_range(&self, part: usize) -> Option<std::ops::RangeInclusive<f64>> {
+            (self.kind_slider && (1..=self.count).contains(&part)).then_some(0.0..=100.0)
+        }
+        fn semantic_part_text_layout(&self, part: usize) -> Option<ContentTextLayout> {
+            if self.kind_slider || !(1..=self.count).contains(&part) {
+                return None;
+            }
+            let text = format!("value-{}", part - 1);
+            let len = text.len();
+            let line_rect = Rect::new(8., 6. + (part - 1) as f32 * 2., 60., 14.);
+            Some(ContentTextLayout {
+                input: ContentTextInput {
+                    binding: part.to_le_bytes().to_vec(),
+                    text,
+                    caret_index: 0,
+                    selection: 0..0,
+                    marked: None,
+                    read_only: false,
+                    caret: Some(Rect::new(line_rect.min_x(), line_rect.min_y(), 1., 14.)),
+                    clip: Some(self.frame.get()),
+                    carets: vec![(0, Rect::new(line_rect.min_x(), line_rect.min_y(), 1., 14.))],
+                },
+                multiline: false,
+                lines: std::iter::once(0..len).collect(),
+                carets: vec![(0, Rect::new(line_rect.min_x(), line_rect.min_y(), 1., 14.))],
+            })
+        }
+    }
+
+    for kind_slider in [false, true] {
+        for count in [16usize, 32, 64] {
+            let calls = Rc::new(Cell::new(0));
+            let constructed_parts = Rc::new(Cell::new(0));
+            let owner = CountingPartsOwner {
+                kind_slider,
+                count,
+                calls: calls.clone(),
+                constructed_parts: constructed_parts.clone(),
+                frame: std::cell::Cell::new(Rect::default()),
+            };
+            let mut host = ContentHost::new(Content::new(ComponentId(900), owner)).unwrap();
+            let frame = Rect::new(0., 0., 320., 400.);
+            host.render(
+                &mut Scene::new(),
+                &mut Text,
+                frame,
+                frame,
+                Theme::LIGHT.into(),
+            )
+            .unwrap();
+
+            calls.set(0);
+            constructed_parts.set(0);
+
+            let snapshot =
+                ContentAccessibilitySnapshot::from_host(&host).expect("valid AX snapshot");
+            let pub_result = WindowAccessibilityPublication::prepare(vec![(
+                ContentAccessibilityOwner(1),
+                snapshot,
+            )])
+            .expect("valid WindowAccessibilityPublication");
+
+            assert_eq!(
+                calls.get(),
+                1,
+                "kind_slider={kind_slider} count={count}: expected 1 semantic_parts() call"
+            );
+            assert_eq!(
+                constructed_parts.get(),
+                count,
+                "kind_slider={kind_slider} count={count}: expected {count} constructed parts"
+            );
+            let ax_nodes = pub_result.nodes();
+            if kind_slider {
+                let sliders = ax_nodes
+                    .iter()
+                    .filter(|n| matches!(n.role, AccessibilityRole::Slider(_)))
+                    .count();
+                assert_eq!(sliders, count);
+            } else {
+                assert_eq!(pub_result.text_layouts().unwrap().len(), count);
+            }
+        }
+    }
+}

@@ -55,5 +55,9 @@ required-features = ["svg-icons"]
 name = "curve_budget_isolation"
 harness = false
 
+[[test]]
+name = "curve_ax_publication"
+harness = false
+
 [lints]
 workspace = true

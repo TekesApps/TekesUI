@@ -167,6 +167,14 @@ fn project_host_accessibility(
     host: &ContentHost,
     include_text_layouts: bool,
 ) -> Option<ProjectedHostAccessibility> {
+    let scope = host.semantic_scope();
+    project_host_accessibility_with_scope(&scope, host, include_text_layouts)
+}
+fn project_host_accessibility_with_scope(
+    scope: &SemanticScope<'_>,
+    host: &ContentHost,
+    include_text_layouts: bool,
+) -> Option<ProjectedHostAccessibility> {
     if !host.is_window_active() {
         return Some(ProjectedHostAccessibility {
             nodes: Vec::new(),
@@ -174,7 +182,6 @@ fn project_host_accessibility(
             id_by_mount: HashMap::new(),
         });
     }
-    let scope = host.semantic_scope();
     let semantics = scope.semantics();
     let mut mount_by_id = HashMap::with_capacity(semantics.len());
     let mut id_by_mount = HashMap::with_capacity(semantics.len());
@@ -217,7 +224,7 @@ fn project_host_accessibility(
         }
         let parent = n
             .parent
-            .and_then(|p| resolve_mount(&scope, p, &mut mount_by_id, &mut id_by_mount))
+            .and_then(|p| resolve_mount(scope, p, &mut mount_by_id, &mut id_by_mount))
             .map(|component| AccessibilityKey {
                 component,
                 part: None,
@@ -235,7 +242,7 @@ fn project_host_accessibility(
                 AccessibilityRole::Splitter(AccessibilityRange::new(*range.start(), *range.end())?);
         }
         enrich_with_layout(
-            &scope,
+            scope,
             n.id,
             None,
             &n.semantics,
@@ -283,7 +290,7 @@ fn project_host_accessibility(
                 };
             }
             enrich_with_layout(
-                &scope,
+                scope,
                 n.id,
                 Some(part.index),
                 &part.semantics,
@@ -558,12 +565,16 @@ impl ContentAccessibilitySnapshot {
         if !host.is_window_active() {
             return None;
         }
-        let geometry = host.geometry_snapshot()?;
+        let scope = host.semantic_scope();
+        if !scope.has_current_geometry() {
+            return None;
+        }
         let ProjectedHostAccessibility {
             mut nodes,
             text_layouts,
             id_by_mount,
-        } = project_host_accessibility(host, true)?;
+        } = project_host_accessibility_with_scope(&scope, host, true)?;
+        let geometry = scope.geometry_snapshot()?;
         let mut identities = HashMap::with_capacity(nodes.len());
         let mut structural_only = std::collections::HashSet::new();
         for node in &mut nodes {
