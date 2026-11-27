@@ -125,7 +125,10 @@ pub struct DataTableView {
     keyed: Option<TableViewIdentity>,
     pub(super) unavailable_layout: DataTableLayout,
     pub(super) content_metrics: Option<TableContentMetrics>,
-    measure_cache: Option<TableMeasureResult>,
+    // Pending measurement from measure_content_keyed, consumed once by arrange_impl.
+    pending_measure: Option<TableMeasureResult>,
+    // Final geometry metrics produced by arrange_impl and reused by paint / repaint_current.
+    arranged_measure: Option<TableMeasureResult>,
 }
 impl Default for DataTableView {
     fn default() -> Self {
@@ -143,7 +146,8 @@ impl Default for DataTableView {
             keyed: None,
             unavailable_layout: DataTableLayout::default(),
             content_metrics: None,
-            measure_cache: None,
+            pending_measure: None,
+            arranged_measure: None,
         }
     }
 }
@@ -246,14 +250,15 @@ impl DataTableView {
         if self.keyed.take().is_some() {
             self.blur();
             self.layout = DataTableLayout::default();
-            self.measure_cache = None;
+            self.pending_measure = None;
+            self.arranged_measure = None;
         }
         self.render_impl(
             scene, text, model, headers, rows, row_order, frame, clip, palette,
         )
     }
-    fn ensure_measured(
-        &mut self,
+    fn compute_measure(
+        &self,
         text: &mut impl ButtonTextRenderer,
         model: &DataTable,
         headers: &[String],
@@ -261,26 +266,10 @@ impl DataTableView {
         row_order: &[usize],
         width: f32,
         keyed: Option<(&std::sync::Arc<()>, u64)>,
-    ) {
+    ) -> TableMeasureResult {
         let width = width.max(0.0);
         let font_size = text.resolved_font_size(proposal::TextRole::UiBody);
         let backing_scale = text.backing_scale();
-        if let Some(cache) = &self.measure_cache
-            && cache.key.matches(
-                width,
-                font_size,
-                backing_scale,
-                self.compact,
-                model,
-                headers,
-                rows,
-                row_order,
-                self.content_metrics.as_ref(),
-                keyed,
-            )
-        {
-            return;
-        }
         let columns = model.columns.max(1);
         let cw = width / columns as f32;
         // Preserve the Gallery's existing table contract: 34pt header and
@@ -417,7 +406,7 @@ impl DataTableView {
                 rows.to_vec()
             },
         };
-        self.measure_cache = Some(TableMeasureResult {
+        TableMeasureResult {
             key,
             cw,
             width,
@@ -431,10 +420,10 @@ impl DataTableView {
             valid_order,
             row_heights,
             content_height,
-        });
+        }
     }
     fn layout_from_measure(&self, frame: Rect, clip: Option<Rect>) -> DataTableLayout {
-        let m = self.measure_cache.as_ref().expect("measured table");
+        let m = self.arranged_measure.as_ref().expect("arranged table");
         let own_clip = own_clip(frame, clip);
         let columns = (0..m.key.columns)
             .map(|i| {
@@ -494,15 +483,36 @@ impl DataTableView {
         clip: Option<Rect>,
         keyed: Option<(&std::sync::Arc<()>, u64)>,
     ) -> DataTableLayout {
-        self.ensure_measured(
-            text,
-            model,
-            headers,
-            rows,
-            row_order,
-            frame.size.width,
-            keyed,
-        );
+        let width = frame.size.width.max(0.0);
+        let font_size = text.resolved_font_size(proposal::TextRole::UiBody);
+        let backing_scale = text.backing_scale();
+        let pending = self.pending_measure.take();
+        let measured = if let Some(cache) = pending
+            && cache.key.matches(
+                width,
+                font_size,
+                backing_scale,
+                self.compact,
+                model,
+                headers,
+                rows,
+                row_order,
+                self.content_metrics.as_ref(),
+                keyed,
+            ) {
+            cache
+        } else {
+            self.compute_measure(
+                text,
+                model,
+                headers,
+                rows,
+                row_order,
+                frame.size.width,
+                keyed,
+            )
+        };
+        self.arranged_measure = Some(measured);
         let (
             valid_order,
             columns,
@@ -514,7 +524,7 @@ impl DataTableView {
             gap,
             row_heights,
         ) = {
-            let m = self.measure_cache.as_ref().expect("measured table");
+            let m = self.arranged_measure.as_ref().expect("arranged table");
             (
                 m.valid_order.clone(),
                 m.key.columns,
@@ -608,7 +618,7 @@ impl DataTableView {
         let Some(own_clip) = self.layout.visible else {
             return;
         };
-        let Some(m) = self.measure_cache.as_ref() else {
+        let Some(m) = self.arranged_measure.as_ref() else {
             return;
         };
         let cw = m.cw;
@@ -1204,7 +1214,7 @@ impl DataTableView {
             .collect::<Vec<_>>();
         let keyed_id = model.view_identity();
         self.content_metrics = Some(metrics);
-        self.ensure_measured(
+        let measured = self.compute_measure(
             text,
             model.original(),
             &headers,
@@ -1213,11 +1223,10 @@ impl DataTableView {
             width,
             Some((&keyed_id, model.revision())),
         );
+        let content_height = measured.content_height;
+        self.pending_measure = Some(measured);
         self.content_metrics = None;
-        self.measure_cache
-            .as_ref()
-            .expect("measured table")
-            .content_height
+        content_height
     }
     pub(crate) fn arrange_content_keyed(
         &mut self,
@@ -1280,7 +1289,8 @@ impl DataTableView {
     }
     pub(crate) fn invalidate_content_layout(&mut self) {
         self.layout = DataTableLayout::default();
-        self.measure_cache = None;
+        self.pending_measure = None;
+        self.arranged_measure = None;
         if let Some(k) = &mut self.keyed {
             k.arranged = false;
         }

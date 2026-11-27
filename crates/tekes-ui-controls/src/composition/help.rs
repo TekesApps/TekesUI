@@ -296,6 +296,15 @@ impl ContentHost {
         layout.visible?;
         Some((n.id, text, layout))
     }
+    pub(super) fn suppress_help(&mut self) -> bool {
+        let was_visible = self.help_tooltip().is_some();
+        self.help.suppress();
+        let hid = was_visible && self.help_tooltip().is_none();
+        if hid {
+            self.dirty = true;
+        }
+        hid
+    }
     pub(super) fn help_event(&mut self, event: &ContentEvent) -> bool {
         if self.hover_preview_event(event) {
             return true;

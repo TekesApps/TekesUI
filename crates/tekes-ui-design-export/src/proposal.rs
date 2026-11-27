@@ -554,8 +554,14 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
     )
     .unwrap();
     out.push_str("pub const TOOLBAR_REFERENCE_TITLE_SIZE: f32 = TextRole::UiBody.style().size;\n");
+    let has_multiline_body = styles.iter().any(|s| s["name"] == "multiline-body");
+    let enum_styles: Vec<_> = styles
+        .iter()
+        .copied()
+        .filter(|s| !(has_multiline_body && s["name"] == "composer-body"))
+        .collect();
     out.push_str("#[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)]\npub enum TextRole {\n");
-    for style in &styles {
+    for style in &enum_styles {
         let variant = style["name"]
             .as_str()
             .unwrap()
@@ -571,8 +577,14 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
             .collect::<String>();
         writeln!(out, "{variant},").unwrap();
     }
-    out.push_str("}\nimpl TextRole { pub const fn style(self)->crate::TextStyle {match self {\n");
-    for style in &styles {
+    out.push_str("}\nimpl TextRole {\n");
+    if has_multiline_body && styles.iter().any(|s| s["name"] == "composer-body") {
+        out.push_str(
+            "    #[allow(non_upper_case_globals)]\n    pub const ComposerBody: Self = Self::MultilineBody;\n",
+        );
+    }
+    out.push_str("pub const fn style(self)->crate::TextStyle {match self {\n");
+    for style in &enum_styles {
         let variant = style["name"]
             .as_str()
             .unwrap()
@@ -596,7 +608,7 @@ pub(crate) fn generate(p: &Value, out: &mut String) -> Result<(), Errors> {
         .unwrap();
     }
     out.push_str("}} pub const fn id(self)->&'static str {match self {\n");
-    for style in &styles {
+    for style in &enum_styles {
         let id = style["name"].as_str().unwrap();
         let variant = id
             .split('-')

@@ -285,7 +285,7 @@ struct Prepared {
     next: usize,
     ids: BTreeSet<ComponentId>,
 }
-type SlotMetricsKey = (u32, u32, u32, usize, u64, bool);
+type SlotMetricsKey = (u32, u32, u32, u32, usize, u64, bool);
 
 struct StructureValidationCache {
     dirty: std::sync::atomic::AtomicBool,
@@ -1336,9 +1336,15 @@ impl DataTableContent {
     }
 }
 impl DataTableContent {
-    fn slot_metrics_key(&self, text: &mut dyn ButtonTextRenderer, width: f32) -> SlotMetricsKey {
+    fn slot_metrics_key(
+        &self,
+        text: &mut dyn ButtonTextRenderer,
+        width: f32,
+        height: f32,
+    ) -> SlotMetricsKey {
         (
             width.max(0.).to_bits(),
+            height.max(0.).to_bits(),
             text.resolved_font_size(proposal::TextRole::UiBody)
                 .to_bits(),
             text.backing_scale().to_bits(),
@@ -1507,7 +1513,7 @@ impl Component for DataTableContent {
         if self.validate_all_cached().is_err() {
             return MeasuredChild::new(Size::default());
         }
-        let key = self.slot_metrics_key(text, a.width);
+        let key = self.slot_metrics_key(text, a.width, a.height);
         let m = self.measured(text, a.width, a.height);
         self.slot_metrics_cache = Some((key, m.clone()));
         let height =
@@ -1519,15 +1525,16 @@ impl Component for DataTableContent {
         if self.validate_all_cached().is_err() {
             return;
         }
-        let key = self.slot_metrics_key(text, f.size.width);
-        self.metrics = if let Some((cached_key, cached)) = &self.slot_metrics_cache
-            && *cached_key == key
+        let key = self.slot_metrics_key(text, f.size.width, f.size.height);
+        // Single-pass handoff only: consume the pending measurement from this
+        // pass so subsequent renders with updated text renderers re-measure.
+        let pending = self.slot_metrics_cache.take();
+        self.metrics = if let Some((cached_key, cached)) = pending
+            && cached_key == key
         {
-            cached.clone()
+            cached
         } else {
-            let computed = self.measured(text, f.size.width, f.size.height);
-            self.slot_metrics_cache = Some((key, computed.clone()));
-            computed
+            self.measured(text, f.size.width, f.size.height)
         };
         let l = self.view.arrange_content_keyed(
             &mut TextAdapter(text),

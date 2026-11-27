@@ -483,29 +483,8 @@ impl ContentHost {
         id: ComponentId,
         part: Option<usize>,
     ) -> Option<ContentTextLayout> {
-        if !self.window_active || self.split_text_geometry_hidden(id) {
-            return None;
-        }
-        let owner = self.scope().find_active(id)?;
-        // Disabled controls remain readable to accessibility. This query grants
-        // no input authority; accessibility_action retains the disabled guard.
-        if let Some(part) = part {
-            let layout = owner.component.semantic_part_text_layout(part)?;
-            if !owner
-                .component
-                .semantic_parts()
-                .iter()
-                .any(|p| p.index == part && !p.semantics.role.is_selection())
-            {
-                return None;
-            }
-            Some(layout)
-        } else {
-            if owner.component.semantics().role.is_selection() {
-                return None;
-            }
-            owner.component.semantic_text_layout()
-        }
+        self.semantic_scope()
+            .semantic_text_layout_snapshot(id, part)
     }
     /// Published text queries for active semantic owners, including unfocused
     /// fields. Closed or background modal subtrees cannot expose editable text.
@@ -883,7 +862,7 @@ impl ContentHost {
             return ContentResponse::default();
         }
         if matches!(action, AccessibilityAction::Press) {
-            self.help.suppress();
+            self.suppress_help();
         }
         if part.is_none()
             && matches!(
@@ -916,12 +895,12 @@ impl ContentHost {
             true,
             &mut self.actions,
         );
+        let delegated_focus = owner.component.accessibility_focus_requested();
         if result.consumed && matches!(action, AccessibilityAction::Press) {
             // Press may focus through the ordinary AX path above. It is still
             // an activation, not a fresh request for delayed keyboard help.
-            self.help.suppress();
+            self.suppress_help();
         }
-        let delegated_focus = owner.component.accessibility_focus_requested();
         if result.consumed
             && (matches!(
                 action,
@@ -1319,6 +1298,7 @@ impl ContentHost {
             scope,
             by_id,
             split_hidden,
+            parts_cache: std::cell::RefCell::new(std::collections::HashMap::new()),
         }
     }
     /// Actual mounted tree projection; this is not a platform accessibility bridge.
@@ -1328,6 +1308,11 @@ impl ContentHost {
         nodes
     }
 }
+#[derive(Debug)]
+struct CachedSemanticParts {
+    entries: Vec<(usize, Rect, ContentRole)>,
+    roles: std::collections::HashMap<usize, ContentRole>,
+}
 /// Single-pass read-only semantic lookup table built from `ContentHost::scope()`.
 #[derive(Debug)]
 pub struct SemanticScope<'a> {
@@ -1335,13 +1320,74 @@ pub struct SemanticScope<'a> {
     scope: &'a Content,
     by_id: std::collections::HashMap<ComponentId, &'a Content>,
     split_hidden: std::collections::HashSet<ComponentId>,
+    parts_cache: std::cell::RefCell<std::collections::HashMap<ComponentId, CachedSemanticParts>>,
 }
 impl<'a> SemanticScope<'a> {
+    fn cache_parts_entries(&self, id: ComponentId, entries: Vec<(usize, Rect, ContentRole)>) {
+        let mut roles = std::collections::HashMap::with_capacity(entries.len());
+        for &(index, _, role) in &entries {
+            roles.insert(index, role);
+        }
+        self.parts_cache
+            .borrow_mut()
+            .insert(id, CachedSemanticParts { entries, roles });
+    }
+    fn ensure_parts_cached(&self, owner: &Content) {
+        if self.parts_cache.borrow().contains_key(&owner.id) {
+            return;
+        }
+        let entries = owner
+            .component
+            .semantic_parts()
+            .into_iter()
+            .map(|p| (p.index, p.frame, p.semantics.role))
+            .collect::<Vec<_>>();
+        self.cache_parts_entries(owner.id, entries);
+    }
+    fn part_role(&self, owner: &Content, part: usize) -> Option<ContentRole> {
+        self.ensure_parts_cached(owner);
+        self.parts_cache
+            .borrow()
+            .get(&owner.id)
+            .and_then(|cached| cached.roles.get(&part).copied())
+    }
     pub fn semantics(&self) -> Vec<SemanticNode> {
         let mut nodes = Vec::new();
         self.scope
             .semantic_nodes(None, self.host.focused, &mut nodes);
+        for node in &nodes {
+            if !self.parts_cache.borrow().contains_key(&node.id) {
+                let entries = node
+                    .parts
+                    .iter()
+                    .map(|p| (p.index, p.frame, p.semantics.role))
+                    .collect();
+                self.cache_parts_entries(node.id, entries);
+            }
+        }
         nodes
+    }
+    pub(super) fn part_frames(&self, owner: &Content) -> Vec<(usize, Rect)> {
+        self.ensure_parts_cached(owner);
+        self.parts_cache
+            .borrow()
+            .get(&owner.id)
+            .map(|cached| {
+                cached
+                    .entries
+                    .iter()
+                    .map(|&(index, frame, _)| (index, frame))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+    pub fn has_current_geometry(&self) -> bool {
+        !self.host.reveal_clock.pending
+            && self.host.last_layout.is_some()
+            && self.host.active_curve_geometry_is_current()
+    }
+    pub fn geometry_snapshot(&self) -> Option<ContentGeometrySnapshot> {
+        self.host.geometry_snapshot_with_scope(self)
     }
     pub fn semantic_mount(&self, id: ComponentId) -> Option<u64> {
         if !self.host.window_active {
@@ -1383,11 +1429,9 @@ impl<'a> SemanticScope<'a> {
         let owner = self.by_id.get(&id)?;
         if let Some(part) = part {
             let layout = owner.component.semantic_part_text_layout(part)?;
-            if !owner
-                .component
-                .semantic_parts()
-                .iter()
-                .any(|p| p.index == part && !p.semantics.role.is_selection())
+            if self
+                .part_role(owner, part)
+                .is_none_or(|role| role.is_selection())
             {
                 return None;
             }
@@ -1427,11 +1471,8 @@ impl<'a> SemanticScope<'a> {
         if !(range.start().is_finite() && range.end().is_finite() && range.start() <= range.end()) {
             return None;
         }
-        owner
-            .component
-            .semantic_parts()
-            .iter()
-            .any(|p| p.index == part && !p.semantics.role.is_selection())
+        self.part_role(owner, part)
+            .is_some_and(|role| !role.is_selection())
             .then_some(range)
     }
     pub fn semantic_part_parent(&self, id: ComponentId, part: usize) -> Option<usize> {

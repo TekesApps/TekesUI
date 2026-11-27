@@ -10,8 +10,9 @@ fn main() -> anyhow::Result<()> {
     use std::time::{Duration, Instant};
     use tekes_ui_app_protocol::Request;
     use tekes_ui_controls::{ButtonTextAlign, ButtonTextRenderer, composition::*};
+    use tekes_ui_macos_bridge::content_accessibility::ContentAccessibilitySnapshot;
     use tekes_ui_module_runtime::{component::*, *};
-    use tekes_ui_scene::{GlyphAtlas, Rect, Scene, Size};
+    use tekes_ui_scene::{GlyphAtlas, ImageId, Primitive, Rect, Scene, Size};
     use tekes_ui_tokens::{Rgba, Theme, proposal};
 
     const TEXT_ID: ComponentId = ComponentId(10);
@@ -229,6 +230,28 @@ fn main() -> anyhow::Result<()> {
         container(&host).status()
     );
 
+    fn painted_image_id(host: &mut ContentHost, frame: Rect) -> Result<ImageId> {
+        let mut scene = Scene::new();
+        host.repaint_current(&mut scene, &mut Text, frame, frame, Theme::LIGHT.into())?;
+        scene
+            .primitives()
+            .iter()
+            .find_map(|p| match p {
+                Primitive::Image(q) => Some(q.image),
+                _ => None,
+            })
+            .context("expected painted ProcessContainer ImageQuad")
+    }
+
+    let session_before = container(&host)
+        .session()
+        .cloned()
+        .context("missing worker Session before oversize query")?;
+    let revision_before = container(&host)
+        .revision()
+        .context("missing frame revision before oversize query")?;
+    let initial_image_id = painted_image_id(&mut host, frame)?;
+
     let initial_snap = container(&host)
         .native_content_bridge(Duration::from_secs(2))?
         .semantics()?;
@@ -258,8 +281,9 @@ fn main() -> anyhow::Result<()> {
         "unexpected auth rejection: {auth_err:#}"
     );
 
-    // Trigger an over-budget semantic snapshot (> MAX_PACKET / 2) on the worker,
-    // pump the next Curve frame, and verify it isolates cleanly to LimitExceeded.
+    // Trigger an invalidated over-budget Curve frame (> MAX_PACKET / 2) on the worker,
+    // pump the next Curve frame, and verify it isolates cleanly to LimitExceeded
+    // while leaving Session, displayed revision, painted ImageId, and AX state uncontaminated.
     ensure!(message(container(&host), "oversize")? == json!("oversized"));
     let oversize_deadline = Instant::now() + Duration::from_secs(15);
     let mut oversize_need_layout = false;
@@ -315,6 +339,35 @@ fn main() -> anyhow::Result<()> {
         .as_u64()
         .context("missing pid after error")?;
     ensure!(pid_after_err == pid_before);
+    ensure!(
+        container(&host).session() == Some(&session_before),
+        "worker Session changed after LimitExceeded rejection"
+    );
+    ensure!(
+        container(&host).revision() == Some(revision_before),
+        "displayed frame revision changed at LimitExceeded rejection: {:?} vs {:?}",
+        container(&host).revision(),
+        revision_before
+    );
+    ensure!(
+        painted_image_id(&mut host, frame)? == initial_image_id,
+        "displayed ImageId replaced at LimitExceeded rejection"
+    );
+    let parts_at_frame_err = container(&host).semantic_parts();
+    ensure!(
+        parts_at_frame_err.is_empty(),
+        "pending grant invalidation must withhold stale parts rather than publishing rejected frame: {:?}",
+        parts_at_frame_err
+    );
+    if let Some(ax_at_frame_err) = ContentAccessibilitySnapshot::from_host(&host) {
+        ensure!(
+            !ax_at_frame_err
+                .nodes()
+                .iter()
+                .any(|n| n.label.starts_with("xxxx")),
+            "rejected over-budget payload leaked into AX snapshot"
+        );
+    }
 
     // Shrink the semantic payload back inside budget on the same worker/session,
     // pump the next frame + paired semantics, and confirm recovery on the same PID.
@@ -382,11 +435,24 @@ fn main() -> anyhow::Result<()> {
         .as_u64()
         .context("missing pid after recovery")?;
     ensure!(pid_final == pid_before);
+    let recovered_rev = container(&host)
+        .revision()
+        .context("missing frame revision after recovery")?;
+    ensure!(recovered_rev > revision_before);
+    let recovered_image_id = painted_image_id(&mut host, frame)?;
+    ensure!(recovered_image_id != initial_image_id);
+    ensure!(
+        container(&host).session() == Some(&session_before),
+        "worker Session changed after recovery"
+    );
 
     println!(
-        "CURVE_BUDGET_ISOLATION worker_pid={} auth_err={:?} oversize_err={:?} recovered_label={:?} initial_stamp={:?} recovered_stamp={:?}",
+        "CURVE_BUDGET_ISOLATION worker_pid={} session_unchanged=true initial_rev={} rev_at_err={} recovered_rev={} image_preserved=true parts_at_frame_err={} oversize_err={:?} recovered_label={:?} initial_stamp={:?} recovered_stamp={:?}",
         pid_before,
-        auth_err.to_string(),
+        revision_before,
+        revision_before,
+        recovered_rev,
+        parts_at_frame_err.len(),
         oversize_msg,
         recovered_name,
         initial_stamp,

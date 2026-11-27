@@ -883,3 +883,85 @@ fn malformed_rows_same_id_wrong_type_rejects() {
 fn malformed_rows_same_id_borrowed_wrapper_rejects() {
     exercise_malformed_rows(5);
 }
+
+#[test]
+fn height_dependent_passive_tree_row_restores_100pt_frame_clip_and_hit_testing() {
+    #[derive(Debug)]
+    struct HalfHeightPassiveRow;
+    impl Component for HalfHeightPassiveRow {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(available.width, available.height * 0.5))
+        }
+    }
+
+    #[derive(Debug)]
+    struct Measure60Arrange200(Vec<Content>);
+    impl Component for Measure60Arrange200 {
+        fn has_stable_hooks(&self) -> bool {
+            true
+        }
+        fn semantics(&self) -> ContentSemantics {
+            ContentSemantics::new(ContentRole::Group, "Measure60Arrange200")
+        }
+        fn children(&self) -> &[Content] {
+            &self.0
+        }
+        fn children_mut(&mut self) -> Option<&mut Vec<Content>> {
+            Some(&mut self.0)
+        }
+        fn measure(&mut self, text: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            let _ = self.0[0].measure(text, Size::new(240., 60.));
+            MeasuredChild::new(available)
+        }
+        fn arrange(&mut self, text: &mut dyn ButtonTextRenderer, _: Rect, _: Rect) {
+            let r = Rect::new(0., 0., 240., 200.);
+            self.0[0].arrange(text, r, r);
+        }
+        fn paint(
+            &mut self,
+            scene: &mut Scene,
+            text: &mut dyn ButtonTextRenderer,
+            _: Rect,
+            _: Rect,
+            theme: ContentTheme,
+        ) {
+            self.0[0].paint(scene, text, theme);
+        }
+    }
+
+    let mut row = n(1, None);
+    row.display = TreeDisplayUpdate::Replace(Content::new(ComponentId(200), HalfHeightPassiveRow));
+    let tr = TreeContent::new("PassiveTree", D(99), vec![row]).unwrap();
+    let mut h = ContentHost::new(Content::new(
+        ComponentId(999),
+        Measure60Arrange200(vec![Content::new(ComponentId(10), tr)]),
+    ))
+    .unwrap();
+    let mut text = Text::default();
+
+    let arrange_rect = Rect::new(0., 0., 240., 200.);
+    h.render(
+        &mut Scene::new(),
+        &mut text,
+        arrange_rect,
+        arrange_rect,
+        Theme::LIGHT.into(),
+    )
+    .unwrap();
+
+    let row_part = parts(&h).into_iter().next().unwrap();
+    assert_eq!(row_part.frame.size.height, 108.);
+    let row_slot_frame = h.get(ComponentId(200)).unwrap().frame();
+    assert_eq!(row_slot_frame.size.height, 100.);
+    assert_eq!(
+        h.get(ComponentId(200)).unwrap().visible(),
+        Some(row_slot_frame)
+    );
+
+    // Hit-test inside the lower half (y = 75 pt), which missed when row height stayed stuck at 30 pt.
+    assert!(h.focus(Some(ComponentId(10)), true));
+    let lower_pt = Point::new(row_part.frame.center().x, row_part.frame.min_y() + 75.);
+    assert!(h.event(&ContentEvent::PointerDown(lower_pt)).consumed);
+    assert!(h.event(&ContentEvent::PointerUp(lower_pt)).consumed);
+    assert_eq!(t(&h).selected_key(), Some(K(1)));
+}

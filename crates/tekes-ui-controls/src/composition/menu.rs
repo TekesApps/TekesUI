@@ -2201,7 +2201,7 @@ impl ContentHost {
         context.anchor = pointer.map_or(frame, |point| Rect::new(point.x, point.y, 0., 0.));
         context.viewport = viewport;
         popup.show_menu();
-        self.help.suppress();
+        self.suppress_help();
         self.dirty = true;
         Ok(request)
     }
