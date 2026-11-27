@@ -551,3 +551,262 @@ fn publication_pass_reuses_semantic_parts_for_valid_text_layouts_and_sliders() {
         }
     }
 }
+
+#[test]
+fn repeated_no_edit_text_key_preserves_ax_publication_without_redraw_and_invalidates_on_real_changes()
+ {
+    use std::time::Duration;
+    use tekes_ui_controls::{ControlMotionContext, ScrollArea};
+    use tekes_ui_platform_macos::Point as NativePoint;
+    use tekes_ui_scene::Point;
+
+    #[derive(Default)]
+    struct ClockText {
+        now: u64,
+    }
+    impl ButtonTextRenderer for ClockText {
+        fn text_surface_host(&mut self) -> Option<&mut dyn TextSurfaceHost> {
+            Some(self)
+        }
+        fn measure(&mut self, s: &str, role: proposal::TextRole, width: f32) -> Size {
+            Text.measure(s, role, width)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+        fn motion_context(&self) -> Option<ControlMotionContext> {
+            Some(ControlMotionContext {
+                now: Duration::from_millis(self.now),
+                reduced_motion: false,
+            })
+        }
+    }
+    impl TextSurfaceTextRenderer for ClockText {
+        fn push_visible(
+            &mut self,
+            _: &mut Scene,
+            _: &tekes_ui_text::Paragraph,
+            _: Point,
+            _: Rgba,
+            _: Rect,
+        ) {
+        }
+    }
+    impl TextSurfaceHost for ClockText {
+        fn shape_surface(
+            &mut self,
+            text: &str,
+            role: proposal::TextRole,
+            width: Option<f32>,
+        ) -> std::rc::Rc<tekes_ui_text::Paragraph> {
+            Text.shape_surface(text, role, width)
+        }
+    }
+
+    const ROOT: ComponentId = ComponentId(16000);
+    const SCROLL: ComponentId = ComponentId(16001);
+    const LIST: ComponentId = ComponentId(16002);
+    const FIRST: ComponentId = ComponentId(16003);
+    const COMPOSER: ComponentId = ComponentId(16020);
+    const MUTABLE: ComponentId = ComponentId(16021);
+
+    let build_host = |read_only: bool| -> ContentHost {
+        let rows = (0..4)
+            .map(|i| {
+                Content::new(
+                    ComponentId(FIRST.0 + i),
+                    Button::new(format!("Session {}", i + 1)),
+                )
+                .with_help(format!("Help item {}", i + 1))
+            })
+            .collect();
+        let scroll = ScrollContent::new(
+            ScrollArea::default(),
+            Content::new(LIST, ListContent::new("Search results", rows)),
+        )
+        .with_viewport_height(Some(120.));
+        let field = TextFieldContent::new("Composer", "Keep A😀B").with_read_only(read_only);
+        let mut h = ContentHost::new(Content::new(
+            ROOT,
+            StackContent::vertical(
+                tekes_ui_tokens::Spacing::Regular.value(),
+                vec![Content::new(SCROLL, scroll), Content::new(COMPOSER, field)],
+            ),
+        ))
+        .unwrap();
+        h.set_action_events(true);
+        h
+    };
+    let draw = |h: &mut ContentHost, t: &mut ClockText, w: f32, ht: f32| {
+        let f = Rect::new(0., 0., w, ht);
+        h.render(&mut Scene::new(), t, f, f, Theme::LIGHT.into())
+            .unwrap();
+    };
+    let publish = |h: &ContentHost| {
+        WindowAccessibilityPublication::prepare(vec![(
+            ContentAccessibilityOwner(1),
+            ContentAccessibilitySnapshot::from_host(h).expect("AX snapshot"),
+        )])
+        .expect("AX publication")
+    };
+    let send_chain = |h: &mut ContentHost, t: &mut ClockText, id: u64, consumed: bool| -> bool {
+        let key = ContentKeyEvent {
+            key: None,
+            down: true,
+            repeat: false,
+            modifiers: InputModifiers {
+                command: !consumed,
+                ..Default::default()
+            },
+            native_code: 105,
+            characters: String::new(),
+            characters_ignoring_modifiers: String::new(),
+        };
+        let events = [
+            ContentEvent::TextKeyStart {
+                id,
+                key: key.clone(),
+                composing: false,
+            },
+            ContentEvent::TextKeyEnd {
+                id,
+                input_context_consumed: consumed,
+            },
+            ContentEvent::KeyInput(ContentKeyEvent { down: false, ..key }),
+        ];
+        let mut pending = false;
+        for (idx, event) in events.iter().enumerate() {
+            let response = h.event_with_text(event, t).unwrap();
+            let req = h.has_visual_changes()
+                || response.changed
+                || if idx == 2 {
+                    response.consumed
+                } else {
+                    response.activated
+                };
+            pending |= req;
+        }
+        pending
+    };
+
+    for input_context_consumed in [false, true] {
+        let mut h = build_host(true);
+        let mut t = ClockText::default();
+        h.focus(Some(COMPOSER), false);
+        draw(&mut h, &mut t, 400., 260.);
+        let btn_pt = h.get(FIRST).unwrap().visible().unwrap().center();
+        h.event(&ContentEvent::PointerMove(btn_pt));
+        draw(&mut h, &mut t, 400., 260.);
+        t.now += 500;
+        draw(&mut h, &mut t, 400., 260.);
+        assert_eq!(h.help_tooltip().map(|tip| tip.0), Some(FIRST));
+        let mut publication = publish(&h);
+
+        // Chain 1 hides tooltip -> 1 redraw -> republish -> AXPress fires once.
+        assert!(send_chain(&mut h, &mut t, 1, input_context_consumed));
+        assert!(!publication.is_current());
+        draw(&mut h, &mut t, 400., 260.);
+        publication = publish(&h);
+        let node_count = publication.nodes().len();
+        assert!(node_count >= 1);
+        let button_key = publication
+            .hit_test(NativePoint {
+                x: f64::from(btn_pt.x),
+                y: f64::from(btn_pt.y),
+            })
+            .expect("published button key");
+        assert!(h.drain_action_records().is_empty());
+        let first_press = publication.dispatch(
+            ContentAccessibilityOwner(1),
+            &mut h,
+            button_key,
+            AccessibilityAction::Press,
+        );
+        assert!(first_press.activated);
+        assert_eq!(h.drain_action_records().len(), 1);
+
+        // Restore read-only focus and publish with tooltip already hidden.
+        h.focus(Some(COMPOSER), false);
+        draw(&mut h, &mut t, 400., 260.);
+        assert!(h.help_tooltip().is_none());
+        publication = publish(&h);
+
+        // Chain 2: repeat same input -> 0 redraws, AX remains current, button Press succeeds once without redraw/republish/focus switch.
+        assert!(!send_chain(&mut h, &mut t, 2, input_context_consumed));
+        assert!(!h.has_visual_changes());
+        assert!(publication.is_current());
+        assert_eq!(publication.nodes().len(), node_count);
+        let repeat_press = publication.dispatch(
+            ContentAccessibilityOwner(1),
+            &mut h,
+            button_key,
+            AccessibilityAction::Press,
+        );
+        assert!(repeat_press.consumed && repeat_press.activated);
+        let actions = h.drain_action_records();
+        assert_eq!(actions.len(), 1);
+        assert_eq!(actions[0].action.target, FIRST);
+    }
+
+    // Real edit, layout change, unmount, and permission change must still invalidate stale AX publications.
+    let mut h = build_host(false);
+    let mut t = ClockText::default();
+    h.focus(Some(COMPOSER), false);
+    draw(&mut h, &mut t, 400., 260.);
+    let p_edit = publish(&h);
+    assert!(
+        h.event(&ContentEvent::Commit {
+            text: "x".into(),
+            replacement: None,
+        })
+        .changed
+    );
+    assert!(!p_edit.is_current());
+    draw(&mut h, &mut t, 400., 260.);
+
+    let p_layout = publish(&h);
+    draw(&mut h, &mut t, 420., 280.);
+    assert!(!p_layout.is_current());
+
+    let p_perm = publish(&h);
+    let btn_pt = h.get(FIRST).unwrap().visible().unwrap().center();
+    let btn_key = p_perm
+        .hit_test(NativePoint {
+            x: f64::from(btn_pt.x),
+            y: f64::from(btn_pt.y),
+        })
+        .unwrap();
+    h.get_mut(FIRST)
+        .unwrap()
+        .component_mut::<Button>()
+        .unwrap()
+        .set_disabled(true);
+    assert!(!p_perm.is_current());
+    assert!(
+        !p_perm
+            .dispatch(
+                ContentAccessibilityOwner(1),
+                &mut h,
+                btn_key,
+                AccessibilityAction::Press
+            )
+            .consumed
+    );
+
+    draw(&mut h, &mut t, 420., 280.);
+    let p_unmount = publish(&h);
+    let rows_list = h
+        .get_mut(LIST)
+        .unwrap()
+        .component_mut::<ListContent>()
+        .unwrap();
+    *rows_list.items_mut() = vec![Content::new(MUTABLE, Button::new("Replacement"))];
+    assert!(!p_unmount.is_current());
+}

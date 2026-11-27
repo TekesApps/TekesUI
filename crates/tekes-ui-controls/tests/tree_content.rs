@@ -965,3 +965,116 @@ fn height_dependent_passive_tree_row_restores_100pt_frame_clip_and_hit_testing()
     assert!(h.event(&ContentEvent::PointerUp(lower_pt)).consumed);
     assert_eq!(t(&h).selected_key(), Some(K(1)));
 }
+
+#[test]
+fn plain_tree_layout_measures_each_label_once_in_240x80_viewport() {
+    #[derive(Default)]
+    struct CountingText {
+        measures: usize,
+        draws: usize,
+    }
+    impl ButtonTextRenderer for CountingText {
+        fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+            self.measures += 1;
+            Size::new((s.len() as f32 * 8.).min(w), 20.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+            self.draws += 1;
+        }
+    }
+
+    let viewport = Rect::new(0., 0., 240., 80.);
+    for n_labels in [100usize, 500, 2000] {
+        let nodes = (1..=n_labels as u64)
+            .map(|i| TreeContentNode {
+                row_id: ComponentId(10_000 + i),
+                node: KeyedTreeNode {
+                    key: K(i),
+                    parent: None,
+                    label: format!("label-{i}"),
+                    disabled: false,
+                    initially_expanded: false,
+                },
+                display: TreeDisplayUpdate::DefaultLabel,
+            })
+            .collect();
+        let tr = TreeContent::new("PlainScaleTree", D(101), nodes).unwrap();
+        let mut h = ContentHost::new(Content::new(ComponentId(10), tr)).unwrap();
+        let mut text = CountingText::default();
+        h.render(
+            &mut Scene::new(),
+            &mut text,
+            viewport,
+            viewport,
+            Theme::LIGHT.into(),
+        )
+        .unwrap();
+        assert_eq!(
+            text.measures, n_labels,
+            "n={n_labels}: expected 1 measure per plain label"
+        );
+        assert_eq!(text.draws, 3, "n={n_labels}: expected 3 visible drawn rows");
+    }
+}
+
+#[test]
+fn mixed_tree_reuses_plain_measures_and_remeasures_height_dependent_custom_rows() {
+    #[derive(Default)]
+    struct CountingMixedText {
+        plain_measures: usize,
+    }
+    impl ButtonTextRenderer for CountingMixedText {
+        fn measure(&mut self, s: &str, _: proposal::TextRole, w: f32) -> Size {
+            if s.starts_with("plain-row-") {
+                self.plain_measures += 1;
+            }
+            Size::new((s.len() as f32 * 8.).min(w), 20.)
+        }
+        fn draw(
+            &mut self,
+            _: &mut Scene,
+            _: &str,
+            _: proposal::TextRole,
+            _: Rect,
+            _: ButtonTextAlign,
+            _: Rgba,
+        ) {
+        }
+    }
+
+    #[derive(Debug)]
+    struct HalfHeightPassiveRow;
+    impl Component for HalfHeightPassiveRow {
+        fn measure(&mut self, _: &mut dyn ButtonTextRenderer, available: Size) -> MeasuredChild {
+            MeasuredChild::new(Size::new(available.width, available.height * 0.5))
+        }
+    }
+
+    let mut plain = n(1, None);
+    plain.node.label = "plain-row-1".into();
+    plain.display = TreeDisplayUpdate::DefaultLabel;
+
+    let mut custom = n(2, None);
+    custom.display =
+        TreeDisplayUpdate::Replace(Content::new(ComponentId(202), HalfHeightPassiveRow));
+
+    let mut tr = TreeContent::new("MixedTree", D(102), vec![plain, custom]).unwrap();
+    let mut text = CountingMixedText::default();
+    let measured = tr.measure(&mut text, Size::new(240., 60.)).size;
+    assert_eq!(measured.height, 28. + 8. + 30. + 8.);
+    let arrange_rect = Rect::new(0., 0., 240., 200.);
+    tr.arrange(&mut text, arrange_rect, arrange_rect);
+    assert_eq!(
+        text.plain_measures, 1,
+        "plain label must not be re-measured when custom row triggers height-dependent arrange"
+    );
+    assert_eq!(tr.children()[1].frame().size.height, 100.);
+}

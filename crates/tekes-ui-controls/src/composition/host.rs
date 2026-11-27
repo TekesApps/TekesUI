@@ -988,6 +988,8 @@ impl ContentHost {
                 })
                 .map(|surface| (id, surface.input.caret))
         });
+        let last_key_delegated = matches!(event, ContentEvent::TextKeyEnd { .. })
+            && self.text_keys.last().is_some_and(|f| f.delegated);
         let mut result = self.key_routed_event(event);
         self.reconcile_active_inputs();
         let routed = event.routing_event();
@@ -1091,20 +1093,24 @@ impl ContentHost {
         }
         self.dirty |= result.changed;
         if let Some(before) = pre_event_state {
-            let delegated_text_key_start = matches!(event, ContentEvent::TextKeyStart { .. })
-                && self.text_keys.last().is_some_and(|f| f.delegated);
+            let delegated_text_key = (last_key_delegated && result.text_key.is_some())
+                || (matches!(event, ContentEvent::TextKeyStart { .. })
+                    && self.text_keys.last().is_some_and(|f| f.delegated));
             let provenance_only = matches!(
                 event,
                 ContentEvent::TextKeyStart { .. } | ContentEvent::TextKeyEnd { .. }
             );
             if (!provenance_only && result.consumed)
-                || delegated_text_key_start
+                || delegated_text_key
                 || result.changed
                 || result.capture_pointer
                 || result.activated
-                || result
-                    .text_key
-                    .is_some_and(|key| key.disposition != TextKeyDisposition::Unhandled)
+                || result.text_key.is_some_and(|key| {
+                    !matches!(
+                        key.disposition,
+                        TextKeyDisposition::Unhandled | TextKeyDisposition::InputConsumed
+                    )
+                })
                 || self.pointer_focus_requested
                 || self.passive_event_snapshot() != before
             {
