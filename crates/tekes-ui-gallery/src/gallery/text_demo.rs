@@ -37,7 +37,7 @@ pub(crate) fn section_layout(
         1.0
     };
     let label_h = proposal::TextRole::UiHeading.style().line_height * type_scale;
-    let line_h = proposal::TextRole::MultilineBody.style().line_height * type_scale;
+    let line_h = proposal::TextRole::ComposerBody.style().line_height * type_scale;
     let mut y = content.min_y();
     let bottom = content.max_y();
     let mut out = Vec::new();

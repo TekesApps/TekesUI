@@ -452,7 +452,7 @@ impl TextSurface {
             inner: Rect::default(),
             trailing_action_width: 0.,
             role: if multiline {
-                proposal::TextRole::MultilineBody
+                proposal::TextRole::ComposerBody
             } else {
                 proposal::TextRole::UiBody
             },
