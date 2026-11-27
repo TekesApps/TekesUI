@@ -589,8 +589,11 @@ impl TreeContent {
         width: f32,
         height: f32,
         compact: bool,
+        cached: &[(usize, tekes_ui_scene::Size, bool)],
     ) -> Vec<(usize, tekes_ui_scene::Size, bool)> {
+        let mut cursor = 0usize;
         let rows = &mut self.rows;
+        let nodes = self.model.nodes();
         TreeView::measure_rows(
             &self.model,
             width,
@@ -604,9 +607,14 @@ impl TreeContent {
                     .is_empty();
                 let size = if custom {
                     rows[i].measure(text, Size::new(custom_width, height)).size
+                } else if let Some(&(id, size, false)) = cached.get(cursor)
+                    && id == i
+                {
+                    size
                 } else {
-                    text.measure(&self.model.nodes()[i].label, proposal::TextRole::UiBody, w)
+                    text.measure(&nodes[i].label, proposal::TextRole::UiBody, w)
                 };
+                cursor += 1;
                 (size, custom)
             },
         )
@@ -799,7 +807,7 @@ impl Component for TreeContent {
         }
         let compact = self.view.compact();
         let key = self.measure_key(text, available.width, available.height, compact);
-        let metrics = self.compute_metrics(text, available.width, available.height, compact);
+        let metrics = self.compute_metrics(text, available.width, available.height, compact, &[]);
         self.metrics_cache = Some((key, metrics.clone()));
         MeasuredChild::new(Size::new(
             available.width,
@@ -813,15 +821,26 @@ impl Component for TreeContent {
         }
         let compact = self.view.compact();
         let key = self.measure_key(text, frame.size.width, frame.size.height, compact);
-        // Single-pass handoff only: consume any pending measurement whose exact
-        // width/height constraints match, and recompute otherwise.
+        // Single-pass handoff only: reuse plain labels across width-matched
+        // measure -> arrange height expansion; re-measure custom rows on height change.
         let pending = self.metrics_cache.take();
         let metrics = if let Some((cached_key, cached)) = pending
-            && cached_key == key
+            && (
+                cached_key.0,
+                cached_key.2,
+                cached_key.3,
+                cached_key.4,
+                cached_key.5,
+                cached_key.6,
+            ) == (key.0, key.2, key.3, key.4, key.5, key.6)
         {
-            cached
+            if cached_key.1 == key.1 || !cached.iter().any(|&(_, _, custom)| custom) {
+                cached
+            } else {
+                self.compute_metrics(text, frame.size.width, frame.size.height, compact, &cached)
+            }
         } else {
-            self.compute_metrics(text, frame.size.width, frame.size.height, compact)
+            self.compute_metrics(text, frame.size.width, frame.size.height, compact, &[])
         };
         self.view.arrange_rows(
             &mut TextAdapter(text),
