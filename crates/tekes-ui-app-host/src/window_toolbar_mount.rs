@@ -629,6 +629,9 @@ impl Host {
                 if key.kind == KeyEventKind::Down && key.key_code == 48
                     && !key.modifiers.command && !key.modifiers.control
                     && !key.modifiers.alt);
+        if Self::is_key_or_text_event(event) && self.local_overlay_yields_chrome_key() {
+            return Ok(false);
+        }
         if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
@@ -639,20 +642,14 @@ impl Host {
                 .mounted_toolbar
                 .modal()
             && !settings_tab
-            && matches!(
-                event,
-                Event::Key(_)
-                    | Event::TextKey(_)
-                    | Event::TextCommit { .. }
-                    | Event::TextPreedit { .. }
-                    | Event::TextUnmark
-                    | Event::TextCommand(_)
-            )
+            && Self::is_key_or_text_event(event)
         {
             let mut body_focus = false;
             for panel in &mut self.panel_mgr.panels {
                 if let Some(local) = &mut panel.local {
-                    local.with_host(&mut |h| body_focus |= h.focused().is_some());
+                    local.with_host(&mut |h| {
+                        body_focus |= h.focused().is_some() || h.input_overlay_owner().is_some();
+                    });
                 }
             }
             if body_focus {
@@ -1427,6 +1424,9 @@ impl Host {
         }
         if let Some(consumed) = self.settings_tab_input(&key)? {
             return Ok(consumed);
+        }
+        if self.local_overlay_yields_chrome_key() {
+            return Ok(false);
         }
         let header_focused = self
             .layout
