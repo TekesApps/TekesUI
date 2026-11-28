@@ -55,7 +55,80 @@ impl Host {
             .as_mut()
             .unwrap()
             .event_with_response(&content_event, &mut self.text)?;
+        if response.consumed {
+            let mut opened_overlay = false;
+            if let Some(local) = &mut self.panel_mgr.panels[index].local {
+                local.with_host(&mut |host| opened_overlay = host.input_overlay_owner().is_some());
+            }
+            if opened_overlay {
+                for (other, panel) in self.panel_mgr.panels.iter_mut().enumerate() {
+                    if other == index {
+                        continue;
+                    }
+                    if let Some(local) = &mut panel.local {
+                        let mut has_overlay = false;
+                        local.with_host(&mut |host| {
+                            has_overlay = host.input_overlay_owner().is_some();
+                        });
+                        if has_overlay {
+                            local.cancel();
+                        }
+                    }
+                }
+            }
+        }
         Ok(response.consumed)
+    }
+    /// Local column currently owning an active overlay (context menu, popover, dialog),
+    /// preferring `self.layout.focused` when multiple overlays exist.
+    pub(super) fn local_overlay_panel(&mut self) -> Option<usize> {
+        let focused = self.layout.focused;
+        let len = self.panel_mgr.panels.len();
+        for index in std::iter::once(focused).chain((0..len).filter(|&i| i != focused)) {
+            let Some(panel) = self.panel_mgr.panels.get_mut(index) else {
+                continue;
+            };
+            if panel.bounds.size.width <= 0. {
+                continue;
+            }
+            let Some(local) = panel.local.as_mut() else {
+                continue;
+            };
+            let mut active = false;
+            local.with_host(&mut |host| active = host.input_overlay_owner().is_some());
+            if active {
+                return Some(index);
+            }
+        }
+        None
+    }
+    pub(super) fn switcher_overlay_active(&self) -> bool {
+        self.layout
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|tabs| tabs.content_host().input_overlay_owner().is_some())
+            || self
+                .layout
+                .presentation_creation_grid
+                .as_ref()
+                .is_some_and(|grid| grid.host.input_overlay_owner().is_some())
+    }
+    pub(super) fn local_overlay_yields_chrome_key(&mut self) -> bool {
+        !self.settings_mgr.is_settings_window
+            && self.open_toolbar().is_none()
+            && !self.switcher_overlay_active()
+            && self.local_overlay_panel().is_some()
+    }
+    pub(super) fn is_key_or_text_event(event: &Event) -> bool {
+        matches!(
+            event,
+            Event::Key(_)
+                | Event::TextKey(_)
+                | Event::TextCommit { .. }
+                | Event::TextPreedit { .. }
+                | Event::TextUnmark
+                | Event::TextCommand(_)
+        )
     }
     pub(super) fn is_search_shortcut(event: &Event) -> bool {
         matches!(event, Event::Key(key) if key.kind == KeyEventKind::Down
@@ -272,11 +345,25 @@ impl Host {
         if !active
             || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
-            || self
-                .layout
-                .presentation_tabs
-                .as_ref()
-                .is_some_and(|tabs| tabs.content_host().focused().is_some())
+            || self.switcher_overlay_active()
+        {
+            return None;
+        }
+        if let Some(overlay_index) = self.local_overlay_panel() {
+            let mut state = None;
+            self.panel_mgr
+                .panels
+                .get_mut(overlay_index)?
+                .local
+                .as_mut()?
+                .with_host(&mut |h| state = crate::columns::text_state(h));
+            return state;
+        }
+        if self
+            .layout
+            .presentation_tabs
+            .as_ref()
+            .is_some_and(|tabs| tabs.content_host().focused().is_some())
             || self
                 .layout
                 .presentation_creation_grid
@@ -324,22 +411,23 @@ impl Host {
         }
     }
     pub(super) fn local_content_event(&mut self, event: &Event, w: &Window) -> Result<bool> {
+        let switcher_overlay = self.switcher_overlay_active();
+        let local_overlay_owns_key = Self::is_key_or_text_event(event)
+            && !switcher_overlay
+            && self.local_overlay_panel().is_some();
         if !w.is_active()
-            || self
-                .layout
-                .presentation_tabs
-                .as_ref()
-                .is_some_and(|tabs| tabs.content_host().focused().is_some())
-            || self
-                .layout
-                .presentation_creation_grid
-                .as_ref()
-                .is_some_and(|grid| grid.host.focused().is_some())
-            || self
-                .layout
-                .presentation_creation_grid
-                .as_ref()
-                .is_some_and(|grid| grid.host.focused().is_some())
+            || switcher_overlay
+            || (!local_overlay_owns_key
+                && (self
+                    .layout
+                    .presentation_tabs
+                    .as_ref()
+                    .is_some_and(|tabs| tabs.content_host().focused().is_some())
+                    || self
+                        .layout
+                        .presentation_creation_grid
+                        .as_ref()
+                        .is_some_and(|grid| grid.host.focused().is_some())))
             || self.layout.sidebar_motion.needs_frame()
             || self.open_toolbar().is_some()
             || self
@@ -401,6 +489,8 @@ impl Host {
                     && p.content_frame().contains(point)
                     && (self.layout.presentation.is_none() || p.clip.contains(point))
             })
+        } else if let Some(overlay_index) = self.local_overlay_panel() {
+            Some(overlay_index)
         } else if self.panel_mgr.panels[self.toolbar_mgr.toolbar_index]
             .mounted_toolbar
             .host
@@ -2597,5 +2687,280 @@ mod redraw_efficiency_tests {
         );
         assert!(hover_pub_after.is_current());
         let _ = btn_center;
+    }
+
+    #[test]
+    fn toolbar_escape_does_not_swallow_unfocused_local_context_menu() {
+        use crate::window::toolbar_key;
+        use crate::{AppWindow, LocalContainer};
+        use tekes_ui_controls::composition::*;
+
+        let sidebar = LocalContainer::new(
+            "sidebar",
+            Content::new(
+                ComponentId(910),
+                StackContent::vertical(
+                    8.,
+                    vec![
+                        Content::new(ComponentId(911), Button::new("Acceptance A")),
+                        Content::new(
+                            ComponentId(912),
+                            MenuContent::context_menu(
+                                "Thread actions",
+                                vec![MenuEntry::item("archive", "Archive")],
+                            )
+                            .unwrap(),
+                        ),
+                    ],
+                ),
+            ),
+        )
+        .unwrap();
+        let main = LocalContainer::new(
+            "main",
+            Content::new(ComponentId(920), TextFieldContent::new("Composer", "draft")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![sidebar.into(), main.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        for (i, panel) in host.panel_mgr.panels.iter_mut().enumerate() {
+            let bounds = Rect::new(i as f32 * 240., 40., 240., 300.);
+            panel.bounds = bounds;
+            panel.geometry_with_header(bounds, 1., 0., 0.).unwrap();
+            panel.frame_viewport = panel.viewport;
+            panel.frame_size = panel.content_size();
+            let frame = panel.content_frame();
+            let local = panel.local.as_mut().unwrap();
+            if i == 0 {
+                local.with_host(&mut |h| {
+                    h.bind_context_menu(ComponentId(911), ComponentId(912))
+                        .unwrap();
+                });
+            }
+            local.set_active(true);
+            local
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        // Main pane blank click clears focus in both panels and points layout.focused at main.
+        host.layout.focused = 1;
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(None, false);
+            });
+        host.panel_mgr.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                h.focus(None, false);
+            });
+        // Case A: AXShowMenu on sidebar updates layout.focused = 0, while h.focused() remains None everywhere.
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(
+                    h.accessibility_action(ComponentId(911), None, AccessibilityAction::ShowMenu)
+                        .consumed
+                );
+                assert!(h.input_overlay_owner().is_some());
+                assert!(h.focused().is_none());
+            });
+        host.layout.focused = 0;
+
+        let escape_key = KeyEvent {
+            kind: KeyEventKind::Down,
+            key_code: 53,
+            characters: "\u{1b}".into(),
+            characters_ignoring_modifiers: "\u{1b}".into(),
+            modifiers: Default::default(),
+            is_repeat: false,
+        };
+        assert!(
+            !host
+                .toolbar_key_input(toolbar_key(escape_key.clone()))
+                .unwrap(),
+            "toolbar must not swallow Escape while a local panel owns an open context menu"
+        );
+        assert!(
+            host.local_content_input(&Event::Key(escape_key), &NoClipboard)
+                .unwrap()
+        );
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(
+                    h.input_overlay_owner().is_none(),
+                    "Escape must close the AX-opened sidebar context menu"
+                );
+            });
+    }
+
+    #[test]
+    fn right_click_context_menu_escape_routes_to_overlay_panel_preserving_other_column_focus() {
+        use crate::window::toolbar_key;
+        use crate::{AppWindow, LocalContainer};
+        use tekes_ui_controls::composition::*;
+        use tekes_ui_platform_macos::{MouseButton, MouseEvent, MouseEventKind};
+
+        let sidebar = LocalContainer::new(
+            "sidebar",
+            Content::new(
+                ComponentId(930),
+                StackContent::vertical(
+                    8.,
+                    vec![
+                        Content::new(ComponentId(931), Button::new("Acceptance B")),
+                        Content::new(
+                            ComponentId(932),
+                            MenuContent::context_menu(
+                                "Thread actions",
+                                vec![MenuEntry::item("archive", "Archive")],
+                            )
+                            .unwrap(),
+                        ),
+                    ],
+                ),
+            ),
+        )
+        .unwrap();
+        let main = LocalContainer::new(
+            "main",
+            Content::new(ComponentId(940), TextFieldContent::new("Composer", "draft")),
+        )
+        .unwrap();
+        let mut host = AppWindow::from_columns(vec![sidebar.into(), main.into()])
+            .unwrap()
+            .into_host(false);
+        assert!(host.mount_columns());
+        for (i, panel) in host.panel_mgr.panels.iter_mut().enumerate() {
+            let bounds = Rect::new(i as f32 * 240., 40., 240., 300.);
+            panel.bounds = bounds;
+            panel.geometry_with_header(bounds, 1., 0., 0.).unwrap();
+            panel.frame_viewport = panel.viewport;
+            panel.frame_size = panel.content_size();
+            let frame = panel.content_frame();
+            let local = panel.local.as_mut().unwrap();
+            if i == 0 {
+                local.with_host(&mut |h| {
+                    h.bind_context_menu(ComponentId(931), ComponentId(932))
+                        .unwrap();
+                });
+            }
+            local.set_active(true);
+            local
+                .render(
+                    &mut Scene::new(),
+                    &mut host.text,
+                    frame,
+                    frame,
+                    Theme::LIGHT.into(),
+                )
+                .unwrap();
+        }
+        // Main panel owns keyboard focus and active TextField; layout.focused == 1.
+        host.layout.focused = 1;
+        host.panel_mgr.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(h.focus(Some(ComponentId(940)), true));
+            });
+        assert!(host.local_text_state(true).is_some());
+
+        let mut row_center = None;
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                row_center = h
+                    .semantics()
+                    .into_iter()
+                    .find(|n| n.id == ComponentId(931))
+                    .map(|n| n.frame.center());
+            });
+        let row_center = row_center.unwrap();
+        let right_down = Event::Mouse(MouseEvent {
+            kind: MouseEventKind::Down {
+                button: MouseButton::Right,
+                click_count: 1,
+            },
+            position: tekes_ui_platform_macos::Point {
+                x: row_center.x as f64,
+                y: row_center.y as f64,
+            },
+            modifiers: Default::default(),
+        });
+        assert!(host.local_secondary_pointer(&right_down).unwrap());
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(h.input_overlay_owner().is_some());
+            });
+        assert_eq!(host.layout.focused, 1);
+        assert!(
+            host.local_text_state(true).is_none(),
+            "active sidebar overlay must pause background Composer text input state while open"
+        );
+
+        let escape_key = KeyEvent {
+            kind: KeyEventKind::Down,
+            key_code: 53,
+            characters: "\u{1b}".into(),
+            characters_ignoring_modifiers: "\u{1b}".into(),
+            modifiers: Default::default(),
+            is_repeat: false,
+        };
+        assert!(
+            !host
+                .toolbar_key_input(toolbar_key(escape_key.clone()))
+                .unwrap()
+        );
+        assert!(
+            host.local_content_input(&Event::Key(escape_key), &NoClipboard)
+                .unwrap()
+        );
+        host.panel_mgr.panels[0]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert!(
+                    h.input_overlay_owner().is_none(),
+                    "Escape must route to the overlay-owning sidebar panel even when layout.focused points at main pane"
+                );
+            });
+        assert_eq!(host.layout.focused, 1);
+        host.panel_mgr.panels[1]
+            .local
+            .as_mut()
+            .unwrap()
+            .with_host(&mut |h| {
+                assert_eq!(h.focused(), Some(ComponentId(940)));
+                assert_eq!(h.text_surface(ComponentId(940)).unwrap().text(), "draft");
+            });
+        assert!(
+            host.local_text_state(true).is_some(),
+            "dismissing sidebar overlay with Escape must restore background Composer text input state"
+        );
     }
 }

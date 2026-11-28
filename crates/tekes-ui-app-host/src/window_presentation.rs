@@ -1761,6 +1761,12 @@ impl Host {
             host_diag!("PRESENTATION_REJECTED composition-in-progress");
             return Ok(true);
         }
+        if !self.settings_mgr.is_settings_window
+            && Self::is_key_or_text_event(event)
+            && self.local_overlay_panel().is_some()
+        {
+            return Ok(false);
+        }
         let Some(host) = &mut self.layout.presentation_tabs else {
             return Ok(false);
         };
