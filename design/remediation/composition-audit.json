@@ -1,6 +1,6 @@
 {
   "format": "tekesui-composition-audit/1",
-  "head": "adc98dd96fc8c66ff423c88148c9e0d77a84f2fb",
+  "head": "95eb4e0e9dcce8a650126828b79cc6fa51a0c13e",
   "source": "Incremental #294 source review on fedb69b6: affected original Gallery fixtures and AppHost/Controls integration; scoped CPU checks through Check380 and release build Check381 passed. Original programs and failed checks retain identity; r3 native acceptance and public delivery remain separate.",
   "audited_at": "2026-11-23",
   "issue14_updated_at": "2026-10-17T08:15:16Z",
