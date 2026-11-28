@@ -5,10 +5,9 @@ Use TextFieldContent with a multiline TextSurface for notes, drafts and messages
 ## Creating the content
 
 ```rust
-use tekes_ui_controls::{TextSurface, composition::*};
+use tekes_ui_controls::composition::*;
 
-let mut area = TextFieldContent::new("Message", "");
-area.surface = TextSurface::new("", true, false);
+let mut area = TextFieldContent::multiline("Message", "");
 area.viewport = TextViewport::Grow { min: 56., max: 160. };
 area.tab_policy = TextTabPolicy::Insert;
 area.submit_policy = TextSubmitPolicy::CommandEnter;
