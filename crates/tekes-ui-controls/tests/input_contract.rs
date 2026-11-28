@@ -312,22 +312,51 @@ fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics()
         TextFieldContent,
     };
 
-    assert_eq!(proposal::TextRole::ComposerBody.id(), "composer-body");
+    use tekes_ui_tokens::proposal::TextRole::{ComposerBody, MultilineBody};
+
+    let describe_role = |role: proposal::TextRole| -> (&'static str, usize) {
+        match role {
+            proposal::TextRole::UiBody => (role.id(), 0),
+            proposal::TextRole::MultilineBody => (role.id(), 1),
+            proposal::TextRole::UiLabel => (role.id(), 2),
+            proposal::TextRole::UiSecondary => (role.id(), 3),
+            proposal::TextRole::UiCaption => (role.id(), 4),
+            proposal::TextRole::UiHeading => (role.id(), 5),
+            proposal::TextRole::Code => (role.id(), 6),
+            proposal::TextRole::ToolbarLabel => (role.id(), 7),
+            proposal::TextRole::DocBody => (role.id(), 8),
+            proposal::TextRole::DocH1 => (role.id(), 9),
+            proposal::TextRole::DocH2 => (role.id(), 10),
+            proposal::TextRole::DocH3 => (role.id(), 11),
+            proposal::TextRole::ChatBody => (role.id(), 12),
+            proposal::TextRole::ComposerBody => (role.id(), 13),
+            proposal::TextRole::ButtonXs => (role.id(), 14),
+            proposal::TextRole::ButtonSm => (role.id(), 15),
+            proposal::TextRole::ButtonMd => (role.id(), 16),
+            proposal::TextRole::ButtonLg => (role.id(), 17),
+        }
+    };
+    assert_ne!(MultilineBody, ComposerBody);
+    assert_eq!(describe_role(MultilineBody), ("multiline-body", 1));
+    assert_eq!(describe_role(ComposerBody), ("composer-body", 13));
+    assert_eq!(MultilineBody.id(), "multiline-body");
+    assert_eq!(ComposerBody.id(), "composer-body");
     assert!(proposal::TEXT_STYLES.contains(&"multiline-body"));
-    let multiline_style = proposal::text("multiline-body").expect("neutral multiline-body token");
-    let composer_style = proposal::TextRole::ComposerBody.style();
+    let multiline_style = MultilineBody.style();
+    assert_eq!(
+        proposal::text("multiline-body").expect("neutral multiline-body token"),
+        multiline_style
+    );
+    let composer_style = ComposerBody.style();
     assert_eq!(multiline_style.size, 14.0);
     assert_eq!(multiline_style.line_height, 20.0);
     assert_eq!(multiline_style.weight, 400);
     assert_eq!(proposal::text_family("multiline-body"), Some("ui"));
-    assert_eq!(
-        proposal::text_family(proposal::TextRole::ComposerBody.id()),
-        Some("ui")
-    );
+    assert_eq!(proposal::text_family(ComposerBody.id()), Some("ui"));
     for theme in tekes_ui_tokens::Theme::ALL {
         assert_eq!(
             proposal::text_color("multiline-body", theme),
-            proposal::text_color(proposal::TextRole::ComposerBody.id(), theme)
+            proposal::text_color(ComposerBody.id(), theme)
         );
     }
     assert_eq!(
@@ -340,17 +369,18 @@ fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics()
     );
     assert_eq!(multiline_style.weight, composer_style.weight);
 
-    // Ordinary public inputs and surface constructors on 0.4.x keep ComposerBody compatibility.
+    // Ordinary public inputs and surface constructors in 0.5.0 default to MultilineBody.
     let single_field = TextFieldContent::new("Title", "Hello");
     assert_eq!(single_field.role(), proposal::TextRole::UiBody);
+    assert_eq!(single_field.role().id(), "ui-body");
 
     let multiline_field = TextFieldContent::multiline("Notes", "Hello");
-    assert_eq!(multiline_field.role(), proposal::TextRole::ComposerBody);
-    assert_eq!(multiline_field.role().id(), "composer-body");
+    assert_eq!(multiline_field.role(), MultilineBody);
+    assert_eq!(multiline_field.role().id(), "multiline-body");
 
-    let explicit_composer = TextFieldContent::multiline("Composer", "Hello")
-        .with_role(proposal::TextRole::ComposerBody);
-    assert_eq!(explicit_composer.role(), proposal::TextRole::ComposerBody);
+    let explicit_composer =
+        TextFieldContent::multiline("Composer", "Hello").with_role(ComposerBody);
+    assert_eq!(explicit_composer.role(), ComposerBody);
     assert_eq!(explicit_composer.role().id(), "composer-body");
 
     let ro_doc =
@@ -367,17 +397,11 @@ fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics()
         TextSurface::new("a", false, false).role(),
         proposal::TextRole::UiBody
     );
-    assert_eq!(
-        TextSurface::new("a", true, false).role(),
-        proposal::TextRole::ComposerBody
-    );
-    assert_eq!(
-        TextSurface::new("a", true, true).role(),
-        proposal::TextRole::ComposerBody
-    );
+    assert_eq!(TextSurface::new("a", true, false).role(), MultilineBody);
+    assert_eq!(TextSurface::new("a", true, true).role(), MultilineBody);
 
     // Compare layout, type scaling, line wrapping, selection, and simulated IME preview geometry
-    // through ContentHost + CoreText (and keep UI baseline style assertions separate from 18pt host overrides).
+    // between default MultilineBody and explicit ComposerBody through ContentHost + CoreText.
     let sample =
         "Ordinary multiline input wraps smoothly across lines when narrowed; 中文输入候选定位。";
     let frame = Rect::new(0., 0., 200., 220.);
@@ -394,8 +418,7 @@ fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics()
         .unwrap();
         let mut composer_host = ContentHost::new(Content::new(
             ComponentId(2),
-            TextFieldContent::multiline("Notes", sample)
-                .with_role(proposal::TextRole::ComposerBody),
+            TextFieldContent::multiline("Notes", sample).with_role(ComposerBody),
         ))
         .unwrap();
 
@@ -411,8 +434,8 @@ fn ordinary_multiline_input_defaults_to_neutral_role_matching_composer_metrics()
         {
             let surf_n = neutral_host.text_surface(ComponentId(1)).unwrap();
             let surf_c = composer_host.text_surface(ComponentId(2)).unwrap();
-            assert_eq!(surf_n.role(), proposal::TextRole::ComposerBody);
-            assert_eq!(surf_c.role(), proposal::TextRole::ComposerBody);
+            assert_eq!(surf_n.role(), MultilineBody);
+            assert_eq!(surf_c.role(), ComposerBody);
 
             let pn = surf_n.paragraph().expect("shaped neutral paragraph");
             let pc = surf_c.paragraph().expect("shaped composer paragraph");

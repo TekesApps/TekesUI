@@ -17,7 +17,7 @@ TextContent exposes text and role without adding editing selection. read_only_co
 
 ## Composition and limitations
 
-The host supplies text shaping and reading focus; a parent supplies document scrolling. Static labels normally do not take an editing focus stop. Animated integer displays use TickingNumber.
+The host supplies text shaping and reading focus; a parent supplies document scrolling. Static labels normally do not take an editing focus stop. Generic multiline inputs default to `TextRole::MultilineBody` (`"multiline-body"`) in `0.5.0`, distinct from explicit `TextRole::ComposerBody` (`"composer-body"`). Animated integer displays use TickingNumber.
 
 ## Related APIs
 
