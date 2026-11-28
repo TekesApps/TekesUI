@@ -246,6 +246,31 @@ mod mac {
         }
     }
 
+    fn resolve_reference_role(
+        role_id: Option<&str>,
+    ) -> Result<tekes_ui_tokens::proposal::TextRole, String> {
+        use tekes_ui_tokens::proposal::TextRole;
+        match role_id {
+            Some("multiline-body") => Ok(TextRole::MultilineBody),
+            Some("composer-body") => Ok(TextRole::ComposerBody),
+            Some(other) => Err(format!(
+                "CoreText system-font reference requires measured multiline-body or composer-body role; got {other:?}"
+            )),
+            None => Err(
+                "CoreText system-font reference requires a string role (multiline-body or composer-body)"
+                    .into(),
+            ),
+        }
+    }
+
+    fn reference_font_source(role: tekes_ui_tokens::proposal::TextRole) -> String {
+        format!(
+            "Gallery CoreTextFonts::create_font(system + {role:?} ({}) weight={}); same object toll-free bridged",
+            role.id(),
+            role.style().weight
+        )
+    }
+
     fn configure_reference(
         doc: &NumberedPaper,
         scroll: &MeasuredScroll,
@@ -257,10 +282,7 @@ mod mac {
                 return Err("backing scale differs from Gallery".into());
             }
             // Match Gallery TextEngine::prepare_proposal, not an NSFont name alias.
-            let role = tekes_ui_tokens::proposal::TextRole::ComposerBody;
-            if r.fixture["role"].as_str() != Some(role.id()) {
-                return Err("CoreText system-font reference requires the measured composer-body role".into());
-            }
+            let role = resolve_reference_role(r.fixture["role"].as_str())?;
             let style = tekes_ui_text::style::TextStyle::system(r.font_size as f32)
                 .with_weight(role.style().weight);
             let ct_font = tekes_ui_text::coretext::CoreTextFonts::new().create_font(&style);
@@ -393,6 +415,7 @@ mod mac {
                         (a[*k].as_f64().unwrap()-b[*k].as_f64().unwrap()).abs() > tolerance)
                 }).map(|(index, (actual, expected))| json!({"index":index,"actual":actual,"expected":expected}));
                 return Err(format!("AppKit layout mismatch: {}", json!({
+                    "role": role.id(),
                     "font_post_script_name":ct_name,"font_point_size":ct_size,"appkit_font_name":font.fontName().to_string(),
                     "actual_viewport_pt":[scroll.contentView().bounds().size.width,scroll.contentView().bounds().size.height],
                     "expected_viewport_pt":[r.width,r.height],"actual_used_height_pt":used.size.height,
@@ -411,9 +434,10 @@ mod mac {
             Ok(json!({"status":if exact_layout_passed && r.centered_baseline {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY_SHARED_VERTICAL_CENTER_POLICY"} else if exact_layout_passed {"MATCHED_BODY_INPUT_AND_LINE_GEOMETRY"} else {"PARTIAL_BODY_CPU_SCROLL_STATE_DIAGNOSTIC"},
                 "scope":if exact_layout_passed {"text body only; Gallery chrome excluded"} else {comparison_scope},"comparison_scope":comparison_scope,"exact_layout_passed":exact_layout_passed,
                 "baseline_diagnostic_requested":r.baseline_diagnostic,"baseline_differences":baseline_differences,
+                "role": role.id(),
                 "font_post_script_name":ct_name,"font_point_size":ct_size,
                 "appkit_font_name":font.fontName().to_string(),
-                "font_source":"Gallery CoreTextFonts::create_font(system + ComposerBody weight); same object toll-free bridged",
+                "font_source":reference_font_source(role),
                 "lines":native_lines,"baseline_policy":baseline_policy,
                 "used_height_pt":used.size.height,"viewport_pt":[r.width,r.height],"backing_scale":window.backingScaleFactor(),
                 "native_resolved_glyph_fallback":"UNKNOWN; exact base font and measured line geometry matched",
@@ -1025,6 +1049,31 @@ mod mac {
         );
         if reference_mode {
             std::process::exit(REFERENCE_EXIT.load(std::sync::atomic::Ordering::Relaxed));
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::{reference_font_source, resolve_reference_role};
+        use tekes_ui_tokens::proposal::TextRole;
+
+        #[test]
+        fn reference_role_accepts_multiline_and_composer_and_rejects_unknown() {
+            assert_eq!(
+                resolve_reference_role(Some("multiline-body")),
+                Ok(TextRole::MultilineBody)
+            );
+            assert_eq!(
+                resolve_reference_role(Some("composer-body")),
+                Ok(TextRole::ComposerBody)
+            );
+            assert!(resolve_reference_role(Some("unknown-role")).is_err());
+            assert!(resolve_reference_role(None).is_err());
+
+            let multi = reference_font_source(TextRole::MultilineBody);
+            assert!(multi.contains("MultilineBody") && multi.contains("multiline-body"));
+            let comp = reference_font_source(TextRole::ComposerBody);
+            assert!(comp.contains("ComposerBody") && comp.contains("composer-body"));
         }
     }
 }

@@ -156,6 +156,12 @@ impl AppHostHarnessHandler {
         }
     }
 
+    fn sync_perf_animation(&self, window: &mut Window) {
+        if let Some(perf) = &self.perf {
+            let _ = window.set_animating(perf.wants_animation());
+        }
+    }
+
     fn handle_diagnostic_command(&mut self, id: u32, window: &mut Window) -> bool {
         match id {
             CMD_APPEARANCE_SYSTEM => self.theme_state.appearance = AppearanceChoice::System,
@@ -215,6 +221,7 @@ impl WindowHandler for AppHostHarnessHandler {
                     perf.resize(size.width as f32, size.height as f32);
                 }
                 self.hosted.handle(event, window);
+                self.sync_perf_animation(window);
             }
             Event::Redraw if self.perf.is_some() => {
                 let theme = self.hosted.theme();
@@ -251,6 +258,7 @@ impl WindowHandler for AppHostHarnessHandler {
                     perf.set_reduced_motion(*reduced);
                 }
                 self.hosted.handle(event, window);
+                self.sync_perf_animation(window);
             }
             Event::SystemAppearanceChanged {
                 dark,
@@ -270,6 +278,7 @@ impl WindowHandler for AppHostHarnessHandler {
                 };
                 self.hosted.handle(event, window);
                 self.sync_effective_theme();
+                self.sync_perf_animation(window);
             }
             Event::CloseRequested
                 if self.perf.as_ref().is_some_and(crate::perf::Perf::is_active) =>
@@ -282,7 +291,10 @@ impl WindowHandler for AppHostHarnessHandler {
                     window.close();
                 }
             }
-            _ => self.hosted.handle(event, window),
+            _ => {
+                self.hosted.handle(event, window);
+                self.sync_perf_animation(window);
+            }
         }
     }
 }

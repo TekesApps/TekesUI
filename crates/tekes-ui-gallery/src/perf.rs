@@ -647,6 +647,13 @@ impl Perf {
         self.phase != Phase::Done
     }
 
+    pub fn wants_animation(&self) -> bool {
+        matches!(
+            self.phase,
+            Phase::WarmUp | Phase::Measure | Phase::PresentationDrain
+        )
+    }
+
     fn editor_scroll_metrics(&self) -> (f32, f32) {
         self.apphost.state().borrow().with_current_page_ref(|page| {
             page.documents()
@@ -1765,6 +1772,22 @@ mod tests {
             Phase::Cooldown,
             Some(&json!({"wait_s":5.0}))
         ));
+    }
+
+    #[test]
+    fn perf_wants_animation_tracks_active_display_link_phases() {
+        let config = PerfConfig::parse("scroll:2", None, None, None).unwrap();
+        let mut perf = Perf::new(config);
+        for (phase, expected) in [
+            (Phase::WarmUp, true),
+            (Phase::Measure, true),
+            (Phase::PresentationDrain, true),
+            (Phase::Cooldown, false),
+            (Phase::Done, false),
+        ] {
+            perf.phase = phase;
+            assert_eq!(perf.wants_animation(), expected);
+        }
     }
 
     fn drain_receipt(serial: u64, presented_at: f64) -> tekes_ui_platform_macos::PresentedFrame {

@@ -139,7 +139,7 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
     let mut surface = TextSurface::new(&source, true, true);
     let mut text = coretext::Text::new(1.);
     assert_eq!(surface.presentation(), TextSurfacePresentation::Field);
-    assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
+    assert_eq!(surface.role(), proposal::TextRole::MultilineBody);
     render(&mut surface, &mut text, Theme::LIGHT, 420.);
     assert!(surface.input_mut().select_range(0..4));
     let mut initial = None;
@@ -163,7 +163,7 @@ fn text_surface_retained_themes_preserve_readonly_source_selection_copy_and_real
     text.scale = 1.5;
     let scene = render(&mut surface, &mut text, Theme::DARK_INCREASED, 260.);
     assert!(surface.paragraph().unwrap().height > before);
-    assert_eq!(surface.role(), proposal::TextRole::ComposerBody);
+    assert_eq!(surface.role(), proposal::TextRole::MultilineBody);
     assert_eq!(surface.type_scale(), 1.5);
     assert_eq!(surface.input().selection(), 0..4);
     assert_eq!(surface.input().selected_text(), "Read");
